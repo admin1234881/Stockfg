@@ -11,74 +11,70 @@
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #ff8fab; /* สีชมพูหลัก */
-            --secondary-color: #a2d2ff; /* สีฟ้า */
-            --success-color: #80ed99; /* สีเขียวมิ้นท์ */
-            --danger-color: #ff5d5d; /* สีแดง */
-            --warning-color: #ffca28; /* สีเหลือง */
-            --bg-color: #fff8f9; /* สีพื้นหลังชมพูอ่อน */
-            --text-color: #5d5d5d;
+            --primary-color: #0d6efd; /* สีน้ำเงินหลัก */
+            --secondary-color: #6c757d; /* สีเทา */
+            --success-color: #198754; /* สีเขียว */
+            --danger-color: #dc3545; /* สีแดง */
+            --warning-color: #ffc107; /* สีเหลือง */
+            --bg-color: #f8f9fa; /* สีพื้นหลังขาวอมเทา */
+            --text-color: #212529;
             --border-radius: 12px;
+            --header-bg: #e7f1ff; /* สีพื้นหลังหัวข้อฟ้าอ่อน */
         }
         body { font-family: 'Mitr', sans-serif; background-color: var(--bg-color); color: var(--text-color); }
         .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
         .card { border-radius: var(--border-radius); border: none; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); overflow: hidden; }
-        .card-header-custom { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; border-bottom: none; }
-        .card-header { background-color: #fce4ec; border-bottom: 1px solid #f8bbd0; }
+        .card-header-custom { background: linear-gradient(135deg, var(--primary-color), #0dcaf0); color: white; border-bottom: none; }
+        .card-header { background-color: var(--header-bg); border-bottom: 1px solid #dee2e6; }
         .btn { border-radius: var(--border-radius); padding: 10px 20px; font-weight: 500; transition: transform 0.2s ease, box-shadow 0.2s ease; border: none; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); }
         .btn-primary { background-color: var(--primary-color); }
-        .btn-primary:hover { background-color: #ff74a2; }
-        .btn-success { background-color: var(--success-color); color: #333; }
-        .btn-success:hover { background-color: #6ee088; }
+        .btn-primary:hover { background-color: #0b5ed7; }
+        .btn-success { background-color: var(--success-color); }
+        .btn-success:hover { background-color: #157347; }
         .btn-danger { background-color: var(--danger-color); }
-        .btn-danger:hover { background-color: #ff4747; }
-        .btn-warning { background-color: var(--warning-color); color: #333;}
-        .btn-warning:hover { background-color: #ffc107; }
+        .btn-danger:hover { background-color: #bb2d3b; }
+        .btn-warning { background-color: var(--warning-color); color: #000;}
+        .btn-warning:hover { background-color: #ffcd39; }
         .btn-outline-danger { color: var(--danger-color); border-color: var(--danger-color); }
         .btn-outline-danger:hover { background-color: var(--danger-color); color: white; }
-        .btn-info { background-color: var(--secondary-color); color: #333; }
-        .btn-info:hover { background-color: #8ecaff; }
+        .btn-info { background-color: #0dcaf0; }
+        .btn-info:hover { background-color: #31d2f2; }
         .form-control, .form-select, .form-check-input { border-radius: var(--border-radius); border: 1px solid #ddd; }
-        .form-control:focus, .form-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.25rem rgba(255, 143, 171, 0.3); }
+        .form-control:focus, .form-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25); }
         .form-check-input:checked { background-color: var(--primary-color); border-color: var(--primary-color); }
         .nav-pills .nav-link { border-radius: var(--border-radius); color: var(--text-color); }
         .nav-pills .nav-link.active, .nav-pills .show>.nav-link { background-color: var(--primary-color); color: white; }
         .table-hover tbody tr { cursor: pointer; }
-        .table-hover tbody tr:hover { background-color: #fff0f3; transform: scale(1.01); transition: all 0.2s ease-in-out; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        thead { background-color: #ffe8f0; }
+        .table-hover tbody tr:hover { background-color: #eef5ff; transform: scale(1.01); transition: all 0.2s ease-in-out; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        thead { background-color: var(--header-bg); }
         #main-dashboard { display: none; }
         .admin-nav { display: none; }
         .history-import { border-left: 5px solid var(--success-color); }
-        .history-export { border-left: 5px solid var(--secondary-color); }
+        .history-export { border-left: 5px solid #0dcaf0; }
         .history-adjustment { border-left: 5px solid var(--warning-color); }
         .suggestions-container { z-index: 1050; }
         .suggestions-container a:hover { background-color: var(--primary-color); color: white; }
         .filter-card { overflow: visible; }
         .refresh-note {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 15px;
-            background-color: #fff0f3;
+            bottom: 15px;
+            right: 15px;
+            padding: 8px 12px;
+            background-color: #e7f1ff;
             border: 1px solid var(--primary-color);
             border-radius: var(--border-radius);
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             z-index: 1100;
             display: flex;
             align-items: center;
-            font-size: 0.9rem;
-        }
-        .backup-container {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 1100;
+            font-size: 0.8rem;
         }
     </style>
 </head>
 <body>
 
+    <!-- HTML Content remains the same -->
     <div id="login-page" class="container">
         <div class="login-container">
             <div class="col-md-6 col-lg-4">
@@ -110,7 +106,7 @@
 
     <div id="main-dashboard" class="container-fluid p-4">
         <header class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
-            <h1 class="h4"><i class="bi bi-box2-heart-fill me-2" style="color: var(--primary-color);"></i>Stock In-Out FG</h1>
+            <h1 class="h4"><i class="bi bi-box2-heart-fill me-2" style="color: var(--primary-color);"></i>STOCK IN-OUT FG</h1>
             <div>
                 <span id="user-role" class="badge rounded-pill me-2 fs-6 align-middle"></span>
                 <button id="logout-btn" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>ออกจากระบบ</button>
@@ -140,33 +136,50 @@
 
         <div class="tab-content" id="pills-tabContent">
             <div class="tab-pane fade show active" id="pills-stock" role="tabpanel" aria-labelledby="pills-stock-tab">
-                <div class="card mb-4">
-                    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-table me-2"></i>สรุปยอดสต็อกสินค้าคงเหลือ</span>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" role="switch" id="show-old-stock-filter">
-                            <label class="form-check-label" for="show-old-stock-filter">แสดงเฉพาะสต็อกที่ผลิตเกิน 3 เดือน</label>
+                <div class="row">
+                    <div class="col-lg-3">
+                        <div class="card admin-nav mb-4">
+                            <div class="card-header fw-bold"><i class="bi bi-cloud-arrow-down-fill me-2"></i>สำรองข้อมูล</div>
+                            <div class="card-body">
+                                <p class="text-center mb-2">ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV</p>
+                                <div class="d-grid gap-2">
+                                    <button id="backup-stock-btn" class="btn btn-info btn-sm"><i class="bi bi-archive-fill me-2"></i>ข้อมูลสต็อก</button>
+                                    <button id="backup-products-btn" class="btn btn-info btn-sm"><i class="bi bi-box-seam-fill me-2"></i>ข้อมูลสินค้า</button>
+                                    <button id="backup-users-btn" class="btn btn-info btn-sm"><i class="bi bi-person-lines-fill me-2"></i>ข้อมูลผู้ใช้</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <div class="input-group mb-3">
-                            <input type="text" id="stock-search-input" class="form-control" placeholder="ค้นหารหัสสินค้า, ชื่อสินค้า หรือลูกค้า...">
-                            <button class="btn btn-secondary" type="button" id="refresh-stock-summary-btn" title="รีเฟรชข้อมูล"><i class="bi bi-arrow-clockwise"></i></button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle">
-                                <thead>
-                                    <tr>
-                                        <th></th>
-                                        <th>รหัส/ชื่อสินค้า</th>
-                                        <th>รหัส ERP</th>
-                                        <th>ลูกค้า</th>
-                                        <th>ยอดคงเหลือทั้งหมด</th>
-                                        <th class="admin-only-cell">ดำเนินการ</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="stock-summary-table"></tbody>
-                            </table>
+                    <div class="col-lg-9">
+                        <div class="card mb-4">
+                            <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-table me-2"></i>สรุปยอดสต็อกสินค้าคงเหลือ</span>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="show-old-stock-filter">
+                                    <label class="form-check-label" for="show-old-stock-filter">แสดงเฉพาะสต็อกที่ผลิตเกิน 3 เดือน</label>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="input-group mb-3">
+                                    <input type="text" id="stock-search-input" class="form-control" placeholder="ค้นหารหัสสินค้า, ชื่อสินค้า หรือลูกค้า...">
+                                    <button class="btn btn-secondary" type="button" id="refresh-stock-summary-btn" title="รีเฟรชข้อมูล"><i class="bi bi-arrow-clockwise"></i></button>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th></th>
+                                                <th>รหัส/ชื่อสินค้า</th>
+                                                <th>รหัส ERP</th>
+                                                <th>ลูกค้า</th>
+                                                <th>ยอดคงเหลือทั้งหมด</th>
+                                                <th class="admin-only-cell">ดำเนินการ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="stock-summary-table"></tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -327,19 +340,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="backup-container admin-nav">
-            <div class="dropup">
-                <button class="btn btn-primary btn-lg rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="สำรองข้อมูล">
-                    <i class="bi bi-cloud-arrow-down-fill"></i>
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#" id="backup-stock-btn"><i class="bi bi-archive-fill me-2"></i>ข้อมูลสต็อก</a></li>
-                    <li><a class="dropdown-item" href="#" id="backup-products-btn"><i class="bi bi-box-seam-fill me-2"></i>ข้อมูลสินค้า</a></li>
-                    <li><a class="dropdown-item" href="#" id="backup-users-btn"><i class="bi bi-person-lines-fill me-2"></i>ข้อมูลผู้ใช้</a></li>
-                </ul>
-            </div>
-        </div>
     </div>
 
     <div class="modal fade" id="lotDetailModal" tabindex="-1" aria-hidden="true">
@@ -436,10 +436,10 @@
     </div>
 
     <div class="refresh-note">
-        <i class="bi bi-arrow-clockwise fs-4 me-2"></i>
+        <i class="bi bi-arrow-clockwise fs-5 me-2"></i>
         <div>
-            <strong>รีเฟรชก่อนใช้!</strong><br>
-            เพื่อข้อมูลที่ถูกต้อง ควรกด F5 ทุกครั้งก่อนเริ่มใช้งาน
+            <strong>รีเฟรช (F5)</strong> ก่อนใช้งาน<br>
+            เพื่อข้อมูลล่าสุด
         </div>
     </div>
 
@@ -914,7 +914,7 @@
                 <div class="col-md-3"> <label for="import-prod-date" class="form-label">วันที่ผลิต</label> <input type="date" id="import-prod-date" class="form-control" required> </div>
                 <div class="col-12"> <label for="import-remarks" class="form-label">หมายเหตุ</label> <textarea id="import-remarks" class="form-control" rows="2"></textarea> </div>
                 <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>เช็ควันที่รับเข้าจากชิ้นงานให้ดีก่อนรับเข้า</p> </div>
-                <div class="col-12"> <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-2"></i>บันทึกการรับเข้า</button> </div>`;
+                <div class="col-12"> <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-2"></i>บันทึกการรับเข้า</button> <button type="button" id="clear-import-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>ล้างฟอร์ม</button> </div>`;
             exportFormEl.innerHTML = `
                 <div class="col-md-4"> <label for="export-product-id" class="form-label">รหัสสินค้า</label> <div class="position-relative"> <input type="text" id="export-product-id" class="form-control" required autocomplete="off" placeholder="พิมพ์เพื่อค้นหา..."> <div id="export-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
                 <div class="col-md-4"> <label for="export-product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="export-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
@@ -926,7 +926,7 @@
                 <div class="col-md-4"> <label for="export-invoice-number" class="form-label">เลขที่ Invoice</label> <input type="text" id="export-invoice-number" class="form-control" required> </div>
                 <div class="col-12"> <label for="export-remarks" class="form-label">หมายเหตุ</label> <textarea id="export-remarks" class="form-control" rows="2"></textarea> </div>
                 <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>การส่งออกสินค้าควรคำนึกถึงหลัก FIFO (เข้าก่อน-ออกก่อน)</p> </div>
-                <div class="col-12 mt-3"> <button type="submit" class="btn btn-success"><i class="bi bi-send-check-fill me-2"></i>บันทึกการส่งออก</button> </div>`;
+                <div class="col-12 mt-3"> <button type="submit" class="btn btn-success"><i class="bi bi-send-check-fill me-2"></i>บันทึกการส่งออก</button> <button type="button" id="clear-export-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>ล้างฟอร์ม</button> </div>`;
             productFormEl.innerHTML = `
                 <div class="col-12"> <label for="product-id" class="form-label">รหัสสินค้า</label> <input type="text" id="product-id" class="form-control" required> </div>
                 <div class="col-12"> <label for="product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="product-name" class="form-control" required> </div>
@@ -965,14 +965,16 @@
             document.addEventListener('click', (e) => { if (!e.target.closest('.position-relative')) { document.getElementById('import-product-suggestions').innerHTML = ''; document.getElementById('export-product-suggestions').innerHTML = ''; document.getElementById('filter-product-suggestions').innerHTML = ''; } });
             importFormEl.addEventListener('submit', handleImport);
             exportFormEl.addEventListener('submit', handleExport);
+            document.getElementById('clear-import-form-btn').addEventListener('click', () => importFormEl.reset());
+            document.getElementById('clear-export-form-btn').addEventListener('click', () => exportFormEl.reset());
             document.getElementById('export-lot').addEventListener('change', () => { const selectedOption = document.getElementById('export-lot').options[document.getElementById('export-lot').selectedIndex]; const exportQuantityInput = document.getElementById('export-quantity'); if (selectedOption && selectedOption.dataset.maxQuantity) { exportQuantityInput.max = selectedOption.dataset.maxQuantity; exportQuantityInput.placeholder = `สูงสุด: ${selectedOption.dataset.maxQuantity}`; } else { exportQuantityInput.max = null; exportQuantityInput.placeholder = ''; } });
             productFormEl.addEventListener('submit', handleProductFormSubmit);
             document.getElementById('clear-product-form-btn').addEventListener('click', clearProductForm);
             userFormEl.addEventListener('submit', handleUserFormSubmit);
             document.getElementById('clear-user-form-btn').addEventListener('click', clearUserForm);
-            document.getElementById('backup-stock-btn').addEventListener('click', (e) => { e.preventDefault(); backupToCSV(db.stock, 'stock_backup.csv'); });
-            document.getElementById('backup-products-btn').addEventListener('click', (e) => { e.preventDefault(); backupToCSV(db.products, 'products_backup.csv'); });
-            document.getElementById('backup-users-btn').addEventListener('click', (e) => { e.preventDefault(); backupToCSV(db.users, 'users_backup.csv'); });
+            document.getElementById('backup-stock-btn').addEventListener('click', () => backupToCSV(db.stock, 'stock_backup.csv'));
+            document.getElementById('backup-products-btn').addEventListener('click', () => backupToCSV(db.products, 'products_backup.csv'));
+            document.getElementById('backup-users-btn').addEventListener('click', () => backupToCSV(db.users, 'users_backup.csv'));
             document.getElementById('backup-history-btn').addEventListener('click', () => {
                 const filteredData = getFilteredHistory();
                 const dataForExport = filteredData.map(item => {
@@ -1008,7 +1010,7 @@
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
             let summary = db.products.map(p => { const lots = db.stock.filter(s => s.productId === p.id); return { ...p, totalQuantity: lots.reduce((sum, item) => sum + item.quantity, 0), hasOldStock: lots.some(s => new Date(formatDate(s.productionDate)) < threeMonthsAgo) }; });
             if (filterOldStock) { summary = summary.filter(p => p.hasOldStock && p.totalQuantity > 0); } else { summary = summary.filter(p => p.totalQuantity > 0); }
-            if (searchTerm) { summary = summary.filter(item => String(item.id).toLowerCase().includes(searchTerm) || item.name.toLowerCase().includes(searchTerm) || (item.customer && item.customer.toLowerCase().includes(searchTerm)) ); }
+            if (searchTerm) { summary = summary.filter(item => item.id.toLowerCase().includes(searchTerm) || item.name.toLowerCase().includes(searchTerm) || (item.customer && item.customer.toLowerCase().includes(searchTerm)) ); }
             if (summary.length === 0) { const message = searchTerm ? 'ไม่พบสินค้าที่ตรงกับการค้นหาค่ะ' : (filterOldStock ? 'ไม่พบสต็อกที่เก่ากว่า 3 เดือนค่ะ' : 'ยังไม่มีข้อมูลสต็อกเลยจ้า'); stockSummaryTable.innerHTML = `<tr><td colspan="6" class="text-center p-4">${message} <i class="bi bi-emoji-wink"></i></td></tr>`; return; }
             summary.forEach(item => {
                 const row = document.createElement('tr');
@@ -1101,53 +1103,15 @@
             productManagementTable.innerHTML = '';
             db.products.forEach(p => {
                 const r = document.createElement('tr');
-                const unitPrice = Number(p.unitPrice || 0).toFixed(2);
-                r.innerHTML = `<td>${p.id}</td><td>${p.name}</td><td>${p.customer || '-'}</td><td>${unitPrice}</td><td><button class="btn btn-warning btn-sm" onclick="window.app.editProduct('${p.id}')"><i class="bi bi-pencil-fill"></i></button> <button class="btn btn-danger btn-sm" onclick="window.app.deleteProduct('${p.id}')"><i class="bi bi-trash3-fill"></i></button></td>`;
+                r.innerHTML = `<td>${p.id}</td><td>${p.name}</td><td>${p.customer || '-'}</td><td>${Number(p.unitPrice || 0).toFixed(2)}</td><td><button class="btn btn-warning btn-sm" onclick="window.app.editProduct('${p.id}')"><i class="bi bi-pencil-fill"></i></button> <button class="btn btn-danger btn-sm" onclick="window.app.deleteProduct('${p.id}')"><i class="bi bi-trash3-fill"></i></button></td>`;
                 productManagementTable.appendChild(r);
             });
         }
         function populateExportLotDropdown(productId) { const d=document.getElementById('export-lot'); d.innerHTML='<option value="">-- เลือกล็อต --</option>'; if(!productId){d.innerHTML='<option value="">-- เลือกสินค้านะคะ --</option>';return} const l=db.stock.filter(s=>s.productId===productId&&s.quantity>0); if(l.length===0){d.innerHTML='<option value="">-- สินค้าหมดสต็อกแล้วจ้า --</option>'} else{l.forEach(lot=>{d.innerHTML+=`<option value="${lot.lotId}" data-max-quantity="${lot.quantity}">วันที่ผลิต: ${formatDate(lot.productionDate)} (เหลือ: ${lot.quantity})</option>`})} }
         function clearProductForm() { editingProductId = null; productFormEl.reset(); document.getElementById('product-id').readOnly = false; }
         function clearUserForm() { originalUsernameForEdit = null; userFormEl.reset(); }
-        function showSuggestions(inputEl, containerEl, productSource, searchTerm) {
-            containerEl.innerHTML = '';
-            if (!searchTerm) { return; }
-            const lowerCaseSearchTerm = searchTerm.toLowerCase();
-            const filteredProducts = productSource.filter(p => String(p.id).toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm));
-            filteredProducts.forEach(item => {
-                const suggestionEl = document.createElement('a');
-                suggestionEl.href = '#';
-                suggestionEl.classList.add('list-group-item', 'list-group-item-action');
-                suggestionEl.textContent = `${item.id} - ${item.name}`;
-                suggestionEl.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    inputEl.value = item.id;
-                    containerEl.innerHTML = '';
-                    inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-                });
-                containerEl.appendChild(suggestionEl);
-            });
-        }
-        function showFilterSuggestions(inputEl, containerEl, productSource, searchTerm) {
-            const hiddenInputEl = document.getElementById('filter-product-id');
-            containerEl.innerHTML = '';
-            if (!searchTerm) { hiddenInputEl.value = ''; return; }
-            const lowerCaseSearchTerm = searchTerm.toLowerCase();
-            const filteredProducts = productSource.filter(p => String(p.id).toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm));
-            filteredProducts.forEach(item => {
-                const suggestionEl = document.createElement('a');
-                suggestionEl.href = '#';
-                suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'p-2');
-                suggestionEl.textContent = `${item.id} - ${item.name}`;
-                suggestionEl.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    inputEl.value = `${item.id} - ${item.name}`;
-                    hiddenInputEl.value = item.id;
-                    containerEl.innerHTML = '';
-                });
-                containerEl.appendChild(suggestionEl);
-            });
-        }
+        function showSuggestions(inputEl, containerEl, productSource, searchTerm) { containerEl.innerHTML = ''; if (!searchTerm) { return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => p.id.toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = item.id; containerEl.innerHTML = ''; inputEl.dispatchEvent(new Event('change', { bubbles: true })); }); containerEl.appendChild(suggestionEl); }); }
+        function showFilterSuggestions(inputEl, containerEl, productSource, searchTerm) { const hiddenInputEl = document.getElementById('filter-product-id'); containerEl.innerHTML = ''; if (!searchTerm) { hiddenInputEl.value = ''; return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => p.id.toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'p-2'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = `${item.id} - ${item.name}`; hiddenInputEl.value = item.id; containerEl.innerHTML = ''; }); containerEl.appendChild(suggestionEl); }); }
         
         // --- HELPER FUNCTIONS ---
         function formatDate(dateInput) {
