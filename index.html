@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบรับเข้า-ส่งออกสินค้า FG (Google Sheets)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #ff8fab; /* สีชมพูหลัก */
+            --secondary-color: #a2d2ff; /* สีฟ้า */
+            --success-color: #80ed99; /* สีเขียวมิ้นท์ */
+            --danger-color: #ff5d5d; /* สีแดง */
+            --warning-color: #ffca28; /* สีเหลือง */
+            --bg-color: #fff8f9; /* สีพื้นหลังชมพูอ่อน */
+            --text-color: #5d5d5d;
+            --border-radius: 12px;
+        }
+        body { font-family: 'Mitr', sans-serif; background-color: var(--bg-color); color: var(--text-color); }
+        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .card { border-radius: var(--border-radius); border: none; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); overflow: hidden; }
+        .card-header-custom { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: white; border-bottom: none; }
+        .card-header { background-color: #fce4ec; border-bottom: 1px solid #f8bbd0; }
+        .btn { border-radius: var(--border-radius); padding: 10px 20px; font-weight: 500; transition: transform 0.2s ease, box-shadow 0.2s ease; border: none; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); }
+        .btn-primary { background-color: var(--primary-color); }
+        .btn-primary:hover { background-color: #ff74a2; }
+        .btn-success { background-color: var(--success-color); color: #333; }
+        .btn-success:hover { background-color: #6ee088; }
+        .btn-danger { background-color: var(--danger-color); }
+        .btn-danger:hover { background-color: #ff4747; }
+        .btn-warning { background-color: var(--warning-color); color: #333;}
+        .btn-warning:hover { background-color: #ffc107; }
+        .btn-outline-danger { color: var(--danger-color); border-color: var(--danger-color); }
+        .btn-outline-danger:hover { background-color: var(--danger-color); color: white; }
+        .btn-info { background-color: var(--secondary-color); color: #333; }
+        .btn-info:hover { background-color: #8ecaff; }
+        .form-control, .form-select, .form-check-input { border-radius: var(--border-radius); border: 1px solid #ddd; }
+        .form-control:focus, .form-select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 0.25rem rgba(255, 143, 171, 0.3); }
+        .form-check-input:checked { background-color: var(--primary-color); border-color: var(--primary-color); }
+        .nav-pills .nav-link { border-radius: var(--border-radius); color: var(--text-color); }
+        .nav-pills .nav-link.active, .nav-pills .show>.nav-link { background-color: var(--primary-color); color: white; }
+        .table-hover tbody tr { cursor: pointer; }
+        .table-hover tbody tr:hover { background-color: #fff0f3; transform: scale(1.01); transition: all 0.2s ease-in-out; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        thead { background-color: #ffe8f0; }
+        #main-dashboard { display: none; }
+        .admin-nav { display: none; }
+        .history-import { border-left: 5px solid var(--success-color); }
+        .history-export { border-left: 5px solid var(--secondary-color); }
+        .history-adjustment { border-left: 5px solid var(--warning-color); }
+        .suggestions-container { z-index: 1050; }
+        .suggestions-container a:hover { background-color: var(--primary-color); color: white; }
+        .filter-card { overflow: visible; }
+        .refresh-note {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px;
+            background-color: #fff0f3;
+            border: 1px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            z-index: 1100;
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HTML Content remains the same -->
+    <div id="login-page" class="container">
+        <div class="login-container">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-lg text-center">
+                    <div class="card-header card-header-custom p-3">
+                        <h3><i class="bi bi-box-seam-fill me-2"></i>ระบบสต็อกสินค้า</h3>
+                        <h4 class="fw-normal">ATECH FG</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="login-form">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">ชื่อผู้ใช้</label>
+                                <input type="text" class="form-control" id="username" required autocomplete="off">
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">รหัสผ่าน</label>
+                                <input type="password" class="form-control" id="password" required autocomplete="off">
+                            </div>
+                            <div id="error-message" class="text-danger mb-3 d-none">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">เข้าสู่ระบบ <i class="bi bi-arrow-right-circle-fill"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-dashboard" class="container-fluid p-4">
+        <header class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+            <h1 class="h4"><i class="bi bi-box2-heart-fill me-2" style="color: var(--primary-color);"></i>Stock In-Out FG</h1>
+            <div>
+                <span id="user-role" class="badge rounded-pill me-2 fs-6 align-middle"></span>
+                <button id="logout-btn" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>ออกจากระบบ</button>
+            </div>
+        </header>
+
+        <ul class="nav nav-pills nav-fill mb-4" id="pills-tab" role="tablist">
+            <li class="nav-item m-1" role="presentation">
+                <button class="nav-link active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab" aria-controls="pills-stock" aria-selected="true"><i class="bi bi-house-heart-fill me-2"></i>สต็อกคงเหลือ</button>
+            </li>
+            <li class="nav-item m-1" role="presentation">
+                <button class="nav-link" id="pills-import-tab" data-bs-toggle="pill" data-bs-target="#pills-import" type="button" role="tab" aria-controls="pills-import" aria-selected="false"><i class="bi bi-arrow-down-square-fill me-2"></i>รับเข้าสินค้า</button>
+            </li>
+            <li class="nav-item m-1" role="presentation">
+                <button class="nav-link" id="pills-export-tab" data-bs-toggle="pill" data-bs-target="#pills-export" type="button" role="tab" aria-controls="pills-export" aria-selected="false"><i class="bi bi-arrow-up-square-fill me-2"></i>ส่งออกสินค้า</button>
+            </li>
+            <li class="nav-item m-1" role="presentation">
+                <button class="nav-link" id="pills-history-tab" data-bs-toggle="pill" data-bs-target="#pills-history" type="button" role="tab" aria-controls="pills-history" aria-selected="false"><i class="bi bi-clock-history me-2"></i>ประวัติ</button>
+            </li>
+            <li class="nav-item m-1 admin-nav" role="presentation">
+                <button class="nav-link" id="pills-products-tab" data-bs-toggle="pill" data-bs-target="#pills-products" type="button" role="tab" aria-controls="pills-products" aria-selected="false"><i class="bi bi-box-seam me-2"></i>จัดการสินค้า</button>
+            </li>
+            <li class="nav-item m-1 admin-nav" role="presentation">
+                <button class="nav-link" id="pills-users-tab" data-bs-toggle="pill" data-bs-target="#pills-users" type="button" role="tab" aria-controls="pills-users" aria-selected="false"><i class="bi bi-people-fill me-2"></i>จัดการผู้ใช้</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="pills-tabContent">
+            <div class="tab-pane fade show active" id="pills-stock" role="tabpanel" aria-labelledby="pills-stock-tab">
+                <div class="card mb-4">
+                    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-table me-2"></i>สรุปยอดสต็อกสินค้าคงเหลือ</span>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="show-old-stock-filter">
+                            <label class="form-check-label" for="show-old-stock-filter">แสดงเฉพาะสต็อกที่ผลิตเกิน 3 เดือน</label>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group mb-3">
+                            <input type="text" id="stock-search-input" class="form-control" placeholder="ค้นหารหัสสินค้า, ชื่อสินค้า หรือลูกค้า...">
+                            <button class="btn btn-secondary" type="button" id="refresh-stock-summary-btn" title="รีเฟรชข้อมูล"><i class="bi bi-arrow-clockwise"></i></button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>รหัส/ชื่อสินค้า</th>
+                                        <th>รหัส ERP</th>
+                                        <th>ลูกค้า</th>
+                                        <th>ยอดคงเหลือทั้งหมด</th>
+                                        <th class="admin-only-cell">ดำเนินการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stock-summary-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                 <div class="card admin-nav">
+                    <div class="card-header fw-bold"><i class="bi bi-cloud-arrow-down-fill me-2"></i>สำรองข้อมูล</div>
+                    <div class="card-body text-center">
+                        <p>ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV</p>
+                        <button id="backup-stock-btn" class="btn btn-info m-1"><i class="bi bi-archive-fill me-2"></i>ข้อมูลสต็อก</button>
+                        <button id="backup-products-btn" class="btn btn-info m-1"><i class="bi bi-box-seam-fill me-2"></i>ข้อมูลสินค้า</button>
+                        <button id="backup-users-btn" class="btn btn-info m-1"><i class="bi bi-person-lines-fill me-2"></i>ข้อมูลผู้ใช้</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="pills-import" role="tabpanel" aria-labelledby="pills-import-tab">
+                <div class="card">
+                    <div class="card-header fw-bold"><i class="bi bi-box-arrow-in-down me-2"></i>ฟอร์มรับเข้าสินค้า</div>
+                    <div class="card-body">
+                        <form id="import-form" class="row g-3"></form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="pills-export" role="tabpanel" aria-labelledby="pills-export-tab">
+                <div class="card">
+                    <div class="card-header fw-bold"><i class="bi bi-box-arrow-up me-2"></i>ฟอร์มส่งออกสินค้า</div>
+                    <div class="card-body">
+                        <form id="export-form" class="row g-3"></form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="pills-history" role="tabpanel" aria-labelledby="pills-history-tab">
+                <div class="card mb-3 filter-card">
+                    <div class="card-body" style="background-color: #fdf2f5;">
+                        <form id="history-filter-form" class="row g-3 align-items-end">
+                            <div class="col-lg-2 col-md-6">
+                                <label for="filter-start-date" class="form-label">จากวันที่</label>
+                                <input type="date" id="filter-start-date" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-lg-2 col-md-6">
+                                <label for="filter-end-date" class="form-label">ถึงวันที่</label>
+                                <input type="date" id="filter-end-date" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-lg-2 col-md-6">
+                                <label for="filter-type" class="form-label">ประเภท</label>
+                                <select id="filter-type" class="form-select form-select-sm">
+                                    <option value="">ทั้งหมด</option>
+                                    <option value="import">รับเข้า</option>
+                                    <option value="export">ส่งออก</option>
+                                    <option value="adjustment">ปรับปรุงยอด</option>
+                                </select>
+                            </div>
+                            <div class="col-lg-2 col-md-6">
+                                <label for="filter-product-search" class="form-label">สินค้า</label>
+                                <div class="position-relative">
+                                    <input type="text" id="filter-product-search" class="form-control form-control-sm" placeholder="ทั้งหมด" autocomplete="off">
+                                    <input type="hidden" id="filter-product-id">
+                                    <div id="filter-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-6">
+                                <label for="filter-invoice-search" class="form-label">เลขที่ Invoice</label>
+                                <input type="text" id="filter-invoice-search" class="form-control form-control-sm" placeholder="ค้นหา..." autocomplete="off">
+                            </div>
+                            <div class="col-lg-2 col-md-12 d-flex mt-auto">
+                                <button type="submit" class="btn btn-primary btn-sm flex-grow-1 me-1"><i class="bi bi-search me-1"></i>ค้นหา</button>
+                                <button type="reset" class="btn btn-secondary btn-sm flex-grow-1 ms-1">ล้าง</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-list-ol me-2"></i>
+                            <span>ประวัติการทำรายการ</span>
+                            <span id="history-total-quantity" class="badge bg-primary ms-2"></span>
+                        </div>
+                        <button id="backup-history-btn" class="btn btn-info btn-sm admin-nav"><i class="bi bi-download me-1"></i>ดาวน์โหลดประวัติ (CSV)</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>ประเภท</th>
+                                        <th>สินค้า</th>
+                                        <th>จำนวน</th>
+                                        <th>วันที่ผลิต</th>
+                                        <th>Invoice / หมายเหตุ</th>
+                                        <th>วันที่ทำรายการ</th>
+                                        <th>ผู้ทำรายการ</th>
+                                        <th class="admin-only-cell">ดำเนินการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="pills-products" role="tabpanel" aria-labelledby="pills-products-tab">
+                <div class="row">
+                    <div class="col-lg-4 mb-4">
+                        <div class="card">
+                            <div class="card-header fw-bold"><i class="bi bi-pencil-square me-2"></i>ฟอร์มข้อมูลสินค้า</div>
+                            <div class="card-body">
+                                <form id="product-form" class="row g-3"></form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header fw-bold"><i class="bi bi-card-list me-2"></i>รายการสินค้าทั้งหมด</div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>รหัสสินค้า</th>
+                                                <th>ชื่อ</th>
+                                                <th>ลูกค้า</th>
+                                                <th>ราคา/หน่วย</th>
+                                                <th>ดำเนินการ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="product-management-table"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="pills-users" role="tabpanel" aria-labelledby="pills-users-tab">
+                 <div class="row">
+                    <div class="col-lg-4 mb-4">
+                        <div class="card">
+                            <div class="card-header fw-bold"><i class="bi bi-person-plus-fill me-2"></i>ฟอร์มข้อมูลผู้ใช้</div>
+                            <div class="card-body">
+                                <form id="user-form" class="row g-3"></form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header fw-bold"><i class="bi bi-list-ul me-2"></i>รายการผู้ใช้ทั้งหมด</div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>ชื่อผู้ใช้</th>
+                                                <th>สิทธิ์</th>
+                                                <th>ดำเนินการ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="user-management-table"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="lotDetailModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--border-radius);">
+          <div class="modal-header" style="background-color: #ffe8f0;">
+            <h5 class="modal-title" id="lotDetailModalLabel"><i class="bi bi-card-list me-2"></i>รายละเอียดล็อตของ: <span id="modal-product-name" class="fw-bold"></span></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>วันที่ผลิต</th>
+                        <th>จำนวนคงเหลือ</th>
+                        <th class="admin-only-cell">ดำเนินการ</th>
+                    </tr>
+                </thead>
+                <tbody id="lot-detail-table"></tbody>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="background-color: #bbb;">ปิด</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal fade" id="editHistoryModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--border-radius);">
+          <div class="modal-header" style="background-color: #fff0f3;">
+            <h5 class="modal-title" id="edit-history-modal-title"></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="edit-history-form">
+                <input type="hidden" id="edit-history-id">
+                <div class="mb-3">
+                    <label class="form-label">สินค้า</label>
+                    <input type="text" id="edit-history-product-name" class="form-control" readonly>
+                </div>
+                <div class="mb-3">
+                    <label for="edit-history-prod-date" class="form-label">วันที่ผลิต</label>
+                    <input type="date" id="edit-history-prod-date" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="edit-history-quantity" class="form-label" id="edit-history-quantity-label"></label>
+                    <input type="number" id="edit-history-quantity" class="form-control" required min="0">
+                </div>
+                 <div class="mb-3" id="edit-history-invoice-group">
+                    <label for="edit-history-invoice" class="form-label">เลขที่ Invoice</label>
+                    <input type="text" id="edit-history-invoice" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label for="edit-history-remarks" class="form-label">หมายเหตุ</label>
+                    <textarea id="edit-history-remarks" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">บันทึกการเปลี่ยนแปลง</button>
+                </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="editStockModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--border-radius);">
+          <div class="modal-header" style="background-color: #fff0f3;">
+            <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>แก้ไขยอดรวมในสต็อก</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form id="edit-stock-form">
+                <input type="hidden" id="edit-stock-product-id">
+                <div class="mb-3">
+                    <label class="form-label">สินค้า</label>
+                    <input type="text" id="edit-stock-product-name" class="form-control" readonly>
+                </div>
+                <div class="mb-3">
+                    <label for="edit-stock-quantity" class="form-label">ยอดรวมใหม่</label>
+                    <input type="number" id="edit-stock-quantity" class="form-control" required min="0">
+                </div>
+                <div class="form-text">การบันทึกจะล้างล็อตเก่าทั้งหมด และสร้างล็อตใหม่ขึ้นมาแทน</div>
+                <div class="d-grid mt-3">
+                    <button type="submit" class="btn btn-primary">บันทึกยอดใหม่</button>
+                </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="refresh-note">
+        <i class="bi bi-arrow-clockwise fs-4 me-2"></i>
+        <div>
+            <strong>รีเฟรชก่อนใช้!</strong><br>
+            เพื่อข้อมูลที่ถูกต้อง ควรกด F5 ทุกครั้งก่อนเริ่มใช้งาน
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- GOOGLE APPS SCRIPT CONFIGURATION ---
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLwRB6s5Ii3Pktg-3HKSWiY8XfhrrqQTOWGsE34M6mubn8GYehQ8dGVpgLD3N-ZjhO/exec';
+
+        // --- DATABASE SIMULATION & PERSISTENCE ---
+        let db = { users: [], products: [], stock: [], history: [] };
+
+        async function loadDataFromSheet() {
+            Swal.fire({
+                title: 'กำลังโหลดข้อมูล...',
+                text: 'กรุณารอสักครู่ค่ะ',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+
+            try {
+                const response = await fetch(SCRIPT_URL);
+                if (!response.ok) {
+                    throw new Error(`Network response was not ok. Status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                if (data && data.stock && data.products && data.users && data.history) {
+                    data.stock.forEach(item => {
+                        item.productionDate = formatDate(item.productionDate);
+                    });
+                    
+                    db = data;
+                    console.log('Data loaded and normalized:', db);
+                } else {
+                    throw new Error('Invalid data structure received from server.');
+                }
+                
+                Swal.close();
+            } catch (error) {
+                console.error('Error loading data from Google Sheet:', error);
+                showError('โหลดข้อมูลไม่สำเร็จ!', `ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ (${error.message}) กรุณาลองรีเฟรชหน้าเว็บใหม่อีกครั้ง`);
+            }
+        }
+
+        async function saveDataToSheet() {
+             try {
+                const payload = {
+                    action: 'saveDb',
+                    payload: db
+                };
+
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                    mode: 'no-cors'
+                });
+                
+                console.log('Save request sent to Google Sheet.');
+
+            } catch (error) {
+                console.error('Error saving data to Google Sheet:', error);
+                showError('บันทึกข้อมูลไม่สำเร็จ!', 'เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก');
+            }
+        }
+        
+        // --- DOM ELEMENTS (No change) ---
+        const loginPage = document.getElementById('login-page');
+        const dashboardPage = document.getElementById('main-dashboard');
+        const loginForm = document.getElementById('login-form');
+        const errorMessage = document.getElementById('error-message');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userRoleSpan = document.getElementById('user-role');
+        const stockSummaryTable = document.getElementById('stock-summary-table');
+        const lotDetailModal = new bootstrap.Modal(document.getElementById('lotDetailModal'));
+        const lotDetailTable = document.getElementById('lot-detail-table');
+        const modalProductName = document.getElementById('modal-product-name');
+        const showOldStockFilter = document.getElementById('show-old-stock-filter');
+        const editHistoryModal = new bootstrap.Modal(document.getElementById('editHistoryModal'));
+        const editStockModal = new bootstrap.Modal(document.getElementById('editStockModal'));
+        const stockSearchInput = document.getElementById('stock-search-input');
+        const importFormEl = document.getElementById('import-form');
+        const exportFormEl = document.getElementById('export-form');
+        const productFormEl = document.getElementById('product-form');
+        const userFormEl = document.getElementById('user-form');
+        const historyFilterForm = document.getElementById('history-filter-form');
+        const editHistoryForm = document.getElementById('edit-history-form');
+        const editStockForm = document.getElementById('edit-stock-form');
+        const userManagementTable = document.getElementById('user-management-table');
+        const productManagementTable = document.getElementById('product-management-table');
+        const historyTable = document.getElementById('history-table');
+
+        // --- STATE MANAGEMENT (No change) ---
+        let currentUser = null;
+        let editingProductId = null;
+        let originalUsernameForEdit = null;
+
+        // --- GLOBAL APP OBJECT ---
+        window.app = {
+            deleteLot: (lotId) => {
+                if (currentUser.role !== 'admin') return;
+                confirmAction('แน่ใจน้าว่าจะลบ?', "ข้อมูลล็อตนี้จะหายไปเลยน้า กู้คืนไม่ได้แล้วด้วย!", () => {
+                    const lotIndex = db.stock.findIndex(lot => lot.lotId === lotId);
+                    if (lotIndex > -1) {
+                        db.stock.splice(lotIndex, 1);
+                        saveDataToSheet();
+                        showSuccess('ลบล็อตสินค้าเรียบร้อยแล้วค่ะ');
+                        populateAll();
+                        lotDetailModal.hide();
+                    }
+                });
+            },
+            editProduct: (productId) => {
+                if (currentUser.role !== 'admin') return;
+                editingProductId = productId;
+                const product = db.products.find(p => p.id === productId);
+                if (product) {
+                    document.getElementById('product-id').value = product.id;
+                    document.getElementById('product-id').readOnly = true;
+                    document.getElementById('product-name').value = product.name;
+                    document.getElementById('product-customer').value = product.customer || '';
+                    document.getElementById('product-fullBoxQuantity').value = product.fullBoxQuantity;
+                    document.getElementById('product-erpCode').value = product.erpCode;
+                    document.getElementById('product-unitPrice').value = product.unitPrice;
+                }
+            },
+            deleteProduct: (productId) => {
+                if (currentUser.role !== 'admin') return;
+                const isProductInStock = db.stock.some(s => s.productId === productId && s.quantity > 0);
+                if (isProductInStock) {
+                    showError('ลบไม่ได้!', 'ยังมีสินค้านี้อยู่ในสต็อกค่ะ');
+                    return;
+                }
+                confirmAction('แน่ใจว่าจะลบสินค้า?', `สินค้า ${productId} จะถูกลบออกจากระบบอย่างถาวร`, () => {
+                    db.products = db.products.filter(p => p.id !== productId);
+                    saveDataToSheet();
+                    showSuccess('ลบสินค้าเรียบร้อยแล้ว');
+                    populateAll();
+                });
+            },
+            editUser: (username) => {
+                if (currentUser.role !== 'admin') return;
+                originalUsernameForEdit = username;
+                const user = db.users.find(u => u.username === username);
+                if (user) {
+                    document.getElementById('user-username').value = user.username;
+                    document.getElementById('user-password').value = user.password;
+                    document.getElementById('user-role-select').value = user.role;
+                }
+            },
+            deleteUser: (username) => {
+                if (currentUser.role !== 'admin') return;
+                if (username === 'admin') {
+                    showError('ลบไม่ได้!', 'ไม่สามารถลบผู้ใช้ admin หลักได้ค่ะ');
+                    return;
+                }
+                confirmAction('แน่ใจว่าจะลบผู้ใช้?', `ผู้ใช้ ${username} จะถูกลบออกจากระบบ`, () => {
+                    db.users = db.users.filter(u => u.username !== username);
+                    saveDataToSheet();
+                    showSuccess('ลบผู้ใช้เรียบร้อยแล้ว');
+                    populateAll();
+                });
+            },
+            editHistory: (historyId) => {
+                if (currentUser.role !== 'admin') return;
+                const historyItem = db.history.find(h => h.date === historyId);
+                const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
+
+                if (historyItem && stockLot) {
+                    document.getElementById('edit-history-id').value = historyItem.date;
+                    document.getElementById('edit-history-product-name').value = `${historyItem.productName} (Lot ID: ${historyItem.lotId})`;
+                    document.getElementById('edit-history-quantity').value = historyItem.quantity;
+                    document.getElementById('edit-history-remarks').value = historyItem.remarks || '';
+                    document.getElementById('edit-history-prod-date').value = formatDate(stockLot.productionDate);
+                    
+                    const modalTitle = document.getElementById('edit-history-modal-title');
+                    const quantityLabel = document.getElementById('edit-history-quantity-label');
+                    const invoiceGroup = document.getElementById('edit-history-invoice-group');
+
+                    if (historyItem.type === 'export') {
+                        modalTitle.innerHTML = '<i class="bi bi-pencil-square me-2"></i>แก้ไขประวัติการส่งออก';
+                        quantityLabel.textContent = 'จำนวนที่ส่งออก';
+                        invoiceGroup.style.display = 'block';
+                        document.getElementById('edit-history-invoice').value = historyItem.invoiceNumber;
+                        document.getElementById('edit-history-invoice').required = true;
+                    } else { // import
+                        modalTitle.innerHTML = '<i class="bi bi-pencil-square me-2"></i>แก้ไขประวัติการรับเข้า';
+                        quantityLabel.textContent = 'จำนวนที่รับเข้า';
+                        invoiceGroup.style.display = 'none';
+                        document.getElementById('edit-history-invoice').required = false;
+                    }
+                    editHistoryModal.show();
+                }
+            },
+            deleteHistory: (historyId) => {
+                if (currentUser.role !== 'admin') return;
+                
+                const historyIndex = db.history.findIndex(h => h.date === historyId);
+                if (historyIndex === -1) return;
+                const historyItem = db.history[historyIndex];
+
+                const message = historyItem.type === 'export' 
+                    ? 'การดำเนินการนี้จะคืนสินค้ากลับเข้าสต็อก และไม่สามารถย้อนกลับได้'
+                    : 'การดำเนินการนี้จะหักสินค้าออกจากสต็อก และไม่สามารถย้อนกลับได้';
+
+                confirmAction('ยืนยันการลบประวัติ?', message, () => {
+                    const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
+
+                    if (historyItem.type === 'export') {
+                        if (stockLot) {
+                            stockLot.quantity += historyItem.quantity;
+                        } else {
+                             db.stock.push({ lotId: historyItem.lotId, productId: historyItem.productId, quantity: historyItem.quantity, productionDate: 'N/A (Reverted)' });
+                        }
+                    } else { // import
+                        if (!stockLot) { showError('ผิดพลาด!', 'ไม่พบสต็อกล็อตเดิมของรายการนี้ ไม่สามารถลบได้'); return; }
+                        if (stockLot.quantity < historyItem.quantity) { showError('ลบไม่ได้!', `สต็อกในล็อตนี้ถูกใช้ไปแล้ว (คงเหลือ ${stockLot.quantity}) ไม่สามารถหักจำนวน ${historyItem.quantity} ได้`); return; }
+                        stockLot.quantity -= historyItem.quantity;
+                    }
+
+                    db.history.splice(historyIndex, 1);
+                    saveDataToSheet();
+                    showSuccess('ลบประวัติและปรับสต็อกเรียบร้อย');
+                    populateAll();
+                });
+            },
+            editStockTotal: (productId) => {
+                if (currentUser.role !== 'admin') return;
+                const product = db.products.find(p => p.id === productId);
+                if (product) {
+                    const totalQuantity = db.stock
+                        .filter(s => s.productId === productId)
+                        .reduce((sum, item) => sum + item.quantity, 0);
+                    
+                    document.getElementById('edit-stock-product-id').value = product.id;
+                    document.getElementById('edit-stock-product-name').value = `${product.id} - ${product.name}`;
+                    document.getElementById('edit-stock-quantity').value = totalQuantity;
+                    editStockModal.show();
+                }
+            },
+            showLotDetails: (productId) => {
+                const product = db.products.find(p => p.id === productId);
+                modalProductName.textContent = product.name;
+                lotDetailTable.innerHTML = '';
+                
+                const lots = db.stock.filter(s => s.productId === productId && s.quantity > 0);
+                const threeMonthsAgo = new Date();
+                threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+                if(lots.length === 0) { lotDetailTable.innerHTML = '<tr><td colspan="3" class="text-center">ไม่พบข้อมูลล็อตสำหรับสินค้านี้</td></tr>'; } 
+                else {
+                    lots.forEach(lot => {
+                        const isOld = new Date(formatDate(lot.productionDate)) < threeMonthsAgo;
+                        const row = document.createElement('tr');
+                        if (isOld) { row.classList.add('table-warning'); }
+                        row.innerHTML = `
+                            <td>${formatDate(lot.productionDate)} ${isOld ? '<i class="bi bi-exclamation-triangle-fill text-danger ms-2"></i>' : ''}</td>
+                            <td>${lot.quantity.toLocaleString()}</td>
+                            <td class="admin-only-cell">
+                                <button class="btn btn-danger btn-sm" onclick="window.app.deleteLot(${lot.lotId})"><i class="bi bi-trash3-fill"></i></button>
+                            </td>
+                        `;
+                        lotDetailTable.appendChild(row);
+                    });
+                }
+                
+                if (currentUser.role === 'admin') { lotDetailTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); } 
+                else { lotDetailTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none'); }
+
+                lotDetailModal.show();
+            }
+        };
+
+        async function init() {
+            renderAllForms();
+            await loadDataFromSheet();
+            checkLoginState();
+            addEventListeners();
+        }
+
+        function checkLoginState() {
+            const user = JSON.parse(sessionStorage.getItem('currentUser'));
+            if (user) {
+                const userInDb = db.users.find(u => u.username === user.username && u.password === user.password);
+                if (userInDb) {
+                    currentUser = userInDb;
+                    showDashboard();
+                } else {
+                    showLoginPage();
+                }
+            } else {
+                showLoginPage();
+            }
+        }
+
+        function addHistory(type, productId, productName, quantity, user, lotId = null, invoiceNumber = null, remarks = '') { 
+            db.history.unshift({ date: new Date().toISOString(), type: type, productId: productId, productName: productName, quantity: quantity, user: user, lotId: lotId, invoiceNumber: invoiceNumber, remarks: remarks }); 
+            saveDataToSheet();
+        }
+
+        function handleImport(e) {
+            e.preventDefault();
+            const remarks = document.getElementById('import-remarks').value;
+            const newStock = {
+                lotId: db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1,
+                productId: document.getElementById('import-product-id').value,
+                quantity: parseInt(document.getElementById('import-quantity').value),
+                productionDate: document.getElementById('import-prod-date').value
+            };
+            db.stock.push(newStock);
+            addHistory('import', newStock.productId, document.getElementById('import-product-name').value, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
+            showSuccess(`รับสินค้า ${document.getElementById('import-product-name').value} เข้ามาแล้วจ้า`);
+            importFormEl.reset();
+            ['import-product-name', 'import-customer', 'import-erp-code', 'import-fullbox'].forEach(id => document.getElementById(id).value = '');
+            populateAll();
+        }
+
+        function handleExport(e) {
+            e.preventDefault();
+            const lotId = parseInt(document.getElementById('export-lot').value);
+            const quantityToExport = parseInt(document.getElementById('export-quantity').value);
+            const invoiceNumber = document.getElementById('export-invoice-number').value;
+            const remarks = document.getElementById('export-remarks').value;
+            const stockLot = db.stock.find(s => s.lotId === lotId);
+
+            if (!stockLot) { showError('อุ๊ย!', 'ไม่เจอล็อตสินค้านี้ในระบบ'); return; }
+            if (quantityToExport > stockLot.quantity) { showError('เดี๋ยวก่อน!', `ของในสต็อกมีไม่พอจ้า (เหลือแค่: ${stockLot.quantity})`); return; }
+            
+            stockLot.quantity -= quantityToExport;
+            addHistory('export', stockLot.productId, document.getElementById('export-product-name').value, quantityToExport, currentUser.username, lotId, invoiceNumber, remarks);
+            showSuccess(`ส่งออกสินค้า ${document.getElementById('export-product-name').value} ไปแล้วค่ะ`);
+            exportFormEl.reset();
+            ['export-product-name', 'export-customer', 'export-erp-code', 'export-fullbox'].forEach(id => document.getElementById(id).value = '');
+            populateAll();
+        }
+
+        function handleProductFormSubmit(e) {
+            e.preventDefault();
+            const productData = {
+                id: document.getElementById('product-id').value,
+                name: document.getElementById('product-name').value,
+                customer: document.getElementById('product-customer').value,
+                fullBoxQuantity: parseInt(document.getElementById('product-fullBoxQuantity').value),
+                erpCode: document.getElementById('product-erpCode').value,
+                unitPrice: parseFloat(document.getElementById('product-unitPrice').value)
+            };
+            if (editingProductId) {
+                const productIndex = db.products.findIndex(p => p.id === editingProductId);
+                if (productIndex > -1) {
+                    db.products[productIndex] = { ...db.products[productIndex], ...productData };
+                    showSuccess('อัปเดตข้อมูลสินค้าเรียบร้อย');
+                }
+            } else {
+                if (db.products.some(p => p.id === productData.id)) { showError('รหัสซ้ำ!', 'มีรหัสสินค้านี้ในระบบแล้วค่ะ'); return; }
+                db.products.push(productData);
+                showSuccess('เพิ่มสินค้าใหม่เรียบร้อย');
+            }
+            saveDataToSheet();
+            clearProductForm();
+            populateAll();
+        }
+        
+        function handleUserFormSubmit(e) {
+            e.preventDefault();
+            const newUsername = document.getElementById('user-username').value;
+            const newPassword = document.getElementById('user-password').value;
+            const newRole = document.getElementById('user-role-select').value;
+            
+            if (!originalUsernameForEdit) {
+                if (db.users.some(u => u.username === newUsername)) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); return; }
+                db.users.push({ username: newUsername, password: newPassword, role: newRole });
+                saveDataToSheet();
+                showSuccess('เพิ่มผู้ใช้ใหม่เรียบร้อย');
+                clearUserForm();
+                populateAll();
+                return;
+            }
+
+            const userIndex = db.users.findIndex(u => u.username === originalUsernameForEdit);
+            if (userIndex === -1) { showError('ผิดพลาด', 'ไม่พบผู้ใช้ที่ต้องการแก้ไข'); clearUserForm(); return; }
+            const isUsernameTaken = db.users.some(u => u.username === newUsername && u.username !== originalUsernameForEdit);
+            if (isUsernameTaken) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); return; }
+
+            if (originalUsernameForEdit !== newUsername) {
+                db.history.forEach(record => { if (record.user === originalUsernameForEdit) { record.user = newUsername; } });
+            }
+
+            const userToUpdate = db.users[userIndex];
+            userToUpdate.username = newUsername;
+            userToUpdate.password = newPassword;
+            userToUpdate.role = newRole;
+
+            let wasCurrentUserEdited = false;
+            if (currentUser.username === originalUsernameForEdit) {
+                currentUser.username = newUsername;
+                currentUser.password = newPassword;
+                currentUser.role = newRole;
+                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                wasCurrentUserEdited = true;
+            }
+            
+            saveDataToSheet();
+            showSuccess('อัปเดตข้อมูลผู้ใช้เรียบร้อย');
+            clearUserForm();
+            if (wasCurrentUserEdited) { showDashboard(); } else { populateAll(); }
+        }
+
+        function handleEditHistorySubmit(e) {
+            e.preventDefault();
+            const historyId = document.getElementById('edit-history-id').value;
+            const newQuantity = parseInt(document.getElementById('edit-history-quantity').value);
+            const newInvoice = document.getElementById('edit-history-invoice').value;
+            const newRemarks = document.getElementById('edit-history-remarks').value;
+            const newProdDate = document.getElementById('edit-history-prod-date').value;
+
+            const historyIndex = db.history.findIndex(h => h.date === historyId);
+            if (historyIndex === -1) { showError('ผิดพลาด', 'ไม่พบประวัติที่ต้องการแก้ไข'); return; }
+            const historyItem = db.history[historyIndex];
+            const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
+            if (!stockLot) { showError('ผิดพลาด', 'ไม่พบสต็อกล็อตเดิมของประวัติรายการนี้'); return; }
+            
+            const originalQuantity = historyItem.quantity;
+            const availableStock = stockLot.quantity + originalQuantity;
+            if (newQuantity > availableStock) { showError('จำนวนไม่พอ', `ไม่สามารถแก้ไขจำนวนได้ สต็อกคงเหลือในล็อตนี้ (รวมที่คืน) มีเพียง ${availableStock} ชิ้น`); return; }
+
+            stockLot.quantity = availableStock - newQuantity;
+            stockLot.productionDate = newProdDate;
+            historyItem.quantity = newQuantity;
+            historyItem.remarks = newRemarks;
+            if (historyItem.type === 'export') { historyItem.invoiceNumber = newInvoice; }
+            
+            saveDataToSheet();
+            showSuccess('แก้ไขประวัติเรียบร้อย');
+            editHistoryModal.hide();
+            populateAll();
+        }
+
+        function handleEditStockSubmit(e) {
+            e.preventDefault();
+            const productId = document.getElementById('edit-stock-product-id').value;
+            const newTotalQuantity = parseInt(document.getElementById('edit-stock-quantity').value);
+            const product = db.products.find(p => p.id === productId);
+            if (!product) { showError('ผิดพลาด', 'ไม่พบสินค้า'); return; }
+            
+            const originalTotal = db.stock.filter(s => s.productId === productId).reduce((sum, item) => sum + item.quantity, 0);
+            db.stock = db.stock.filter(s => s.productId !== productId);
+            const newLotId = db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1;
+            db.stock.push({ lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' });
+            const remarks = `ปรับยอดจาก ${originalTotal} เป็น ${newTotalQuantity}`;
+            addHistory('adjustment', productId, product.name, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
+            showSuccess('ปรับปรุงยอดสต็อกเรียบร้อย');
+            editStockModal.hide();
+            populateAll();
+        }
+        
+        function showLoginPage() { currentUser = null; sessionStorage.removeItem('currentUser'); loginPage.style.display = 'block'; dashboardPage.style.display = 'none'; document.getElementById('username').value = ''; document.getElementById('password').value = ''; errorMessage.classList.add('d-none'); }
+        function showDashboard() { loginPage.style.display = 'none'; dashboardPage.style.display = 'block'; userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (สิทธิ์: ${currentUser.role})`; userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`; const adminElements = document.querySelectorAll('.admin-nav'); const displayStyle = currentUser.role === 'admin' ? 'block' : 'none'; adminElements.forEach(el => el.style.display = displayStyle); if (currentUser.role === 'admin') { document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); } else { document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none'); } populateAll(); }
+        function populateAll() { populateStockSummary(); populateUserManagementTable(); populateProductManagementTable(); populateHistoryTable(); }
+        function renderAllForms() {
+            importFormEl.innerHTML = `
+                <div class="col-md-4"> <label for="import-product-id" class="form-label">รหัสสินค้า</label> <div class="position-relative"> <input type="text" id="import-product-id" class="form-control" required autocomplete="off" placeholder="พิมพ์เพื่อค้นหา..."> <div id="import-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
+                <div class="col-md-4"> <label for="import-product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="import-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-4"> <label for="import-customer" class="form-label">ลูกค้า</label> <input type="text" id="import-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-3"> <label for="import-erp-code" class="form-label">รหัส ERP</label> <input type="text" id="import-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-3"> <label for="import-fullbox" class="form-label">จำนวนเต็มกล่อง</label> <input type="text" id="import-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-3"> <label for="import-quantity" class="form-label">จำนวนที่รับเข้า</label> <input type="number" id="import-quantity" class="form-control" required min="1"> </div>
+                <div class="col-md-3"> <label for="import-prod-date" class="form-label">วันที่ผลิต</label> <input type="date" id="import-prod-date" class="form-control" required> </div>
+                <div class="col-12"> <label for="import-remarks" class="form-label">หมายเหตุ</label> <textarea id="import-remarks" class="form-control" rows="2"></textarea> </div>
+                <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>เช็ควันที่รับเข้าจากชิ้นงานให้ดีก่อนรับเข้า</p> </div>
+                <div class="col-12"> <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-2"></i>บันทึกการรับเข้า</button> </div>`;
+            exportFormEl.innerHTML = `
+                <div class="col-md-4"> <label for="export-product-id" class="form-label">รหัสสินค้า</label> <div class="position-relative"> <input type="text" id="export-product-id" class="form-control" required autocomplete="off" placeholder="พิมพ์เพื่อค้นหา..."> <div id="export-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
+                <div class="col-md-4"> <label for="export-product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="export-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-4"> <label for="export-customer" class="form-label">ลูกค้า</label> <input type="text" id="export-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-3"> <label for="export-erp-code" class="form-label">รหัส ERP</label> <input type="text" id="export-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-5"> <label for="export-lot" class="form-label">ล็อตวันที่ผลิต</label> <select id="export-lot" class="form-select" required></select> </div>
+                <div class="col-md-4"> <label for="export-fullbox" class="form-label">จำนวนเต็มกล่อง</label> <input type="text" id="export-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-4"> <label for="export-quantity" class="form-label">จำนวนที่ส่งออก</label> <input type="number" id="export-quantity" class="form-control" required min="1"> </div>
+                <div class="col-md-4"> <label for="export-invoice-number" class="form-label">เลขที่ Invoice</label> <input type="text" id="export-invoice-number" class="form-control" required> </div>
+                <div class="col-12"> <label for="export-remarks" class="form-label">หมายเหตุ</label> <textarea id="export-remarks" class="form-control" rows="2"></textarea> </div>
+                <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>การส่งออกสินค้าควรคำนึกถึงหลัก FIFO (เข้าก่อน-ออกก่อน)</p> </div>
+                <div class="col-12 mt-3"> <button type="submit" class="btn btn-success"><i class="bi bi-send-check-fill me-2"></i>บันทึกการส่งออก</button> </div>`;
+            productFormEl.innerHTML = `
+                <div class="col-12"> <label for="product-id" class="form-label">รหัสสินค้า</label> <input type="text" id="product-id" class="form-control" required> </div>
+                <div class="col-12"> <label for="product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="product-name" class="form-control" required> </div>
+                <div class="col-12"> <label for="product-customer" class="form-label">ลูกค้า</label> <input type="text" id="product-customer" class="form-control"> </div>
+                <div class="col-12"> <label for="product-fullBoxQuantity" class="form-label">จำนวนเต็มกล่อง/แร็ค</label> <input type="number" id="product-fullBoxQuantity" class="form-control" required min="1"> </div>
+                <div class="col-12"> <label for="product-erpCode" class="form-label">รหัส ERP</label> <input type="text" id="product-erpCode" class="form-control"> </div>
+                <div class="col-12"> <label for="product-unitPrice" class="form-label">ราคาต่อหน่วย</label> <input type="number" step="0.01" id="product-unitPrice" class="form-control" required min="0"> </div>
+                <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>บันทึกข้อมูลสินค้า</button> <button type="button" id="clear-product-form-btn" class="btn btn-secondary w-100 mt-2">ล้างฟอร์ม</button> </div>`;
+            userFormEl.innerHTML = ` <div class="col-12"> <label for="user-username" class="form-label">ชื่อผู้ใช้</label> <input type="text" id="user-username" class="form-control" required> </div> <div class="col-12"> <label for="user-password" class="form-label">รหัสผ่าน</label> <input type="password" id="user-password" class="form-control" required> </div> <div class="col-12"> <label for="user-role-select" class="form-label">สิทธิ์</label> <select id="user-role-select" class="form-select" required> <option value="user">User</option> <option value="admin">Admin</option> </select> </div> <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>บันทึกข้อมูลผู้ใช้</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">ล้างฟอร์ม</button> </div>`;
+        }
+        function addEventListeners() {
+            loginForm.addEventListener('submit', handleLogin);
+            logoutBtn.addEventListener('click', handleLogout);
+            document.getElementById('refresh-stock-summary-btn').addEventListener('click', populateStockSummary);
+            const importProductIdInput = document.getElementById('import-product-id');
+            const exportProductIdInput = document.getElementById('export-product-id');
+            const filterProductSearchInput = document.getElementById('filter-product-search');
+            importProductIdInput.addEventListener('input', () => { const searchTerm = importProductIdInput.value; const suggestionsContainer = document.getElementById('import-product-suggestions'); const productSource = db.products; showSuggestions(importProductIdInput, suggestionsContainer, productSource, searchTerm); });
+            importProductIdInput.addEventListener('change', () => {
+                const product = db.products.find(p => p.id === importProductIdInput.value);
+                document.getElementById('import-product-name').value = product ? product.name : '';
+                document.getElementById('import-customer').value = product ? product.customer || '' : '';
+                document.getElementById('import-erp-code').value = product ? product.erpCode : '';
+                document.getElementById('import-fullbox').value = product ? product.fullBoxQuantity : '';
+            });
+            exportProductIdInput.addEventListener('input', () => { const searchTerm = exportProductIdInput.value; const suggestionsContainer = document.getElementById('export-product-suggestions'); const productsInStockIds = [...new Set(db.stock.filter(s => s.quantity > 0).map(s => s.productId))]; const productSource = db.products.filter(p => productsInStockIds.includes(p.id)); showSuggestions(exportProductIdInput, suggestionsContainer, productSource, searchTerm); });
+            exportProductIdInput.addEventListener('change', () => {
+                const product = db.products.find(p => p.id === exportProductIdInput.value);
+                document.getElementById('export-product-name').value = product ? product.name : '';
+                document.getElementById('export-customer').value = product ? product.customer || '' : '';
+                document.getElementById('export-erp-code').value = product ? product.erpCode : '';
+                document.getElementById('export-fullbox').value = product ? product.fullBoxQuantity : '';
+                populateExportLotDropdown(exportProductIdInput.value);
+            });
+            filterProductSearchInput.addEventListener('input', () => { const searchTerm = filterProductSearchInput.value; const suggestionsContainer = document.getElementById('filter-product-suggestions'); const productSource = db.products; showFilterSuggestions(filterProductSearchInput, suggestionsContainer, productSource, searchTerm); });
+            document.addEventListener('click', (e) => { if (!e.target.closest('.position-relative')) { document.getElementById('import-product-suggestions').innerHTML = ''; document.getElementById('export-product-suggestions').innerHTML = ''; document.getElementById('filter-product-suggestions').innerHTML = ''; } });
+            importFormEl.addEventListener('submit', handleImport);
+            exportFormEl.addEventListener('submit', handleExport);
+            document.getElementById('export-lot').addEventListener('change', () => { const selectedOption = document.getElementById('export-lot').options[document.getElementById('export-lot').selectedIndex]; const exportQuantityInput = document.getElementById('export-quantity'); if (selectedOption && selectedOption.dataset.maxQuantity) { exportQuantityInput.max = selectedOption.dataset.maxQuantity; exportQuantityInput.placeholder = `สูงสุด: ${selectedOption.dataset.maxQuantity}`; } else { exportQuantityInput.max = null; exportQuantityInput.placeholder = ''; } });
+            productFormEl.addEventListener('submit', handleProductFormSubmit);
+            document.getElementById('clear-product-form-btn').addEventListener('click', clearProductForm);
+            userFormEl.addEventListener('submit', handleUserFormSubmit);
+            document.getElementById('clear-user-form-btn').addEventListener('click', clearUserForm);
+            document.getElementById('backup-stock-btn').addEventListener('click', () => backupToCSV(db.stock, 'stock_backup.csv'));
+            document.getElementById('backup-products-btn').addEventListener('click', () => backupToCSV(db.products, 'products_backup.csv'));
+            document.getElementById('backup-users-btn').addEventListener('click', () => backupToCSV(db.users, 'users_backup.csv'));
+            document.getElementById('backup-history-btn').addEventListener('click', () => {
+                const filteredData = getFilteredHistory();
+                const dataForExport = filteredData.map(item => {
+                    const lot = db.stock.find(s => s.lotId === item.lotId);
+                    return {
+                        date: new Date(item.date).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
+                        type: item.type,
+                        productId: item.productId,
+                        productName: item.productName,
+                        quantity: item.quantity,
+                        productionDate: lot ? formatDate(lot.productionDate) : 'N/A',
+                        invoiceNumber: item.invoiceNumber,
+                        remarks: item.remarks,
+                        user: item.user,
+                    };
+                });
+                backupToCSV(dataForExport, 'history_backup.csv');
+            });
+            showOldStockFilter.addEventListener('change', populateStockSummary);
+            stockSearchInput.addEventListener('input', populateStockSummary);
+            historyFilterForm.addEventListener('submit', (e) => { e.preventDefault(); populateHistoryTable(); });
+            historyFilterForm.addEventListener('reset', () => { document.getElementById('filter-product-id').value = ''; document.getElementById('filter-product-search').value = ''; setTimeout(populateHistoryTable, 0); });
+            editHistoryForm.addEventListener('submit', handleEditHistorySubmit);
+            editStockForm.addEventListener('submit', handleEditStockSubmit);
+        }
+        function handleLogin(e) { e.preventDefault(); const username = document.getElementById('username').value; const password = document.getElementById('password').value; const foundUser = db.users.find(u => u.username === username && u.password === password); if (foundUser) { sessionStorage.setItem('currentUser', JSON.stringify(foundUser)); checkLoginState(); } else { errorMessage.classList.remove('d-none'); } }
+        function handleLogout() { confirmAction('ต้องการออกจากระบบ?', '', showLoginPage); }
+        function populateStockSummary() {
+            stockSummaryTable.innerHTML = '';
+            const filterOldStock = showOldStockFilter.checked;
+            const searchTerm = stockSearchInput.value.toLowerCase();
+            const threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+            let summary = db.products.map(p => { const lots = db.stock.filter(s => s.productId === p.id); return { ...p, totalQuantity: lots.reduce((sum, item) => sum + item.quantity, 0), hasOldStock: lots.some(s => new Date(formatDate(s.productionDate)) < threeMonthsAgo) }; });
+            if (filterOldStock) { summary = summary.filter(p => p.hasOldStock && p.totalQuantity > 0); } else { summary = summary.filter(p => p.totalQuantity > 0); }
+            if (searchTerm) { summary = summary.filter(item => item.id.toLowerCase().includes(searchTerm) || item.name.toLowerCase().includes(searchTerm) || (item.customer && item.customer.toLowerCase().includes(searchTerm)) ); }
+            if (summary.length === 0) { const message = searchTerm ? 'ไม่พบสินค้าที่ตรงกับการค้นหาค่ะ' : (filterOldStock ? 'ไม่พบสต็อกที่เก่ากว่า 3 เดือนค่ะ' : 'ยังไม่มีข้อมูลสต็อกเลยจ้า'); stockSummaryTable.innerHTML = `<tr><td colspan="6" class="text-center p-4">${message} <i class="bi bi-emoji-wink"></i></td></tr>`; return; }
+            summary.forEach(item => {
+                const row = document.createElement('tr');
+                row.dataset.productId = item.id;
+                if (item.hasOldStock) { row.classList.add('table-warning'); }
+                row.innerHTML = `
+                    <td>${item.hasOldStock ? '<i class="bi bi-exclamation-triangle-fill text-danger"></i>' : ''}</td>
+                    <td>
+                        <div><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${item.id}</span></div>
+                        <small class="text-muted">${item.name}</small>
+                    </td>
+                    <td>${item.erpCode || '-'}</td>
+                    <td>${item.customer || '-'}</td>
+                    <td><span class="fw-bold">${item.totalQuantity.toLocaleString()}</span></td>
+                    <td class="admin-only-cell">
+                        <button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')"><i class="bi bi-pencil-fill"></i></button>
+                    </td>
+                `;
+                row.addEventListener('click', () => window.app.showLotDetails(item.id));
+                stockSummaryTable.appendChild(row);
+            });
+            if (currentUser.role === 'admin') { stockSummaryTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); } else { stockSummaryTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none'); }
+        }
+        function getFilteredHistory() {
+            const startDate = document.getElementById('filter-start-date').value;
+            const endDate = document.getElementById('filter-end-date').value;
+            const type = document.getElementById('filter-type').value;
+            const productId = document.getElementById('filter-product-id').value;
+            const invoiceSearch = document.getElementById('filter-invoice-search').value.toLowerCase();
+
+            let filteredHistory = db.history;
+
+            if (startDate) { filteredHistory = filteredHistory.filter(item => item.date.split('T')[0] >= startDate); }
+            if (endDate) { filteredHistory = filteredHistory.filter(item => item.date.split('T')[0] <= endDate); }
+            if (type) { filteredHistory = filteredHistory.filter(item => item.type === type); }
+            if (productId) { filteredHistory = filteredHistory.filter(item => item.productId === productId); }
+            if (invoiceSearch) { filteredHistory = filteredHistory.filter(item => item.invoiceNumber && item.invoiceNumber.toLowerCase().includes(invoiceSearch));}
+            
+            return filteredHistory;
+        }
+        function populateHistoryTable() {
+            historyTable.innerHTML = '';
+            const filteredHistory = getFilteredHistory();
+            const totalQuantity = filteredHistory.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('history-total-quantity').textContent = `ยอดรวม: ${totalQuantity.toLocaleString()}`;
+
+            if (filteredHistory.length === 0) {
+                historyTable.innerHTML = `<tr><td colspan="8" class="text-center p-4">ไม่พบข้อมูลตามเงื่อนไขที่กำหนดค่ะ</td></tr>`;
+                return;
+            }
+            filteredHistory.forEach(item => {
+                const row = document.createElement('tr');
+                let typeHtml, rowClass;
+                const lot = db.stock.find(s => s.lotId === item.lotId);
+                switch (item.type) {
+                    case 'import':
+                        typeHtml = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill"><i class="bi bi-arrow-down me-1"></i>รับเข้า</span>`;
+                        rowClass = 'history-import';
+                        break;
+                    case 'export':
+                        typeHtml = `<span class="badge bg-info-subtle text-info-emphasis rounded-pill"><i class="bi bi-arrow-up me-1"></i>ส่งออก</span>`;
+                        rowClass = 'history-export';
+                        break;
+                    case 'adjustment':
+                        typeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill"><i class="bi bi-pencil-fill me-1"></i>ปรับปรุงยอด</span>`;
+                        rowClass = 'history-adjustment';
+                        break;
+                }
+                row.classList.add(rowClass);
+                const formattedDate = new Date(item.date).toLocaleString('th-TH', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'Asia/Bangkok'
+                });
+                const actionsContent = `<button class="btn btn-warning btn-sm" onclick="window.app.editHistory('${item.date}')"><i class="bi bi-pencil-fill"></i></button> <button class="btn btn-danger btn-sm" onclick="window.app.deleteHistory('${item.date}')"><i class="bi bi-trash3-fill"></i></button>`;
+                row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${item.quantity.toLocaleString()}</td> <td>${lot ? formatDate(lot.productionDate) : 'N/A'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${item.remarks || ''}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
+                historyTable.appendChild(row);
+            });
+            if (currentUser.role === 'admin') {
+                historyTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell');
+            } else {
+                historyTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none');
+            }
+        }
+        function populateUserManagementTable() { userManagementTable.innerHTML = ''; db.users.forEach(u => { const r = document.createElement('tr'); r.innerHTML = `<td><i class="bi bi-person-circle me-2"></i>${u.username}</td><td><span class="badge rounded-pill ${u.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}">${u.role}</span></td><td><button class="btn btn-warning btn-sm" onclick="window.app.editUser('${u.username}')"><i class="bi bi-pencil-fill"></i></button> <button class="btn btn-danger btn-sm" onclick="window.app.deleteUser('${u.username}')"><i class="bi bi-trash3-fill"></i></button></td>`; userManagementTable.appendChild(r); }); }
+        function populateProductManagementTable() { productManagementTable.innerHTML = ''; db.products.forEach(p => { const r = document.createElement('tr'); r.innerHTML = `<td>${p.id}</td><td>${p.name}</td><td>${p.customer || '-'}</td><td>${p.unitPrice.toFixed(2)}</td><td><button class="btn btn-warning btn-sm" onclick="window.app.editProduct('${p.id}')"><i class="bi bi-pencil-fill"></i></button> <button class="btn btn-danger btn-sm" onclick="window.app.deleteProduct('${p.id}')"><i class="bi bi-trash3-fill"></i></button></td>`; productManagementTable.appendChild(r); }); }
+        function populateExportLotDropdown(productId) { const d=document.getElementById('export-lot'); d.innerHTML='<option value="">-- เลือกล็อต --</option>'; if(!productId){d.innerHTML='<option value="">-- เลือกสินค้านะคะ --</option>';return} const l=db.stock.filter(s=>s.productId===productId&&s.quantity>0); if(l.length===0){d.innerHTML='<option value="">-- สินค้าหมดสต็อกแล้วจ้า --</option>'} else{l.forEach(lot=>{d.innerHTML+=`<option value="${lot.lotId}" data-max-quantity="${lot.quantity}">วันที่ผลิต: ${formatDate(lot.productionDate)} (เหลือ: ${lot.quantity})</option>`})} }
+        function clearProductForm() { editingProductId = null; productFormEl.reset(); document.getElementById('product-id').readOnly = false; }
+        function clearUserForm() { originalUsernameForEdit = null; userFormEl.reset(); }
+        function showSuggestions(inputEl, containerEl, productSource, searchTerm) { containerEl.innerHTML = ''; if (!searchTerm) { return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => p.id.toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = item.id; containerEl.innerHTML = ''; inputEl.dispatchEvent(new Event('change', { bubbles: true })); }); containerEl.appendChild(suggestionEl); }); }
+        function showFilterSuggestions(inputEl, containerEl, productSource, searchTerm) { const hiddenInputEl = document.getElementById('filter-product-id'); containerEl.innerHTML = ''; if (!searchTerm) { hiddenInputEl.value = ''; return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => p.id.toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'p-2'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = `${item.id} - ${item.name}`; hiddenInputEl.value = item.id; containerEl.innerHTML = ''; }); containerEl.appendChild(suggestionEl); }); }
+        
+        // --- HELPER FUNCTIONS ---
+        function formatDate(dateInput) {
+            if (!dateInput) return dateInput;
+            let date;
+            if (!isNaN(dateInput) && Number.isFinite(Number(dateInput))) {
+                date = new Date(Number(dateInput));
+            } 
+            else if (typeof dateInput === 'string' && dateInput.includes('T')) {
+                date = new Date(dateInput);
+            } 
+            else if (typeof dateInput === 'string') {
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput) || isNaN(new Date(dateInput).getTime())) {
+                    return dateInput;
+                }
+                date = new Date(dateInput);
+            } else {
+                return dateInput;
+            }
+            if (isNaN(date.getTime())) {
+                return dateInput;
+            }
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function showSuccess(title) { Swal.fire({ title: 'เรียบร้อย!', text: title, icon: 'success', timer: 2000, showConfirmButton: false }); }
+        function showError(title, text) { Swal.fire(title, text, 'error'); }
+        function confirmAction(title, text, callback) { Swal.fire({ title: title, text: text, icon: 'question', showCancelButton: true, confirmButtonText: 'ใช่, ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#ff8fab', }).then((r) => { if (r.isConfirmed) callback(); }); }
+        function backupToCSV(data, filename) { if (!data || data.length === 0) { showError('ไม่มีข้อมูล', 'ไม่สามารถสำรองข้อมูลที่ว่างเปล่าได้ค่ะ'); return; } const headers = Object.keys(data[0]); const csvRows = [headers.join(',')]; data.forEach(row => { const values = headers.map(header => `"${('' + row[header]).replace(/"/g, '""')}"`); csvRows.push(values.join(',')); }); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })); link.setAttribute('download', filename); document.body.appendChild(link); link.click(); document.body.removeChild(link); showSuccess(`กำลังดาวน์โหลดไฟล์ ${filename}`); }
+        
+        // --- START THE APP ---
+        init();
+    });
+    </script>
+</body>
+</html>
