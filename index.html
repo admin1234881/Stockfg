@@ -137,8 +137,8 @@
         <div class="tab-content" id="pills-tabContent">
             <div class="tab-pane fade show active" id="pills-stock" role="tabpanel" aria-labelledby="pills-stock-tab">
                 <div class="row">
-                    <div class="col-lg-3">
-                        <div class="card admin-nav mb-4">
+                    <div class="col-lg-3 admin-nav">
+                        <div class="card mb-4">
                             <div class="card-header fw-bold"><i class="bi bi-cloud-arrow-down-fill me-2"></i>สำรองข้อมูล</div>
                             <div class="card-body">
                                 <p class="text-center mb-2">ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV</p>
@@ -150,7 +150,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-9">
+                    <div id="stock-summary-container">
                         <div class="card mb-4">
                             <div class="card-header fw-bold d-flex justify-content-between align-items-center">
                                 <span><i class="bi bi-table me-2"></i>สรุปยอดสต็อกสินค้าคงเหลือ</span>
@@ -901,7 +901,31 @@
         }
         
         function showLoginPage() { currentUser = null; sessionStorage.removeItem('currentUser'); loginPage.style.display = 'block'; dashboardPage.style.display = 'none'; document.getElementById('username').value = ''; document.getElementById('password').value = ''; errorMessage.classList.add('d-none'); }
-        function showDashboard() { loginPage.style.display = 'none'; dashboardPage.style.display = 'block'; userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (สิทธิ์: ${currentUser.role})`; userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`; const adminElements = document.querySelectorAll('.admin-nav'); const displayStyle = currentUser.role === 'admin' ? 'block' : 'none'; adminElements.forEach(el => el.style.display = displayStyle); if (currentUser.role === 'admin') { document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); } else { document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none'); } populateAll(); }
+        function showDashboard() {
+            loginPage.style.display = 'none';
+            dashboardPage.style.display = 'block';
+            userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (สิทธิ์: ${currentUser.role})`;
+            userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`;
+            
+            const adminElements = document.querySelectorAll('.admin-nav');
+            const displayStyle = currentUser.role === 'admin' ? 'block' : 'none';
+            adminElements.forEach(el => el.style.display = displayStyle);
+            
+            const stockSummaryContainer = document.getElementById('stock-summary-container');
+            if (currentUser.role === 'admin') {
+                stockSummaryContainer.className = 'col-lg-9';
+            } else {
+                stockSummaryContainer.className = 'col-lg-12';
+            }
+
+            if (currentUser.role === 'admin') {
+                document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell');
+            } else {
+                 document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none');
+            }
+            
+            populateAll();
+        }
         function populateAll() { populateStockSummary(); populateUserManagementTable(); populateProductManagementTable(); populateHistoryTable(); }
         function renderAllForms() {
             importFormEl.innerHTML = `
