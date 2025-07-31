@@ -1089,9 +1089,9 @@
         function renderAllForms() {
             importFormEl.innerHTML = `
                 <div class="col-md-4"> <label for="import-product-id" class="form-label">รหัสสินค้า</label> <div class="position-relative"> <input type="text" id="import-product-id" class="form-control" required autocomplete="off" placeholder="พิมพ์เพื่อค้นหา..."> <div id="import-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
-                <div class="col-md-4"> <label for="import-product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="import-product-name" class="form-control" required> </div>
-                <div class="col-md-4"> <label for="import-customer" class="form-label">ลูกค้า</label> <input type="text" id="import-customer" class="form-control"> </div>
-                <div class="col-md-3"> <label for="import-erp-code" class="form-label">รหัส ERP</label> <input type="text" id="import-erp-code" class="form-control"> </div>
+                <div class="col-md-4"> <label for="import-product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="import-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-4"> <label for="import-customer" class="form-label">ลูกค้า</label> <input type="text" id="import-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-3"> <label for="import-erp-code" class="form-label">รหัส ERP</label> <input type="text" id="import-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
                 <div class="col-md-3"> <label for="import-fullbox" class="form-label">จำนวนเต็มกล่อง</label> <input type="text" id="import-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
                 <div class="col-md-3"> <label for="import-quantity" class="form-label">จำนวนที่รับเข้า</label> <input type="number" id="import-quantity" class="form-control" required min="1"> </div>
                 <div class="col-md-3"> <label for="import-prod-date" class="form-label">วันที่ผลิต</label> <input type="date" id="import-prod-date" class="form-control" required> </div>
