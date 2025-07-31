@@ -896,38 +896,68 @@
             e.preventDefault();
             stopDataSync();
 
-            const lotId = parseInt(document.getElementById('export-lot').value);
-            const quantityToExport = parseInt(document.getElementById('export-quantity').value);
+            const productId = document.getElementById('export-product-id').value;
+            const productionDate = document.getElementById('export-lot').value;
+            let quantityToExport = parseInt(document.getElementById('export-quantity').value);
             const invoiceNumber = document.getElementById('export-invoice-number').value;
             const remarks = document.getElementById('export-remarks').value;
-            const stockLot = db.stock.find(s => s.lotId === lotId);
 
-            if (!stockLot) { showError('อุ๊ย!', 'ไม่เจอล็อตสินค้านี้ในระบบ'); startDataSync(); return; }
-            if (quantityToExport > stockLot.quantity) { showError('เดี๋ยวก่อน!', `ของในสต็อกมีไม่พอจ้า (เหลือแค่: ${stockLot.quantity})`); startDataSync(); return; }
-            
-            let product = db.products.find(p => String(p.id) === String(stockLot.productId));
+            if (!productId || !productionDate || !quantityToExport) {
+                showError('ข้อมูลไม่ครบ', 'กรุณาเลือกสินค้า, วันที่ผลิต, และระบุจำนวนที่ต้องการส่งออก');
+                startDataSync();
+                return;
+            }
+
+            const lotsForDate = db.stock
+                .filter(s => String(s.productId) === String(productId) && formatDate(s.productionDate) === productionDate && s.quantity > 0)
+                .sort((a, b) => a.lotId - b.lotId);
+
+            if (lotsForDate.length === 0) {
+                showError('ผิดพลาด', 'ไม่พบสต็อกสำหรับวันที่ผลิตที่เลือก');
+                startDataSync();
+                return;
+            }
+
+            const totalAvailable = lotsForDate.reduce((sum, lot) => sum + lot.quantity, 0);
+            if (quantityToExport > totalAvailable) {
+                showError('ของไม่พอ', `มีสินค้าในสต็อกสำหรับวันที่นี้เพียง ${totalAvailable.toLocaleString()} ชิ้น`);
+                startDataSync();
+                return;
+            }
+
+            let product = db.products.find(p => String(p.id) === String(productId));
             if (!product) {
-                const latestHistoryEntry = db.history.find(h => String(h.productId) === String(stockLot.productId));
+                const latestHistoryEntry = db.history.find(h => String(h.productId) === String(productId));
                 product = { 
-                    id: stockLot.productId, 
-                    name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${stockLot.productId})`,
+                    id: productId, 
+                    name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${productId})`,
                     customer: latestHistoryEntry ? latestHistoryEntry.customer : '',
                     erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode : ''
                 };
             }
 
-            stockLot.quantity -= quantityToExport;
-            addHistory('export', product, quantityToExport, currentUser.username, lotId, invoiceNumber, remarks);
+            for (const stockLot of lotsForDate) {
+                if (quantityToExport <= 0) break;
+
+                const quantityFromThisLot = Math.min(quantityToExport, stockLot.quantity);
+                
+                stockLot.quantity -= quantityFromThisLot;
+                addHistory('export', product, quantityFromThisLot, currentUser.username, stockLot.lotId, invoiceNumber, remarks);
+
+                quantityToExport -= quantityFromThisLot;
+            }
             
             populateAll();
-            showSuccess(`ส่งออกสินค้า ${product.name} ไปแล้วค่ะ`);
+            showSuccess(`ส่งออกสินค้า ${product.name} เรียบร้อยแล้วค่ะ`);
             exportFormEl.reset();
             ['export-product-name', 'export-customer', 'export-erp-code', 'export-fullbox'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('export-lot').innerHTML = '<option value="">-- กรุณาเลือกสินค้าก่อน --</option>';
+
 
             saveDataToSheet();
             setTimeout(() => {
                 loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            }, 4000);
         }
 
         function handleProductFormSubmit(e) {
