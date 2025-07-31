@@ -151,7 +151,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-9">
+                    <div class="col-lg-9" id="stock-content-column">
                         <div class="card mb-4">
                             <div class="card-header fw-bold d-flex justify-content-between align-items-center">
                                 <span><i class="bi bi-table me-2"></i>สรุปยอดสต็อกสินค้าคงเหลือ</span>
@@ -1064,6 +1064,16 @@
             const adminElements = document.querySelectorAll('.admin-nav'); 
             const displayStyle = currentUser.role === 'admin' ? 'block' : 'none'; 
             adminElements.forEach(el => el.style.display = displayStyle); 
+
+            const stockContentColumn = document.getElementById('stock-content-column');
+            if (currentUser.role === 'admin') {
+                stockContentColumn.classList.remove('col-lg-12');
+                stockContentColumn.classList.add('col-lg-9');
+            } else {
+                stockContentColumn.classList.remove('col-lg-9');
+                stockContentColumn.classList.add('col-lg-12');
+            }
+
             if (currentUser.role === 'admin') { 
                 document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); 
             } else { 
