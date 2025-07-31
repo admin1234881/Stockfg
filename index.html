@@ -70,6 +70,7 @@
             align-items: center;
             font-size: 0.8rem;
         }
+        .small-text { font-size: 0.85rem; color: #6c757d; }
     </style>
 </head>
 <body>
@@ -137,8 +138,8 @@
         <div class="tab-content" id="pills-tabContent">
             <div class="tab-pane fade show active" id="pills-stock" role="tabpanel" aria-labelledby="pills-stock-tab">
                 <div class="row">
-                    <div class="col-lg-3 admin-nav">
-                        <div class="card mb-4">
+                    <div class="col-lg-3">
+                        <div class="card admin-nav mb-4">
                             <div class="card-header fw-bold"><i class="bi bi-cloud-arrow-down-fill me-2"></i>สำรองข้อมูล</div>
                             <div class="card-body">
                                 <p class="text-center mb-2">ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV</p>
@@ -150,7 +151,7 @@
                             </div>
                         </div>
                     </div>
-                    <div id="stock-summary-container">
+                    <div class="col-lg-9">
                         <div class="card mb-4">
                             <div class="card-header fw-bold d-flex justify-content-between align-items-center">
                                 <span><i class="bi bi-table me-2"></i>สรุปยอดสต็อกสินค้าคงเหลือ</span>
@@ -453,65 +454,115 @@
 
         // --- DATABASE SIMULATION & PERSISTENCE ---
         let db = { users: [], products: [], stock: [], history: [] };
+        let dataSyncInterval = null;
+        let inactivityTimer = null;
 
-        async function loadDataFromSheet() {
+        // --- INACTIVITY & SYNC FUNCTIONS ---
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(logoutDueToInactivity, 30 * 60 * 1000); // 30 minutes
+        }
+
+        function logoutDueToInactivity() {
+            stopDataSync(); // Stop background refresh
             Swal.fire({
-                title: 'กำลังโหลดข้อมูล...',
-                text: 'กรุณารอสักครู่ค่ะ',
+                title: 'หมดเวลาใช้งาน',
+                text: 'ไม่มีการใช้งานระบบเกิน 30 นาที กรุณาลงชื่อเข้าใช้ใหม่',
+                icon: 'warning',
+                confirmButtonText: 'ตกลง',
                 allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading() }
+            }).then(() => {
+                showLoginPage();
             });
+        }
+        
+        function setupActivityListeners() {
+            const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+            events.forEach(event => window.addEventListener(event, resetInactivityTimer, true));
+            console.log('Activity listeners set up.');
+        }
+
+        function clearActivityListeners() {
+            const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+            events.forEach(event => window.removeEventListener(event, resetInactivityTimer, true));
+            console.log('Activity listeners removed.');
+        }
+
+        function startDataSync() {
+            if (dataSyncInterval) clearInterval(dataSyncInterval);
+            dataSyncInterval = setInterval(() => loadDataFromSheet(false), 30000);
+            console.log('Periodic data sync started.');
+        }
+
+        function stopDataSync() {
+            if (dataSyncInterval) {
+                clearInterval(dataSyncInterval);
+                dataSyncInterval = null;
+                console.log('Periodic data sync stopped.');
+            }
+        }
+
+        async function loadDataFromSheet(isInitialLoad = false) {
+            if (isInitialLoad) {
+                Swal.fire({
+                    title: 'กำลังโหลดข้อมูล...',
+                    text: 'กรุณารอสักครู่ค่ะ',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading() }
+                });
+            }
 
             try {
                 const response = await fetch(SCRIPT_URL);
                 if (!response.ok) {
-                    throw new Error(`Network response was not ok. Status: ${response.status}`);
+                    if (isInitialLoad) throw new Error(`Network response was not ok. Status: ${response.status}`);
+                    else { console.error('Background refresh failed.'); return; }
                 }
-                const data = await response.json();
+                const newData = await response.json();
                 
-                if (data && data.stock && data.products && data.users && data.history) {
-                    data.stock.forEach(item => {
-                        item.productionDate = formatDate(item.productionDate);
-                    });
+                if (newData && newData.stock && newData.products && newData.users && newData.history) {
+                    newData.stock.forEach(item => { item.productionDate = formatDate(item.productionDate); });
                     
-                    db = data;
-                    console.log('Data loaded and normalized:', db);
+                    if (JSON.stringify(db) !== JSON.stringify(newData)) {
+                        db = newData;
+                        console.log('Data updated from Google Sheet at:', new Date().toLocaleTimeString());
+                        populateAll();
+                        
+                        if (!isInitialLoad) {
+                            const Toast = Swal.mixin({
+                              toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
+                            });
+                            Toast.fire({ icon: 'success', title: 'ข้อมูลอัปเดตแล้ว!' });
+                        }
+                    }
                 } else {
-                    throw new Error('Invalid data structure received from server.');
+                    if (isInitialLoad) throw new Error('Invalid data structure received from server.');
                 }
                 
-                Swal.close();
+                if (isInitialLoad) Swal.close();
             } catch (error) {
                 console.error('Error loading data from Google Sheet:', error);
-                showError('โหลดข้อมูลไม่สำเร็จ!', `ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ (${error.message}) กรุณาลองรีเฟรชหน้าเว็บใหม่อีกครั้ง`);
+                if (isInitialLoad) showError('โหลดข้อมูลไม่สำเร็จ!', `ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ (${error.message}) กรุณาลองรีเฟรชหน้าเว็บใหม่อีกครั้ง`);
             }
         }
 
         async function saveDataToSheet() {
              try {
-                const payload = {
-                    action: 'saveDb',
-                    payload: db
-                };
-
+                const payload = { action: 'saveDb', payload: db };
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload),
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8',
-                    },
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     mode: 'no-cors'
                 });
-                
                 console.log('Save request sent to Google Sheet.');
-
             } catch (error) {
                 console.error('Error saving data to Google Sheet:', error);
                 showError('บันทึกข้อมูลไม่สำเร็จ!', 'เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก');
             }
         }
         
-        // --- DOM ELEMENTS (No change) ---
+        // --- DOM ELEMENTS ---
         const loginPage = document.getElementById('login-page');
         const dashboardPage = document.getElementById('main-dashboard');
         const loginForm = document.getElementById('login-form');
@@ -537,7 +588,7 @@
         const productManagementTable = document.getElementById('product-management-table');
         const historyTable = document.getElementById('history-table');
 
-        // --- STATE MANAGEMENT (No change) ---
+        // --- STATE MANAGEMENT ---
         let currentUser = null;
         let editingProductId = null;
         let originalUsernameForEdit = null;
@@ -547,20 +598,26 @@
             deleteLot: (lotId) => {
                 if (currentUser.role !== 'admin') return;
                 confirmAction('แน่ใจน้าว่าจะลบ?', "ข้อมูลล็อตนี้จะหายไปเลยน้า กู้คืนไม่ได้แล้วด้วย!", () => {
+                    stopDataSync();
                     const lotIndex = db.stock.findIndex(lot => lot.lotId === lotId);
                     if (lotIndex > -1) {
                         db.stock.splice(lotIndex, 1);
-                        saveDataToSheet();
-                        showSuccess('ลบล็อตสินค้าเรียบร้อยแล้วค่ะ');
                         populateAll();
                         lotDetailModal.hide();
+                        showSuccess('ลบล็อตสินค้าเรียบร้อยแล้วค่ะ');
+                        saveDataToSheet();
+                        setTimeout(() => {
+                            loadDataFromSheet(false).then(() => startDataSync());
+                        }, 3000);
+                    } else {
+                        startDataSync();
                     }
                 });
             },
             editProduct: (productId) => {
                 if (currentUser.role !== 'admin') return;
                 editingProductId = productId;
-                const product = db.products.find(p => p.id === productId);
+                const product = db.products.find(p => String(p.id) === String(productId));
                 if (product) {
                     document.getElementById('product-id').value = product.id;
                     document.getElementById('product-id').readOnly = true;
@@ -573,16 +630,20 @@
             },
             deleteProduct: (productId) => {
                 if (currentUser.role !== 'admin') return;
-                const isProductInStock = db.stock.some(s => s.productId === productId && s.quantity > 0);
+                const isProductInStock = db.stock.some(s => String(s.productId) === String(productId) && s.quantity > 0);
                 if (isProductInStock) {
                     showError('ลบไม่ได้!', 'ยังมีสินค้านี้อยู่ในสต็อกค่ะ');
                     return;
                 }
                 confirmAction('แน่ใจว่าจะลบสินค้า?', `สินค้า ${productId} จะถูกลบออกจากระบบอย่างถาวร`, () => {
-                    db.products = db.products.filter(p => p.id !== productId);
-                    saveDataToSheet();
-                    showSuccess('ลบสินค้าเรียบร้อยแล้ว');
+                    stopDataSync();
+                    db.products = db.products.filter(p => String(p.id) !== String(productId));
                     populateAll();
+                    showSuccess('ลบสินค้าเรียบร้อยแล้ว');
+                    saveDataToSheet();
+                    setTimeout(() => {
+                        loadDataFromSheet(false).then(() => startDataSync());
+                    }, 3000);
                 });
             },
             editUser: (username) => {
@@ -602,10 +663,14 @@
                     return;
                 }
                 confirmAction('แน่ใจว่าจะลบผู้ใช้?', `ผู้ใช้ ${username} จะถูกลบออกจากระบบ`, () => {
+                    stopDataSync();
                     db.users = db.users.filter(u => u.username !== username);
-                    saveDataToSheet();
-                    showSuccess('ลบผู้ใช้เรียบร้อยแล้ว');
                     populateAll();
+                    showSuccess('ลบผู้ใช้เรียบร้อยแล้ว');
+                    saveDataToSheet();
+                    setTimeout(() => {
+                        loadDataFromSheet(false).then(() => startDataSync());
+                    }, 3000);
                 });
             },
             editHistory: (historyId) => {
@@ -651,6 +716,7 @@
                     : 'การดำเนินการนี้จะหักสินค้าออกจากสต็อก และไม่สามารถย้อนกลับได้';
 
                 confirmAction('ยืนยันการลบประวัติ?', message, () => {
+                    stopDataSync();
                     const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
 
                     if (historyItem.type === 'export') {
@@ -660,23 +726,26 @@
                              db.stock.push({ lotId: historyItem.lotId, productId: historyItem.productId, quantity: historyItem.quantity, productionDate: 'N/A (Reverted)' });
                         }
                     } else { // import
-                        if (!stockLot) { showError('ผิดพลาด!', 'ไม่พบสต็อกล็อตเดิมของรายการนี้ ไม่สามารถลบได้'); return; }
-                        if (stockLot.quantity < historyItem.quantity) { showError('ลบไม่ได้!', `สต็อกในล็อตนี้ถูกใช้ไปแล้ว (คงเหลือ ${stockLot.quantity}) ไม่สามารถหักจำนวน ${historyItem.quantity} ได้`); return; }
+                        if (!stockLot) { showError('ผิดพลาด!', 'ไม่พบสต็อกล็อตเดิมของรายการนี้ ไม่สามารถลบได้'); startDataSync(); return; }
+                        if (stockLot.quantity < historyItem.quantity) { showError('ลบไม่ได้!', `สต็อกในล็อตนี้ถูกใช้ไปแล้ว (คงเหลือ ${stockLot.quantity}) ไม่สามารถหักจำนวน ${historyItem.quantity} ได้`); startDataSync(); return; }
                         stockLot.quantity -= historyItem.quantity;
                     }
 
                     db.history.splice(historyIndex, 1);
-                    saveDataToSheet();
-                    showSuccess('ลบประวัติและปรับสต็อกเรียบร้อย');
                     populateAll();
+                    showSuccess('ลบประวัติและปรับสต็อกเรียบร้อย');
+                    saveDataToSheet();
+                    setTimeout(() => {
+                        loadDataFromSheet(false).then(() => startDataSync());
+                    }, 3000);
                 });
             },
             editStockTotal: (productId) => {
                 if (currentUser.role !== 'admin') return;
-                const product = db.products.find(p => p.id === productId);
+                const product = db.products.find(p => String(p.id) === String(productId));
                 if (product) {
                     const totalQuantity = db.stock
-                        .filter(s => s.productId === productId)
+                        .filter(s => String(s.productId) === String(productId))
                         .reduce((sum, item) => sum + item.quantity, 0);
                     
                     document.getElementById('edit-stock-product-id').value = product.id;
@@ -686,11 +755,10 @@
                 }
             },
             showLotDetails: (productId) => {
-                const product = db.products.find(p => p.id === productId);
-                modalProductName.textContent = product.name;
+                modalProductName.textContent = productId;
                 lotDetailTable.innerHTML = '';
                 
-                const lots = db.stock.filter(s => s.productId === productId && s.quantity > 0);
+                const lots = db.stock.filter(s => String(s.productId) === String(productId) && s.quantity > 0);
                 const threeMonthsAgo = new Date();
                 threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
@@ -711,7 +779,7 @@
                     });
                 }
                 
-                if (currentUser.role === 'admin') { lotDetailTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); } 
+                if (currentUser && currentUser.role === 'admin') { lotDetailTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); } 
                 else { lotDetailTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none'); }
 
                 lotDetailModal.show();
@@ -720,7 +788,7 @@
 
         async function init() {
             renderAllForms();
-            await loadDataFromSheet();
+            await loadDataFromSheet(true); // Initial load with spinner
             checkLoginState();
             addEventListeners();
         }
@@ -740,49 +808,107 @@
             }
         }
 
-        function addHistory(type, productId, productName, quantity, user, lotId = null, invoiceNumber = null, remarks = '') { 
-            db.history.unshift({ date: new Date().toISOString(), type: type, productId: productId, productName: productName, quantity: quantity, user: user, lotId: lotId, invoiceNumber: invoiceNumber, remarks: remarks }); 
-            saveDataToSheet();
+        function addHistory(type, product, quantity, user, lotId = null, invoiceNumber = null, remarks = '') { 
+            db.history.unshift({ 
+                date: new Date().toISOString(), 
+                type: type, 
+                productId: product.id, 
+                productName: product.name, 
+                customer: product.customer || '',
+                erpCode: product.erpCode || '',
+                quantity: quantity, 
+                user: user, 
+                lotId: lotId, 
+                invoiceNumber: invoiceNumber, 
+                remarks: remarks 
+            }); 
         }
 
         function handleImport(e) {
             e.preventDefault();
+            stopDataSync();
+
+            const productId = document.getElementById('import-product-id').value;
+            const productName = document.getElementById('import-product-name').value;
+            const customer = document.getElementById('import-customer').value;
+            const erpCode = document.getElementById('import-erp-code').value;
+
+            const productForHistory = {
+                id: productId,
+                name: productName,
+                customer: customer,
+                erpCode: erpCode
+            };
+            
+            if (!productName) {
+                showError('ข้อมูลไม่ครบถ้วน', 'กรุณาระบุชื่อสินค้า');
+                startDataSync();
+                return;
+            }
+
             const remarks = document.getElementById('import-remarks').value;
             const newStock = {
                 lotId: db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1,
-                productId: document.getElementById('import-product-id').value,
+                productId: productId,
                 quantity: parseInt(document.getElementById('import-quantity').value),
                 productionDate: document.getElementById('import-prod-date').value
             };
             db.stock.push(newStock);
-            addHistory('import', newStock.productId, document.getElementById('import-product-name').value, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
-            showSuccess(`รับสินค้า ${document.getElementById('import-product-name').value} เข้ามาแล้วจ้า`);
+            addHistory('import', productForHistory, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
+            
+            populateAll();
+            showSuccess(`รับสินค้า ${productName} เข้ามาแล้วจ้า`);
             importFormEl.reset();
             ['import-product-name', 'import-customer', 'import-erp-code', 'import-fullbox'].forEach(id => document.getElementById(id).value = '');
-            populateAll();
+            
+            saveDataToSheet();
+            setTimeout(() => {
+                loadDataFromSheet(false).then(() => startDataSync());
+            }, 3000);
         }
 
         function handleExport(e) {
             e.preventDefault();
+            stopDataSync();
+
             const lotId = parseInt(document.getElementById('export-lot').value);
             const quantityToExport = parseInt(document.getElementById('export-quantity').value);
             const invoiceNumber = document.getElementById('export-invoice-number').value;
             const remarks = document.getElementById('export-remarks').value;
             const stockLot = db.stock.find(s => s.lotId === lotId);
 
-            if (!stockLot) { showError('อุ๊ย!', 'ไม่เจอล็อตสินค้านี้ในระบบ'); return; }
-            if (quantityToExport > stockLot.quantity) { showError('เดี๋ยวก่อน!', `ของในสต็อกมีไม่พอจ้า (เหลือแค่: ${stockLot.quantity})`); return; }
+            if (!stockLot) { showError('อุ๊ย!', 'ไม่เจอล็อตสินค้านี้ในระบบ'); startDataSync(); return; }
+            if (quantityToExport > stockLot.quantity) { showError('เดี๋ยวก่อน!', `ของในสต็อกมีไม่พอจ้า (เหลือแค่: ${stockLot.quantity})`); startDataSync(); return; }
             
+            let product = db.products.find(p => String(p.id) === String(stockLot.productId));
+            if (!product) {
+                const latestHistoryEntry = db.history.find(h => String(h.productId) === String(stockLot.productId));
+                product = { 
+                    id: stockLot.productId, 
+                    name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${stockLot.productId})`,
+                    customer: latestHistoryEntry ? latestHistoryEntry.customer : '',
+                    erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode : ''
+                };
+            }
+
             stockLot.quantity -= quantityToExport;
-            addHistory('export', stockLot.productId, document.getElementById('export-product-name').value, quantityToExport, currentUser.username, lotId, invoiceNumber, remarks);
-            showSuccess(`ส่งออกสินค้า ${document.getElementById('export-product-name').value} ไปแล้วค่ะ`);
+            addHistory('export', product, quantityToExport, currentUser.username, lotId, invoiceNumber, remarks);
+            
+            populateAll();
+            showSuccess(`ส่งออกสินค้า ${product.name} ไปแล้วค่ะ`);
             exportFormEl.reset();
             ['export-product-name', 'export-customer', 'export-erp-code', 'export-fullbox'].forEach(id => document.getElementById(id).value = '');
-            populateAll();
+
+            saveDataToSheet();
+            setTimeout(() => {
+                loadDataFromSheet(false).then(() => startDataSync());
+            }, 3000);
         }
 
         function handleProductFormSubmit(e) {
             e.preventDefault();
+            stopDataSync();
+
             const productData = {
                 id: document.getElementById('product-id').value,
                 name: document.getElementById('product-name').value,
@@ -792,68 +918,74 @@
                 unitPrice: parseFloat(document.getElementById('product-unitPrice').value)
             };
             if (editingProductId) {
-                const productIndex = db.products.findIndex(p => p.id === editingProductId);
+                const productIndex = db.products.findIndex(p => String(p.id) === String(editingProductId));
                 if (productIndex > -1) {
                     db.products[productIndex] = { ...db.products[productIndex], ...productData };
                     showSuccess('อัปเดตข้อมูลสินค้าเรียบร้อย');
                 }
             } else {
-                if (db.products.some(p => p.id === productData.id)) { showError('รหัสซ้ำ!', 'มีรหัสสินค้านี้ในระบบแล้วค่ะ'); return; }
+                if (db.products.some(p => String(p.id) === String(productData.id))) { showError('รหัสซ้ำ!', 'มีรหัสสินค้านี้ในระบบแล้วค่ะ'); startDataSync(); return; }
                 db.products.push(productData);
                 showSuccess('เพิ่มสินค้าใหม่เรียบร้อย');
             }
-            saveDataToSheet();
+            
             clearProductForm();
             populateAll();
+            saveDataToSheet();
+            setTimeout(() => {
+                loadDataFromSheet(false).then(() => startDataSync());
+            }, 3000);
         }
         
         function handleUserFormSubmit(e) {
             e.preventDefault();
+            stopDataSync();
+
             const newUsername = document.getElementById('user-username').value;
             const newPassword = document.getElementById('user-password').value;
             const newRole = document.getElementById('user-role-select').value;
             
             if (!originalUsernameForEdit) {
-                if (db.users.some(u => u.username === newUsername)) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); return; }
+                if (db.users.some(u => u.username === newUsername)) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); startDataSync(); return; }
                 db.users.push({ username: newUsername, password: newPassword, role: newRole });
-                saveDataToSheet();
                 showSuccess('เพิ่มผู้ใช้ใหม่เรียบร้อย');
-                clearUserForm();
-                populateAll();
-                return;
-            }
+            } else {
+                const userIndex = db.users.findIndex(u => u.username === originalUsernameForEdit);
+                if (userIndex === -1) { showError('ผิดพลาด', 'ไม่พบผู้ใช้ที่ต้องการแก้ไข'); clearUserForm(); startDataSync(); return; }
+                const isUsernameTaken = db.users.some(u => u.username === newUsername && u.username !== originalUsernameForEdit);
+                if (isUsernameTaken) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); startDataSync(); return; }
 
-            const userIndex = db.users.findIndex(u => u.username === originalUsernameForEdit);
-            if (userIndex === -1) { showError('ผิดพลาด', 'ไม่พบผู้ใช้ที่ต้องการแก้ไข'); clearUserForm(); return; }
-            const isUsernameTaken = db.users.some(u => u.username === newUsername && u.username !== originalUsernameForEdit);
-            if (isUsernameTaken) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); return; }
+                if (originalUsernameForEdit !== newUsername) {
+                    db.history.forEach(record => { if (record.user === originalUsernameForEdit) { record.user = newUsername; } });
+                }
 
-            if (originalUsernameForEdit !== newUsername) {
-                db.history.forEach(record => { if (record.user === originalUsernameForEdit) { record.user = newUsername; } });
-            }
+                const userToUpdate = db.users[userIndex];
+                userToUpdate.username = newUsername;
+                userToUpdate.password = newPassword;
+                userToUpdate.role = newRole;
 
-            const userToUpdate = db.users[userIndex];
-            userToUpdate.username = newUsername;
-            userToUpdate.password = newPassword;
-            userToUpdate.role = newRole;
-
-            let wasCurrentUserEdited = false;
-            if (currentUser.username === originalUsernameForEdit) {
-                currentUser.username = newUsername;
-                currentUser.password = newPassword;
-                currentUser.role = newRole;
-                sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-                wasCurrentUserEdited = true;
+                if (currentUser.username === originalUsernameForEdit) {
+                    currentUser.username = newUsername;
+                    currentUser.password = newPassword;
+                    currentUser.role = newRole;
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    showDashboard();
+                }
+                showSuccess('อัปเดตข้อมูลผู้ใช้เรียบร้อย');
             }
             
-            saveDataToSheet();
-            showSuccess('อัปเดตข้อมูลผู้ใช้เรียบร้อย');
             clearUserForm();
-            if (wasCurrentUserEdited) { showDashboard(); } else { populateAll(); }
+            populateAll();
+            saveDataToSheet();
+            setTimeout(() => {
+                loadDataFromSheet(false).then(() => startDataSync());
+            }, 3000);
         }
 
         function handleEditHistorySubmit(e) {
             e.preventDefault();
+            stopDataSync();
+
             const historyId = document.getElementById('edit-history-id').value;
             const newQuantity = parseInt(document.getElementById('edit-history-quantity').value);
             const newInvoice = document.getElementById('edit-history-invoice').value;
@@ -861,78 +993,95 @@
             const newProdDate = document.getElementById('edit-history-prod-date').value;
 
             const historyIndex = db.history.findIndex(h => h.date === historyId);
-            if (historyIndex === -1) { showError('ผิดพลาด', 'ไม่พบประวัติที่ต้องการแก้ไข'); return; }
+            if (historyIndex === -1) { showError('ผิดพลาด', 'ไม่พบประวัติที่ต้องการแก้ไข'); startDataSync(); return; }
             const historyItem = db.history[historyIndex];
             const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
-            if (!stockLot) { showError('ผิดพลาด', 'ไม่พบสต็อกล็อตเดิมของประวัติรายการนี้'); return; }
+            if (!stockLot) { showError('ผิดพลาด', 'ไม่พบสต็อกล็อตเดิมของประวัติรายการนี้'); startDataSync(); return; }
             
             const originalQuantity = historyItem.quantity;
-            const availableStock = stockLot.quantity + originalQuantity;
-            if (newQuantity > availableStock) { showError('จำนวนไม่พอ', `ไม่สามารถแก้ไขจำนวนได้ สต็อกคงเหลือในล็อตนี้ (รวมที่คืน) มีเพียง ${availableStock} ชิ้น`); return; }
+            const availableStock = stockLot.quantity + (historyItem.type === 'export' ? originalQuantity : -originalQuantity);
+            
+            if (newQuantity > availableStock) { showError('จำนวนไม่พอ', `ไม่สามารถแก้ไขจำนวนได้ สต็อกคงเหลือในล็อตนี้ (รวมที่คืน) มีเพียง ${availableStock} ชิ้น`); startDataSync(); return; }
 
-            stockLot.quantity = availableStock - newQuantity;
+            stockLot.quantity = availableStock - (historyItem.type === 'export' ? newQuantity : -newQuantity);
             stockLot.productionDate = newProdDate;
             historyItem.quantity = newQuantity;
             historyItem.remarks = newRemarks;
             if (historyItem.type === 'export') { historyItem.invoiceNumber = newInvoice; }
             
-            saveDataToSheet();
-            showSuccess('แก้ไขประวัติเรียบร้อย');
-            editHistoryModal.hide();
             populateAll();
+            editHistoryModal.hide();
+            showSuccess('แก้ไขประวัติเรียบร้อย');
+            saveDataToSheet();
+            setTimeout(() => {
+                loadDataFromSheet(false).then(() => startDataSync());
+            }, 3000);
         }
 
         function handleEditStockSubmit(e) {
             e.preventDefault();
+            stopDataSync();
+
             const productId = document.getElementById('edit-stock-product-id').value;
             const newTotalQuantity = parseInt(document.getElementById('edit-stock-quantity').value);
-            const product = db.products.find(p => p.id === productId);
-            if (!product) { showError('ผิดพลาด', 'ไม่พบสินค้า'); return; }
+            const product = db.products.find(p => String(p.id) === String(productId));
+            if (!product) { showError('ผิดพลาด', 'ไม่พบสินค้า'); startDataSync(); return; }
             
-            const originalTotal = db.stock.filter(s => s.productId === productId).reduce((sum, item) => sum + item.quantity, 0);
-            db.stock = db.stock.filter(s => s.productId !== productId);
+            const originalTotal = db.stock.filter(s => String(s.productId) === String(productId)).reduce((sum, item) => sum + item.quantity, 0);
+            db.stock = db.stock.filter(s => String(s.productId) !== String(productId));
             const newLotId = db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1;
             db.stock.push({ lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' });
             const remarks = `ปรับยอดจาก ${originalTotal} เป็น ${newTotalQuantity}`;
-            addHistory('adjustment', productId, product.name, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
-            showSuccess('ปรับปรุงยอดสต็อกเรียบร้อย');
-            editStockModal.hide();
+            addHistory('adjustment', product, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
+            
             populateAll();
+            editStockModal.hide();
+            showSuccess('ปรับปรุงยอดสต็อกเรียบร้อย');
+            saveDataToSheet();
+            setTimeout(() => {
+                loadDataFromSheet(false).then(() => startDataSync());
+            }, 3000);
         }
         
-        function showLoginPage() { currentUser = null; sessionStorage.removeItem('currentUser'); loginPage.style.display = 'block'; dashboardPage.style.display = 'none'; document.getElementById('username').value = ''; document.getElementById('password').value = ''; errorMessage.classList.add('d-none'); }
-        function showDashboard() {
-            loginPage.style.display = 'none';
-            dashboardPage.style.display = 'block';
-            userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (สิทธิ์: ${currentUser.role})`;
-            userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`;
-            
-            const adminElements = document.querySelectorAll('.admin-nav');
-            const displayStyle = currentUser.role === 'admin' ? 'block' : 'none';
-            adminElements.forEach(el => el.style.display = displayStyle);
-            
-            const stockSummaryContainer = document.getElementById('stock-summary-container');
-            if (currentUser.role === 'admin') {
-                stockSummaryContainer.className = 'col-lg-9';
-            } else {
-                stockSummaryContainer.className = 'col-lg-12';
-            }
-
-            if (currentUser.role === 'admin') {
-                document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell');
-            } else {
-                 document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none');
-            }
-            
-            populateAll();
+        function showLoginPage() { 
+            stopDataSync(); 
+            clearTimeout(inactivityTimer);
+            clearActivityListeners();
+            currentUser = null; 
+            sessionStorage.removeItem('currentUser'); 
+            loginPage.style.display = 'block'; 
+            dashboardPage.style.display = 'none'; 
+            document.getElementById('username').value = ''; 
+            document.getElementById('password').value = ''; 
+            errorMessage.classList.add('d-none'); 
         }
+
+        function showDashboard() { 
+            loginPage.style.display = 'none'; 
+            dashboardPage.style.display = 'block'; 
+            userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (สิทธิ์: ${currentUser.role})`; 
+            userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`; 
+            const adminElements = document.querySelectorAll('.admin-nav'); 
+            const displayStyle = currentUser.role === 'admin' ? 'block' : 'none'; 
+            adminElements.forEach(el => el.style.display = displayStyle); 
+            if (currentUser.role === 'admin') { 
+                document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); 
+            } else { 
+                document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none'); 
+            } 
+            populateAll(); 
+            startDataSync(); 
+            setupActivityListeners();
+            resetInactivityTimer();
+        }
+
         function populateAll() { populateStockSummary(); populateUserManagementTable(); populateProductManagementTable(); populateHistoryTable(); }
         function renderAllForms() {
             importFormEl.innerHTML = `
                 <div class="col-md-4"> <label for="import-product-id" class="form-label">รหัสสินค้า</label> <div class="position-relative"> <input type="text" id="import-product-id" class="form-control" required autocomplete="off" placeholder="พิมพ์เพื่อค้นหา..."> <div id="import-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
-                <div class="col-md-4"> <label for="import-product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="import-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-4"> <label for="import-customer" class="form-label">ลูกค้า</label> <input type="text" id="import-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-3"> <label for="import-erp-code" class="form-label">รหัส ERP</label> <input type="text" id="import-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-4"> <label for="import-product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="import-product-name" class="form-control" required> </div>
+                <div class="col-md-4"> <label for="import-customer" class="form-label">ลูกค้า</label> <input type="text" id="import-customer" class="form-control"> </div>
+                <div class="col-md-3"> <label for="import-erp-code" class="form-label">รหัส ERP</label> <input type="text" id="import-erp-code" class="form-control"> </div>
                 <div class="col-md-3"> <label for="import-fullbox" class="form-label">จำนวนเต็มกล่อง</label> <input type="text" id="import-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
                 <div class="col-md-3"> <label for="import-quantity" class="form-label">จำนวนที่รับเข้า</label> <input type="number" id="import-quantity" class="form-control" required min="1"> </div>
                 <div class="col-md-3"> <label for="import-prod-date" class="form-label">วันที่ผลิต</label> <input type="date" id="import-prod-date" class="form-control" required> </div>
@@ -964,13 +1113,13 @@
         function addEventListeners() {
             loginForm.addEventListener('submit', handleLogin);
             logoutBtn.addEventListener('click', handleLogout);
-            document.getElementById('refresh-stock-summary-btn').addEventListener('click', populateStockSummary);
+            document.getElementById('refresh-stock-summary-btn').addEventListener('click', () => loadDataFromSheet(true));
             const importProductIdInput = document.getElementById('import-product-id');
             const exportProductIdInput = document.getElementById('export-product-id');
             const filterProductSearchInput = document.getElementById('filter-product-search');
             importProductIdInput.addEventListener('input', () => { const searchTerm = importProductIdInput.value; const suggestionsContainer = document.getElementById('import-product-suggestions'); const productSource = db.products; showSuggestions(importProductIdInput, suggestionsContainer, productSource, searchTerm); });
             importProductIdInput.addEventListener('change', () => {
-                const product = db.products.find(p => p.id === importProductIdInput.value);
+                const product = db.products.find(p => String(p.id) === importProductIdInput.value);
                 document.getElementById('import-product-name').value = product ? product.name : '';
                 document.getElementById('import-customer').value = product ? product.customer || '' : '';
                 document.getElementById('import-erp-code').value = product ? product.erpCode : '';
@@ -978,7 +1127,7 @@
             });
             exportProductIdInput.addEventListener('input', () => { const searchTerm = exportProductIdInput.value; const suggestionsContainer = document.getElementById('export-product-suggestions'); const productsInStockIds = [...new Set(db.stock.filter(s => s.quantity > 0).map(s => s.productId))]; const productSource = db.products.filter(p => productsInStockIds.includes(p.id)); showSuggestions(exportProductIdInput, suggestionsContainer, productSource, searchTerm); });
             exportProductIdInput.addEventListener('change', () => {
-                const product = db.products.find(p => p.id === exportProductIdInput.value);
+                const product = db.products.find(p => String(p.id) === exportProductIdInput.value);
                 document.getElementById('export-product-name').value = product ? product.name : '';
                 document.getElementById('export-customer').value = product ? product.customer || '' : '';
                 document.getElementById('export-erp-code').value = product ? product.erpCode : '';
@@ -1028,14 +1177,56 @@
         function handleLogout() { confirmAction('ต้องการออกจากระบบ?', '', showLoginPage); }
         function populateStockSummary() {
             stockSummaryTable.innerHTML = '';
+            
+            const productIdsInStock = [...new Set(db.stock.map(s => s.productId))];
+
             const filterOldStock = showOldStockFilter.checked;
             const searchTerm = stockSearchInput.value.toLowerCase();
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-            let summary = db.products.map(p => { const lots = db.stock.filter(s => s.productId === p.id); return { ...p, totalQuantity: lots.reduce((sum, item) => sum + item.quantity, 0), hasOldStock: lots.some(s => new Date(formatDate(s.productionDate)) < threeMonthsAgo) }; });
-            if (filterOldStock) { summary = summary.filter(p => p.hasOldStock && p.totalQuantity > 0); } else { summary = summary.filter(p => p.totalQuantity > 0); }
-            if (searchTerm) { summary = summary.filter(item => item.id.toLowerCase().includes(searchTerm) || item.name.toLowerCase().includes(searchTerm) || (item.customer && item.customer.toLowerCase().includes(searchTerm)) ); }
-            if (summary.length === 0) { const message = searchTerm ? 'ไม่พบสินค้าที่ตรงกับการค้นหาค่ะ' : (filterOldStock ? 'ไม่พบสต็อกที่เก่ากว่า 3 เดือนค่ะ' : 'ยังไม่มีข้อมูลสต็อกเลยจ้า'); stockSummaryTable.innerHTML = `<tr><td colspan="6" class="text-center p-4">${message} <i class="bi bi-emoji-wink"></i></td></tr>`; return; }
+
+            let summary = productIdsInStock.map(id => {
+                let productInfo = db.products.find(p => String(p.id) === String(id));
+                if (!productInfo) {
+                    const latestHistoryEntry = db.history.find(h => String(h.productId) === String(id));
+                    productInfo = {
+                        id: id,
+                        name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${id})`,
+                        customer: latestHistoryEntry ? latestHistoryEntry.customer || '-' : '-',
+                        erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode || '-' : '-',
+                        unitPrice: 0,
+                        fullBoxQuantity: 0
+                    };
+                }
+                
+                const lots = db.stock.filter(s => String(s.productId) === String(id));
+                const totalQuantity = lots.reduce((sum, item) => sum + item.quantity, 0);
+                const hasOldStock = lots.some(s => new Date(formatDate(s.productionDate)) < threeMonthsAgo);
+
+                return { ...productInfo, totalQuantity, hasOldStock };
+            });
+            
+            summary = summary.filter(p => p.totalQuantity > 0);
+
+            if (filterOldStock) {
+                summary = summary.filter(p => p.hasOldStock);
+            }
+            if (searchTerm) {
+                summary = summary.filter(item => 
+                    String(item.id).toLowerCase().includes(searchTerm) || 
+                    item.name.toLowerCase().includes(searchTerm) || 
+                    (item.customer && item.customer.toLowerCase().includes(searchTerm)) 
+                );
+            }
+            
+            summary.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+
+            if (summary.length === 0) {
+                const message = searchTerm ? 'ไม่พบสินค้าที่ตรงกับการค้นหาค่ะ' : (filterOldStock ? 'ไม่พบสต็อกที่เก่ากว่า 3 เดือนค่ะ' : 'ยังไม่มีข้อมูลสต็อกเลยจ้า');
+                stockSummaryTable.innerHTML = `<tr><td colspan="6" class="text-center p-4">${message} <i class="bi bi-emoji-wink"></i></td></tr>`;
+                return;
+            }
+
             summary.forEach(item => {
                 const row = document.createElement('tr');
                 row.dataset.productId = item.id;
@@ -1046,8 +1237,8 @@
                         <div><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${item.id}</span></div>
                         <small class="text-muted">${item.name}</small>
                     </td>
-                    <td>${item.erpCode || '-'}</td>
-                    <td>${item.customer || '-'}</td>
+                    <td class="small-text">${item.erpCode || '-'}</td>
+                    <td class="small-text">${item.customer || '-'}</td>
                     <td><span class="fw-bold">${item.totalQuantity.toLocaleString()}</span></td>
                     <td class="admin-only-cell">
                         <button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')"><i class="bi bi-pencil-fill"></i></button>
@@ -1056,7 +1247,12 @@
                 row.addEventListener('click', () => window.app.showLotDetails(item.id));
                 stockSummaryTable.appendChild(row);
             });
-            if (currentUser.role === 'admin') { stockSummaryTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); } else { stockSummaryTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none'); }
+
+            if (currentUser && currentUser.role === 'admin') {
+                stockSummaryTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell');
+            } else {
+                stockSummaryTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none');
+            }
         }
         function getFilteredHistory() {
             const startDate = document.getElementById('filter-start-date').value;
@@ -1070,7 +1266,7 @@
             if (startDate) { filteredHistory = filteredHistory.filter(item => item.date.split('T')[0] >= startDate); }
             if (endDate) { filteredHistory = filteredHistory.filter(item => item.date.split('T')[0] <= endDate); }
             if (type) { filteredHistory = filteredHistory.filter(item => item.type === type); }
-            if (productId) { filteredHistory = filteredHistory.filter(item => item.productId === productId); }
+            if (productId) { filteredHistory = filteredHistory.filter(item => String(item.productId) === String(productId)); }
             if (invoiceSearch) { filteredHistory = filteredHistory.filter(item => item.invoiceNumber && item.invoiceNumber.toLowerCase().includes(invoiceSearch));}
             
             return filteredHistory;
@@ -1116,7 +1312,7 @@
                 row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${item.quantity.toLocaleString()}</td> <td>${lot ? formatDate(lot.productionDate) : 'N/A'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${item.remarks || ''}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
                 historyTable.appendChild(row);
             });
-            if (currentUser.role === 'admin') {
+            if (currentUser && currentUser.role === 'admin') {
                 historyTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell');
             } else {
                 historyTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none');
@@ -1131,11 +1327,11 @@
                 productManagementTable.appendChild(r);
             });
         }
-        function populateExportLotDropdown(productId) { const d=document.getElementById('export-lot'); d.innerHTML='<option value="">-- เลือกล็อต --</option>'; if(!productId){d.innerHTML='<option value="">-- เลือกสินค้านะคะ --</option>';return} const l=db.stock.filter(s=>s.productId===productId&&s.quantity>0); if(l.length===0){d.innerHTML='<option value="">-- สินค้าหมดสต็อกแล้วจ้า --</option>'} else{l.forEach(lot=>{d.innerHTML+=`<option value="${lot.lotId}" data-max-quantity="${lot.quantity}">วันที่ผลิต: ${formatDate(lot.productionDate)} (เหลือ: ${lot.quantity})</option>`})} }
+        function populateExportLotDropdown(productId) { const d=document.getElementById('export-lot'); d.innerHTML='<option value="">-- เลือกล็อต --</option>'; if(!productId){d.innerHTML='<option value="">-- เลือกสินค้านะคะ --</option>';return} const l=db.stock.filter(s=>String(s.productId)===String(productId)&&s.quantity>0); if(l.length===0){d.innerHTML='<option value="">-- สินค้าหมดสต็อกแล้วจ้า --</option>'} else{l.forEach(lot=>{d.innerHTML+=`<option value="${lot.lotId}" data-max-quantity="${lot.quantity}">วันที่ผลิต: ${formatDate(lot.productionDate)} (เหลือ: ${lot.quantity})</option>`})} }
         function clearProductForm() { editingProductId = null; productFormEl.reset(); document.getElementById('product-id').readOnly = false; }
         function clearUserForm() { originalUsernameForEdit = null; userFormEl.reset(); }
-        function showSuggestions(inputEl, containerEl, productSource, searchTerm) { containerEl.innerHTML = ''; if (!searchTerm) { return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => p.id.toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = item.id; containerEl.innerHTML = ''; inputEl.dispatchEvent(new Event('change', { bubbles: true })); }); containerEl.appendChild(suggestionEl); }); }
-        function showFilterSuggestions(inputEl, containerEl, productSource, searchTerm) { const hiddenInputEl = document.getElementById('filter-product-id'); containerEl.innerHTML = ''; if (!searchTerm) { hiddenInputEl.value = ''; return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => p.id.toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'p-2'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = `${item.id} - ${item.name}`; hiddenInputEl.value = item.id; containerEl.innerHTML = ''; }); containerEl.appendChild(suggestionEl); }); }
+        function showSuggestions(inputEl, containerEl, productSource, searchTerm) { containerEl.innerHTML = ''; if (!searchTerm) { return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => String(p.id).toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = item.id; containerEl.innerHTML = ''; inputEl.dispatchEvent(new Event('change', { bubbles: true })); }); containerEl.appendChild(suggestionEl); }); }
+        function showFilterSuggestions(inputEl, containerEl, productSource, searchTerm) { const hiddenInputEl = document.getElementById('filter-product-id'); containerEl.innerHTML = ''; if (!searchTerm) { hiddenInputEl.value = ''; return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => String(p.id).toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'p-2'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = `${item.id} - ${item.name}`; hiddenInputEl.value = item.id; containerEl.innerHTML = ''; }); containerEl.appendChild(suggestionEl); }); }
         
         // --- HELPER FUNCTIONS ---
         function formatDate(dateInput) {
