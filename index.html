@@ -546,19 +546,27 @@
             }
         }
 
-        async function saveDataToSheet() {
-             try {
-                const payload = { action: 'saveDb', payload: db };
-                const response = await fetch(SCRIPT_URL, {
+        // [NEW] More robust data saving function
+        async function sendDataUpdate(payload) {
+            console.log("Sending update to backend:", payload);
+            // This function sends a specific action and its data to the backend.
+            // This is much more efficient than sending the whole database.
+            // The Google Apps Script needs to be updated to handle these specific actions
+            // (e.g., 'addImport', 'deleteProduct', etc.) instead of just overwriting sheets.
+            try {
+                // IMPORTANT: For a real implementation, mode should be 'cors' to read the response.
+                // This would allow handling server-side errors properly.
+                // We keep 'no-cors' to match the original setup's limitations.
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    mode: 'no-cors'
+                    mode: 'no-cors' 
                 });
-                console.log('Save request sent to Google Sheet.');
             } catch (error) {
-                console.error('Error saving data to Google Sheet:', error);
-                showError('บันทึกข้อมูลไม่สำเร็จ!', 'เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก');
+                console.error('Error sending update to Google Sheet:', error);
+                showError('บันทึกข้อมูลไม่สำเร็จ!', 'เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อบันทึกข้อมูล');
+                // Optional: Implement a retry mechanism or a way to revert optimistic UI updates.
             }
         }
         
@@ -598,26 +606,24 @@
             deleteLotsByDate: (productId, productionDate) => {
                 if (currentUser.role !== 'admin') return;
 
-                const lotIdsToDelete = db.stock
-                    .filter(lot => String(lot.productId) === String(productId) && formatDate(lot.productionDate) === productionDate)
-                    .map(lot => lot.lotId);
-
-                if (lotIdsToDelete.length === 0) {
+                const lotsToDelete = db.stock.filter(lot => String(lot.productId) === String(productId) && formatDate(lot.productionDate) === productionDate);
+                if (lotsToDelete.length === 0) {
                     showError('ผิดพลาด!', 'ไม่พบล็อตที่ต้องการลบ');
                     return;
                 }
 
                 confirmAction('แน่ใจว่าจะลบ?', `ล็อตทั้งหมดของสินค้า ${productId} ที่ผลิตวันที่ ${productionDate} จะถูกลบอย่างถาวร!`, () => {
                     stopDataSync();
-                    db.stock = db.stock.filter(lot => !lotIdsToDelete.includes(lot.lotId));
+                    // Optimistic UI update
+                    db.stock = db.stock.filter(lot => !(String(lot.productId) === String(productId) && formatDate(lot.productionDate) === productionDate));
+                    
+                    // Send update to backend
+                    sendDataUpdate({ action: 'deleteLotsByDate', payload: { productId, productionDate } });
                     
                     populateAll();
                     lotDetailModal.hide();
                     showSuccess('ลบล็อตสินค้าตามวันที่เรียบร้อยแล้วค่ะ');
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    startDataSync();
                 });
             },
             editProduct: (productId) => {
@@ -644,12 +650,10 @@
                 confirmAction('แน่ใจว่าจะลบสินค้า?', `สินค้า ${productId} จะถูกลบออกจากระบบอย่างถาวร`, () => {
                     stopDataSync();
                     db.products = db.products.filter(p => String(p.id) !== String(productId));
+                    sendDataUpdate({ action: 'deleteProduct', payload: { productId } });
                     populateAll();
                     showSuccess('ลบสินค้าเรียบร้อยแล้ว');
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    startDataSync();
                 });
             },
             editUser: (username) => {
@@ -671,12 +675,10 @@
                 confirmAction('แน่ใจว่าจะลบผู้ใช้?', `ผู้ใช้ ${username} จะถูกลบออกจากระบบ`, () => {
                     stopDataSync();
                     db.users = db.users.filter(u => u.username !== username);
+                    sendDataUpdate({ action: 'deleteUser', payload: { username } });
                     populateAll();
                     showSuccess('ลบผู้ใช้เรียบร้อยแล้ว');
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    startDataSync();
                 });
             },
             editHistory: (historyId) => {
@@ -724,26 +726,29 @@
                 confirmAction('ยืนยันการลบประวัติ?', message, () => {
                     stopDataSync();
                     const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
+                    let updatedStockLot;
 
                     if (historyItem.type === 'export') {
                         if (stockLot) {
                             stockLot.quantity += historyItem.quantity;
+                            updatedStockLot = { ...stockLot };
                         } else {
-                             db.stock.push({ lotId: historyItem.lotId, productId: historyItem.productId, quantity: historyItem.quantity, productionDate: 'N/A (Reverted)' });
+                            showError('ผิดพลาด!', 'ไม่พบสต็อกล็อตเดิมของรายการนี้ ไม่สามารถคืนสต็อกได้');
+                            startDataSync();
+                            return;
                         }
                     } else { // import
                         if (!stockLot) { showError('ผิดพลาด!', 'ไม่พบสต็อกล็อตเดิมของรายการนี้ ไม่สามารถลบได้'); startDataSync(); return; }
                         if (stockLot.quantity < historyItem.quantity) { showError('ลบไม่ได้!', `สต็อกในล็อตนี้ถูกใช้ไปแล้ว (คงเหลือ ${stockLot.quantity}) ไม่สามารถหักจำนวน ${historyItem.quantity} ได้`); startDataSync(); return; }
                         stockLot.quantity -= historyItem.quantity;
+                        updatedStockLot = { ...stockLot };
                     }
 
                     db.history.splice(historyIndex, 1);
+                    sendDataUpdate({ action: 'deleteHistory', payload: { historyId, updatedStockLot } });
                     populateAll();
                     showSuccess('ลบประวัติและปรับสต็อกเรียบร้อย');
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    startDataSync();
                 });
             },
             editStockTotal: (productId) => {
@@ -834,7 +839,7 @@
         }
 
         function addHistory(type, product, quantity, user, lotId = null, invoiceNumber = null, remarks = '') { 
-            db.history.unshift({ 
+            const newHistoryRecord = { 
                 date: new Date().toISOString(), 
                 type: type, 
                 productId: product.id, 
@@ -846,7 +851,9 @@
                 lotId: lotId, 
                 invoiceNumber: invoiceNumber, 
                 remarks: remarks 
-            }); 
+            };
+            db.history.unshift(newHistoryRecord);
+            return newHistoryRecord;
         }
 
         function handleImport(e) {
@@ -858,12 +865,7 @@
             const customer = document.getElementById('import-customer').value;
             const erpCode = document.getElementById('import-erp-code').value;
 
-            const productForHistory = {
-                id: productId,
-                name: productName,
-                customer: customer,
-                erpCode: erpCode
-            };
+            const productForHistory = { id: productId, name: productName, customer: customer, erpCode: erpCode };
             
             if (!productName) {
                 showError('ข้อมูลไม่ครบถ้วน', 'กรุณาระบุชื่อสินค้า');
@@ -878,18 +880,19 @@
                 quantity: parseInt(document.getElementById('import-quantity').value),
                 productionDate: document.getElementById('import-prod-date').value
             };
+
+            // Optimistic UI update
             db.stock.push(newStock);
-            addHistory('import', productForHistory, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
+            const newHistoryRecord = addHistory('import', productForHistory, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
+            
+            // Send only the new data to the backend
+            sendDataUpdate({ action: 'addImport', payload: { stock: newStock, history: newHistoryRecord } });
             
             populateAll();
             showSuccess(`รับสินค้า ${productName} เข้ามาแล้วจ้า`);
             importFormEl.reset();
             ['import-product-name', 'import-customer', 'import-erp-code', 'import-fullbox'].forEach(id => document.getElementById(id).value = '');
-            
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            startDataSync();
         }
 
         function handleExport(e) {
@@ -908,7 +911,6 @@
                 return;
             }
 
-            // Find all lots for the selected product and date, sorted by lotId (FIFO)
             const lotsForDate = db.stock
                 .filter(s => String(s.productId) === String(productId) && formatDate(s.productionDate) === productionDate && s.quantity > 0)
                 .sort((a, b) => a.lotId - b.lotId);
@@ -926,42 +928,34 @@
                 return;
             }
 
-            // Find product info for history
             let product = db.products.find(p => String(p.id) === String(productId));
             if (!product) {
                 const latestHistoryEntry = db.history.find(h => String(h.productId) === String(productId));
-                product = { 
-                    id: productId, 
-                    name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${productId})`,
-                    customer: latestHistoryEntry ? latestHistoryEntry.customer : '',
-                    erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode : ''
-                };
+                product = { id: productId, name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${productId})`, customer: latestHistoryEntry ? latestHistoryEntry.customer : '', erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode : '' };
             }
 
-            // Loop through lots and deduct quantity
+            let quantityToExportOriginal = quantityToExport;
+            let updatedLots = [];
+            let newHistoryRecords = [];
+
             for (const stockLot of lotsForDate) {
                 if (quantityToExport <= 0) break;
-
                 const quantityFromThisLot = Math.min(quantityToExport, stockLot.quantity);
-                
                 stockLot.quantity -= quantityFromThisLot;
                 quantityToExport -= quantityFromThisLot;
-
-                // Add a history record for each deduction
-                addHistory('export', product, quantityFromThisLot, currentUser.username, stockLot.lotId, invoiceNumber, remarks);
+                updatedLots.push({ lotId: stockLot.lotId, quantity: stockLot.quantity });
+                const newHistoryRecord = addHistory('export', product, quantityFromThisLot, currentUser.username, stockLot.lotId, invoiceNumber, remarks);
+                newHistoryRecords.push(newHistoryRecord);
             }
             
+            sendDataUpdate({ action: 'addExport', payload: { updatedLots, history: newHistoryRecords } });
+
             populateAll();
             showSuccess(`ส่งออกสินค้า ${product.name} เรียบร้อยแล้วค่ะ`);
             exportFormEl.reset();
             ['export-product-name', 'export-customer', 'export-erp-code', 'export-fullbox'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('export-lot').innerHTML = '<option value="">-- กรุณาเลือกสินค้าก่อน --</option>';
-
-
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            startDataSync();
         }
 
         function handleProductFormSubmit(e) {
@@ -988,57 +982,55 @@
                 showSuccess('เพิ่มสินค้าใหม่เรียบร้อย');
             }
             
+            sendDataUpdate({ action: 'saveProduct', payload: productData });
+            
             clearProductForm();
             populateAll();
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            startDataSync();
         }
         
         function handleUserFormSubmit(e) {
             e.preventDefault();
             stopDataSync();
 
-            const newUsername = document.getElementById('user-username').value;
-            const newPassword = document.getElementById('user-password').value;
-            const newRole = document.getElementById('user-role-select').value;
+            const userData = {
+                username: document.getElementById('user-username').value,
+                password: document.getElementById('user-password').value,
+                role: document.getElementById('user-role-select').value
+            };
             
             if (!originalUsernameForEdit) {
-                if (db.users.some(u => u.username === newUsername)) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); startDataSync(); return; }
-                db.users.push({ username: newUsername, password: newPassword, role: newRole });
+                if (db.users.some(u => u.username === userData.username)) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); startDataSync(); return; }
+                db.users.push(userData);
                 showSuccess('เพิ่มผู้ใช้ใหม่เรียบร้อย');
             } else {
                 const userIndex = db.users.findIndex(u => u.username === originalUsernameForEdit);
                 if (userIndex === -1) { showError('ผิดพลาด', 'ไม่พบผู้ใช้ที่ต้องการแก้ไข'); clearUserForm(); startDataSync(); return; }
-                const isUsernameTaken = db.users.some(u => u.username === newUsername && u.username !== originalUsernameForEdit);
+                const isUsernameTaken = db.users.some(u => u.username === userData.username && u.username !== originalUsernameForEdit);
                 if (isUsernameTaken) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); startDataSync(); return; }
 
-                if (originalUsernameForEdit !== newUsername) {
-                    db.history.forEach(record => { if (record.user === originalUsernameForEdit) { record.user = newUsername; } });
+                if (originalUsernameForEdit !== userData.username) {
+                    db.history.forEach(record => { if (record.user === originalUsernameForEdit) { record.user = userData.username; } });
                 }
 
                 const userToUpdate = db.users[userIndex];
-                userToUpdate.username = newUsername;
-                userToUpdate.password = newPassword;
-                userToUpdate.role = newRole;
+                userToUpdate.username = userData.username;
+                userToUpdate.password = userData.password;
+                userToUpdate.role = userData.role;
 
                 if (currentUser.username === originalUsernameForEdit) {
-                    currentUser.username = newUsername;
-                    currentUser.password = newPassword;
-                    currentUser.role = newRole;
+                    currentUser = { ...userToUpdate };
                     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
                     showDashboard();
                 }
                 showSuccess('อัปเดตข้อมูลผู้ใช้เรียบร้อย');
             }
             
+            sendDataUpdate({ action: 'saveUser', payload: { user: userData, originalUsername: originalUsernameForEdit } });
+
             clearUserForm();
             populateAll();
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            startDataSync();
         }
 
         function handleEditHistorySubmit(e) {
@@ -1068,13 +1060,12 @@
             historyItem.remarks = newRemarks;
             if (historyItem.type === 'export') { historyItem.invoiceNumber = newInvoice; }
             
+            sendDataUpdate({ action: 'editHistory', payload: { history: historyItem, stock: stockLot } });
+
             populateAll();
             editHistoryModal.hide();
             showSuccess('แก้ไขประวัติเรียบร้อย');
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            startDataSync();
         }
 
         function handleEditStockSubmit(e) {
@@ -1089,17 +1080,17 @@
             const originalTotal = db.stock.filter(s => String(s.productId) === String(productId)).reduce((sum, item) => sum + item.quantity, 0);
             db.stock = db.stock.filter(s => String(s.productId) !== String(productId));
             const newLotId = db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1;
-            db.stock.push({ lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' });
+            const newStockLot = { lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' };
+            db.stock.push(newStockLot);
             const remarks = `ปรับยอดจาก ${originalTotal} เป็น ${newTotalQuantity}`;
-            addHistory('adjustment', product, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
+            const newHistoryRecord = addHistory('adjustment', product, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
+            
+            sendDataUpdate({ action: 'adjustStock', payload: { productId, newStockLot, history: newHistoryRecord } });
             
             populateAll();
             editStockModal.hide();
             showSuccess('ปรับปรุงยอดสต็อกเรียบร้อย');
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            startDataSync();
         }
         
         function showLoginPage() { 
