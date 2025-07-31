@@ -595,23 +595,29 @@
 
         // --- GLOBAL APP OBJECT ---
         window.app = {
-            deleteLot: (lotId) => {
+            deleteLotsByDate: (productId, productionDate) => {
                 if (currentUser.role !== 'admin') return;
-                confirmAction('แน่ใจน้าว่าจะลบ?', "ข้อมูลล็อตนี้จะหายไปเลยน้า กู้คืนไม่ได้แล้วด้วย!", () => {
+
+                const lotIdsToDelete = db.stock
+                    .filter(lot => String(lot.productId) === String(productId) && formatDate(lot.productionDate) === productionDate)
+                    .map(lot => lot.lotId);
+
+                if (lotIdsToDelete.length === 0) {
+                    showError('ผิดพลาด!', 'ไม่พบล็อตที่ต้องการลบ');
+                    return;
+                }
+
+                confirmAction('แน่ใจว่าจะลบ?', `ล็อตทั้งหมดของสินค้า ${productId} ที่ผลิตวันที่ ${productionDate} จะถูกลบอย่างถาวร!`, () => {
                     stopDataSync();
-                    const lotIndex = db.stock.findIndex(lot => lot.lotId === lotId);
-                    if (lotIndex > -1) {
-                        db.stock.splice(lotIndex, 1);
-                        populateAll();
-                        lotDetailModal.hide();
-                        showSuccess('ลบล็อตสินค้าเรียบร้อยแล้วค่ะ');
-                        saveDataToSheet();
-                        setTimeout(() => {
-                            loadDataFromSheet(false).then(() => startDataSync());
-                        }, 3000);
-                    } else {
-                        startDataSync();
-                    }
+                    db.stock = db.stock.filter(lot => !lotIdsToDelete.includes(lot.lotId));
+                    
+                    populateAll();
+                    lotDetailModal.hide();
+                    showSuccess('ลบล็อตสินค้าตามวันที่เรียบร้อยแล้วค่ะ');
+                    saveDataToSheet();
+                    setTimeout(() => {
+                        loadDataFromSheet(false).then(() => startDataSync());
+                    }, 3000);
                 });
             },
             editProduct: (productId) => {
@@ -762,22 +768,41 @@
                 const threeMonthsAgo = new Date();
                 threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-                if(lots.length === 0) { lotDetailTable.innerHTML = '<tr><td colspan="3" class="text-center">ไม่พบข้อมูลล็อตสำหรับสินค้านี้</td></tr>'; } 
-                else {
-                    lots.forEach(lot => {
-                        const isOld = new Date(formatDate(lot.productionDate)) < threeMonthsAgo;
-                        const row = document.createElement('tr');
-                        if (isOld) { row.classList.add('table-warning'); }
-                        row.innerHTML = `
-                            <td>${formatDate(lot.productionDate)} ${isOld ? '<i class="bi bi-exclamation-triangle-fill text-danger ms-2"></i>' : ''}</td>
-                            <td>${lot.quantity.toLocaleString()}</td>
-                            <td class="admin-only-cell">
-                                <button class="btn btn-danger btn-sm" onclick="window.app.deleteLot(${lot.lotId})"><i class="bi bi-trash3-fill"></i></button>
-                            </td>
-                        `;
-                        lotDetailTable.appendChild(row);
-                    });
+                if(lots.length === 0) {
+                    lotDetailTable.innerHTML = '<tr><td colspan="3" class="text-center">ไม่พบข้อมูลล็อตสำหรับสินค้านี้</td></tr>';
+                    lotDetailModal.show();
+                    return;
                 }
+
+                const lotsByDate = lots.reduce((acc, lot) => {
+                    const date = formatDate(lot.productionDate);
+                    if (!acc[date]) {
+                        acc[date] = { quantity: 0, isOld: false };
+                    }
+                    acc[date].quantity += lot.quantity;
+                    if (new Date(date) < threeMonthsAgo) {
+                        acc[date].isOld = true;
+                    }
+                    return acc;
+                }, {});
+
+                const sortedDates = Object.keys(lotsByDate).sort((a, b) => new Date(a) - new Date(b));
+
+                sortedDates.forEach(date => {
+                    const lotGroup = lotsByDate[date];
+                    const isOld = lotGroup.isOld;
+                    const row = document.createElement('tr');
+                    if (isOld) { row.classList.add('table-warning'); }
+                    
+                    row.innerHTML = `
+                        <td>${date} ${isOld ? '<i class="bi bi-exclamation-triangle-fill text-danger ms-2"></i>' : ''}</td>
+                        <td>${lotGroup.quantity.toLocaleString()}</td>
+                        <td class="admin-only-cell">
+                            <button class="btn btn-danger btn-sm" onclick="window.app.deleteLotsByDate('${productId}', '${date}')"><i class="bi bi-trash3-fill"></i></button>
+                        </td>
+                    `;
+                    lotDetailTable.appendChild(row);
+                });
                 
                 if (currentUser && currentUser.role === 'admin') { lotDetailTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); } 
                 else { lotDetailTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none'); }
@@ -871,33 +896,67 @@
             e.preventDefault();
             stopDataSync();
 
-            const lotId = parseInt(document.getElementById('export-lot').value);
-            const quantityToExport = parseInt(document.getElementById('export-quantity').value);
+            const productId = document.getElementById('export-product-id').value;
+            const productionDate = document.getElementById('export-lot').value;
+            let quantityToExport = parseInt(document.getElementById('export-quantity').value);
             const invoiceNumber = document.getElementById('export-invoice-number').value;
             const remarks = document.getElementById('export-remarks').value;
-            const stockLot = db.stock.find(s => s.lotId === lotId);
 
-            if (!stockLot) { showError('อุ๊ย!', 'ไม่เจอล็อตสินค้านี้ในระบบ'); startDataSync(); return; }
-            if (quantityToExport > stockLot.quantity) { showError('เดี๋ยวก่อน!', `ของในสต็อกมีไม่พอจ้า (เหลือแค่: ${stockLot.quantity})`); startDataSync(); return; }
-            
-            let product = db.products.find(p => String(p.id) === String(stockLot.productId));
+            if (!productId || !productionDate || !quantityToExport) {
+                showError('ข้อมูลไม่ครบ', 'กรุณาเลือกสินค้า, วันที่ผลิต, และระบุจำนวนที่ต้องการส่งออก');
+                startDataSync();
+                return;
+            }
+
+            // Find all lots for the selected product and date, sorted by lotId (FIFO)
+            const lotsForDate = db.stock
+                .filter(s => String(s.productId) === String(productId) && formatDate(s.productionDate) === productionDate && s.quantity > 0)
+                .sort((a, b) => a.lotId - b.lotId);
+
+            if (lotsForDate.length === 0) {
+                showError('ผิดพลาด', 'ไม่พบสต็อกสำหรับวันที่ผลิตที่เลือก');
+                startDataSync();
+                return;
+            }
+
+            const totalAvailable = lotsForDate.reduce((sum, lot) => sum + lot.quantity, 0);
+            if (quantityToExport > totalAvailable) {
+                showError('ของไม่พอ', `มีสินค้าในสต็อกสำหรับวันที่นี้เพียง ${totalAvailable.toLocaleString()} ชิ้น`);
+                startDataSync();
+                return;
+            }
+
+            // Find product info for history
+            let product = db.products.find(p => String(p.id) === String(productId));
             if (!product) {
-                const latestHistoryEntry = db.history.find(h => String(h.productId) === String(stockLot.productId));
+                const latestHistoryEntry = db.history.find(h => String(h.productId) === String(productId));
                 product = { 
-                    id: stockLot.productId, 
-                    name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${stockLot.productId})`,
+                    id: productId, 
+                    name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${productId})`,
                     customer: latestHistoryEntry ? latestHistoryEntry.customer : '',
                     erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode : ''
                 };
             }
 
-            stockLot.quantity -= quantityToExport;
-            addHistory('export', product, quantityToExport, currentUser.username, lotId, invoiceNumber, remarks);
+            // Loop through lots and deduct quantity
+            for (const stockLot of lotsForDate) {
+                if (quantityToExport <= 0) break;
+
+                const quantityFromThisLot = Math.min(quantityToExport, stockLot.quantity);
+                
+                stockLot.quantity -= quantityFromThisLot;
+                quantityToExport -= quantityFromThisLot;
+
+                // Add a history record for each deduction
+                addHistory('export', product, quantityFromThisLot, currentUser.username, stockLot.lotId, invoiceNumber, remarks);
+            }
             
             populateAll();
-            showSuccess(`ส่งออกสินค้า ${product.name} ไปแล้วค่ะ`);
+            showSuccess(`ส่งออกสินค้า ${product.name} เรียบร้อยแล้วค่ะ`);
             exportFormEl.reset();
             ['export-product-name', 'export-customer', 'export-erp-code', 'export-fullbox'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('export-lot').innerHTML = '<option value="">-- กรุณาเลือกสินค้าก่อน --</option>';
+
 
             saveDataToSheet();
             setTimeout(() => {
@@ -1337,7 +1396,42 @@
                 productManagementTable.appendChild(r);
             });
         }
-        function populateExportLotDropdown(productId) { const d=document.getElementById('export-lot'); d.innerHTML='<option value="">-- เลือกล็อต --</option>'; if(!productId){d.innerHTML='<option value="">-- เลือกสินค้านะคะ --</option>';return} const l=db.stock.filter(s=>String(s.productId)===String(productId)&&s.quantity>0); if(l.length===0){d.innerHTML='<option value="">-- สินค้าหมดสต็อกแล้วจ้า --</option>'} else{l.forEach(lot=>{d.innerHTML+=`<option value="${lot.lotId}" data-max-quantity="${lot.quantity}">วันที่ผลิต: ${formatDate(lot.productionDate)} (เหลือ: ${lot.quantity})</option>`})} }
+        function populateExportLotDropdown(productId) {
+            const dropdown = document.getElementById('export-lot');
+            dropdown.innerHTML = '<option value="">-- เลือกล็อตตามวันที่ผลิต --</option>';
+            if (!productId) {
+                dropdown.innerHTML = '<option value="">-- กรุณาเลือกสินค้าก่อน --</option>';
+                return;
+            }
+
+            const lots = db.stock.filter(s => String(s.productId) === String(productId) && s.quantity > 0);
+            if (lots.length === 0) {
+                dropdown.innerHTML = '<option value="">-- สินค้าหมดสต็อกแล้วจ้า --</option>';
+                return;
+            }
+
+            // Group lots by date and sum quantities
+            const lotsByDate = lots.reduce((acc, lot) => {
+                const date = formatDate(lot.productionDate);
+                if (!acc[date]) {
+                    acc[date] = 0;
+                }
+                acc[date] += lot.quantity;
+                return acc;
+            }, {});
+
+            // Sort dates, oldest first
+            const sortedDates = Object.keys(lotsByDate).sort((a, b) => new Date(a) - new Date(b));
+
+            sortedDates.forEach(date => {
+                const totalQuantity = lotsByDate[date];
+                const option = document.createElement('option');
+                option.value = date;
+                option.textContent = `วันที่ผลิต: ${date} (เหลือทั้งหมด: ${totalQuantity.toLocaleString()})`;
+                option.dataset.maxQuantity = totalQuantity;
+                dropdown.appendChild(option);
+            });
+        }
         function clearProductForm() { editingProductId = null; productFormEl.reset(); document.getElementById('product-id').readOnly = false; }
         function clearUserForm() { originalUsernameForEdit = null; userFormEl.reset(); }
         function showSuggestions(inputEl, containerEl, productSource, searchTerm) { containerEl.innerHTML = ''; if (!searchTerm) { return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => String(p.id).toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = item.id; containerEl.innerHTML = ''; inputEl.dispatchEvent(new Event('change', { bubbles: true })); }); containerEl.appendChild(suggestionEl); }); }
