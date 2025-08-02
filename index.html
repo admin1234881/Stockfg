@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบรับเข้า-ส่งออกสินค้า FG (Google Sheets)</title>
+    <title data-i18n="app_title">ระบบรับเข้า-ส่งออกสินค้า FG (Google Sheets)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,6 +71,25 @@
             font-size: 0.8rem;
         }
         .small-text { font-size: 0.85rem; color: #6c757d; }
+        /* New styles for announcements */
+        .announcement-card {
+            border-left: 5px solid var(--primary-color);
+            background-color: #e7f1ff;
+        }
+        .announcement-card .card-header {
+            background-color: #d0e7ff;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        .announcement-card .card-body {
+            font-size: 0.95rem;
+        }
+        .announcement-card .card-footer {
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+            background-color: #e7f1ff;
+            border-top: 1px solid #c0d8f7;
+        }
     </style>
 </head>
 <body>
@@ -81,22 +100,22 @@
             <div class="col-md-6 col-lg-4">
                 <div class="card shadow-lg text-center">
                     <div class="card-header card-header-custom p-3">
-                        <h3><i class="bi bi-box-seam-fill me-2"></i>ระบบสต็อกสินค้า</h3>
-                        <h4 class="fw-normal">ATECH FG</h4>
+                        <h3 data-i18n="system_name_fg"><i class="bi bi-box-seam-fill me-2"></i>ระบบสต็อกสินค้า</h3>
+                        <h4 class="fw-normal" data-i18n="system_name_atech">ATECH FG</h4>
                     </div>
                     <div class="card-body p-4">
                         <form id="login-form">
                             <div class="mb-3">
-                                <label for="username" class="form-label">ชื่อผู้ใช้</label>
+                                <label for="username" class="form-label" data-i18n="username_label">ชื่อผู้ใช้</label>
                                 <input type="text" class="form-control" id="username" required autocomplete="off">
                             </div>
                             <div class="mb-3">
-                                <label for="password" class="form-label">รหัสผ่าน</label>
+                                <label for="password" class="form-label" data-i18n="password_label">รหัสผ่าน</label>
                                 <input type="password" class="form-control" id="password" required autocomplete="off">
                             </div>
-                            <div id="error-message" class="text-danger mb-3 d-none">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
+                            <div id="error-message" class="text-danger mb-3 d-none" data-i18n="login_error">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-primary">เข้าสู่ระบบ <i class="bi bi-arrow-right-circle-fill"></i></button>
+                                <button type="submit" class="btn btn-primary" data-i18n="login_button">เข้าสู่ระบบ <i class="bi bi-arrow-right-circle-fill"></i></button>
                             </div>
                         </form>
                     </div>
@@ -107,46 +126,57 @@
 
     <div id="main-dashboard" class="container-fluid p-4">
         <header class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
-            <h1 class="h4"><i class="bi bi-box2-heart-fill me-2" style="color: var(--primary-color);"></i>STOCK IN-OUT FG</h1>
+            <h1 class="h4" data-i18n="stock_in_out_fg_title"><i class="bi bi-box2-heart-fill me-2" style="color: var(--primary-color);"></i>STOCK IN-OUT FG</h1>
             <div>
                 <span id="user-role" class="badge rounded-pill me-2 fs-6 align-middle"></span>
-                <button id="logout-btn" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i>ออกจากระบบ</button>
+                <button id="logout-btn" class="btn btn-outline-danger btn-sm" data-i18n="logout_button"><i class="bi bi-box-arrow-right me-1"></i>ออกจากระบบ</button>
+                <select id="language-switcher" class="form-select form-select-sm d-inline-block w-auto ms-2">
+                    <option value="th">ไทย</option>
+                    <option value="en">English</option>
+                </select>
             </div>
         </header>
 
         <ul class="nav nav-pills nav-fill mb-4" id="pills-tab" role="tablist">
             <li class="nav-item m-1" role="presentation">
-                <button class="nav-link active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab" aria-controls="pills-stock" aria-selected="true"><i class="bi bi-house-heart-fill me-2"></i>สต็อกคงเหลือ</button>
+                <button class="nav-link active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab" aria-controls="pills-stock" aria-selected="true" data-i18n="nav_stock_balance"><i class="bi bi-house-heart-fill me-2"></i>สต็อกคงเหลือ</button>
             </li>
             <li class="nav-item m-1" role="presentation">
-                <button class="nav-link" id="pills-import-tab" data-bs-toggle="pill" data-bs-target="#pills-import" type="button" role="tab" aria-controls="pills-import" aria-selected="false"><i class="bi bi-arrow-down-square-fill me-2"></i>รับเข้าสินค้า</button>
+                <button class="nav-link" id="pills-import-tab" data-bs-toggle="pill" data-bs-target="#pills-import" type="button" role="tab" aria-controls="pills-import" aria-selected="false" data-i18n="nav_import_product"><i class="bi bi-arrow-down-square-fill me-2"></i>รับเข้าสินค้า</button>
             </li>
             <li class="nav-item m-1" role="presentation">
-                <button class="nav-link" id="pills-export-tab" data-bs-toggle="pill" data-bs-target="#pills-export" type="button" role="tab" aria-controls="pills-export" aria-selected="false"><i class="bi bi-arrow-up-square-fill me-2"></i>ส่งออกสินค้า</button>
+                <button class="nav-link" id="pills-export-tab" data-bs-toggle="pill" data-bs-target="#pills-export" type="button" role="tab" aria-controls="pills-export" aria-selected="false" data-i18n="nav_export_product"><i class="bi bi-arrow-up-square-fill me-2"></i>ส่งออกสินค้า</button>
             </li>
             <li class="nav-item m-1" role="presentation">
-                <button class="nav-link" id="pills-history-tab" data-bs-toggle="pill" data-bs-target="#pills-history" type="button" role="tab" aria-controls="pills-history" aria-selected="false"><i class="bi bi-clock-history me-2"></i>ประวัติ</button>
+                <button class="nav-link" id="pills-history-tab" data-bs-toggle="pill" data-bs-target="#pills-history" type="button" role="tab" aria-controls="pills-history" aria-selected="false" data-i18n="nav_history"><i class="bi bi-clock-history me-2"></i>ประวัติ</button>
             </li>
             <li class="nav-item m-1 admin-nav" role="presentation">
-                <button class="nav-link" id="pills-products-tab" data-bs-toggle="pill" data-bs-target="#pills-products" type="button" role="tab" aria-controls="pills-products" aria-selected="false"><i class="bi bi-box-seam me-2"></i>จัดการสินค้า</button>
+                <button class="nav-link" id="pills-products-tab" data-bs-toggle="pill" data-bs-target="#pills-products" type="button" role="tab" aria-controls="pills-products" aria-selected="false" data-i18n="nav_manage_products"><i class="bi bi-box-seam me-2"></i>จัดการสินค้า</button>
             </li>
             <li class="nav-item m-1 admin-nav" role="presentation">
-                <button class="nav-link" id="pills-users-tab" data-bs-toggle="pill" data-bs-target="#pills-users" type="button" role="tab" aria-controls="pills-users" aria-selected="false"><i class="bi bi-people-fill me-2"></i>จัดการผู้ใช้</button>
+                <button class="nav-link" id="pills-users-tab" data-bs-toggle="pill" data-bs-target="#pills-users" type="button" role="tab" aria-controls="pills-users" aria-selected="false" data-i18n="nav_manage_users"><i class="bi bi-people-fill me-2"></i>จัดการผู้ใช้</button>
+            </li>
+            <li class="nav-item m-1 admin-nav" role="presentation">
+                <button class="nav-link" id="pills-announcements-tab" data-bs-toggle="pill" data-bs-target="#pills-announcements" type="button" role="tab" aria-controls="pills-announcements" aria-selected="false" data-i18n="nav_manage_announcements"><i class="bi bi-megaphone-fill me-2"></i>จัดการประกาศ</button>
             </li>
         </ul>
 
         <div class="tab-content" id="pills-tabContent">
             <div class="tab-pane fade show active" id="pills-stock" role="tabpanel" aria-labelledby="pills-stock-tab">
+                <!-- Announcement Display Area -->
+                <div id="announcements-display-area" class="mb-4">
+                    <!-- Announcements will be loaded here -->
+                </div>
                 <div class="row">
                     <div class="col-lg-3">
                         <div class="card admin-nav mb-4">
-                            <div class="card-header fw-bold"><i class="bi bi-cloud-arrow-down-fill me-2"></i>สำรองข้อมูล</div>
+                            <div class="card-header fw-bold" data-i18n="backup_data_title"><i class="bi bi-cloud-arrow-down-fill me-2"></i>สำรองข้อมูล</div>
                             <div class="card-body">
-                                <p class="text-center mb-2">ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV</p>
+                                <p class="text-center mb-2" data-i18n="backup_data_description">ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV</p>
                                 <div class="d-grid gap-2">
-                                    <button id="backup-stock-btn" class="btn btn-info btn-sm"><i class="bi bi-archive-fill me-2"></i>ข้อมูลสต็อก</button>
-                                    <button id="backup-products-btn" class="btn btn-info btn-sm"><i class="bi bi-box-seam-fill me-2"></i>ข้อมูลสินค้า</button>
-                                    <button id="backup-users-btn" class="btn btn-info btn-sm"><i class="bi bi-person-lines-fill me-2"></i>ข้อมูลผู้ใช้</button>
+                                    <button id="backup-stock-btn" class="btn btn-info btn-sm" data-i18n="backup_stock_data"><i class="bi bi-archive-fill me-2"></i>ข้อมูลสต็อก</button>
+                                    <button id="backup-products-btn" class="btn btn-info btn-sm" data-i18n="backup_product_data"><i class="bi bi-box-seam-fill me-2"></i>ข้อมูลสินค้า</button>
+                                    <button id="backup-users-btn" class="btn btn-info btn-sm" data-i18n="backup_user_data"><i class="bi bi-person-lines-fill me-2"></i>ข้อมูลผู้ใช้</button>
                                 </div>
                             </div>
                         </div>
@@ -154,27 +184,27 @@
                     <div class="col-lg-9" id="stock-content-column">
                         <div class="card mb-4">
                             <div class="card-header fw-bold d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-table me-2"></i>สรุปยอดสต็อกสินค้าคงเหลือ</span>
+                                <span data-i18n="stock_summary_title"><i class="bi bi-table me-2"></i>สรุปยอดสต็อกสินค้าคงเหลือ</span>
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" role="switch" id="show-old-stock-filter">
-                                    <label class="form-check-label" for="show-old-stock-filter">แสดงเฉพาะสต็อกที่ผลิตเกิน 3 เดือน</label>
+                                    <label class="form-check-label" for="show-old-stock-filter" data-i18n="show_old_stock_filter">แสดงเฉพาะสต็อกที่ผลิตเกิน 3 เดือน</label>
                                 </div>
                             </div>
                             <div class="card-body">
                                 <div class="input-group mb-3">
-                                    <input type="text" id="stock-search-input" class="form-control" placeholder="ค้นหารหัสสินค้า, ชื่อสินค้า หรือลูกค้า...">
-                                    <button class="btn btn-secondary" type="button" id="refresh-stock-summary-btn" title="รีเฟรชข้อมูล"><i class="bi bi-arrow-clockwise"></i></button>
+                                    <input type="text" id="stock-search-input" class="form-control" data-i18n="search_stock_placeholder" placeholder="ค้นหารหัสสินค้า, ชื่อสินค้า หรือลูกค้า...">
+                                    <button class="btn btn-secondary" type="button" id="refresh-stock-summary-btn" data-i18n="refresh_data_button" title="รีเฟรชข้อมูล"><i class="bi bi-arrow-clockwise"></i></button>
                                 </div>
                                 <div class="table-responsive">
                                     <table class="table table-hover align-middle">
                                         <thead>
                                             <tr>
                                                 <th></th>
-                                                <th>รหัส/ชื่อสินค้า</th>
-                                                <th>รหัส ERP</th>
-                                                <th>ลูกค้า</th>
-                                                <th>ยอดคงเหลือทั้งหมด</th>
-                                                <th class="admin-only-cell">ดำเนินการ</th>
+                                                <th data-i18n="product_code_name_col">รหัส/ชื่อสินค้า</th>
+                                                <th data-i18n="erp_code_col">รหัส ERP</th>
+                                                <th data-i18n="customer_col">ลูกค้า</th>
+                                                <th data-i18n="total_stock_col">ยอดคงเหลือทั้งหมด</th>
+                                                <th class="admin-only-cell" data-i18n="actions_col">ดำเนินการ</th>
                                             </tr>
                                         </thead>
                                         <tbody id="stock-summary-table"></tbody>
@@ -188,7 +218,7 @@
 
             <div class="tab-pane fade" id="pills-import" role="tabpanel" aria-labelledby="pills-import-tab">
                 <div class="card">
-                    <div class="card-header fw-bold"><i class="bi bi-box-arrow-in-down me-2"></i>ฟอร์มรับเข้าสินค้า</div>
+                    <div class="card-header fw-bold" data-i18n="import_form_title"><i class="bi bi-box-arrow-in-down me-2"></i>ฟอร์มรับเข้าสินค้า</div>
                     <div class="card-body">
                         <form id="import-form" class="row g-3"></form>
                     </div>
@@ -197,7 +227,7 @@
 
             <div class="tab-pane fade" id="pills-export" role="tabpanel" aria-labelledby="pills-export-tab">
                 <div class="card">
-                    <div class="card-header fw-bold"><i class="bi bi-box-arrow-up me-2"></i>ฟอร์มส่งออกสินค้า</div>
+                    <div class="card-header fw-bold" data-i18n="export_form_title"><i class="bi bi-box-arrow-up me-2"></i>ฟอร์มส่งออกสินค้า</div>
                     <div class="card-body">
                         <form id="export-form" class="row g-3"></form>
                     </div>
@@ -209,37 +239,37 @@
                     <div class="card-body" style="background-color: #fdf2f5;">
                         <form id="history-filter-form" class="row g-3 align-items-end">
                             <div class="col-lg-2 col-md-6">
-                                <label for="filter-start-date" class="form-label">จากวันที่</label>
+                                <label for="filter-start-date" class="form-label" data-i18n="from_date_label">จากวันที่</label>
                                 <input type="date" id="filter-start-date" class="form-control form-control-sm">
                             </div>
                             <div class="col-lg-2 col-md-6">
-                                <label for="filter-end-date" class="form-label">ถึงวันที่</label>
+                                <label for="filter-end-date" class="form-label" data-i18n="to_date_label">ถึงวันที่</label>
                                 <input type="date" id="filter-end-date" class="form-control form-control-sm">
                             </div>
                             <div class="col-lg-2 col-md-6">
-                                <label for="filter-type" class="form-label">ประเภท</label>
+                                <label for="filter-type" class="form-label" data-i18n="type_label">ประเภท</label>
                                 <select id="filter-type" class="form-select form-select-sm">
-                                    <option value="">ทั้งหมด</option>
-                                    <option value="import">รับเข้า</option>
-                                    <option value="export">ส่งออก</option>
-                                    <option value="adjustment">ปรับปรุงยอด</option>
+                                    <option value="" data-i18n="all_option">ทั้งหมด</option>
+                                    <option value="import" data-i18n="import_type">รับเข้า</option>
+                                    <option value="export" data-i18n="export_type">ส่งออก</option>
+                                    <option value="adjustment" data-i18n="adjustment_type">ปรับปรุงยอด</option>
                                 </select>
                             </div>
                             <div class="col-lg-2 col-md-6">
-                                <label for="filter-product-search" class="form-label">สินค้า</label>
+                                <label for="filter-product-search" class="form-label" data-i18n="product_label">สินค้า</label>
                                 <div class="position-relative">
-                                    <input type="text" id="filter-product-search" class="form-control form-control-sm" placeholder="ทั้งหมด" autocomplete="off">
+                                    <input type="text" id="filter-product-search" class="form-control form-control-sm" data-i18n="all_placeholder" placeholder="ทั้งหมด" autocomplete="off">
                                     <input type="hidden" id="filter-product-id">
                                     <div id="filter-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div>
                                 </div>
                             </div>
                             <div class="col-lg-2 col-md-6">
-                                <label for="filter-invoice-search" class="form-label">เลขที่ Invoice</label>
-                                <input type="text" id="filter-invoice-search" class="form-control form-control-sm" placeholder="ค้นหา..." autocomplete="off">
+                                <label for="filter-invoice-search" class="form-label" data-i18n="invoice_number_label">เลขที่ Invoice</label>
+                                <input type="text" id="filter-invoice-search" class="form-control form-control-sm" data-i18n="search_placeholder" placeholder="ค้นหา..." autocomplete="off">
                             </div>
                             <div class="col-lg-2 col-md-12 d-flex mt-auto">
-                                <button type="submit" class="btn btn-primary btn-sm flex-grow-1 me-1"><i class="bi bi-search me-1"></i>ค้นหา</button>
-                                <button type="reset" class="btn btn-secondary btn-sm flex-grow-1 ms-1">ล้าง</button>
+                                <button type="submit" class="btn btn-primary btn-sm flex-grow-1 me-1" data-i18n="search_button"><i class="bi bi-search me-1"></i>ค้นหา</button>
+                                <button type="reset" class="btn btn-secondary btn-sm flex-grow-1 ms-1" data-i18n="clear_button">ล้าง</button>
                             </div>
                         </form>
                     </div>
@@ -248,24 +278,24 @@
                     <div class="card-header fw-bold d-flex justify-content-between align-items-center">
                         <div>
                             <i class="bi bi-list-ol me-2"></i>
-                            <span>ประวัติการทำรายการ</span>
+                            <span data-i18n="history_title">ประวัติการทำรายการ</span>
                             <span id="history-total-quantity" class="badge bg-primary ms-2"></span>
                         </div>
-                        <button id="backup-history-btn" class="btn btn-info btn-sm admin-nav"><i class="bi bi-download me-1"></i>ดาวน์โหลดประวัติ (CSV)</button>
+                        <button id="backup-history-btn" class="btn btn-info btn-sm admin-nav" data-i18n="download_history_csv"><i class="bi bi-download me-1"></i>ดาวน์โหลดประวัติ (CSV)</button>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle">
                                 <thead>
                                     <tr>
-                                        <th>ประเภท</th>
-                                        <th>สินค้า</th>
-                                        <th>จำนวน</th>
-                                        <th>วันที่ผลิต</th>
-                                        <th>Invoice / หมายเหตุ</th>
-                                        <th>วันที่ทำรายการ</th>
-                                        <th>ผู้ทำรายการ</th>
-                                        <th class="admin-only-cell">ดำเนินการ</th>
+                                        <th data-i18n="type_col">ประเภท</th>
+                                        <th data-i18n="product_col">สินค้า</th>
+                                        <th data-i18n="quantity_col">จำนวน</th>
+                                        <th data-i18n="production_date_col">วันที่ผลิต</th>
+                                        <th data-i18n="invoice_remarks_col">Invoice / หมายเหตุ</th>
+                                        <th data-i18n="transaction_date_col">วันที่ทำรายการ</th>
+                                        <th data-i18n="transaction_user_col">ผู้ทำรายการ</th>
+                                        <th class="admin-only-cell" data-i18n="actions_col">ดำเนินการ</th>
                                     </tr>
                                 </thead>
                                 <tbody id="history-table"></tbody>
@@ -279,7 +309,7 @@
                 <div class="row">
                     <div class="col-lg-4 mb-4">
                         <div class="card">
-                            <div class="card-header fw-bold"><i class="bi bi-pencil-square me-2"></i>ฟอร์มข้อมูลสินค้า</div>
+                            <div class="card-header fw-bold" data-i18n="product_form_title"><i class="bi bi-pencil-square me-2"></i>ฟอร์มข้อมูลสินค้า</div>
                             <div class="card-body">
                                 <form id="product-form" class="row g-3"></form>
                             </div>
@@ -287,17 +317,17 @@
                     </div>
                     <div class="col-lg-8">
                         <div class="card">
-                            <div class="card-header fw-bold"><i class="bi bi-card-list me-2"></i>รายการสินค้าทั้งหมด</div>
+                            <div class="card-header fw-bold" data-i18n="all_products_title"><i class="bi bi-card-list me-2"></i>รายการสินค้าทั้งหมด</div>
                             <div class="card-body">
                                 <div class="table-responsive">
                                     <table class="table table-hover align-middle">
                                         <thead>
                                             <tr>
-                                                <th>รหัสสินค้า</th>
-                                                <th>ชื่อ</th>
-                                                <th>ลูกค้า</th>
-                                                <th>ราคา/หน่วย</th>
-                                                <th>ดำเนินการ</th>
+                                                <th data-i18n="product_code_col">รหัสสินค้า</th>
+                                                <th data-i18n="name_col">ชื่อ</th>
+                                                <th data-i18n="customer_col">ลูกค้า</th>
+                                                <th data-i18n="unit_price_col">ราคา/หน่วย</th>
+                                                <th data-i18n="actions_col">ดำเนินการ</th>
                                             </tr>
                                         </thead>
                                         <tbody id="product-management-table"></tbody>
@@ -310,10 +340,10 @@
             </div>
 
             <div class="tab-pane fade" id="pills-users" role="tabpanel" aria-labelledby="pills-users-tab">
-                 <div class="row">
+                   <div class="row">
                     <div class="col-lg-4 mb-4">
                         <div class="card">
-                            <div class="card-header fw-bold"><i class="bi bi-person-plus-fill me-2"></i>ฟอร์มข้อมูลผู้ใช้</div>
+                            <div class="card-header fw-bold" data-i18n="user_form_title"><i class="bi bi-person-plus-fill me-2"></i>ฟอร์มข้อมูลผู้ใช้</div>
                             <div class="card-body">
                                 <form id="user-form" class="row g-3"></form>
                             </div>
@@ -321,18 +351,53 @@
                     </div>
                     <div class="col-lg-8">
                         <div class="card">
-                            <div class="card-header fw-bold"><i class="bi bi-list-ul me-2"></i>รายการผู้ใช้ทั้งหมด</div>
+                            <div class="card-header fw-bold" data-i18n="all_users_title"><i class="bi bi-list-ul me-2"></i>รายการผู้ใช้ทั้งหมด</div>
                             <div class="card-body">
                                 <div class="table-responsive">
                                     <table class="table table-hover align-middle">
                                         <thead>
                                             <tr>
-                                                <th>ชื่อผู้ใช้</th>
-                                                <th>สิทธิ์</th>
-                                                <th>ดำเนินการ</th>
+                                                <th data-i18n="username_col">ชื่อผู้ใช้</th>
+                                                <th data-i18n="role_col">สิทธิ์</th>
+                                                <th data-i18n="actions_col">ดำเนินการ</th>
                                             </tr>
                                         </thead>
                                         <tbody id="user-management-table"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New tab for Announcements -->
+            <div class="tab-pane fade" id="pills-announcements" role="tabpanel" aria-labelledby="pills-announcements-tab">
+                <div class="row">
+                    <div class="col-lg-4 mb-4">
+                        <div class="card">
+                            <div class="card-header fw-bold" data-i18n="create_edit_announcement_title"><i class="bi bi-megaphone me-2"></i>สร้าง/แก้ไขประกาศ</div>
+                            <div class="card-body">
+                                <form id="announcement-form" class="row g-3"></form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header fw-bold" data-i18n="all_announcements_title"><i class="bi bi-card-list me-2"></i>รายการประกาศทั้งหมด</div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th data-i18n="announcement_title_col">หัวข้อ</th>
+                                                <th data-i18n="status_col">สถานะ</th>
+                                                <th data-i18n="posted_by_col">ผู้ประกาศ</th>
+                                                <th data-i18n="posted_date_col">วันที่ประกาศ</th>
+                                                <th data-i18n="actions_col">ดำเนินการ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="announcement-management-table"></tbody>
                                     </table>
                                 </div>
                             </div>
@@ -347,23 +412,23 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: var(--border-radius);">
           <div class="modal-header" style="background-color: #ffe8f0;">
-            <h5 class="modal-title" id="lotDetailModalLabel"><i class="bi bi-card-list me-2"></i>รายละเอียดล็อตของ: <span id="modal-product-name" class="fw-bold"></span></h5>
+            <h5 class="modal-title" id="lotDetailModalLabel" data-i18n="lot_details_of">รายละเอียดล็อตของ: <span id="modal-product-name" class="fw-bold"></span></h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <table class="table align-middle">
                 <thead>
                     <tr>
-                        <th>วันที่ผลิต</th>
-                        <th>จำนวนคงเหลือ</th>
-                        <th class="admin-only-cell">ดำเนินการ</th>
+                        <th data-i18n="production_date_col">วันที่ผลิต</th>
+                        <th data-i18n="remaining_quantity_col">จำนวนคงเหลือ</th>
+                        <th class="admin-only-cell" data-i18n="actions_col">ดำเนินการ</th>
                     </tr>
                 </thead>
                 <tbody id="lot-detail-table"></tbody>
             </table>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="background-color: #bbb;">ปิด</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="background-color: #bbb;" data-i18n="close_button">ปิด</button>
           </div>
         </div>
       </div>
@@ -380,27 +445,27 @@
             <form id="edit-history-form">
                 <input type="hidden" id="edit-history-id">
                 <div class="mb-3">
-                    <label class="form-label">สินค้า</label>
+                    <label class="form-label" data-i18n="product_label">สินค้า</label>
                     <input type="text" id="edit-history-product-name" class="form-control" readonly>
                 </div>
                 <div class="mb-3">
-                    <label for="edit-history-prod-date" class="form-label">วันที่ผลิต</label>
+                    <label for="edit-history-prod-date" class="form-label" data-i18n="production_date_label">วันที่ผลิต</label>
                     <input type="date" id="edit-history-prod-date" class="form-control" required>
                 </div>
                 <div class="mb-3">
                     <label for="edit-history-quantity" class="form-label" id="edit-history-quantity-label"></label>
                     <input type="number" id="edit-history-quantity" class="form-control" required min="0">
                 </div>
-                 <div class="mb-3" id="edit-history-invoice-group">
-                    <label for="edit-history-invoice" class="form-label">เลขที่ Invoice</label>
+                   <div class="mb-3" id="edit-history-invoice-group">
+                    <label for="edit-history-invoice" class="form-label" data-i18n="invoice_number_label">เลขที่ Invoice</label>
                     <input type="text" id="edit-history-invoice" class="form-control" required>
                 </div>
                 <div class="mb-3">
-                    <label for="edit-history-remarks" class="form-label">หมายเหตุ</label>
+                    <label for="edit-history-remarks" class="form-label" data-i18n="remarks_label">หมายเหตุ</label>
                     <textarea id="edit-history-remarks" class="form-control" rows="2"></textarea>
                 </div>
                 <div class="d-grid">
-                    <button type="submit" class="btn btn-primary">บันทึกการเปลี่ยนแปลง</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="save_changes_button">บันทึกการเปลี่ยนแปลง</button>
                 </div>
             </form>
           </div>
@@ -412,23 +477,23 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: var(--border-radius);">
           <div class="modal-header" style="background-color: #fff0f3;">
-            <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>แก้ไขยอดรวมในสต็อก</h5>
+            <h5 class="modal-title" data-i18n="edit_total_stock_title"><i class="bi bi-pencil-square me-2"></i>แก้ไขยอดรวมในสต็อก</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <form id="edit-stock-form">
                 <input type="hidden" id="edit-stock-product-id">
                 <div class="mb-3">
-                    <label class="form-label">สินค้า</label>
+                    <label class="form-label" data-i18n="product_label">สินค้า</label>
                     <input type="text" id="edit-stock-product-name" class="form-control" readonly>
                 </div>
                 <div class="mb-3">
-                    <label for="edit-stock-quantity" class="form-label">ยอดรวมใหม่</label>
+                    <label for="edit-stock-quantity" class="form-label" data-i18n="new_total_quantity_label">ยอดรวมใหม่</label>
                     <input type="number" id="edit-stock-quantity" class="form-control" required min="0">
                 </div>
-                <div class="form-text">การบันทึกจะล้างล็อตเก่าทั้งหมด และสร้างล็อตใหม่ขึ้นมาแทน</div>
+                <div class="form-text" data-i18n="edit_stock_warning">การบันทึกจะล้างล็อตเก่าทั้งหมด และสร้างล็อตใหม่ขึ้นมาแทน</div>
                 <div class="d-grid mt-3">
-                    <button type="submit" class="btn btn-primary">บันทึกยอดใหม่</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="save_new_total_button">บันทึกยอดใหม่</button>
                 </div>
             </form>
           </div>
@@ -438,7 +503,7 @@
 
     <div class="refresh-note">
         <i class="bi bi-arrow-clockwise fs-5 me-2"></i>
-        <div>
+        <div data-i18n="refresh_note_text">
             <strong>รีเฟรช (F5)</strong> ก่อนใช้งาน<br>
             เพื่อข้อมูลล่าสุด
         </div>
@@ -452,10 +517,380 @@
         // --- GOOGLE APPS SCRIPT CONFIGURATION ---
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLwRB6s5Ii3Pktg-3HKSWiY8XfhrrqQTOWGsE34M6mubn8GYehQ8dGVpgLD3N-ZjhO/exec';
 
+        // --- LANGUAGE CONFIGURATION ---
+        const translations = {
+            th: {
+                app_title: 'ระบบรับเข้า-ส่งออกสินค้า FG (Google Sheets)',
+                system_name_fg: 'ระบบสต็อกสินค้า',
+                system_name_atech: 'ATECH FG',
+                username_label: 'ชื่อผู้ใช้',
+                password_label: 'รหัสผ่าน',
+                login_error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
+                login_button: 'เข้าสู่ระบบ',
+                stock_in_out_fg_title: 'STOCK IN-OUT FG',
+                logout_button: 'ออกจากระบบ',
+                nav_stock_balance: 'สต็อกคงเหลือ',
+                nav_import_product: 'รับเข้าสินค้า',
+                nav_export_product: 'ส่งออกสินค้า',
+                nav_history: 'ประวัติ',
+                nav_manage_products: 'จัดการสินค้า',
+                nav_manage_users: 'จัดการผู้ใช้',
+                nav_manage_announcements: 'จัดการประกาศ',
+                backup_data_title: 'สำรองข้อมูล',
+                backup_data_description: 'ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV',
+                backup_stock_data: 'ข้อมูลสต็อก',
+                backup_product_data: 'ข้อมูลสินค้า',
+                backup_user_data: 'ข้อมูลผู้ใช้',
+                stock_summary_title: 'สรุปยอดสต็อกสินค้าคงเหลือ',
+                show_old_stock_filter: 'แสดงเฉพาะสต็อกที่ผลิตเกิน 3 เดือน',
+                search_stock_placeholder: 'ค้นหารหัสสินค้า, ชื่อสินค้า หรือลูกค้า...',
+                refresh_data_button: 'รีเฟรชข้อมูล',
+                product_code_name_col: 'รหัส/ชื่อสินค้า',
+                erp_code_col: 'รหัส ERP',
+                customer_col: 'ลูกค้า',
+                total_stock_col: 'ยอดคงเหลือทั้งหมด',
+                actions_col: 'ดำเนินการ',
+                import_form_title: 'ฟอร์มรับเข้าสินค้า',
+                export_form_title: 'ฟอร์มส่งออกสินค้า',
+                from_date_label: 'จากวันที่',
+                to_date_label: 'ถึงวันที่',
+                type_label: 'ประเภท',
+                all_option: 'ทั้งหมด',
+                import_type: 'รับเข้า',
+                export_type: 'ส่งออก',
+                adjustment_type: 'ปรับปรุงยอด',
+                product_label: 'สินค้า',
+                all_placeholder: 'ทั้งหมด',
+                invoice_number_label: 'เลขที่ Invoice',
+                search_placeholder: 'ค้นหา...',
+                search_button: 'ค้นหา',
+                clear_button: 'ล้าง',
+                history_title: 'ประวัติการทำรายการ',
+                download_history_csv: 'ดาวน์โหลดประวัติ (CSV)',
+                type_col: 'ประเภท',
+                product_col: 'สินค้า',
+                quantity_col: 'จำนวน',
+                production_date_col: 'วันที่ผลิต',
+                invoice_remarks_col: 'Invoice / หมายเหตุ',
+                transaction_date_col: 'วันที่ทำรายการ',
+                transaction_user_col: 'ผู้ทำรายการ',
+                product_form_title: 'ฟอร์มข้อมูลสินค้า',
+                all_products_title: 'รายการสินค้าทั้งหมด',
+                product_code_col: 'รหัสสินค้า',
+                name_col: 'ชื่อ',
+                unit_price_col: 'ราคา/หน่วย',
+                user_form_title: 'ฟอร์มข้อมูลผู้ใช้',
+                all_users_title: 'รายการผู้ใช้ทั้งหมด',
+                username_col: 'ชื่อผู้ใช้',
+                role_col: 'สิทธิ์',
+                create_edit_announcement_title: 'สร้าง/แก้ไขประกาศ',
+                all_announcements_title: 'รายการประกาศทั้งหมด',
+                announcement_title_col: 'หัวข้อ',
+                status_col: 'สถานะ',
+                posted_by_col: 'ผู้ประกาศ',
+                posted_date_col: 'วันที่ประกาศ',
+                lot_details_of: 'รายละเอียดล็อตของ:',
+                remaining_quantity_col: 'จำนวนคงเหลือ',
+                close_button: 'ปิด',
+                edit_history_export: 'แก้ไขประวัติการส่งออก',
+                edit_history_import: 'แก้ไขประวัติการรับเข้า',
+                quantity_exported: 'จำนวนที่ส่งออก',
+                quantity_imported: 'จำนวนที่รับเข้า',
+                remarks_label: 'หมายเหตุ',
+                save_changes_button: 'บันทึกการเปลี่ยนแปลง',
+                edit_total_stock_title: 'แก้ไขยอดรวมในสต็อก',
+                new_total_quantity_label: 'ยอดรวมใหม่',
+                edit_stock_warning: 'การบันทึกจะล้างล็อตเก่าทั้งหมด และสร้างล็อตใหม่ขึ้นมาแทน',
+                save_new_total_button: 'บันทึกยอดใหม่',
+                refresh_note_text: '<strong>รีเฟรช (F5)</strong> ก่อนใช้งาน<br>เพื่อข้อมูลล่าสุด',
+                // Specific messages
+                error_no_lot_found: 'ไม่พบล็อตที่ต้องการลบ',
+                confirm_delete_lot: 'ล็อตทั้งหมดของสินค้า {productId} ที่ผลิตวันที่ {productionDate} จะถูกลบอย่างถาวร!',
+                success_delete_lot: 'ลบล็อตสินค้าตามวันที่เรียบร้อยแล้วค่ะ',
+                error_product_in_stock: 'ยังมีสินค้านี้อยู่ในสต็อกค่ะ',
+                confirm_delete_product: 'สินค้า {productId} จะถูกลบออกจากระบบอย่างถาวร',
+                success_delete_product: 'ลบสินค้าเรียบร้อยแล้ว',
+                error_cannot_delete_admin: 'ไม่สามารถลบผู้ใช้ admin หลักได้ค่ะ',
+                confirm_delete_user: 'ผู้ใช้ {username} จะถูกลบออกจากระบบ',
+                success_delete_user: 'ลบผู้ใช้เรียบร้อยแล้ว',
+                error_no_history_found: 'ไม่พบประวัติที่ต้องการแก้ไข',
+                error_no_stock_lot_for_history: 'ไม่พบสต็อกล็อตเดิมของประวัติรายการนี้',
+                confirm_delete_export_history: 'การดำเนินการนี้จะคืนสินค้ากลับเข้าสต็อก และไม่สามารถย้อนกลับได้',
+                confirm_delete_import_history: 'การดำเนินการนี้จะหักสินค้าออกจากสต็อก และไม่สามารถย้อนกลับได้',
+                error_stock_used_up: 'สต็อกในล็อตนี้ถูกใช้ไปแล้ว (คงเหลือ {quantity}) ไม่สามารถหักจำนวน {historyQuantity} ได้',
+                success_delete_history: 'ลบประวัติและปรับสต็อกเรียบร้อย',
+                error_no_product_found: 'ไม่พบสินค้า',
+                success_update_stock_total: 'ปรับปรุงยอดสต็อกเรียบร้อย',
+                no_lot_data_for_product: 'ไม่พบข้อมูลล็อตสำหรับสินค้านี้',
+                no_announcement_found: 'ยังไม่มีประกาศค่ะ',
+                announcement_active: 'ใช้งานอยู่',
+                announcement_inactive: 'ไม่ใช้งาน',
+                confirm_delete_announcement: 'ประกาศนี้จะถูกลบอย่างถาวร',
+                success_delete_announcement: 'ลบประกาศเรียบร้อยแล้ว',
+                success_update_announcement_status: 'อัปเดตสถานะประกาศเรียบร้อยแล้ว',
+                data_incomplete: 'ข้อมูลไม่ครบถ้วน',
+                please_specify_product_name: 'กรุณาระบุชื่อสินค้า',
+                success_import_product: 'รับสินค้า {productName} เข้ามาแล้วจ้า',
+                data_incomplete_export: 'กรุณาเลือกสินค้า, วันที่ผลิต, และระบุจำนวนที่ต้องการส่งออก',
+                error_no_stock_for_date: 'ไม่พบสต็อกสำหรับวันที่ผลิตที่เลือก',
+                not_enough_stock: 'มีสินค้าในสต็อกสำหรับวันที่นี้เพียง {quantity} ชิ้น',
+                success_export_product: 'ส่งออกสินค้า {productName} เรียบร้อยแล้วค่ะ',
+                select_lot_prod_date: '-- เลือกล็อตตามวันที่ผลิต --',
+                select_product_first: '-- กรุณาเลือกสินค้าก่อน --',
+                product_out_of_stock: '-- สินค้าหมดสต็อกแล้วจ้า --',
+                prod_date_label: 'วันที่ผลิต',
+                remaining_total: 'เหลือทั้งหมด',
+                duplicate_product_id: 'มีรหัสสินค้านี้ในระบบแล้วค่ะ',
+                success_update_product: 'อัปเดตข้อมูลสินค้าเรียบร้อย',
+                success_add_product: 'เพิ่มสินค้าใหม่เรียบร้อย',
+                duplicate_username: 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ',
+                error_user_not_found: 'ไม่พบผู้ใช้ที่ต้องการแก้ไข',
+                success_update_user: 'อัปเดตข้อมูลผู้ใช้เรียบร้อย',
+                success_add_user: 'เพิ่มผู้ใช้ใหม่เรียบร้อย',
+                history_search_prompt: 'กรุณาใส่ข้อมูลเพื่อค้นหาประวัติการทำรายการค่ะ',
+                history_no_results: 'ไม่พบข้อมูลตามเงื่อนไขที่กำหนดค่ะ',
+                announcement_title_required: 'กรุณาระบุหัวข้อและข้อความประกาศ',
+                success_update_announcement: 'อัปเดตประกาศเรียบร้อยแล้ว',
+                success_add_announcement: 'เพิ่มประกาศใหม่เรียบร้อยแล้ว',
+                downloading_file: 'กำลังดาวน์โหลดไฟล์ {filename}',
+                no_data_to_backup: 'ไม่สามารถสำรองข้อมูลที่ว่างเปล่าได้ค่ะ',
+                error_network_response: 'ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ ({errorMessage}) กรุณาลองรีเฟรชหน้าเว็บใหม่อีกครั้ง',
+                error_invalid_data: 'Invalid data structure received from server.',
+                error_saving_data: 'เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก',
+                inactivity_timeout_title: 'หมดเวลาใช้งาน',
+                inactivity_timeout_text: 'ไม่มีการใช้งานระบบเกิน 30 นาที กรุณาลงชื่อเข้าใช้ใหม่',
+                ok_button: 'ตกลง',
+                data_updated: 'ข้อมูลอัปเดตแล้ว!',
+                loading_data: 'กำลังโหลดข้อมูล...',
+                please_wait: 'กรุณารอสักครู่ค่ะ',
+                product_id_label: 'รหัสสินค้า',
+                full_box_quantity_label: 'จำนวนเต็มกล่อง/แร็ค',
+                erp_code_label: 'รหัส ERP',
+                unit_price_label: 'ราคาต่อหน่วย',
+                save_product_button: 'บันทึกข้อมูลสินค้า',
+                clear_form_button: 'ล้างฟอร์ม',
+                user_role_select_label: 'สิทธิ์',
+                user_role_user: 'User',
+                user_role_admin: 'Admin',
+                save_user_button: 'บันทึกข้อมูลผู้ใช้',
+                announcement_title_label: 'หัวข้อประกาศ',
+                announcement_message_label: 'ข้อความประกาศ',
+                announcement_active_label: 'แสดงประกาศนี้',
+                save_announcement_button: 'บันทึกประกาศ',
+                check_prod_date_warning: 'เช็ควันที่รับเข้าจากชิ้นงานให้ดีก่อนรับเข้า',
+                fifo_warning: 'การส่งออกสินค้าควรคำนึงถึงหลัก FIFO (เข้าก่อน-ออกก่อน)',
+                posted_by: 'ประกาศโดย',
+                when: 'เมื่อ',
+                total_quantity_label: 'ยอดรวม',
+                max_quantity_label: 'สูงสุด',
+            },
+            en: {
+                app_title: 'FG Stock In-Out System (Google Sheets)',
+                system_name_fg: 'Stock System',
+                system_name_atech: 'ATECH FG',
+                username_label: 'Username',
+                password_label: 'Password',
+                login_error: 'Incorrect username or password',
+                login_button: 'Login',
+                stock_in_out_fg_title: 'STOCK IN-OUT FG',
+                logout_button: 'Logout',
+                nav_stock_balance: 'Stock Balance',
+                nav_import_product: 'Import Product',
+                nav_export_product: 'Export Product',
+                nav_history: 'History',
+                nav_manage_products: 'Manage Products',
+                nav_manage_users: 'Manage Users',
+                nav_manage_announcements: 'Manage Announcements',
+                backup_data_title: 'Backup Data',
+                backup_data_description: 'Download data as CSV files',
+                backup_stock_data: 'Stock Data',
+                backup_product_data: 'Product Data',
+                backup_user_data: 'User Data',
+                stock_summary_title: 'Stock Balance Summary',
+                show_old_stock_filter: 'Show only stock older than 3 months',
+                search_stock_placeholder: 'Search product code, name, or customer...',
+                refresh_data_button: 'Refresh Data',
+                product_code_name_col: 'Code/Name',
+                erp_code_col: 'ERP Code',
+                customer_col: 'Customer',
+                total_stock_col: 'Total Quantity',
+                actions_col: 'Actions',
+                import_form_title: 'Product Import Form',
+                export_form_title: 'Product Export Form',
+                from_date_label: 'From Date',
+                to_date_label: 'To Date',
+                type_label: 'Type',
+                all_option: 'All',
+                import_type: 'Import',
+                export_type: 'Export',
+                adjustment_type: 'Adjustment',
+                product_label: 'Product',
+                all_placeholder: 'All',
+                invoice_number_label: 'Invoice No.',
+                search_placeholder: 'Search...',
+                search_button: 'Search',
+                clear_button: 'Clear',
+                history_title: 'Transaction History',
+                download_history_csv: 'Download History (CSV)',
+                type_col: 'Type',
+                product_col: 'Product',
+                quantity_col: 'Quantity',
+                production_date_col: 'Production Date',
+                invoice_remarks_col: 'Invoice / Remarks',
+                transaction_date_col: 'Transaction Date',
+                transaction_user_col: 'User',
+                product_form_title: 'Product Data Form',
+                all_products_title: 'All Products',
+                product_code_col: 'Product Code',
+                name_col: 'Name',
+                unit_price_col: 'Price/Unit',
+                user_form_title: 'User Data Form',
+                all_users_title: 'All Users',
+                username_col: 'Username',
+                role_col: 'Role',
+                create_edit_announcement_title: 'Create/Edit Announcement',
+                all_announcements_title: 'All Announcements',
+                announcement_title_col: 'Title',
+                status_col: 'Status',
+                posted_by_col: 'Posted By',
+                posted_date_col: 'Posted Date',
+                lot_details_of: 'Lot Details of:',
+                remaining_quantity_col: 'Remaining Quantity',
+                close_button: 'Close',
+                edit_history_export: 'Edit Export History',
+                edit_history_import: 'Edit Import History',
+                quantity_exported: 'Quantity Exported',
+                quantity_imported: 'Quantity Imported',
+                remarks_label: 'Remarks',
+                save_changes_button: 'Save Changes',
+                edit_total_stock_title: 'Edit Total Stock',
+                new_total_quantity_label: 'New Total Quantity',
+                edit_stock_warning: 'Saving will clear all old lots and create a new one.',
+                save_new_total_button: 'Save New Total',
+                refresh_note_text: '<strong>Refresh (F5)</strong> before use<br>for latest data',
+                // Specific messages
+                error_no_lot_found: 'No lot found to delete.',
+                confirm_delete_lot: 'All lots of product {productId} produced on {productionDate} will be permanently deleted!',
+                success_delete_lot: 'Lots deleted successfully.',
+                error_product_in_stock: 'This product is still in stock.',
+                confirm_delete_product: 'Product {productId} will be permanently deleted from the system.',
+                success_delete_product: 'Product deleted successfully.',
+                error_cannot_delete_admin: 'Cannot delete the main admin user.',
+                confirm_delete_user: 'User {username} will be deleted from the system.',
+                success_delete_user: 'User deleted successfully.',
+                error_no_history_found: 'No history record found to edit.',
+                error_no_stock_lot_for_history: 'No original stock lot found for this history record.',
+                confirm_delete_export_history: 'This action will return the product to stock and cannot be undone.',
+                confirm_delete_import_history: 'This action will deduct the product from stock and cannot be undone.',
+                error_stock_used_up: 'Stock in this lot has been used (remaining {quantity}). Cannot deduct {historyQuantity} units.',
+                success_delete_history: 'History and stock updated successfully.',
+                error_no_product_found: 'Product not found.',
+                success_update_stock_total: 'Stock total updated successfully.',
+                no_lot_data_for_product: 'No lot data found for this product.',
+                no_announcement_found: 'No announcements yet.',
+                announcement_active: 'Active',
+                announcement_inactive: 'Inactive',
+                confirm_delete_announcement: 'This announcement will be permanently deleted.',
+                success_delete_announcement: 'Announcement deleted successfully.',
+                success_update_announcement_status: 'Announcement status updated successfully.',
+                data_incomplete: 'Incomplete Data',
+                please_specify_product_name: 'Please specify product name.',
+                success_import_product: 'Product {productName} imported successfully.',
+                data_incomplete_export: 'Please select product, production date, and specify quantity to export.',
+                error_no_stock_for_date: 'No stock found for the selected production date.',
+                not_enough_stock: 'Only {quantity} units of this product are available for this date.',
+                success_export_product: 'Product {productName} exported successfully.',
+                select_lot_prod_date: '-- Select Lot by Production Date --',
+                select_product_first: '-- Please select a product first --',
+                product_out_of_stock: '-- Product out of stock --',
+                prod_date_label: 'Production Date',
+                remaining_total: 'Remaining Total',
+                duplicate_product_id: 'Product ID already exists in the system.',
+                success_update_product: 'Product data updated successfully.',
+                success_add_product: 'New product added successfully.',
+                duplicate_username: 'Username already exists in the system.',
+                error_user_not_found: 'User not found.',
+                success_update_user: 'User data updated successfully.',
+                success_add_user: 'New user added successfully.',
+                history_search_prompt: 'Please enter criteria to search transaction history.',
+                history_no_results: 'No data found matching the criteria.',
+                announcement_title_required: 'Please specify announcement title and message.',
+                success_update_announcement: 'Announcement updated successfully.',
+                success_add_announcement: 'New announcement added successfully.',
+                downloading_file: 'Downloading file {filename}',
+                no_data_to_backup: 'Cannot backup empty data.',
+                error_network_response: 'Could not connect to the database ({errorMessage}). Please refresh the page.',
+                error_invalid_data: 'Invalid data structure received from server.',
+                error_saving_data: 'Error sending data to save.',
+                inactivity_timeout_title: 'Session Expired',
+                inactivity_timeout_text: 'No activity for more than 30 minutes. Please log in again.',
+                ok_button: 'OK',
+                data_updated: 'Data updated!',
+                loading_data: 'Loading data...',
+                please_wait: 'Please wait...',
+                product_id_label: 'Product ID',
+                full_box_quantity_label: 'Full Box/Rack Quantity',
+                erp_code_label: 'ERP Code',
+                unit_price_label: 'Unit Price',
+                save_product_button: 'Save Product Data',
+                clear_form_button: 'Clear Form',
+                user_role_select_label: 'Role',
+                user_role_user: 'User',
+                user_role_admin: 'Admin',
+                save_user_button: 'Save User Data',
+                announcement_title_label: 'Announcement Title',
+                announcement_message_label: 'Announcement Message',
+                announcement_active_label: 'Show this announcement',
+                save_announcement_button: 'Save Announcement',
+                check_prod_date_warning: 'Check the production date from the workpiece carefully before importing.',
+                fifo_warning: 'Product export should consider FIFO principle (First-In, First-Out).',
+                posted_by: 'Posted by',
+                when: 'on',
+                total_quantity_label: 'Total',
+                max_quantity_label: 'Max',
+            }
+        };
+        let currentLanguage = localStorage.getItem('appLanguage') || 'th'; // Default to Thai
+
         // --- DATABASE SIMULATION & PERSISTENCE ---
-        let db = { users: [], products: [], stock: [], history: [] };
+        let db = { users: [], products: [], stock: [], history: [], announcements: [] };
         let dataSyncInterval = null;
         let inactivityTimer = null;
+        let editingAnnouncementId = null; // New state variable for announcement editing
+
+        // --- LANGUAGE SWITCHER ---
+        const languageSwitcher = document.getElementById('language-switcher');
+
+        function updateTextContent() {
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[currentLanguage][key]) {
+                    // Handle innerHTML for elements that contain HTML (like strong tag in refresh_note_text)
+                    if (key === 'refresh_note_text') {
+                        element.innerHTML = translations[currentLanguage][key];
+                    } else {
+                        element.textContent = translations[currentLanguage][key];
+                    }
+                }
+            });
+            // Update placeholders
+            document.querySelectorAll('[data-i18n][placeholder]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[currentLanguage][key]) {
+                    element.placeholder = translations[currentLanguage][key];
+                }
+            });
+            // Update titles
+            document.querySelectorAll('[data-i18n][title]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[currentLanguage][key]) {
+                    element.title = translations[currentLanguage][key];
+                }
+            });
+            // Update specific form elements that are rendered dynamically
+            renderAllForms(); // Re-render forms to update dynamic labels/placeholders
+            populateAll(); // Re-populate tables to update dynamic content
+        }
 
         // --- INACTIVITY & SYNC FUNCTIONS ---
         function resetInactivityTimer() {
@@ -466,10 +901,10 @@
         function logoutDueToInactivity() {
             stopDataSync(); // Stop background refresh
             Swal.fire({
-                title: 'หมดเวลาใช้งาน',
-                text: 'ไม่มีการใช้งานระบบเกิน 30 นาที กรุณาลงชื่อเข้าใช้ใหม่',
+                title: translations[currentLanguage].inactivity_timeout_title,
+                text: translations[currentLanguage].inactivity_timeout_text,
                 icon: 'warning',
-                confirmButtonText: 'ตกลง',
+                confirmButtonText: translations[currentLanguage].ok_button,
                 allowOutsideClick: false,
             }).then(() => {
                 showLoginPage();
@@ -505,8 +940,8 @@
         async function loadDataFromSheet(isInitialLoad = false) {
             if (isInitialLoad) {
                 Swal.fire({
-                    title: 'กำลังโหลดข้อมูล...',
-                    text: 'กรุณารอสักครู่ค่ะ',
+                    title: translations[currentLanguage].loading_data,
+                    text: translations[currentLanguage].please_wait,
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading() }
                 });
@@ -515,34 +950,37 @@
             try {
                 const response = await fetch(SCRIPT_URL);
                 if (!response.ok) {
-                    if (isInitialLoad) throw new Error(`Network response was not ok. Status: ${response.status}`);
+                    if (isInitialLoad) throw new Error(`${translations[currentLanguage].error_network_response.replace('{errorMessage}', response.status)}`);
                     else { console.error('Background refresh failed.'); return; }
                 }
                 const newData = await response.json();
                 
-                if (newData && newData.stock && newData.products && newData.users && newData.history) {
-                    newData.stock.forEach(item => { item.productionDate = formatDate(item.productionDate); });
+                // Ensure all expected properties exist, initialize if missing
+                newData.stock = newData.stock || [];
+                newData.products = newData.products || [];
+                newData.users = newData.users || [];
+                newData.history = newData.history || [];
+                newData.announcements = newData.announcements || []; // Initialize announcements
+
+                newData.stock.forEach(item => { item.productionDate = formatDate(item.productionDate); });
+                
+                if (JSON.stringify(db) !== JSON.stringify(newData)) {
+                    db = newData;
+                    console.log('Data updated from Google Sheet at:', new Date().toLocaleTimeString());
+                    populateAll();
                     
-                    if (JSON.stringify(db) !== JSON.stringify(newData)) {
-                        db = newData;
-                        console.log('Data updated from Google Sheet at:', new Date().toLocaleTimeString());
-                        populateAll();
-                        
-                        if (!isInitialLoad) {
-                            const Toast = Swal.mixin({
-                              toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
-                            });
-                            Toast.fire({ icon: 'success', title: 'ข้อมูลอัปเดตแล้ว!' });
-                        }
+                    if (!isInitialLoad) {
+                        const Toast = Swal.mixin({
+                            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
+                        });
+                        Toast.fire({ icon: 'success', title: translations[currentLanguage].data_updated });
                     }
-                } else {
-                    if (isInitialLoad) throw new Error('Invalid data structure received from server.');
                 }
                 
                 if (isInitialLoad) Swal.close();
             } catch (error) {
                 console.error('Error loading data from Google Sheet:', error);
-                if (isInitialLoad) showError('โหลดข้อมูลไม่สำเร็จ!', `ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ (${error.message}) กรุณาลองรีเฟรชหน้าเว็บใหม่อีกครั้ง`);
+                if (isInitialLoad) showError(translations[currentLanguage].data_incomplete, `${translations[currentLanguage].error_network_response.replace('{errorMessage}', error.message)}`);
             }
         }
 
@@ -558,7 +996,7 @@
                 console.log('Save request sent to Google Sheet.');
             } catch (error) {
                 console.error('Error saving data to Google Sheet:', error);
-                showError('บันทึกข้อมูลไม่สำเร็จ!', 'เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก');
+                showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].error_saving_data);
             }
         }
         
@@ -587,6 +1025,9 @@
         const userManagementTable = document.getElementById('user-management-table');
         const productManagementTable = document.getElementById('product-management-table');
         const historyTable = document.getElementById('history-table');
+        const announcementFormEl = document.getElementById('announcement-form'); // New announcement form element
+        const announcementManagementTable = document.getElementById('announcement-management-table'); // New announcement table element
+        const announcementsDisplayArea = document.getElementById('announcements-display-area'); // New announcement display area
 
         // --- STATE MANAGEMENT ---
         let currentUser = null;
@@ -603,17 +1044,20 @@
                     .map(lot => lot.lotId);
 
                 if (lotsToDelete.length === 0) {
-                    showError('ผิดพลาด!', 'ไม่พบล็อตที่ต้องการลบ');
+                    showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].error_no_lot_found);
                     return;
                 }
 
-                confirmAction('แน่ใจว่าจะลบ?', `ล็อตทั้งหมดของสินค้า ${productId} ที่ผลิตวันที่ ${productionDate} จะถูกลบอย่างถาวร!`, () => {
+                confirmAction(
+                    translations[currentLanguage].confirm_delete_lot_title,
+                    translations[currentLanguage].confirm_delete_lot.replace('{productId}', productId).replace('{productionDate}', productionDate),
+                    () => {
                     stopDataSync();
                     db.stock = db.stock.filter(lot => !lotsToDelete.includes(lot.lotId));
                     
                     populateAll();
                     lotDetailModal.hide();
-                    showSuccess('ลบล็อตสินค้าตามวันที่เรียบร้อยแล้วค่ะ');
+                    showSuccess(translations[currentLanguage].success_delete_lot);
                     saveDataToSheet();
                     setTimeout(() => {
                         loadDataFromSheet(false).then(() => startDataSync());
@@ -638,14 +1082,17 @@
                 if (currentUser.role !== 'admin') return;
                 const isProductInStock = db.stock.some(s => String(s.productId) === String(productId) && s.quantity > 0);
                 if (isProductInStock) {
-                    showError('ลบไม่ได้!', 'ยังมีสินค้านี้อยู่ในสต็อกค่ะ');
+                    showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].error_product_in_stock);
                     return;
                 }
-                confirmAction('แน่ใจว่าจะลบสินค้า?', `สินค้า ${productId} จะถูกลบออกจากระบบอย่างถาวร`, () => {
+                confirmAction(
+                    translations[currentLanguage].confirm_delete_product_title,
+                    translations[currentLanguage].confirm_delete_product.replace('{productId}', productId),
+                    () => {
                     stopDataSync();
                     db.products = db.products.filter(p => String(p.id) !== String(productId));
                     populateAll();
-                    showSuccess('ลบสินค้าเรียบร้อยแล้ว');
+                    showSuccess(translations[currentLanguage].success_delete_product);
                     saveDataToSheet();
                     setTimeout(() => {
                         loadDataFromSheet(false).then(() => startDataSync());
@@ -665,14 +1112,17 @@
             deleteUser: (username) => {
                 if (currentUser.role !== 'admin') return;
                 if (username === 'admin') {
-                    showError('ลบไม่ได้!', 'ไม่สามารถลบผู้ใช้ admin หลักได้ค่ะ');
+                    showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].error_cannot_delete_admin);
                     return;
                 }
-                confirmAction('แน่ใจว่าจะลบผู้ใช้?', `ผู้ใช้ ${username} จะถูกลบออกจากระบบ`, () => {
+                confirmAction(
+                    translations[currentLanguage].confirm_delete_user_title,
+                    translations[currentLanguage].confirm_delete_user.replace('{username}', username),
+                    () => {
                     stopDataSync();
                     db.users = db.users.filter(u => u.username !== username);
                     populateAll();
-                    showSuccess('ลบผู้ใช้เรียบร้อยแล้ว');
+                    showSuccess(translations[currentLanguage].success_delete_user);
                     saveDataToSheet();
                     setTimeout(() => {
                         loadDataFromSheet(false).then(() => startDataSync());
@@ -696,14 +1146,14 @@
                     const invoiceGroup = document.getElementById('edit-history-invoice-group');
 
                     if (historyItem.type === 'export') {
-                        modalTitle.innerHTML = '<i class="bi bi-pencil-square me-2"></i>แก้ไขประวัติการส่งออก';
-                        quantityLabel.textContent = 'จำนวนที่ส่งออก';
+                        modalTitle.innerHTML = `<i class="bi bi-pencil-square me-2"></i>${translations[currentLanguage].edit_history_export}`;
+                        quantityLabel.textContent = translations[currentLanguage].quantity_exported;
                         invoiceGroup.style.display = 'block';
                         document.getElementById('edit-history-invoice').value = historyItem.invoiceNumber;
                         document.getElementById('edit-history-invoice').required = true;
                     } else { // import
-                        modalTitle.innerHTML = '<i class="bi bi-pencil-square me-2"></i>แก้ไขประวัติการรับเข้า';
-                        quantityLabel.textContent = 'จำนวนที่รับเข้า';
+                        modalTitle.innerHTML = `<i class="bi bi-pencil-square me-2"></i>${translations[currentLanguage].edit_history_import}`;
+                        quantityLabel.textContent = translations[currentLanguage].quantity_imported;
                         invoiceGroup.style.display = 'none';
                         document.getElementById('edit-history-invoice').required = false;
                     }
@@ -718,10 +1168,10 @@
                 const historyItem = db.history[historyIndex];
 
                 const message = historyItem.type === 'export' 
-                    ? 'การดำเนินการนี้จะคืนสินค้ากลับเข้าสต็อก และไม่สามารถย้อนกลับได้'
-                    : 'การดำเนินการนี้จะหักสินค้าออกจากสต็อก และไม่สามารถย้อนกลับได้';
+                    ? translations[currentLanguage].confirm_delete_export_history
+                    : translations[currentLanguage].confirm_delete_import_history;
 
-                confirmAction('ยืนยันการลบประวัติ?', message, () => {
+                confirmAction(translations[currentLanguage].confirm_delete_history_title, message, () => {
                     stopDataSync();
                     const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
 
@@ -732,14 +1182,14 @@
                              db.stock.push({ lotId: historyItem.lotId, productId: historyItem.productId, quantity: historyItem.quantity, productionDate: 'N/A (Reverted)' });
                         }
                     } else { // import
-                        if (!stockLot) { showError('ผิดพลาด!', 'ไม่พบสต็อกล็อตเดิมของรายการนี้ ไม่สามารถลบได้'); startDataSync(); return; }
-                        if (stockLot.quantity < historyItem.quantity) { showError('ลบไม่ได้!', `สต็อกในล็อตนี้ถูกใช้ไปแล้ว (คงเหลือ ${stockLot.quantity}) ไม่สามารถหักจำนวน ${historyItem.quantity} ได้`); startDataSync(); return; }
+                        if (!stockLot) { showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].error_no_stock_lot_for_history); startDataSync(); return; }
+                        if (stockLot.quantity < historyItem.quantity) { showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].error_stock_used_up.replace('{quantity}', stockLot.quantity).replace('{historyQuantity}', historyItem.quantity)); startDataSync(); return; }
                         stockLot.quantity -= historyItem.quantity;
                     }
 
                     db.history.splice(historyIndex, 1);
                     populateAll();
-                    showSuccess('ลบประวัติและปรับสต็อกเรียบร้อย');
+                    showSuccess(translations[currentLanguage].success_delete_history);
                     saveDataToSheet();
                     setTimeout(() => {
                         loadDataFromSheet(false).then(() => startDataSync());
@@ -769,7 +1219,7 @@
                 threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
                 if(lots.length === 0) {
-                    lotDetailTable.innerHTML = '<tr><td colspan="3" class="text-center">ไม่พบข้อมูลล็อตสำหรับสินค้านี้</td></tr>';
+                    lotDetailTable.innerHTML = `<tr><td colspan="3" class="text-center">${translations[currentLanguage].no_lot_data_for_product}</td></tr>`;
                     lotDetailModal.show();
                     return;
                 }
@@ -808,10 +1258,51 @@
                 else { lotDetailTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none'); }
 
                 lotDetailModal.show();
+            },
+            // New functions for Announcement Management
+            editAnnouncement: (announcementId) => {
+                if (currentUser.role !== 'admin') return;
+                editingAnnouncementId = announcementId;
+                const announcement = db.announcements.find(a => String(a.id) === String(announcementId));
+                if (announcement) {
+                    document.getElementById('announcement-id').value = announcement.id;
+                    document.getElementById('announcement-id').readOnly = true;
+                    document.getElementById('announcement-title').value = announcement.title;
+                    document.getElementById('announcement-message').value = announcement.message;
+                    document.getElementById('announcement-active').checked = announcement.isActive;
+                }
+            },
+            deleteAnnouncement: (announcementId) => {
+                if (currentUser.role !== 'admin') return;
+                confirmAction(translations[currentLanguage].confirm_delete_announcement_title, translations[currentLanguage].confirm_delete_announcement, () => {
+                    stopDataSync();
+                    db.announcements = db.announcements.filter(a => String(a.id) !== String(announcementId));
+                    populateAll();
+                    showSuccess(translations[currentLanguage].success_delete_announcement);
+                    saveDataToSheet();
+                    setTimeout(() => {
+                        loadDataFromSheet(false).then(() => startDataSync());
+                    }, 3000);
+                });
+            },
+            toggleAnnouncementStatus: (announcementId) => {
+                if (currentUser.role !== 'admin') return;
+                const announcement = db.announcements.find(a => String(a.id) === String(announcementId));
+                if (announcement) {
+                    announcement.isActive = !announcement.isActive;
+                    populateAll();
+                    showSuccess(translations[currentLanguage].success_update_announcement_status);
+                    saveDataToSheet();
+                    setTimeout(() => {
+                        loadDataFromSheet(false).then(() => startDataSync());
+                    }, 3000);
+                }
             }
         };
 
         async function init() {
+            languageSwitcher.value = currentLanguage; // Set initial dropdown value
+            updateTextContent(); // Apply initial language
             renderAllForms();
             await loadDataFromSheet(true); // Initial load with spinner
             checkLoginState();
@@ -866,7 +1357,7 @@
             };
             
             if (!productName) {
-                showError('ข้อมูลไม่ครบถ้วน', 'กรุณาระบุชื่อสินค้า');
+                showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].please_specify_product_name);
                 startDataSync();
                 return;
             }
@@ -882,7 +1373,7 @@
             addHistory('import', productForHistory, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
             
             populateAll();
-            showSuccess(`รับสินค้า ${productName} เข้ามาแล้วจ้า`);
+            showSuccess(translations[currentLanguage].success_import_product.replace('{productName}', productName));
             importFormEl.reset();
             ['import-product-name', 'import-customer', 'import-erp-code', 'import-fullbox'].forEach(id => document.getElementById(id).value = '');
             
@@ -903,7 +1394,7 @@
             const remarks = document.getElementById('export-remarks').value;
 
             if (!productId || !productionDate || !quantityToExport) {
-                showError('ข้อมูลไม่ครบ', 'กรุณาเลือกสินค้า, วันที่ผลิต, และระบุจำนวนที่ต้องการส่งออก');
+                showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].data_incomplete_export);
                 startDataSync();
                 return;
             }
@@ -913,14 +1404,14 @@
                 .sort((a, b) => a.lotId - b.lotId);
 
             if (lotsForDate.length === 0) {
-                showError('ผิดพลาด', 'ไม่พบสต็อกสำหรับวันที่ผลิตที่เลือก');
+                showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].error_no_stock_for_date);
                 startDataSync();
                 return;
             }
 
             const totalAvailable = lotsForDate.reduce((sum, lot) => sum + lot.quantity, 0);
             if (quantityToExport > totalAvailable) {
-                showError('ของไม่พอ', `มีสินค้าในสต็อกสำหรับวันที่นี้เพียง ${totalAvailable.toLocaleString()} ชิ้น`);
+                showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].not_enough_stock.replace('{quantity}', totalAvailable.toLocaleString()));
                 startDataSync();
                 return;
             }
@@ -930,7 +1421,7 @@
                 const latestHistoryEntry = db.history.find(h => String(h.productId) === String(productId));
                 product = { 
                     id: productId, 
-                    name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${productId})`,
+                    name: latestHistoryEntry ? latestHistoryEntry.productName : `(${translations[currentLanguage].no_product_info} ${productId})`,
                     customer: latestHistoryEntry ? latestHistoryEntry.customer : '',
                     erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode : ''
                 };
@@ -948,10 +1439,10 @@
             }
             
             populateAll();
-            showSuccess(`ส่งออกสินค้า ${product.name} เรียบร้อยแล้วค่ะ`);
+            showSuccess(translations[currentLanguage].success_export_product.replace('{productName}', product.name));
             exportFormEl.reset();
             ['export-product-name', 'export-customer', 'export-erp-code', 'export-fullbox'].forEach(id => document.getElementById(id).value = '');
-            document.getElementById('export-lot').innerHTML = '<option value="">-- กรุณาเลือกสินค้าก่อน --</option>';
+            document.getElementById('export-lot').innerHTML = `<option value="">${translations[currentLanguage].select_product_first}</option>`;
 
 
             saveDataToSheet();
@@ -976,12 +1467,12 @@
                 const productIndex = db.products.findIndex(p => String(p.id) === String(editingProductId));
                 if (productIndex > -1) {
                     db.products[productIndex] = { ...db.products[productIndex], ...productData };
-                    showSuccess('อัปเดตข้อมูลสินค้าเรียบร้อย');
+                    showSuccess(translations[currentLanguage].success_update_product);
                 }
             } else {
-                if (db.products.some(p => String(p.id) === String(productData.id))) { showError('รหัสซ้ำ!', 'มีรหัสสินค้านี้ในระบบแล้วค่ะ'); startDataSync(); return; }
+                if (db.products.some(p => String(p.id) === String(productData.id))) { showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].duplicate_product_id); startDataSync(); return; }
                 db.products.push(productData);
-                showSuccess('เพิ่มสินค้าใหม่เรียบร้อย');
+                showSuccess(translations[currentLanguage].success_add_product);
             }
             
             clearProductForm();
@@ -1001,32 +1492,34 @@
             const newRole = document.getElementById('user-role-select').value;
             
             if (!originalUsernameForEdit) {
-                if (db.users.some(u => u.username === newUsername)) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); startDataSync(); return; }
+                if (db.users.some(u => u.username === newUsername)) { showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].duplicate_username); startDataSync(); return; }
                 db.users.push({ username: newUsername, password: newPassword, role: newRole });
-                showSuccess('เพิ่มผู้ใช้ใหม่เรียบร้อย');
+                showSuccess(translations[currentLanguage].success_add_user);
             } else {
                 const userIndex = db.users.findIndex(u => u.username === originalUsernameForEdit);
-                if (userIndex === -1) { showError('ผิดพลาด', 'ไม่พบผู้ใช้ที่ต้องการแก้ไข'); clearUserForm(); startDataSync(); return; }
+                if (userIndex === -1) { showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].error_user_not_found); clearUserForm(); startDataSync(); return; }
                 const isUsernameTaken = db.users.some(u => u.username === newUsername && u.username !== originalUsernameForEdit);
-                if (isUsernameTaken) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); startDataSync(); return; }
+                if (isUsernameTaken) { showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].duplicate_username); startDataSync(); return; }
 
+                if (currentUser.username === originalUsernameForEdit) { // Update current user's session if their own profile is edited
+                    currentUser.username = newUsername;
+                    currentUser.password = newPassword;
+                    currentUser.role = newRole;
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    showDashboard(); // Re-render dashboard to reflect role changes immediately
+                }
+                // Update history records if username changed
                 if (originalUsernameForEdit !== newUsername) {
                     db.history.forEach(record => { if (record.user === originalUsernameForEdit) { record.user = newUsername; } });
+                    db.announcements.forEach(ann => { if (ann.postedBy === originalUsernameForEdit) { ann.postedBy = newUsername; } }); // Update announcements too
                 }
-
+                
                 const userToUpdate = db.users[userIndex];
                 userToUpdate.username = newUsername;
                 userToUpdate.password = newPassword;
                 userToUpdate.role = newRole;
 
-                if (currentUser.username === originalUsernameForEdit) {
-                    currentUser.username = newUsername;
-                    currentUser.password = newPassword;
-                    currentUser.role = newRole;
-                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    showDashboard();
-                }
-                showSuccess('อัปเดตข้อมูลผู้ใช้เรียบร้อย');
+                showSuccess(translations[currentLanguage].success_update_user);
             }
             
             clearUserForm();
@@ -1048,15 +1541,15 @@
             const newProdDate = document.getElementById('edit-history-prod-date').value;
 
             const historyIndex = db.history.findIndex(h => h.date === historyId);
-            if (historyIndex === -1) { showError('ผิดพลาด', 'ไม่พบประวัติที่ต้องการแก้ไข'); startDataSync(); return; }
+            if (historyIndex === -1) { showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].error_no_history_found); startDataSync(); return; }
             const historyItem = db.history[historyIndex];
             const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
-            if (!stockLot) { showError('ผิดพลาด', 'ไม่พบสต็อกล็อตเดิมของประวัติรายการนี้'); startDataSync(); return; }
+            if (!stockLot) { showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].error_no_stock_lot_for_history); startDataSync(); return; }
             
             const originalQuantity = historyItem.quantity;
             const availableStock = stockLot.quantity + (historyItem.type === 'export' ? originalQuantity : -originalQuantity);
             
-            if (newQuantity > availableStock) { showError('จำนวนไม่พอ', `ไม่สามารถแก้ไขจำนวนได้ สต็อกคงเหลือในล็อตนี้ (รวมที่คืน) มีเพียง ${availableStock} ชิ้น`); startDataSync(); return; }
+            if (newQuantity > availableStock) { showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].not_enough_stock.replace('{quantity}', availableStock)); startDataSync(); return; }
 
             stockLot.quantity = availableStock - (historyItem.type === 'export' ? newQuantity : -newQuantity);
             stockLot.productionDate = newProdDate;
@@ -1066,7 +1559,7 @@
             
             populateAll();
             editHistoryModal.hide();
-            showSuccess('แก้ไขประวัติเรียบร้อย');
+            showSuccess(translations[currentLanguage].save_changes_button);
             saveDataToSheet();
             setTimeout(() => {
                 loadDataFromSheet(false).then(() => startDataSync());
@@ -1080,18 +1573,66 @@
             const productId = document.getElementById('edit-stock-product-id').value;
             const newTotalQuantity = parseInt(document.getElementById('edit-stock-quantity').value);
             const product = db.products.find(p => String(p.id) === String(productId));
-            if (!product) { showError('ผิดพลาด', 'ไม่พบสินค้า'); startDataSync(); return; }
+            if (!product) { showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].error_no_product_found); startDataSync(); return; }
             
             const originalTotal = db.stock.filter(s => String(s.productId) === String(productId)).reduce((sum, item) => sum + item.quantity, 0);
             db.stock = db.stock.filter(s => String(s.productId) !== String(productId));
             const newLotId = db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1;
             db.stock.push({ lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' });
-            const remarks = `ปรับยอดจาก ${originalTotal} เป็น ${newTotalQuantity}`;
+            const remarks = `${translations[currentLanguage].adjustment_from} ${originalTotal} ${translations[currentLanguage].to} ${newTotalQuantity}`;
             addHistory('adjustment', product, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
             
             populateAll();
             editStockModal.hide();
-            showSuccess('ปรับปรุงยอดสต็อกเรียบร้อย');
+            showSuccess(translations[currentLanguage].success_update_stock_total);
+            saveDataToSheet();
+            setTimeout(() => {
+                loadDataFromSheet(false).then(() => startDataSync());
+            }, 3000);
+        }
+
+        // New function for handling Announcement form submission
+        function handleAnnouncementFormSubmit(e) {
+            e.preventDefault();
+            stopDataSync();
+
+            const announcementId = document.getElementById('announcement-id').value;
+            const title = document.getElementById('announcement-title').value;
+            const message = document.getElementById('announcement-message').value;
+            const isActive = document.getElementById('announcement-active').checked;
+
+            if (!title || !message) {
+                showError(translations[currentLanguage].data_incomplete, translations[currentLanguage].announcement_title_required);
+                startDataSync();
+                return;
+            }
+
+            if (editingAnnouncementId) {
+                const index = db.announcements.findIndex(a => String(a.id) === String(editingAnnouncementId));
+                if (index > -1) {
+                    db.announcements[index] = {
+                        ...db.announcements[index],
+                        title,
+                        message,
+                        isActive
+                    };
+                    showSuccess(translations[currentLanguage].success_update_announcement);
+                }
+            } else {
+                const newId = db.announcements.length > 0 ? Math.max(...db.announcements.map(a => a.id)) + 1 : 1;
+                db.announcements.push({
+                    id: newId,
+                    title,
+                    message,
+                    postedBy: currentUser.username,
+                    postedDate: new Date().toISOString(),
+                    isActive
+                });
+                showSuccess(translations[currentLanguage].success_add_announcement);
+            }
+            
+            clearAnnouncementForm();
+            populateAll();
             saveDataToSheet();
             setTimeout(() => {
                 loadDataFromSheet(false).then(() => startDataSync());
@@ -1114,7 +1655,7 @@
         function showDashboard() { 
             loginPage.style.display = 'none'; 
             dashboardPage.style.display = 'block'; 
-            userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (สิทธิ์: ${currentUser.role})`; 
+            userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${translations[currentLanguage].role_col}: ${currentUser.role})`; 
             userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`; 
             const adminElements = document.querySelectorAll('.admin-nav'); 
             const displayStyle = currentUser.role === 'admin' ? 'block' : 'none'; 
@@ -1140,41 +1681,62 @@
             resetInactivityTimer();
         }
 
-        function populateAll() { populateStockSummary(); populateUserManagementTable(); populateProductManagementTable(); populateHistoryTable(); }
+        function populateAll() { 
+            populateStockSummary(); 
+            populateUserManagementTable(); 
+            populateProductManagementTable(); 
+            populateHistoryTable(); 
+            populateAnnouncementsTable(); // New: Populate announcements table
+            displayActiveAnnouncements(); // New: Display active announcements on dashboard
+        }
+
         function renderAllForms() {
             importFormEl.innerHTML = `
-                <div class="col-md-4"> <label for="import-product-id" class="form-label">รหัสสินค้า</label> <div class="position-relative"> <input type="text" id="import-product-id" class="form-control" required autocomplete="off" placeholder="พิมพ์เพื่อค้นหา..."> <div id="import-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
-                <div class="col-md-4"> <label for="import-product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="import-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-4"> <label for="import-customer" class="form-label">ลูกค้า</label> <input type="text" id="import-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-3"> <label for="import-erp-code" class="form-label">รหัส ERP</label> <input type="text" id="import-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-3"> <label for="import-fullbox" class="form-label">จำนวนเต็มกล่อง</label> <input type="text" id="import-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-3"> <label for="import-quantity" class="form-label">จำนวนที่รับเข้า</label> <input type="number" id="import-quantity" class="form-control" required min="1"> </div>
-                <div class="col-md-3"> <label for="import-prod-date" class="form-label">วันที่ผลิต</label> <input type="date" id="import-prod-date" class="form-control" required> </div>
-                <div class="col-12"> <label for="import-remarks" class="form-label">หมายเหตุ</label> <textarea id="import-remarks" class="form-control" rows="2"></textarea> </div>
-                <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>เช็ควันที่รับเข้าจากชิ้นงานให้ดีก่อนรับเข้า</p> </div>
-                <div class="col-12"> <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-2"></i>บันทึกการรับเข้า</button> <button type="button" id="clear-import-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>ล้างฟอร์ม</button> </div>`;
+                <div class="col-md-4"> <label for="import-product-id" class="form-label" data-i18n="product_code_label">${translations[currentLanguage].product_code_label}</label> <div class="position-relative"> <input type="text" id="import-product-id" class="form-control" required autocomplete="off" data-i18n="search_placeholder" placeholder="${translations[currentLanguage].search_placeholder}"> <div id="import-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
+                <div class="col-md-4"> <label for="import-product-name" class="form-label" data-i18n="name_col">${translations[currentLanguage].name_col}</label> <input type="text" id="import-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-4"> <label for="import-customer" class="form-label" data-i18n="customer_col">${translations[currentLanguage].customer_col}</label> <input type="text" id="import-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-3"> <label for="import-erp-code" class="form-label" data-i18n="erp_code_col">${translations[currentLanguage].erp_code_col}</label> <input type="text" id="import-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-3"> <label for="import-fullbox" class="form-label" data-i18n="full_box_quantity_label">${translations[currentLanguage].full_box_quantity_label}</label> <input type="text" id="import-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-3"> <label for="import-quantity" class="form-label" data-i18n="quantity_imported">${translations[currentLanguage].quantity_imported}</label> <input type="number" id="import-quantity" class="form-control" required min="1"> </div>
+                <div class="col-md-3"> <label for="import-prod-date" class="form-label" data-i18n="production_date_label">${translations[currentLanguage].production_date_label}</label> <input type="date" id="import-prod-date" class="form-control" required> </div>
+                <div class="col-12"> <label for="import-remarks" class="form-label" data-i18n="remarks_label">${translations[currentLanguage].remarks_label}</label> <textarea id="import-remarks" class="form-control" rows="2"></textarea> </div>
+                <div class="col-12 mt-2"> <p class="text-danger fw-bold" data-i18n="check_prod_date_warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>${translations[currentLanguage].check_prod_date_warning}</p> </div>
+                <div class="col-12"> <button type="submit" class="btn btn-primary" data-i18n="save_import_button"><i class="bi bi-save-fill me-2"></i>${translations[currentLanguage].save_import_button}</button> <button type="button" id="clear-import-form-btn" class="btn btn-secondary ms-2" data-i18n="clear_form_button"><i class="bi bi-eraser-fill me-2"></i>${translations[currentLanguage].clear_form_button}</button> </div>`;
             exportFormEl.innerHTML = `
-                <div class="col-md-4"> <label for="export-product-id" class="form-label">รหัสสินค้า</label> <div class="position-relative"> <input type="text" id="export-product-id" class="form-control" required autocomplete="off" placeholder="พิมพ์เพื่อค้นหา..."> <div id="export-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
-                <div class="col-md-4"> <label for="export-product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="export-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-4"> <label for="export-customer" class="form-label">ลูกค้า</label> <input type="text" id="export-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-3"> <label for="export-erp-code" class="form-label">รหัส ERP</label> <input type="text" id="export-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-5"> <label for="export-lot" class="form-label">ล็อตวันที่ผลิต</label> <select id="export-lot" class="form-select" required></select> </div>
-                <div class="col-md-4"> <label for="export-fullbox" class="form-label">จำนวนเต็มกล่อง</label> <input type="text" id="export-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-4"> <label for="export-quantity" class="form-label">จำนวนที่ส่งออก</label> <input type="number" id="export-quantity" class="form-control" required min="1"> </div>
-                <div class="col-md-4"> <label for="export-invoice-number" class="form-label">เลขที่ Invoice</label> <input type="text" id="export-invoice-number" class="form-control" required> </div>
-                <div class="col-12"> <label for="export-remarks" class="form-label">หมายเหตุ</label> <textarea id="export-remarks" class="form-control" rows="2"></textarea> </div>
-                <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>การส่งออกสินค้าควรคำนึกถึงหลัก FIFO (เข้าก่อน-ออกก่อน)</p> </div>
-                <div class="col-12 mt-3"> <button type="submit" class="btn btn-success"><i class="bi bi-send-check-fill me-2"></i>บันทึกการส่งออก</button> <button type="button" id="clear-export-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>ล้างฟอร์ม</button> </div>`;
+                <div class="col-md-4"> <label for="export-product-id" class="form-label" data-i18n="product_code_label">${translations[currentLanguage].product_code_label}</label> <div class="position-relative"> <input type="text" id="export-product-id" class="form-control" required autocomplete="off" data-i18n="search_placeholder" placeholder="${translations[currentLanguage].search_placeholder}"> <div id="export-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
+                <div class="col-md-4"> <label for="export-product-name" class="form-label" data-i18n="name_col">${translations[currentLanguage].name_col}</label> <input type="text" id="export-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-4"> <label for="export-customer" class="form-label" data-i18n="customer_col">${translations[currentLanguage].customer_col}</label> <input type="text" id="export-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-3"> <label for="export-erp-code" class="form-label" data-i18n="erp_code_col">${translations[currentLanguage].erp_code_col}</label> <input type="text" id="export-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-5"> <label for="export-lot" class="form-label" data-i18n="lot_prod_date_label">${translations[currentLanguage].lot_prod_date_label}</label> <select id="export-lot" class="form-select" required></select> </div>
+                <div class="col-md-4"> <label for="export-fullbox" class="form-label" data-i18n="full_box_quantity_label">${translations[currentLanguage].full_box_quantity_label}</label> <input type="text" id="export-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-4"> <label for="export-quantity" class="form-label" data-i18n="quantity_exported">${translations[currentLanguage].quantity_exported}</label> <input type="number" id="export-quantity" class="form-control" required min="1"> </div>
+                <div class="col-md-4"> <label for="export-invoice-number" class="form-label" data-i18n="invoice_number_label">${translations[currentLanguage].invoice_number_label}</label> <input type="text" id="export-invoice-number" class="form-control" required> </div>
+                <div class="col-12"> <label for="export-remarks" class="form-label" data-i18n="remarks_label">${translations[currentLanguage].remarks_label}</label> <textarea id="export-remarks" class="form-control" rows="2"></textarea> </div>
+                <div class="col-12 mt-2"> <p class="text-danger fw-bold" data-i18n="fifo_warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>${translations[currentLanguage].fifo_warning}</p> </div>
+                <div class="col-12 mt-3"> <button type="submit" class="btn btn-success" data-i18n="save_export_button"><i class="bi bi-send-check-fill me-2"></i>${translations[currentLanguage].save_export_button}</button> <button type="button" id="clear-export-form-btn" class="btn btn-secondary ms-2" data-i18n="clear_form_button"><i class="bi bi-eraser-fill me-2"></i>${translations[currentLanguage].clear_form_button}</button> </div>`;
             productFormEl.innerHTML = `
-                <div class="col-12"> <label for="product-id" class="form-label">รหัสสินค้า</label> <input type="text" id="product-id" class="form-control" required> </div>
-                <div class="col-12"> <label for="product-name" class="form-label">ชื่อสินค้า</label> <input type="text" id="product-name" class="form-control" required> </div>
-                <div class="col-12"> <label for="product-customer" class="form-label">ลูกค้า</label> <input type="text" id="product-customer" class="form-control"> </div>
-                <div class="col-12"> <label for="product-fullBoxQuantity" class="form-label">จำนวนเต็มกล่อง/แร็ค</label> <input type="number" id="product-fullBoxQuantity" class="form-control" required min="1"> </div>
-                <div class="col-12"> <label for="product-erpCode" class="form-label">รหัส ERP</label> <input type="text" id="product-erpCode" class="form-control"> </div>
-                <div class="col-12"> <label for="product-unitPrice" class="form-label">ราคาต่อหน่วย</label> <input type="number" step="0.01" id="product-unitPrice" class="form-control" required min="0"> </div>
-                <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>บันทึกข้อมูลสินค้า</button> <button type="button" id="clear-product-form-btn" class="btn btn-secondary w-100 mt-2">ล้างฟอร์ม</button> </div>`;
-            userFormEl.innerHTML = ` <div class="col-12"> <label for="user-username" class="form-label">ชื่อผู้ใช้</label> <input type="text" id="user-username" class="form-control" required> </div> <div class="col-12"> <label for="user-password" class="form-label">รหัสผ่าน</label> <input type="password" id="user-password" class="form-control" required> </div> <div class="col-12"> <label for="user-role-select" class="form-label">สิทธิ์</label> <select id="user-role-select" class="form-select" required> <option value="user">User</option> <option value="admin">Admin</option> </select> </div> <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>บันทึกข้อมูลผู้ใช้</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">ล้างฟอร์ม</button> </div>`;
+                <div class="col-12"> <label for="product-id" class="form-label" data-i18n="product_code_label">${translations[currentLanguage].product_code_label}</label> <input type="text" id="product-id" class="form-control" required> </div>
+                <div class="col-12"> <label for="product-name" class="form-label" data-i18n="name_col">${translations[currentLanguage].name_col}</label> <input type="text" id="product-name" class="form-control" required> </div>
+                <div class="col-12"> <label for="product-customer" class="form-label" data-i18n="customer_col">${translations[currentLanguage].customer_col}</label> <input type="text" id="product-customer" class="form-control"> </div>
+                <div class="col-12"> <label for="product-fullBoxQuantity" class="form-label" data-i18n="full_box_quantity_label">${translations[currentLanguage].full_box_quantity_label}</label> <input type="number" id="product-fullBoxQuantity" class="form-control" required min="1"> </div>
+                <div class="col-12"> <label for="product-erpCode" class="form-label" data-i18n="erp_code_col">${translations[currentLanguage].erp_code_col}</label> <input type="text" id="product-erpCode" class="form-control"> </div>
+                <div class="col-12"> <label for="product-unitPrice" class="form-label" data-i18n="unit_price_col">${translations[currentLanguage].unit_price_col}</label> <input type="number" step="0.01" id="product-unitPrice" class="form-control" required min="0"> </div>
+                <div class="col-12"> <button type="submit" class="btn btn-primary w-100" data-i18n="save_product_button"><i class="bi bi-save-fill me-2"></i>${translations[currentLanguage].save_product_button}</button> <button type="button" id="clear-product-form-btn" class="btn btn-secondary w-100 mt-2" data-i18n="clear_form_button">${translations[currentLanguage].clear_form_button}</button> </div>`;
+            userFormEl.innerHTML = ` <div class="col-12"> <label for="user-username" class="form-label" data-i18n="username_col">${translations[currentLanguage].username_col}</label> <input type="text" id="user-username" class="form-control" required> </div> <div class="col-12"> <label for="user-password" class="form-label" data-i18n="password_label">${translations[currentLanguage].password_label}</label> <input type="password" id="user-password" class="form-control" required> </div> <div class="col-12"> <label for="user-role-select" class="form-label" data-i18n="user_role_select_label">${translations[currentLanguage].user_role_select_label}</label> <select id="user-role-select" class="form-select" required> <option value="user" data-i18n="user_role_user">${translations[currentLanguage].user_role_user}</option> <option value="admin" data-i18n="user_role_admin">${translations[currentLanguage].user_role_admin}</option> </select> </div> <div class="col-12"> <button type="submit" class="btn btn-primary w-100" data-i18n="save_user_button"><i class="bi bi-save-fill me-2"></i>${translations[currentLanguage].save_user_button}</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2" data-i18n="clear_form_button">${translations[currentLanguage].clear_form_button}</button> </div>`;
+            // New announcement form HTML
+            announcementFormEl.innerHTML = `
+                <input type="hidden" id="announcement-id">
+                <div class="col-12"> <label for="announcement-title" class="form-label" data-i18n="announcement_title_label">${translations[currentLanguage].announcement_title_label}</label> <input type="text" id="announcement-title" class="form-control" required> </div>
+                <div class="col-12"> <label for="announcement-message" class="form-label" data-i18n="announcement_message_label">${translations[currentLanguage].announcement_message_label}</label> <textarea id="announcement-message" class="form-control" rows="4" required></textarea> </div>
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="announcement-active" checked>
+                        <label class="form-check-label" for="announcement-active" data-i18n="announcement_active_label">${translations[currentLanguage].announcement_active_label}</label>
+                    </div>
+                </div>
+                <div class="col-12"> <button type="submit" class="btn btn-primary w-100" data-i18n="save_announcement_button"><i class="bi bi-save-fill me-2"></i>${translations[currentLanguage].save_announcement_button}</button> <button type="button" id="clear-announcement-form-btn" class="btn btn-secondary w-100 mt-2" data-i18n="clear_form_button">${translations[currentLanguage].clear_form_button}</button> </div>`;
         }
+
         function addEventListeners() {
             loginForm.addEventListener('submit', handleLogin);
             logoutBtn.addEventListener('click', handleLogout);
@@ -1205,11 +1767,15 @@
             exportFormEl.addEventListener('submit', handleExport);
             document.getElementById('clear-import-form-btn').addEventListener('click', () => importFormEl.reset());
             document.getElementById('clear-export-form-btn').addEventListener('click', () => exportFormEl.reset());
-            document.getElementById('export-lot').addEventListener('change', () => { const selectedOption = document.getElementById('export-lot').options[document.getElementById('export-lot').selectedIndex]; const exportQuantityInput = document.getElementById('export-quantity'); if (selectedOption && selectedOption.dataset.maxQuantity) { exportQuantityInput.max = selectedOption.dataset.maxQuantity; exportQuantityInput.placeholder = `สูงสุด: ${selectedOption.dataset.maxQuantity}`; } else { exportQuantityInput.max = null; exportQuantityInput.placeholder = ''; } });
+            document.getElementById('export-lot').addEventListener('change', () => { const selectedOption = document.getElementById('export-lot').options[document.getElementById('export-lot').selectedIndex]; const exportQuantityInput = document.getElementById('export-quantity'); if (selectedOption && selectedOption.dataset.maxQuantity) { exportQuantityInput.max = selectedOption.dataset.maxQuantity; exportQuantityInput.placeholder = `${translations[currentLanguage].max_quantity_label}: ${selectedOption.dataset.maxQuantity}`; } else { exportQuantityInput.max = null; exportQuantityInput.placeholder = ''; } });
             productFormEl.addEventListener('submit', handleProductFormSubmit);
             document.getElementById('clear-product-form-btn').addEventListener('click', clearProductForm);
             userFormEl.addEventListener('submit', handleUserFormSubmit);
             document.getElementById('clear-user-form-btn').addEventListener('click', clearUserForm);
+            // New event listeners for Announcement Management
+            announcementFormEl.addEventListener('submit', handleAnnouncementFormSubmit);
+            document.getElementById('clear-announcement-form-btn').addEventListener('click', clearAnnouncementForm);
+
             document.getElementById('backup-stock-btn').addEventListener('click', () => backupToCSV(db.stock, 'stock_backup.csv'));
             document.getElementById('backup-products-btn').addEventListener('click', () => backupToCSV(db.products, 'products_backup.csv'));
             document.getElementById('backup-users-btn').addEventListener('click', () => backupToCSV(db.users, 'users_backup.csv'));
@@ -1219,7 +1785,7 @@
                     const lot = db.stock.find(s => s.lotId === item.lotId);
                     return {
                         date: new Date(item.date).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-                        type: item.type,
+                        type: translations[currentLanguage][`${item.type}_type`], // Translate type
                         productId: item.productId,
                         productName: item.productName,
                         quantity: item.quantity,
@@ -1237,9 +1803,16 @@
             historyFilterForm.addEventListener('reset', () => { document.getElementById('filter-product-id').value = ''; document.getElementById('filter-product-search').value = ''; setTimeout(populateHistoryTable, 0); });
             editHistoryForm.addEventListener('submit', handleEditHistorySubmit);
             editStockForm.addEventListener('submit', handleEditStockSubmit);
+
+            // Language switcher event listener
+            languageSwitcher.addEventListener('change', (event) => {
+                currentLanguage = event.target.value;
+                localStorage.setItem('appLanguage', currentLanguage);
+                updateTextContent();
+            });
         }
         function handleLogin(e) { e.preventDefault(); const username = document.getElementById('username').value; const password = document.getElementById('password').value; const foundUser = db.users.find(u => u.username === username && u.password === password); if (foundUser) { sessionStorage.setItem('currentUser', JSON.stringify(foundUser)); checkLoginState(); } else { errorMessage.classList.remove('d-none'); } }
-        function handleLogout() { confirmAction('ต้องการออกจากระบบ?', '', showLoginPage); }
+        function handleLogout() { confirmAction(translations[currentLanguage].logout_confirm_title, translations[currentLanguage].logout_confirm_text, showLoginPage); }
         function populateStockSummary() {
             stockSummaryTable.innerHTML = '';
             
@@ -1256,7 +1829,7 @@
                     const latestHistoryEntry = db.history.find(h => String(h.productId) === String(id));
                     productInfo = {
                         id: id,
-                        name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${id})`,
+                        name: latestHistoryEntry ? latestHistoryEntry.productName : `(${translations[currentLanguage].no_product_info} ${id})`,
                         customer: latestHistoryEntry ? latestHistoryEntry.customer || '-' : '-',
                         erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode || '-' : '-',
                         unitPrice: 0,
@@ -1287,7 +1860,7 @@
             summary.sort((a, b) => String(a.id).localeCompare(String(b.id)));
 
             if (summary.length === 0) {
-                const message = searchTerm ? 'ไม่พบสินค้าที่ตรงกับการค้นหาค่ะ' : (filterOldStock ? 'ไม่พบสต็อกที่เก่ากว่า 3 เดือนค่ะ' : 'ยังไม่มีข้อมูลสต็อกเลยจ้า');
+                const message = searchTerm ? translations[currentLanguage].no_search_results : (filterOldStock ? translations[currentLanguage].no_old_stock : translations[currentLanguage].no_stock_data);
                 stockSummaryTable.innerHTML = `<tr><td colspan="6" class="text-center p-4">${message} <i class="bi bi-emoji-wink"></i></td></tr>`;
                 return;
             }
@@ -1338,12 +1911,25 @@
         }
         function populateHistoryTable() {
             historyTable.innerHTML = '';
+            const startDate = document.getElementById('filter-start-date').value;
+            const endDate = document.getElementById('filter-end-date').value;
+            const type = document.getElementById('filter-type').value;
+            const productId = document.getElementById('filter-product-id').value;
+            const invoiceSearch = document.getElementById('filter-invoice-search').value.toLowerCase();
+
+            // Check if any filter criteria are provided
+            if (!startDate && !endDate && !type && !productId && !invoiceSearch) {
+                document.getElementById('history-total-quantity').textContent = `${translations[currentLanguage].total_quantity_label}: 0`;
+                historyTable.innerHTML = `<tr><td colspan="8" class="text-center p-4">${translations[currentLanguage].history_search_prompt} <i class="bi bi-info-circle-fill"></i></td></tr>`;
+                return;
+            }
+
             const filteredHistory = getFilteredHistory();
             const totalQuantity = filteredHistory.reduce((sum, item) => sum + item.quantity, 0);
-            document.getElementById('history-total-quantity').textContent = `ยอดรวม: ${totalQuantity.toLocaleString()}`;
+            document.getElementById('history-total-quantity').textContent = `${translations[currentLanguage].total_quantity_label}: ${totalQuantity.toLocaleString()}`;
 
             if (filteredHistory.length === 0) {
-                historyTable.innerHTML = `<tr><td colspan="8" class="text-center p-4">ไม่พบข้อมูลตามเงื่อนไขที่กำหนดค่ะ</td></tr>`;
+                historyTable.innerHTML = `<tr><td colspan="8" class="text-center p-4">${translations[currentLanguage].history_no_results}</td></tr>`;
                 return;
             }
             filteredHistory.forEach(item => {
@@ -1352,20 +1938,20 @@
                 const lot = db.stock.find(s => s.lotId === item.lotId);
                 switch (item.type) {
                     case 'import':
-                        typeHtml = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill"><i class="bi bi-arrow-down me-1"></i>รับเข้า</span>`;
+                        typeHtml = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill"><i class="bi bi-arrow-down me-1"></i>${translations[currentLanguage].import_type}</span>`;
                         rowClass = 'history-import';
                         break;
                     case 'export':
-                        typeHtml = `<span class="badge bg-info-subtle text-info-emphasis rounded-pill"><i class="bi bi-arrow-up me-1"></i>ส่งออก</span>`;
+                        typeHtml = `<span class="badge bg-info-subtle text-info-emphasis rounded-pill"><i class="bi bi-arrow-up me-1"></i>${translations[currentLanguage].export_type}</span>`;
                         rowClass = 'history-export';
                         break;
                     case 'adjustment':
-                        typeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill"><i class="bi bi-pencil-fill me-1"></i>ปรับปรุงยอด</span>`;
+                        typeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill"><i class="bi bi-pencil-fill me-1"></i>${translations[currentLanguage].adjustment_type}</span>`;
                         rowClass = 'history-adjustment';
                         break;
                 }
                 row.classList.add(rowClass);
-                const formattedDate = new Date(item.date).toLocaleString('th-TH', {
+                const formattedDate = new Date(item.date).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-US', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric',
@@ -1383,7 +1969,14 @@
                 historyTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none');
             }
         }
-        function populateUserManagementTable() { userManagementTable.innerHTML = ''; db.users.forEach(u => { const r = document.createElement('tr'); r.innerHTML = `<td><i class="bi bi-person-circle me-2"></i>${u.username}</td><td><span class="badge rounded-pill ${u.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}">${u.role}</span></td><td><button class="btn btn-warning btn-sm" onclick="window.app.editUser('${u.username}')"><i class="bi bi-pencil-fill"></i></button> <button class="btn btn-danger btn-sm" onclick="window.app.deleteUser('${u.username}')"><i class="bi bi-trash3-fill"></i></button></td>`; userManagementTable.appendChild(r); }); }
+        function populateUserManagementTable() { 
+            userManagementTable.innerHTML = ''; 
+            db.users.forEach(u => { 
+                const r = document.createElement('tr'); 
+                r.innerHTML = `<td><i class="bi bi-person-circle me-2"></i>${u.username}</td><td><span class="badge rounded-pill ${u.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}">${u.role === 'admin' ? translations[currentLanguage].user_role_admin : translations[currentLanguage].user_role_user}</span></td><td><button class="btn btn-warning btn-sm" onclick="window.app.editUser('${u.username}')"><i class="bi bi-pencil-fill"></i></button> ${u.username !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="window.app.deleteUser('${u.username}')"><i class="bi bi-trash3-fill"></i></button>` : ''}</td>`; 
+                userManagementTable.appendChild(r); 
+            }); 
+        }
         function populateProductManagementTable() {
             productManagementTable.innerHTML = '';
             db.products.forEach(p => {
@@ -1392,17 +1985,93 @@
                 productManagementTable.appendChild(r);
             });
         }
+        function populateAnnouncementsTable() {
+            announcementManagementTable.innerHTML = '';
+            // Sort announcements by postedDate, newest first
+            const sortedAnnouncements = [...db.announcements].sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+
+            if (sortedAnnouncements.length === 0) {
+                announcementManagementTable.innerHTML = `<tr><td colspan="5" class="text-center p-4">${translations[currentLanguage].no_announcement_found}</td></tr>`;
+                return;
+            }
+
+            sortedAnnouncements.forEach(ann => {
+                const row = document.createElement('tr');
+                const formattedDate = new Date(ann.postedDate).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'Asia/Bangkok'
+                });
+                const statusBadge = ann.isActive 
+                    ? `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">${translations[currentLanguage].announcement_active}</span>`
+                    : `<span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${translations[currentLanguage].announcement_inactive}</span>`;
+                
+                row.innerHTML = `
+                    <td>${ann.title}</td>
+                    <td>${statusBadge}</td>
+                    <td>${ann.postedBy}</td>
+                    <td>${formattedDate}</td>
+                    <td>
+                        <button class="btn btn-warning btn-sm" onclick="window.app.editAnnouncement('${ann.id}')"><i class="bi bi-pencil-fill"></i></button>
+                        <button class="btn btn-info btn-sm" onclick="window.app.toggleAnnouncementStatus('${ann.id}')"><i class="bi bi-toggle-${ann.isActive ? 'on' : 'off'}"></i></button>
+                        <button class="btn btn-danger btn-sm" onclick="window.app.deleteAnnouncement('${ann.id}')"><i class="bi bi-trash3-fill"></i></button>
+                    </td>
+                `;
+                announcementManagementTable.appendChild(row);
+            });
+        }
+
+        function displayActiveAnnouncements() {
+            announcementsDisplayArea.innerHTML = '';
+            const activeAnnouncements = db.announcements.filter(ann => ann.isActive)
+                                                         .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate)); // Newest first
+
+            if (activeAnnouncements.length === 0) {
+                return; // No active announcements to display
+            }
+
+            activeAnnouncements.forEach(ann => {
+                const formattedDate = new Date(ann.postedDate).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'Asia/Bangkok'
+                });
+                const announcementHtml = `
+                    <div class="card announcement-card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-megaphone-fill me-2"></i>${ann.title}</span>
+                            <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill">${translations[currentLanguage].announcement_label}</span>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">${ann.message}</p>
+                        </div>
+                        <div class="card-footer text-end">
+                            ${translations[currentLanguage].posted_by}: ${ann.postedBy} ${translations[currentLanguage].when}: ${formattedDate}
+                        </div>
+                    </div>
+                `;
+                announcementsDisplayArea.insertAdjacentHTML('beforeend', announcementHtml);
+            });
+        }
+
+
         function populateExportLotDropdown(productId) {
             const dropdown = document.getElementById('export-lot');
-            dropdown.innerHTML = '<option value="">-- เลือกล็อตตามวันที่ผลิต --</option>';
+            dropdown.innerHTML = `<option value="">${translations[currentLanguage].select_lot_prod_date}</option>`;
             if (!productId) {
-                dropdown.innerHTML = '<option value="">-- กรุณาเลือกสินค้าก่อน --</option>';
+                dropdown.innerHTML = `<option value="">${translations[currentLanguage].select_product_first}</option>`;
                 return;
             }
 
             const lots = db.stock.filter(s => String(s.productId) === String(productId) && s.quantity > 0);
             if (lots.length === 0) {
-                dropdown.innerHTML = '<option value="">-- สินค้าหมดสต็อกแล้วจ้า --</option>';
+                dropdown.innerHTML = `<option value="">${translations[currentLanguage].product_out_of_stock}</option>`;
                 return;
             }
 
@@ -1423,13 +2092,14 @@
                 const totalQuantity = lotsByDate[date];
                 const option = document.createElement('option');
                 option.value = date;
-                option.textContent = `วันที่ผลิต: ${date} (เหลือทั้งหมด: ${totalQuantity.toLocaleString()})`;
+                option.textContent = `${translations[currentLanguage].prod_date_label}: ${date} (${translations[currentLanguage].remaining_total}: ${totalQuantity.toLocaleString()})`;
                 option.dataset.maxQuantity = totalQuantity;
                 dropdown.appendChild(option);
             });
         }
         function clearProductForm() { editingProductId = null; productFormEl.reset(); document.getElementById('product-id').readOnly = false; }
         function clearUserForm() { originalUsernameForEdit = null; userFormEl.reset(); }
+        function clearAnnouncementForm() { editingAnnouncementId = null; announcementFormEl.reset(); document.getElementById('announcement-id').value = ''; document.getElementById('announcement-id').readOnly = false; document.getElementById('announcement-active').checked = true; } // New clear form function
         function showSuggestions(inputEl, containerEl, productSource, searchTerm) { containerEl.innerHTML = ''; if (!searchTerm) { return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => String(p.id).toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = item.id; containerEl.innerHTML = ''; inputEl.dispatchEvent(new Event('change', { bubbles: true })); }); containerEl.appendChild(suggestionEl); }); }
         function showFilterSuggestions(inputEl, containerEl, productSource, searchTerm) { const hiddenInputEl = document.getElementById('filter-product-id'); containerEl.innerHTML = ''; if (!searchTerm) { hiddenInputEl.value = ''; return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => String(p.id).toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'p-2'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = `${item.id} - ${item.name}`; hiddenInputEl.value = item.id; containerEl.innerHTML = ''; }); containerEl.appendChild(suggestionEl); }); }
         
@@ -1460,10 +2130,10 @@
             return `${year}-${month}-${day}`;
         }
 
-        function showSuccess(title) { Swal.fire({ title: 'เรียบร้อย!', text: title, icon: 'success', timer: 2000, showConfirmButton: false }); }
+        function showSuccess(title) { Swal.fire({ title: translations[currentLanguage].success_title, text: title, icon: 'success', timer: 2000, showConfirmButton: false }); }
         function showError(title, text) { Swal.fire(title, text, 'error'); }
-        function confirmAction(title, text, callback) { Swal.fire({ title: title, text: text, icon: 'question', showCancelButton: true, confirmButtonText: 'ใช่, ยืนยัน', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#ff8fab', }).then((r) => { if (r.isConfirmed) callback(); }); }
-        function backupToCSV(data, filename) { if (!data || data.length === 0) { showError('ไม่มีข้อมูล', 'ไม่สามารถสำรองข้อมูลที่ว่างเปล่าได้ค่ะ'); return; } const headers = Object.keys(data[0]); const csvRows = [headers.join(',')]; data.forEach(row => { const values = headers.map(header => `"${('' + row[header]).replace(/"/g, '""')}"`); csvRows.push(values.join(',')); }); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })); link.setAttribute('download', filename); document.body.appendChild(link); link.click(); document.body.removeChild(link); showSuccess(`กำลังดาวน์โหลดไฟล์ ${filename}`); }
+        function confirmAction(title, text, callback) { Swal.fire({ title: title, text: text, icon: 'question', showCancelButton: true, confirmButtonText: translations[currentLanguage].yes_confirm_button, cancelButtonText: translations[currentLanguage].cancel_button, confirmButtonColor: '#ff8fab', }).then((r) => { if (r.isConfirmed) callback(); }); }
+        function backupToCSV(data, filename) { if (!data || data.length === 0) { showError(translations[currentLanguage].no_data_to_backup_title, translations[currentLanguage].no_data_to_backup); return; } const headers = Object.keys(data[0]); const csvRows = [headers.join(',')]; data.forEach(row => { const values = headers.map(header => `"${('' + row[header]).replace(/"/g, '""')}"`); csvRows.push(values.join(',')); }); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })); link.setAttribute('download', filename); document.body.appendChild(link); link.click(); document.body.removeChild(link); showSuccess(translations[currentLanguage].downloading_file.replace('{filename}', filename)); }
         
         // --- START THE APP ---
         init();
