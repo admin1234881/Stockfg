@@ -17,7 +17,7 @@
             --success-color: #198754; /* สีเขียว */
             --danger-color: #dc3545; /* สีแดง */
             --warning-color: #ffc107; /* สีเหลือง */
-            --bg-color: #f8f9fa; /* สีพื้นหลังขาวอมเทา */
+            --bg-color: #f0f2f5; /* สีพื้นหลังเทาอ่อน (แก้ไขแล้ว) */
             --text-color: #212529;
             --border-radius: 12px;
             --header-bg: #e7f1ff; /* สีพื้นหลังหัวข้อฟ้าอ่อน */
@@ -365,7 +365,7 @@
             </div>
         </div>
     </div>
-    
+   
     <div class="modal fade" id="editHistoryModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius: var(--border-radius);">
@@ -1893,7 +1893,7 @@
             const announcementsDisplayArea = document.getElementById('announcements-display-area');
             announcementsDisplayArea.innerHTML = '';
             const activeAnnouncements = db.announcements.filter(ann => ann.isActive)
-                                                        .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+                                                         .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
 
             if (activeAnnouncements.length === 0) return;
 
