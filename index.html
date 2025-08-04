@@ -517,12 +517,13 @@
             refresh_desc: "เพื่อข้อมูลล่าสุด",
             // SweetAlerts
             loading: "กำลังโหลดข้อมูล...",
+            saving: "กำลังบันทึกข้อมูล...",
             please_wait: "กรุณารอสักครู่ค่ะ",
             data_updated: "ข้อมูลอัปเดตแล้ว!",
             load_error_title: "โหลดข้อมูลไม่สำเร็จ!",
             load_error_text: "ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ ({error}) กรุณาลองรีเฟรชหน้าเว็บใหม่อีกครั้ง",
             save_error_title: "บันทึกข้อมูลไม่สำเร็จ!",
-            save_error_text: "เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก",
+            save_error_text: "เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก: {error}",
             session_expired_title: "หมดเวลาใช้งาน",
             session_expired_text: "ไม่มีการใช้งานระบบเกิน 30 นาที กรุณาลงชื่อเข้าใช้ใหม่",
             confirm_delete_title: "แน่ใจว่าจะลบ?",
@@ -578,7 +579,7 @@
             history_not_found_for_edit: "ไม่พบประวัติที่ต้องการแก้ไข",
             history_edit_no_lot: "ไม่พบสต็อกล็อตเดิมของประวัติรายการนี้",
             history_edit_not_enough: "ไม่สามารถแก้ไขจำนวนได้ สต็อกคงเหลือในล็อตนี้ (รวมที่คืน) มีเพียง {qty} ชิ้น",
-            product_not_found: "ไม่พบสินค้า",
+            product_not_found_error: "ไม่พบสินค้า",
             success_title: "เรียบร้อย!",
             import_success: "รับสินค้า {name} เข้ามาแล้วจ้า",
             export_success: "ส่งออกสินค้า {name} เรียบร้อยแล้วค่ะ",
@@ -702,12 +703,13 @@
             refresh_desc: "for the latest data",
             // SweetAlerts
             loading: "Loading data...",
+            saving: "Saving data...",
             please_wait: "Please wait",
             data_updated: "Data updated!",
             load_error_title: "Failed to Load Data!",
             load_error_text: "Could not connect to the database ({error}). Please try refreshing the page.",
             save_error_title: "Failed to Save Data!",
-            save_error_text: "An error occurred while sending data to be saved.",
+            save_error_text: "An error occurred while saving data: {error}",
             session_expired_title: "Session Expired",
             session_expired_text: "You have been inactive for over 30 minutes. Please log in again.",
             confirm_delete_title: "Are you sure?",
@@ -763,7 +765,7 @@
             history_not_found_for_edit: "Could not find the history record to edit.",
             history_edit_no_lot: "Original stock lot for this history record not found.",
             history_edit_not_enough: "Cannot edit quantity. Stock available in this lot (including returned items) is only {qty}.",
-            product_not_found: "Product not found",
+            product_not_found_error: "Product not found",
             success_title: "Success!",
             import_success: "Imported {name} successfully.",
             export_success: "Exported {name} successfully.",
@@ -858,7 +860,8 @@
 
         function startDataSync() {
             if (dataSyncInterval) clearInterval(dataSyncInterval);
-            dataSyncInterval = setInterval(() => loadDataFromSheet(false), 30000);
+            // Fetch data every 60 seconds for background updates
+            dataSyncInterval = setInterval(() => loadDataFromSheet(false), 60000);
         }
 
         function stopDataSync() {
@@ -886,14 +889,17 @@
                 }
                 const newData = await response.json();
                 
+                // Ensure all data arrays exist
                 newData.stock = newData.stock || [];
                 newData.products = newData.products || [];
                 newData.users = newData.users || [];
                 newData.history = newData.history || [];
                 newData.announcements = newData.announcements || [];
 
+                // Standardize date formats upon loading
                 newData.stock.forEach(item => { item.productionDate = formatDate(item.productionDate); });
                 
+                // Only update and re-render if data has actually changed
                 if (JSON.stringify(db) !== JSON.stringify(newData)) {
                     db = newData;
                     console.log('Data updated from Google Sheet at:', new Date().toLocaleTimeString());
@@ -915,18 +921,43 @@
         }
 
         async function saveDataToSheet() {
+            Swal.fire({
+                title: translations[currentLanguage].saving,
+                text: translations[currentLanguage].please_wait,
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading() }
+            });
+
             try {
                 const payload = { action: 'saveDb', payload: db };
-                await fetch(SCRIPT_URL, {
+                const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    mode: 'no-cors'
+                    // IMPORTANT: The body is stringified, but the Content-Type header tells the server what it is.
+                    // Google Apps Script's e.postData.contents will receive this string.
+                    body: JSON.stringify(payload), 
+                    headers: {
+                        // This header is informational for the server, but the body content is what matters.
+                        'Content-Type': 'text/plain;charset=utf-8', 
+                    },
                 });
-                console.log('Save request sent to Google Sheet.');
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                
+                // Since the response from a simple doPost is often just text, we process it as text.
+                // A more advanced Apps Script could return JSON, which would be parsed here.
+                const resultText = await response.text();
+                console.log('Save successful:', resultText);
+                
+                // The loading overlay will be closed by the subsequent loadDataFromSheet call
+                return true; // Indicate success
+
             } catch (error) {
                 console.error('Error saving data to Google Sheet:', error);
-                showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text);
+                showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
+                Swal.close(); // Close loading overlay on error
+                return false; // Indicate failure
             }
         }
         
@@ -966,13 +997,13 @@
 
         // --- GLOBAL APP OBJECT ---
         window.app = {
-            deleteLotsByDate: (productId, productionDate) => {
+            deleteLotsByDate: async (productId, productionDate) => {
                 if (currentUser.role !== 'admin') return;
                 const confirmText = translations[currentLanguage].confirm_delete_lot_text
                     .replace('{productId}', productId)
                     .replace('{productionDate}', productionDate);
 
-                confirmAction(translations[currentLanguage].confirm_delete_title, confirmText, () => {
+                confirmAction(translations[currentLanguage].confirm_delete_title, confirmText, async () => {
                     stopDataSync();
                     const lotsToDelete = db.stock
                         .filter(lot => String(lot.productId) === String(productId) && formatDate(lot.productionDate) === productionDate)
@@ -980,18 +1011,19 @@
 
                     if (lotsToDelete.length === 0) {
                         showError('Error!', translations[currentLanguage].delete_lot_error);
+                        startDataSync();
                         return;
                     }
 
                     db.stock = db.stock.filter(lot => !lotsToDelete.includes(lot.lotId));
-                    
-                    populateAll();
                     lotDetailModal.hide();
-                    showSuccess(translations[currentLanguage].delete_lot_success);
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    
+                    const saveSuccess = await saveDataToSheet();
+                    if(saveSuccess) {
+                        await loadDataFromSheet(false);
+                        showSuccess(translations[currentLanguage].delete_lot_success);
+                    }
+                    startDataSync();
                 });
             },
             editProduct: (productId) => {
@@ -1008,7 +1040,7 @@
                     document.getElementById('product-unitPrice').value = product.unitPrice;
                 }
             },
-            deleteProduct: (productId) => {
+            deleteProduct: async (productId) => {
                 if (currentUser.role !== 'admin') return;
                 const isProductInStock = db.stock.some(s => String(s.productId) === String(productId) && s.quantity > 0);
                 if (isProductInStock) {
@@ -1016,15 +1048,16 @@
                     return;
                 }
                 const confirmText = translations[currentLanguage].confirm_delete_product_text.replace('{productId}', productId);
-                confirmAction(translations[currentLanguage].confirm_delete_title, confirmText, () => {
+                confirmAction(translations[currentLanguage].confirm_delete_title, confirmText, async () => {
                     stopDataSync();
                     db.products = db.products.filter(p => String(p.id) !== String(productId));
-                    populateAll();
-                    showSuccess(translations[currentLanguage].delete_product_success);
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    
+                    const saveSuccess = await saveDataToSheet();
+                    if(saveSuccess) {
+                        await loadDataFromSheet(false);
+                        showSuccess(translations[currentLanguage].delete_product_success);
+                    }
+                    startDataSync();
                 });
             },
             editUser: (username) => {
@@ -1037,22 +1070,23 @@
                     document.getElementById('user-role-select').value = user.role;
                 }
             },
-            deleteUser: (username) => {
+            deleteUser: async (username) => {
                 if (currentUser.role !== 'admin') return;
                 if (username === 'admin') {
                     showError('Cannot Delete!', translations[currentLanguage].delete_user_admin_error);
                     return;
                 }
                 const confirmText = translations[currentLanguage].confirm_delete_user_text.replace('{username}', username);
-                confirmAction(translations[currentLanguage].confirm_delete_title, confirmText, () => {
+                confirmAction(translations[currentLanguage].confirm_delete_title, confirmText, async () => {
                     stopDataSync();
                     db.users = db.users.filter(u => u.username !== username);
-                    populateAll();
-                    showSuccess(translations[currentLanguage].delete_user_success);
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    
+                    const saveSuccess = await saveDataToSheet();
+                    if(saveSuccess) {
+                        await loadDataFromSheet(false);
+                        showSuccess(translations[currentLanguage].delete_user_success);
+                    }
+                    startDataSync();
                 });
             },
             editHistory: (historyId) => {
@@ -1065,7 +1099,7 @@
                     editHistoryModal.show();
                 }
             },
-            deleteHistory: (historyId) => {
+            deleteHistory: async (historyId) => {
                 if (currentUser.role !== 'admin') return;
                 
                 const historyIndex = db.history.findIndex(h => h.date === historyId);
@@ -1076,7 +1110,7 @@
                     ? translations[currentLanguage].delete_history_export_text
                     : translations[currentLanguage].delete_history_import_text;
 
-                confirmAction(translations[currentLanguage].confirm_delete_history_title, message, () => {
+                confirmAction(translations[currentLanguage].confirm_delete_history_title, message, async () => {
                     stopDataSync();
                     const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
 
@@ -1084,6 +1118,7 @@
                         if (stockLot) {
                             stockLot.quantity += historyItem.quantity;
                         } else {
+                            // This case is unlikely if data is consistent, but good to handle.
                             db.stock.push({ lotId: historyItem.lotId, productId: historyItem.productId, quantity: historyItem.quantity, productionDate: 'N/A (Reverted)' });
                         }
                     } else { // import
@@ -1100,12 +1135,13 @@
                     }
 
                     db.history.splice(historyIndex, 1);
-                    populateAll();
-                    showSuccess(translations[currentLanguage].delete_history_success);
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    
+                    const saveSuccess = await saveDataToSheet();
+                    if(saveSuccess) {
+                        await loadDataFromSheet(false);
+                        showSuccess(translations[currentLanguage].delete_history_success);
+                    }
+                    startDataSync();
                 });
             },
             editStockTotal: (productId) => {
@@ -1133,30 +1169,32 @@
                     renderAnnouncementForm(announcement);
                 }
             },
-            deleteAnnouncement: (announcementId) => {
+            deleteAnnouncement: async (announcementId) => {
                 if (currentUser.role !== 'admin') return;
-                confirmAction(translations[currentLanguage].confirm_delete_title, 'This announcement will be permanently deleted.', () => {
+                confirmAction(translations[currentLanguage].confirm_delete_title, 'This announcement will be permanently deleted.', async () => {
                     stopDataSync();
                     db.announcements = db.announcements.filter(a => String(a.id) !== String(announcementId));
-                    populateAll();
-                    showSuccess(translations[currentLanguage].announcement_update_success);
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    
+                    const saveSuccess = await saveDataToSheet();
+                    if(saveSuccess) {
+                        await loadDataFromSheet(false);
+                        showSuccess(translations[currentLanguage].announcement_update_success);
+                    }
+                    startDataSync();
                 });
             },
-            toggleAnnouncementStatus: (announcementId) => {
+            toggleAnnouncementStatus: async (announcementId) => {
                 if (currentUser.role !== 'admin') return;
                 const announcement = db.announcements.find(a => String(a.id) === String(announcementId));
                 if (announcement) {
                     announcement.isActive = !announcement.isActive;
-                    populateAll();
-                    showSuccess(translations[currentLanguage].announcement_status_update_success);
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    
+                    const saveSuccess = await saveDataToSheet();
+                    if(saveSuccess) {
+                        await loadDataFromSheet(false);
+                        showSuccess(translations[currentLanguage].announcement_status_update_success);
+                    }
+                    startDataSync();
                 }
             }
         };
@@ -1199,7 +1237,7 @@
             }); 
         }
 
-        function handleImport(e) {
+        async function handleImport(e) {
             e.preventDefault();
             stopDataSync();
 
@@ -1231,18 +1269,18 @@
             db.stock.push(newStock);
             addHistory('import', productForHistory, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
             
-            populateAll();
-            showSuccess(translations[currentLanguage].import_success.replace('{name}', productName));
             importFormEl.reset();
             ['import-product-name', 'import-customer', 'import-erp-code', 'import-fullbox'].forEach(id => document.getElementById(id).value = '');
             
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            const saveSuccess = await saveDataToSheet();
+            if(saveSuccess) {
+                await loadDataFromSheet(false);
+                showSuccess(translations[currentLanguage].import_success.replace('{name}', productName));
+            }
+            startDataSync();
         }
 
-        function handleExport(e) {
+        async function handleExport(e) {
             e.preventDefault();
             stopDataSync();
 
@@ -1294,19 +1332,19 @@
                 quantityToExport -= quantityFromThisLot;
             }
             
-            populateAll();
-            showSuccess(translations[currentLanguage].export_success.replace('{name}', product.name));
             exportFormEl.reset();
             ['export-product-name', 'export-customer', 'export-erp-code', 'export-fullbox'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('export-lot').innerHTML = `<option value="">${translations[currentLanguage].export_lot_placeholder_no_product}</option>`;
 
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 4000);
+            const saveSuccess = await saveDataToSheet();
+            if(saveSuccess) {
+                await loadDataFromSheet(false);
+                showSuccess(translations[currentLanguage].export_success.replace('{name}', product.name));
+            }
+            startDataSync();
         }
 
-        function handleProductFormSubmit(e) {
+        async function handleProductFormSubmit(e) {
             e.preventDefault();
             stopDataSync();
 
@@ -1318,27 +1356,30 @@
                 erpCode: document.getElementById('product-erpCode').value,
                 unitPrice: parseFloat(document.getElementById('product-unitPrice').value)
             };
+            let successMessage = '';
             if (editingProductId) {
                 const productIndex = db.products.findIndex(p => String(p.id) === String(editingProductId));
                 if (productIndex > -1) {
                     db.products[productIndex] = { ...db.products[productIndex], ...productData };
-                    showSuccess(translations[currentLanguage].product_update_success);
+                    successMessage = translations[currentLanguage].product_update_success;
                 }
             } else {
                 if (db.products.some(p => String(p.id) === String(productData.id))) { showError('Duplicate ID!', translations[currentLanguage].product_id_exists); startDataSync(); return; }
                 db.products.push(productData);
-                showSuccess(translations[currentLanguage].product_add_success);
+                successMessage = translations[currentLanguage].product_add_success;
             }
             
             clearProductForm();
-            populateAll();
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+
+            const saveSuccess = await saveDataToSheet();
+            if(saveSuccess) {
+                await loadDataFromSheet(false);
+                showSuccess(successMessage);
+            }
+            startDataSync();
         }
         
-        function handleUserFormSubmit(e) {
+        async function handleUserFormSubmit(e) {
             e.preventDefault();
             stopDataSync();
 
@@ -1346,10 +1387,12 @@
             const newPassword = document.getElementById('user-password').value;
             const newRole = document.getElementById('user-role-select').value;
             
+            let successMessage = '';
+
             if (!originalUsernameForEdit) {
                 if (db.users.some(u => u.username === newUsername)) { showError('Duplicate Username!', translations[currentLanguage].username_exists); startDataSync(); return; }
                 db.users.push({ username: newUsername, password: newPassword, role: newRole });
-                showSuccess(translations[currentLanguage].user_add_success);
+                successMessage = translations[currentLanguage].user_add_success;
             } else {
                 const userIndex = db.users.findIndex(u => u.username === originalUsernameForEdit);
                 if (userIndex === -1) { showError('Error', translations[currentLanguage].user_not_found_for_edit); clearUserForm(); startDataSync(); return; }
@@ -1361,7 +1404,6 @@
                     currentUser.password = newPassword;
                     currentUser.role = newRole;
                     sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    showDashboard();
                 }
                 if (originalUsernameForEdit !== newUsername) {
                     db.history.forEach(record => { if (record.user === originalUsernameForEdit) { record.user = newUsername; } });
@@ -1372,19 +1414,24 @@
                 userToUpdate.username = newUsername;
                 userToUpdate.password = newPassword;
                 userToUpdate.role = newRole;
-
-                showSuccess(translations[currentLanguage].user_update_success);
+                successMessage = translations[currentLanguage].user_update_success;
             }
             
             clearUserForm();
-            populateAll();
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+
+            const saveSuccess = await saveDataToSheet();
+            if(saveSuccess) {
+                await loadDataFromSheet(false);
+                showSuccess(successMessage);
+                // After load, update dashboard UI if current user was edited
+                if (currentUser.username === newUsername) {
+                    showDashboard();
+                }
+            }
+            startDataSync();
         }
 
-        function handleEditHistorySubmit(e) {
+        async function handleEditHistorySubmit(e) {
             e.preventDefault();
             stopDataSync();
 
@@ -1400,57 +1447,74 @@
             const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
             if (!stockLot) { showError('Error', translations[currentLanguage].history_edit_no_lot); startDataSync(); return; }
             
-            const originalQuantity = historyItem.quantity;
-            const availableStock = stockLot.quantity + (historyItem.type === 'export' ? originalQuantity : -originalQuantity);
-            
-            if (newQuantity > availableStock) { 
-                const errorText = translations[currentLanguage].history_edit_not_enough.replace('{qty}', availableStock);
+            // Revert original transaction to get a baseline stock
+            let baselineStock = stockLot.quantity;
+            if (historyItem.type === 'export') {
+                baselineStock += historyItem.quantity;
+            } else { // import
+                baselineStock -= historyItem.quantity;
+            }
+
+            // Check if new transaction is possible from baseline
+            if (historyItem.type === 'import' && newQuantity > baselineStock) {
+                const errorText = translations[currentLanguage].history_edit_not_enough.replace('{qty}', baselineStock);
                 showError('Not Enough Stock', errorText); 
                 startDataSync(); 
                 return; 
             }
+            
+            // Apply new transaction
+            if (historyItem.type === 'export') {
+                stockLot.quantity = baselineStock - newQuantity;
+            } else { // import
+                stockLot.quantity = baselineStock + newQuantity;
+            }
 
-            stockLot.quantity = availableStock - (historyItem.type === 'export' ? newQuantity : -newQuantity);
             stockLot.productionDate = newProdDate;
             historyItem.quantity = newQuantity;
             historyItem.remarks = newRemarks;
             if (historyItem.type === 'export') { historyItem.invoiceNumber = newInvoice; }
             
-            populateAll();
             editHistoryModal.hide();
-            showSuccess(translations[currentLanguage].history_edit_success);
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+
+            const saveSuccess = await saveDataToSheet();
+            if(saveSuccess) {
+                await loadDataFromSheet(false);
+                showSuccess(translations[currentLanguage].history_edit_success);
+            }
+            startDataSync();
         }
 
-        function handleEditStockSubmit(e) {
+        async function handleEditStockSubmit(e) {
             e.preventDefault();
             stopDataSync();
 
             const productId = document.getElementById('edit-stock-product-id').value;
             const newTotalQuantity = parseInt(document.getElementById('edit-stock-quantity').value);
             const product = db.products.find(p => String(p.id) === String(productId));
-            if (!product) { showError('Error', translations[currentLanguage].product_not_found); startDataSync(); return; }
+            if (!product) { showError('Error', translations[currentLanguage].product_not_found_error); startDataSync(); return; }
             
             const originalTotal = db.stock.filter(s => String(s.productId) === String(productId)).reduce((sum, item) => sum + item.quantity, 0);
+            // Remove all existing lots for this product
             db.stock = db.stock.filter(s => String(s.productId) !== String(productId));
+            // Create a new single lot
             const newLotId = db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1;
             db.stock.push({ lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' });
+            
             const remarks = `Adjusted from ${originalTotal} to ${newTotalQuantity}`;
             addHistory('adjustment', product, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
             
-            populateAll();
             editStockModal.hide();
-            showSuccess(translations[currentLanguage].stock_update_success);
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            
+            const saveSuccess = await saveDataToSheet();
+            if(saveSuccess) {
+                await loadDataFromSheet(false);
+                showSuccess(translations[currentLanguage].stock_update_success);
+            }
+            startDataSync();
         }
 
-        function handleAnnouncementFormSubmit(e) {
+        async function handleAnnouncementFormSubmit(e) {
             e.preventDefault();
             stopDataSync();
 
@@ -1464,24 +1528,27 @@
                 return;
             }
 
+            let successMessage = '';
             if (editingAnnouncementId) {
                 const index = db.announcements.findIndex(a => String(a.id) === String(editingAnnouncementId));
                 if (index > -1) {
                     db.announcements[index] = { ...db.announcements[index], title, message, isActive };
-                    showSuccess(translations[currentLanguage].announcement_update_success);
+                    successMessage = translations[currentLanguage].announcement_update_success;
                 }
             } else {
                 const newId = db.announcements.length > 0 ? Math.max(...db.announcements.map(a => a.id)) + 1 : 1;
                 db.announcements.push({ id: newId, title, message, postedBy: currentUser.username, postedDate: new Date().toISOString(), isActive });
-                showSuccess(translations[currentLanguage].announcement_add_success);
+                successMessage = translations[currentLanguage].announcement_add_success;
             }
             
             clearAnnouncementForm();
-            populateAll();
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            
+            const saveSuccess = await saveDataToSheet();
+            if(saveSuccess) {
+                await loadDataFromSheet(false);
+                showSuccess(successMessage);
+            }
+            startDataSync();
         }
         
         function showLoginPage() { 
@@ -1659,6 +1726,7 @@
             filteredHistory.forEach(item => {
                 const row = document.createElement('tr');
                 let typeHtml, rowClass;
+                // Find the production date from the stock data using lotId
                 const lot = db.stock.find(s => s.lotId === item.lotId);
                 switch (item.type) {
                     case 'import':
@@ -2125,3 +2193,4 @@
     </script>
 </body>
 </html>
+
