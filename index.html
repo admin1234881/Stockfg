@@ -816,6 +816,13 @@
             renderAllForms();
             addEventListeners(); // Re-attach listeners after re-rendering forms
             if (currentUser) {
+                // *** FIX STARTS HERE ***
+                // This part was missing. It updates the user role display with the selected language.
+                const userRoleSpan = document.getElementById('user-role');
+                const roleText = translations[currentLanguage].user_role_display.replace('{role}', currentUser.role);
+                userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`;
+                // *** FIX ENDS HERE ***
+
                 populateAll();
             }
         };
@@ -1445,13 +1452,42 @@
             e.preventDefault();
             const dbBackup = JSON.parse(JSON.stringify(db));
 
-            // ... (validation and logic)
             const historyId = document.getElementById('edit-history-id').value;
             const newQuantity = parseInt(document.getElementById('edit-history-quantity').value);
+            const newInvoice = document.getElementById('edit-history-invoice').value;
+            const newRemarks = document.getElementById('edit-history-remarks').value;
+            const newProdDate = document.getElementById('edit-history-prod-date').value;
+
             const historyIndex = db.history.findIndex(h => h.date === historyId);
             if (historyIndex === -1) { showError('Error', translations[currentLanguage].history_not_found_for_edit); return; }
-            // ... more logic
+            const historyItem = db.history[historyIndex];
+            const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
+            if (!stockLot) { showError('Error', translations[currentLanguage].history_edit_no_lot); return; }
+            
+            let baselineStock = stockLot.quantity;
+            if (historyItem.type === 'export') {
+                baselineStock += historyItem.quantity;
+            } else { // import
+                baselineStock -= historyItem.quantity;
+            }
 
+            if (historyItem.type === 'import' && newQuantity > baselineStock) {
+                const errorText = translations[currentLanguage].history_edit_not_enough.replace('{qty}', baselineStock);
+                showError('Not Enough Stock', errorText); 
+                return; 
+            }
+            
+            if (historyItem.type === 'export') {
+                stockLot.quantity = baselineStock - newQuantity;
+            } else { // import
+                stockLot.quantity = baselineStock + newQuantity;
+            }
+
+            stockLot.productionDate = newProdDate;
+            historyItem.quantity = newQuantity;
+            historyItem.remarks = newRemarks;
+            if (historyItem.type === 'export') { historyItem.invoiceNumber = newInvoice; }
+            
             populateAll();
             editHistoryModal.hide();
             showSuccess(translations[currentLanguage].history_edit_success);
@@ -1459,7 +1495,7 @@
             try {
                 await saveDataToSheet();
             } catch (error) {
-                db = dbBackup;
+                db = dbBackup; // Rollback
                 populateAll();
                 showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
             }
