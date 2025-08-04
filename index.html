@@ -96,6 +96,10 @@
             background-color: #e7f1ff;
             border-top: 1px solid #c0d8f7;
         }
+        #export-lots-container {
+            max-height: 250px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -453,12 +457,15 @@
             stock_table_balance: "ยอดคงเหลือทั้งหมด",
             // Import Tab
             import_form_title: "ฟอร์มรับเข้าสินค้า",
+            import_add_lot_button: "เพิ่มล็อตวันที่ผลิต",
+            import_total_quantity: "ยอดรวมที่จะรับเข้า",
             import_fullbox: "จำนวนเต็มกล่อง",
             import_quantity: "จำนวนที่รับเข้า",
             import_warning: "เช็ควันที่รับเข้าจากชิ้นงานให้ดีก่อนรับเข้า",
             import_save_button: "บันทึกการรับเข้า",
             // Export Tab
             export_form_title: "ฟอร์มส่งออกสินค้า",
+            export_total_quantity: "ยอดรวมที่จะส่งออก",
             export_lot_select: "ล็อตวันที่ผลิต",
             export_quantity: "จำนวนที่ส่งออก",
             export_invoice: "เลขที่ Invoice",
@@ -579,6 +586,7 @@
             history_not_found_for_edit: "ไม่พบประวัติที่ต้องการแก้ไข",
             history_edit_no_lot: "ไม่พบสต็อกล็อตเดิมของประวัติรายการนี้",
             history_edit_not_enough: "ไม่สามารถแก้ไขจำนวนได้ สต็อกคงเหลือในล็อตนี้ (รวมที่คืน) มีเพียง {qty} ชิ้น",
+            history_edit_import_not_enough: "ไม่สามารถลดจำนวนรับเข้าให้ต่ำกว่า {qty} ได้ เนื่องจากมีสินค้าถูกใช้ไปแล้ว {qty} ชิ้น",
             product_not_found_error: "ไม่พบสินค้า",
             success_title: "เรียบร้อย!",
             import_success: "รับสินค้า {name} เข้ามาแล้วจ้า",
@@ -639,12 +647,15 @@
             stock_table_balance: "Total Balance",
             // Import Tab
             import_form_title: "Import Goods Form",
+            import_add_lot_button: "Add Production Lot",
+            import_total_quantity: "Total Import Quantity",
             import_fullbox: "Full Box Qty",
             import_quantity: "Import Quantity",
             import_warning: "Please double-check the production date on the product before importing.",
             import_save_button: "Save Import",
             // Export Tab
             export_form_title: "Export Goods Form",
+            export_total_quantity: "Total Export Quantity",
             export_lot_select: "Production Date Lot",
             export_quantity: "Export Quantity",
             export_invoice: "Invoice No.",
@@ -765,6 +776,7 @@
             history_not_found_for_edit: "Could not find the history record to edit.",
             history_edit_no_lot: "Original stock lot for this history record not found.",
             history_edit_not_enough: "Cannot edit quantity. Stock available in this lot (including returned items) is only {qty}.",
+            history_edit_import_not_enough: "Cannot reduce import quantity below {qty}, as {qty} units have already been used.",
             product_not_found_error: "Product not found",
             success_title: "Success!",
             import_success: "Imported {name} successfully.",
@@ -814,14 +826,10 @@
 
             // Re-render all dynamic content
             renderAllForms();
-            addEventListeners(); // Re-attach listeners after re-rendering forms
             if (currentUser) {
-                // *** FIX STARTS HERE ***
-                // This part was missing. It updates the user role display with the selected language.
                 const userRoleSpan = document.getElementById('user-role');
                 const roleText = translations[currentLanguage].user_role_display.replace('{role}', currentUser.role);
                 userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`;
-                // *** FIX ENDS HERE ***
 
                 populateAll();
             }
@@ -927,7 +935,6 @@
             }
         }
 
-        // MODIFIED: This function no longer shows a blocking loader. It just performs the save operation.
         async function saveDataToSheet() {
             try {
                 const payload = { action: 'saveDb', payload: db };
@@ -940,18 +947,16 @@
                 });
 
                 if (!response.ok) {
-                    // Try to get more error details from the response body if possible
                     const errorBody = await response.text();
                     console.error("Error Body from Server:", errorBody);
                     throw new Error(`Server responded with status: ${response.status}`);
                 }
                 
                 console.log('Save successful');
-                return true; // Indicate success
+                return true;
 
             } catch (error) {
                 console.error('Error saving data to Google Sheet:', error);
-                // Re-throw the error so the calling function knows about the failure and can roll back.
                 throw error;
             }
         }
@@ -1002,7 +1007,7 @@
                     const dbBackup = JSON.parse(JSON.stringify(db));
                     
                     const lotsToDelete = db.stock
-                        .filter(lot => String(lot.productId) === String(productId) && formatDate(lot.productionDate) === productionDate)
+                        .filter(lot => String(lot.productId).trim() === String(productId).trim() && formatDate(lot.productionDate) === productionDate)
                         .map(lot => lot.lotId);
 
                     if (lotsToDelete.length === 0) {
@@ -1027,7 +1032,7 @@
             editProduct: (productId) => {
                 if (currentUser.role !== 'admin') return;
                 editingProductId = productId;
-                const product = db.products.find(p => String(p.id) === String(productId));
+                const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
                 if (product) {
                     document.getElementById('product-id').value = product.id;
                     document.getElementById('product-id').readOnly = true;
@@ -1040,7 +1045,7 @@
             },
             deleteProduct: (productId) => {
                 if (currentUser.role !== 'admin') return;
-                const isProductInStock = db.stock.some(s => String(s.productId) === String(productId) && s.quantity > 0);
+                const isProductInStock = db.stock.some(s => String(s.productId).trim() === String(productId).trim() && s.quantity > 0);
                 if (isProductInStock) {
                     showError('Cannot Delete!', translations[currentLanguage].delete_product_error);
                     return;
@@ -1048,7 +1053,7 @@
                 const confirmText = translations[currentLanguage].confirm_delete_product_text.replace('{productId}', productId);
                 confirmAction(translations[currentLanguage].confirm_delete_title, confirmText, async () => {
                     const dbBackup = JSON.parse(JSON.stringify(db));
-                    db.products = db.products.filter(p => String(p.id) !== String(productId));
+                    db.products = db.products.filter(p => String(p.id).trim() !== String(productId).trim());
                     populateAll();
                     showSuccess(translations[currentLanguage].delete_product_success);
 
@@ -1152,10 +1157,10 @@
             },
             editStockTotal: (productId) => {
                 if (currentUser.role !== 'admin') return;
-                const product = db.products.find(p => String(p.id) === String(productId));
+                const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
                 if (product) {
                     const totalQuantity = db.stock
-                        .filter(s => String(s.productId) === String(productId))
+                        .filter(s => String(s.productId).trim() === String(productId).trim())
                         .reduce((sum, item) => sum + item.quantity, 0);
                     
                     renderEditStockForm(product, totalQuantity);
@@ -1262,44 +1267,53 @@
                 return;
             }
             
-            // --- Create temporary objects for potential rollback ---
-            const newStock = {
-                lotId: db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1,
-                productId: productId,
-                quantity: parseInt(document.getElementById('import-quantity').value),
-                productionDate: document.getElementById('import-prod-date').value
-            };
-            const productForHistory = {
-                id: productId,
-                name: productName,
-                customer: document.getElementById('import-customer').value,
-                erpCode: document.getElementById('import-erp-code').value
-            };
-            const remarks = document.getElementById('import-remarks').value;
+            const dbBackup = JSON.parse(JSON.stringify(db));
+            const newStockEntries = [];
+            const newHistoryEntries = [];
 
-            // --- Optimistic UI Update ---
-            // This section updates the local data and UI immediately.
-            db.stock.push(newStock);
-            const newHistoryEntry = addHistory('import', productForHistory, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
+            const lotRows = document.querySelectorAll('#import-lots-container .import-lot-row');
             
+            for(const row of lotRows) {
+                const quantity = parseInt(row.querySelector('.import-quantity').value);
+                const productionDate = row.querySelector('.import-prod-date').value;
+
+                if (quantity > 0 && productionDate) {
+                    const newStock = {
+                        lotId: (db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) : 0) + newStockEntries.length + 1,
+                        productId: productId,
+                        quantity: quantity,
+                        productionDate: productionDate
+                    };
+                    db.stock.push(newStock);
+                    newStockEntries.push(newStock);
+
+                    const productForHistory = {
+                        id: productId,
+                        name: productName,
+                        customer: document.getElementById('import-customer').value,
+                        erpCode: document.getElementById('import-erp-code').value
+                    };
+                    const remarks = document.getElementById('import-remarks').value;
+                    const newHistory = addHistory('import', productForHistory, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
+                    newHistoryEntries.push(newHistory);
+                }
+            }
+
+            if (newStockEntries.length === 0) {
+                showError(translations[currentLanguage].form_incomplete, "Please add at least one valid lot.");
+                return;
+            }
+
             populateAll();
             showSuccess(translations[currentLanguage].import_success.replace('{name}', productName));
-            importFormEl.reset();
-            ['import-product-name', 'import-customer', 'import-erp-code', 'import-fullbox'].forEach(id => document.getElementById(id).value = '');
+            renderImportForm();
 
-            // --- Background Save & Rollback on Failure ---
             try {
                 await saveDataToSheet();
             } catch (error) {
                 console.error("Import save failed. Rolling back.");
-                // Rollback Logic: Remove the items we just added optimistically.
-                db.stock = db.stock.filter(s => s.lotId !== newStock.lotId);
-                db.history = db.history.filter(h => h.date !== newHistoryEntry.date);
-                
-                // Re-render UI to show the rolled-back state
+                db = dbBackup;
                 populateAll();
-                
-                // Inform the user
                 showError(
                     translations[currentLanguage].save_error_title, 
                     translations[currentLanguage].save_error_text.replace('{error}', error.message)
@@ -1311,45 +1325,48 @@
             e.preventDefault();
 
             const productId = document.getElementById('export-product-id').value;
-            const productionDate = document.getElementById('export-lot').value;
-            let quantityToExport = parseInt(document.getElementById('export-quantity').value);
             const invoiceNumber = document.getElementById('export-invoice-number').value;
             const remarks = document.getElementById('export-remarks').value;
+            
+            const lotRows = document.querySelectorAll('#export-lots-container .export-lot-row:has(input[type="checkbox"]:checked)');
 
-            if (!productId || !productionDate || !quantityToExport) {
+            if (!productId || lotRows.length === 0) {
                 showError(translations[currentLanguage].form_incomplete, translations[currentLanguage].export_data_incomplete);
                 return;
             }
-            // ... (rest of the validation)
 
-            // --- Backup current state for potential rollback ---
             const dbBackup = JSON.parse(JSON.stringify(db));
+            let product = db.products.find(p => String(p.id).trim() === String(productId).trim()) || { id: productId, name: 'N/A' };
+            
+            for(const row of lotRows) {
+                const productionDate = row.dataset.date;
+                const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
 
-            // --- Optimistic UI Update ---
-            let product = db.products.find(p => String(p.id) === String(productId)) || { id: productId, name: 'N/A' };
-            const lotsForDate = db.stock
-                .filter(s => String(s.productId) === String(productId) && formatDate(s.productionDate) === productionDate && s.quantity > 0)
-                .sort((a, b) => a.lotId - b.lotId);
-            
-            for (const stockLot of lotsForDate) {
-                if (quantityToExport <= 0) break;
-                const quantityFromThisLot = Math.min(quantityToExport, stockLot.quantity);
-                stockLot.quantity -= quantityFromThisLot;
-                addHistory('export', product, quantityFromThisLot, currentUser.username, stockLot.lotId, invoiceNumber, remarks);
-                quantityToExport -= quantityFromThisLot;
+                if (isNaN(quantityToExport) || quantityToExport <= 0) continue;
+
+                let remainingToExport = quantityToExport;
+                const lotsForDate = db.stock
+                    .filter(s => String(s.productId).trim() === String(productId).trim() && formatDate(s.productionDate) === productionDate && s.quantity > 0)
+                    .sort((a, b) => a.lotId - b.lotId);
+
+                for (const stockLot of lotsForDate) {
+                    if (remainingToExport <= 0) break;
+                    const quantityFromThisLot = Math.min(remainingToExport, stockLot.quantity);
+                    stockLot.quantity -= quantityFromThisLot;
+                    addHistory('export', product, quantityFromThisLot, currentUser.username, stockLot.lotId, invoiceNumber, remarks);
+                    remainingToExport -= quantityFromThisLot;
+                }
             }
-            
+
             populateAll();
             showSuccess(translations[currentLanguage].export_success.replace('{name}', product.name));
-            exportFormEl.reset();
-            // ... (clear form fields)
+            renderExportForm();
 
-            // --- Background Save & Rollback on Failure ---
             try {
                 await saveDataToSheet();
             } catch (error) {
                 console.error("Export save failed. Rolling back.");
-                db = dbBackup; // Restore the entire database state from backup
+                db = dbBackup;
                 populateAll();
                 showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
             }
@@ -1370,13 +1387,13 @@
             };
 
             if (editingProductId) {
-                const productIndex = db.products.findIndex(p => String(p.id) === String(editingProductId));
+                const productIndex = db.products.findIndex(p => String(p.id).trim() === String(editingProductId).trim());
                 if (productIndex > -1) {
                     db.products[productIndex] = { ...db.products[productIndex], ...productData };
                     successMessage = translations[currentLanguage].product_update_success;
                 }
             } else {
-                if (db.products.some(p => String(p.id) === String(productData.id))) { showError('Duplicate ID!', translations[currentLanguage].product_id_exists); return; }
+                if (db.products.some(p => String(p.id).trim() === String(productData.id).trim())) { showError('Duplicate ID!', translations[currentLanguage].product_id_exists); return; }
                 db.products.push(productData);
                 successMessage = translations[currentLanguage].product_add_success;
             }
@@ -1408,7 +1425,6 @@
                 db.users.push({ username: newUsername, password: newPassword, role: newRole });
                 successMessage = translations[currentLanguage].user_add_success;
             } else {
-                // ... (logic for updating user, history, and announcements)
                  const userIndex = db.users.findIndex(u => u.username === originalUsernameForEdit);
                 if (userIndex === -1) { showError('Error', translations[currentLanguage].user_not_found_for_edit); clearUserForm(); return; }
                 const isUsernameTaken = db.users.some(u => u.username === newUsername && u.username !== originalUsernameForEdit);
@@ -1464,23 +1480,32 @@
             const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
             if (!stockLot) { showError('Error', translations[currentLanguage].history_edit_no_lot); return; }
             
-            let baselineStock = stockLot.quantity;
+            let originalLotQuantity = stockLot.quantity;
             if (historyItem.type === 'export') {
-                baselineStock += historyItem.quantity;
-            } else { // import
-                baselineStock -= historyItem.quantity;
+                originalLotQuantity += historyItem.quantity;
+            } else { 
+                originalLotQuantity -= historyItem.quantity;
             }
 
-            if (historyItem.type === 'import' && newQuantity > baselineStock) {
-                const errorText = translations[currentLanguage].history_edit_not_enough.replace('{qty}', baselineStock);
-                showError('Not Enough Stock', errorText); 
-                return; 
+            if (historyItem.type === 'import') {
+                const amountUsed = historyItem.quantity - stockLot.quantity;
+                if (newQuantity < amountUsed) {
+                    const errorText = translations[currentLanguage].history_edit_import_not_enough.replaceAll('{qty}', amountUsed);
+                    showError('Invalid Quantity', errorText);
+                    return;
+                }
+            } else { 
+                if (newQuantity > originalLotQuantity) {
+                    const errorText = translations[currentLanguage].export_not_enough.replace('{qty}', originalLotQuantity);
+                    showError('Not Enough Stock', errorText);
+                    return;
+                }
             }
-            
+
             if (historyItem.type === 'export') {
-                stockLot.quantity = baselineStock - newQuantity;
-            } else { // import
-                stockLot.quantity = baselineStock + newQuantity;
+                stockLot.quantity = originalLotQuantity - newQuantity;
+            } else { 
+                stockLot.quantity = originalLotQuantity + newQuantity;
             }
 
             stockLot.productionDate = newProdDate;
@@ -1495,7 +1520,7 @@
             try {
                 await saveDataToSheet();
             } catch (error) {
-                db = dbBackup; // Rollback
+                db = dbBackup; 
                 populateAll();
                 showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
             }
@@ -1507,11 +1532,11 @@
 
             const productId = document.getElementById('edit-stock-product-id').value;
             const newTotalQuantity = parseInt(document.getElementById('edit-stock-quantity').value);
-            const product = db.products.find(p => String(p.id) === String(productId));
+            const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
             if (!product) { showError('Error', translations[currentLanguage].product_not_found_error); return; }
             
-            const originalTotal = db.stock.filter(s => String(s.productId) === String(productId)).reduce((sum, item) => sum + item.quantity, 0);
-            db.stock = db.stock.filter(s => String(s.productId) !== String(productId));
+            const originalTotal = db.stock.filter(s => String(s.productId).trim() === String(productId).trim()).reduce((sum, item) => sum + item.quantity, 0);
+            db.stock = db.stock.filter(s => String(s.productId).trim() !== String(productId).trim());
             const newLotId = db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1;
             db.stock.push({ lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' });
             
@@ -1646,16 +1671,16 @@
             </tr>`;
             
             stockSummaryTable.innerHTML = '';
-            const productIdsInStock = [...new Set(db.stock.map(s => s.productId))];
+            const productIdsInStock = [...new Set(db.stock.map(s => String(s.productId).trim()))];
             const filterOldStock = showOldStockFilter.checked;
             const searchTerm = stockSearchInput.value.toLowerCase();
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
             let summary = productIdsInStock.map(id => {
-                let productInfo = db.products.find(p => String(p.id) === String(id));
+                let productInfo = db.products.find(p => String(p.id).trim() === id);
                 if (!productInfo) {
-                    const latestHistoryEntry = db.history.find(h => String(h.productId) === String(id));
+                    const latestHistoryEntry = db.history.find(h => String(h.productId).trim() === id);
                     productInfo = {
                         id: id,
                         name: latestHistoryEntry ? latestHistoryEntry.productName : T.product_not_found.replace('{id}', id),
@@ -1663,7 +1688,7 @@
                         erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode || '-' : '-',
                     };
                 }
-                const lots = db.stock.filter(s => String(s.productId) === String(id));
+                const lots = db.stock.filter(s => String(s.productId).trim() === id);
                 const totalQuantity = lots.reduce((sum, item) => sum + item.quantity, 0);
                 const hasOldStock = lots.some(s => new Date(formatDate(s.productionDate)) < threeMonthsAgo);
                 return { ...productInfo, totalQuantity, hasOldStock };
@@ -1673,7 +1698,7 @@
             if (filterOldStock) summary = summary.filter(p => p.hasOldStock);
             if (searchTerm) {
                 summary = summary.filter(item => 
-                    String(item.id).toLowerCase().includes(searchTerm) || 
+                    String(item.id).trim().toLowerCase().includes(searchTerm) || 
                     item.name.toLowerCase().includes(searchTerm) || 
                     (item.customer && item.customer.toLowerCase().includes(searchTerm)) 
                 );
@@ -1778,76 +1803,100 @@
             logoutBtn.addEventListener('click', () => confirmAction(translations[currentLanguage].confirm_logout_title, '', showLoginPage));
             document.getElementById('refresh-stock-summary-btn').addEventListener('click', () => loadDataFromSheet(true));
             
-            const importProductIdInput = document.getElementById('import-product-id');
-            const exportProductIdInput = document.getElementById('export-product-id');
-            const filterProductSearchInput = document.getElementById('filter-product-search');
+            // Delegated event listeners for dynamic content
+            document.body.addEventListener('input', (e) => {
+                if (e.target.id === 'import-product-id') {
+                    const searchTerm = e.target.value;
+                    const suggestionsContainer = document.getElementById('import-product-suggestions');
+                    const productSource = db.products;
+                    showSuggestions(e.target, suggestionsContainer, productSource, searchTerm);
+                }
+                if (e.target.id === 'export-product-id') {
+                    const searchTerm = e.target.value;
+                    const suggestionsContainer = document.getElementById('export-product-suggestions');
+                    const productsInStockIds = [...new Set(db.stock.filter(s => s.quantity > 0).map(s => String(s.productId).trim()))];
+                    const productSource = db.products.filter(p => productsInStockIds.includes(String(p.id).trim()));
+                    showSuggestions(e.target, suggestionsContainer, productSource, searchTerm);
+                }
+                if (e.target.id === 'filter-product-search') {
+                    const searchTerm = e.target.value;
+                    const suggestionsContainer = document.getElementById('filter-product-suggestions');
+                    const productSource = db.products;
+                    showFilterSuggestions(e.target, suggestionsContainer, productSource, searchTerm);
+                }
+                if (e.target.classList.contains('import-quantity')) {
+                    updateImportTotal();
+                }
+                if (e.target.classList.contains('export-quantity')) {
+                    updateExportTotal();
+                }
+                 if (e.target.id === 'stock-search-input') {
+                    populateStockSummary();
+                }
+            });
 
-            importProductIdInput.addEventListener('input', () => { const searchTerm = importProductIdInput.value; const suggestionsContainer = document.getElementById('import-product-suggestions'); const productSource = db.products; showSuggestions(importProductIdInput, suggestionsContainer, productSource, searchTerm); });
-            importProductIdInput.addEventListener('change', () => {
-                const product = db.products.find(p => String(p.id) === importProductIdInput.value);
-                document.getElementById('import-product-name').value = product ? product.name : '';
-                document.getElementById('import-customer').value = product ? product.customer || '' : '';
-                document.getElementById('import-erp-code').value = product ? product.erpCode : '';
-                document.getElementById('import-fullbox').value = product ? product.fullBoxQuantity : '';
-            });
-            exportProductIdInput.addEventListener('input', () => { 
-                const searchTerm = exportProductIdInput.value; 
-                const suggestionsContainer = document.getElementById('export-product-suggestions'); 
-                const productsInStockIds = [...new Set(db.stock.filter(s => s.quantity > 0).map(s => String(s.productId)))]; 
-                const productSource = db.products.filter(p => productsInStockIds.includes(String(p.id))); 
-                showSuggestions(exportProductIdInput, suggestionsContainer, productSource, searchTerm); 
-            });
-            exportProductIdInput.addEventListener('change', () => {
-                const product = db.products.find(p => String(p.id) === exportProductIdInput.value);
-                document.getElementById('export-product-name').value = product ? product.name : '';
-                document.getElementById('export-customer').value = product ? product.customer || '' : '';
-                document.getElementById('export-erp-code').value = product ? product.erpCode : '';
-                document.getElementById('export-fullbox').value = product ? product.fullBoxQuantity : '';
-                populateExportLotDropdown(exportProductIdInput.value);
-            });
-            filterProductSearchInput.addEventListener('input', () => { const searchTerm = filterProductSearchInput.value; const suggestionsContainer = document.getElementById('filter-product-suggestions'); const productSource = db.products; showFilterSuggestions(filterProductSearchInput, suggestionsContainer, productSource, searchTerm); });
-            document.addEventListener('click', (e) => { if (!e.target.closest('.position-relative')) { document.getElementById('import-product-suggestions').innerHTML = ''; document.getElementById('export-product-suggestions').innerHTML = ''; document.getElementById('filter-product-suggestions').innerHTML = ''; } });
-            
-            importFormEl.addEventListener('submit', handleImport);
-            exportFormEl.addEventListener('submit', handleExport);
-            
-            document.getElementById('export-lot').addEventListener('change', () => { 
-                const selectedOption = document.getElementById('export-lot').options[document.getElementById('export-lot').selectedIndex]; 
-                const exportQuantityInput = document.getElementById('export-quantity'); 
-                if (selectedOption && selectedOption.dataset.maxQuantity) { 
-                    exportQuantityInput.max = selectedOption.dataset.maxQuantity; 
-                    exportQuantityInput.placeholder = translations[currentLanguage].export_quantity_placeholder.replace('{qty}', selectedOption.dataset.maxQuantity); 
-                } else { 
-                    exportQuantityInput.max = null; 
-                    exportQuantityInput.placeholder = ''; 
-                } 
+            document.body.addEventListener('change', (e) => {
+                if (e.target.id === 'import-product-id') {
+                    const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
+                    document.getElementById('import-product-name').value = product ? product.name : '';
+                    document.getElementById('import-customer').value = product ? product.customer || '' : '';
+                    document.getElementById('import-erp-code').value = product ? product.erpCode : '';
+                    document.getElementById('import-fullbox').value = product ? product.fullBoxQuantity : '';
+                }
+                if (e.target.id === 'export-product-id') {
+                    const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
+                    document.getElementById('export-product-name').value = product ? product.name : '';
+                    document.getElementById('export-customer').value = product ? product.customer || '' : '';
+                    document.getElementById('export-erp-code').value = product ? product.erpCode : '';
+                    document.getElementById('export-fullbox').value = product ? product.fullBoxQuantity : '';
+                    populateExportLotsList(e.target.value);
+                }
+                if (e.target.type === 'checkbox' && e.target.closest('.export-lot-row')) {
+                    const row = e.target.closest('.export-lot-row');
+                    const quantityInput = row.querySelector('.export-quantity');
+                    quantityInput.disabled = !e.target.checked;
+                    if (!e.target.checked) {
+                        quantityInput.value = '';
+                    }
+                    updateExportTotal();
+                }
+                 if (e.target.id === 'show-old-stock-filter') {
+                    populateStockSummary();
+                }
             });
             
-            productFormEl.addEventListener('submit', handleProductFormSubmit);
-            userFormEl.addEventListener('submit', handleUserFormSubmit);
-            announcementFormEl.addEventListener('submit', handleAnnouncementFormSubmit);
+            document.body.addEventListener('submit', function(e) {
+                if(e.target.id === 'import-form') handleImport(e);
+                if(e.target.id === 'export-form') handleExport(e);
+                if(e.target.id === 'product-form') handleProductFormSubmit(e);
+                if(e.target.id === 'user-form') handleUserFormSubmit(e);
+                if(e.target.id === 'announcement-form') handleAnnouncementFormSubmit(e);
+                if(e.target.id === 'history-filter-form') { e.preventDefault(); populateHistoryTable(); }
+                if(e.target.id === 'edit-history-form') handleEditHistorySubmit(e);
+                if(e.target.id === 'edit-stock-form') handleEditStockSubmit(e);
+            });
 
-            document.getElementById('backup-stock-btn').addEventListener('click', () => backupToCSV(db.stock, 'stock_backup.csv'));
-            document.getElementById('backup-products-btn').addEventListener('click', () => backupToCSV(db.products, 'products_backup.csv'));
-            document.getElementById('backup-users-btn').addEventListener('click', () => backupToCSV(db.users, 'users_backup.csv'));
-            document.getElementById('backup-history-btn').addEventListener('click', () => {
-                const filteredData = getFilteredHistory();
-                const dataForExport = filteredData.map(item => {
-                    const lot = db.stock.find(s => s.lotId === item.lotId);
-                    return {
-                        date: new Date(item.date).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }),
-                        type: item.type, productId: item.productId, productName: item.productName,
-                        quantity: item.quantity, productionDate: lot ? formatDate(lot.productionDate) : 'N/A',
-                        invoiceNumber: item.invoiceNumber, remarks: item.remarks, user: item.user,
-                    };
-                });
-                backupToCSV(dataForExport, 'history_backup.csv');
+            document.body.addEventListener('click', function(e) {
+                if (e.target.id === 'add-import-lot-btn') addImportLotRow();
+                if (e.target.classList.contains('remove-import-lot-btn')) {
+                    e.target.closest('.import-lot-row').remove();
+                    updateImportTotal();
+                }
+                if (e.target.id === 'clear-import-form-btn') renderImportForm();
+                if (e.target.id === 'clear-export-form-btn') renderExportForm();
+                if (e.target.id === 'clear-product-form-btn') clearProductForm();
+                if (e.target.id === 'clear-user-form-btn') clearUserForm();
+                if (e.target.id === 'clear-announcement-form-btn') clearAnnouncementForm();
+                if (e.target.id === 'history-filter-reset-btn') {
+                    document.getElementById('filter-product-id').value = '';
+                    setTimeout(() => populateHistoryTable(), 0);
+                }
+                if (e.target.closest('.suggestions-container')) {
+                     if (!e.target.closest('.position-relative')) {
+                        document.querySelectorAll('.suggestions-container').forEach(c => c.innerHTML = '');
+                    }
+                }
             });
-            showOldStockFilter.addEventListener('change', populateStockSummary);
-            stockSearchInput.addEventListener('input', populateStockSummary);
-            historyFilterForm.addEventListener('submit', (e) => { e.preventDefault(); populateHistoryTable(); });
-            editHistoryForm.addEventListener('submit', handleEditHistorySubmit);
-            editStockForm.addEventListener('submit', handleEditStockSubmit);
         }
         function handleLogin(e) { e.preventDefault(); const username = document.getElementById('username').value; const password = document.getElementById('password').value; const foundUser = db.users.find(u => u.username === username && u.password === password); if (foundUser) { sessionStorage.setItem('currentUser', JSON.stringify(foundUser)); checkLoginState(); } else { errorMessage.classList.remove('d-none'); } }
         
@@ -1896,7 +1945,7 @@
             if (startDate) { filteredHistory = filteredHistory.filter(item => item.date.split('T')[0] >= startDate); }
             if (endDate) { filteredHistory = filteredHistory.filter(item => item.date.split('T')[0] <= endDate); }
             if (type) { filteredHistory = filteredHistory.filter(item => item.type === type); }
-            if (productId) { filteredHistory = filteredHistory.filter(item => String(item.productId) === String(productId)); }
+            if (productId) { filteredHistory = filteredHistory.filter(item => String(item.productId).trim() === String(productId).trim()); }
             if (invoiceSearch) { filteredHistory = filteredHistory.filter(item => item.invoiceNumber && item.invoiceNumber.toLowerCase().includes(invoiceSearch));}
             
             return filteredHistory;
@@ -2010,18 +2059,18 @@
             });
         }
 
-        function populateExportLotDropdown(productId) {
+        function populateExportLotsList(productId) {
             const T = translations[currentLanguage];
-            const dropdown = document.getElementById('export-lot');
-            dropdown.innerHTML = `<option value="">${T.export_lot_placeholder_select}</option>`;
+            const container = document.getElementById('export-lots-container');
+            container.innerHTML = '';
             if (!productId) {
-                dropdown.innerHTML = `<option value="">${T.export_lot_placeholder_no_product}</option>`;
+                container.innerHTML = `<p class="text-muted text-center">${T.export_lot_placeholder_no_product}</p>`;
                 return;
             }
 
-            const lots = db.stock.filter(s => String(s.productId) === String(productId) && s.quantity > 0);
+            const lots = db.stock.filter(s => String(s.productId).trim() === String(productId).trim() && s.quantity > 0);
             if (lots.length === 0) {
-                dropdown.innerHTML = `<option value="">${T.export_lot_placeholder_no_stock}</option>`;
+                container.innerHTML = `<p class="text-muted text-center">${T.export_lot_placeholder_no_stock}</p>`;
                 return;
             }
 
@@ -2036,11 +2085,21 @@
 
             sortedDates.forEach(date => {
                 const totalQuantity = lotsByDate[date];
-                const option = document.createElement('option');
-                option.value = date;
-                option.textContent = T.export_lot_option.replace('{date}', date).replace('{qty}', totalQuantity.toLocaleString());
-                option.dataset.maxQuantity = totalQuantity;
-                dropdown.appendChild(option);
+                const row = document.createElement('div');
+                row.className = 'row g-2 mb-2 align-items-center export-lot-row';
+                row.dataset.date = date;
+                row.innerHTML = `
+                    <div class="col-auto">
+                        <input class="form-check-input" type="checkbox">
+                    </div>
+                    <div class="col">
+                        <label class="form-check-label">${T.export_lot_option.replace('{date}', date).replace('{qty}', totalQuantity.toLocaleString())}</label>
+                    </div>
+                    <div class="col-4">
+                        <input type="number" class="form-control form-control-sm export-quantity" placeholder="${T.quantity}" min="1" max="${totalQuantity}" disabled>
+                    </div>
+                `;
+                container.appendChild(row);
             });
         }
 
@@ -2056,7 +2115,7 @@
             const lotDetailTable = document.getElementById('lot-detail-table');
             lotDetailTable.innerHTML = '';
             
-            const lots = db.stock.filter(s => String(s.productId) === String(productId) && s.quantity > 0);
+            const lots = db.stock.filter(s => String(s.productId).trim() === String(productId).trim() && s.quantity > 0);
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
@@ -2090,27 +2149,71 @@
             });
         }
 
-        function showSuggestions(inputEl, containerEl, productSource, searchTerm) { containerEl.innerHTML = ''; if (!searchTerm) return; const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => String(p.id).toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.slice(0, 5).forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = item.id; containerEl.innerHTML = ''; inputEl.dispatchEvent(new Event('change', { bubbles: true })); }); containerEl.appendChild(suggestionEl); }); }
-        function showFilterSuggestions(inputEl, containerEl, productSource, searchTerm) { const hiddenInputEl = document.getElementById('filter-product-id'); containerEl.innerHTML = ''; if (!searchTerm) { hiddenInputEl.value = ''; return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => String(p.id).toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.slice(0, 5).forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'p-2'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = `${item.id} - ${item.name}`; hiddenInputEl.value = item.id; containerEl.innerHTML = ''; }); containerEl.appendChild(suggestionEl); }); }
+        function showSuggestions(inputEl, containerEl, productSource, searchTerm) { containerEl.innerHTML = ''; if (!searchTerm) return; const lowerCaseSearchTerm = searchTerm.toLowerCase().trim(); const filteredProducts = productSource.filter(p => String(p.id).trim().toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.slice(0, 5).forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = item.id; containerEl.innerHTML = ''; inputEl.dispatchEvent(new Event('change', { bubbles: true })); }); containerEl.appendChild(suggestionEl); }); }
+        function showFilterSuggestions(inputEl, containerEl, productSource, searchTerm) { const hiddenInputEl = document.getElementById('filter-product-id'); containerEl.innerHTML = ''; if (!searchTerm) { hiddenInputEl.value = ''; return; } const lowerCaseSearchTerm = searchTerm.toLowerCase().trim(); const filteredProducts = productSource.filter(p => String(p.id).trim().toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.slice(0, 5).forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'p-2'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = `${item.id} - ${item.name}`; hiddenInputEl.value = item.id; containerEl.innerHTML = ''; }); containerEl.appendChild(suggestionEl); }); }
 
         function clearProductForm() { editingProductId = null; document.getElementById('product-form').reset(); document.getElementById('product-id').readOnly = false; }
         function clearUserForm() { originalUsernameForEdit = null; document.getElementById('user-form').reset(); }
         function clearAnnouncementForm() { editingAnnouncementId = null; document.getElementById('announcement-form').reset(); document.getElementById('announcement-id').value = ''; document.getElementById('announcement-active').checked = true; }
+
+        function addImportLotRow() {
+            const T = translations[currentLanguage];
+            const container = document.getElementById('import-lots-container');
+            const newRow = document.createElement('div');
+            newRow.className = 'row g-2 mb-2 align-items-center import-lot-row';
+            newRow.innerHTML = `
+                <div class="col-md-5">
+                    <label class="form-label visually-hidden">${T.production_date}</label>
+                    <input type="date" class="form-control import-prod-date" required>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label visually-hidden">${T.quantity}</label>
+                    <input type="number" class="form-control import-quantity" placeholder="${T.quantity}" required min="1">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger btn-sm w-100 remove-import-lot-btn"><i class="bi bi-trash3-fill"></i></button>
+                </div>
+            `;
+            container.appendChild(newRow);
+        }
+
+        function updateImportTotal() {
+            const lotQuantities = document.querySelectorAll('#import-lots-container .import-quantity');
+            let total = 0;
+            lotQuantities.forEach(input => {
+                total += parseInt(input.value) || 0;
+            });
+            document.getElementById('import-total-quantity').value = total.toLocaleString();
+        }
+
+        function updateExportTotal() {
+            const lotRows = document.querySelectorAll('#export-lots-container .export-lot-row:has(input[type="checkbox"]:checked)');
+            let total = 0;
+            lotRows.forEach(row => {
+                const quantityInput = row.querySelector('.export-quantity');
+                total += parseInt(quantityInput.value) || 0;
+            });
+            document.getElementById('export-total-quantity').value = total.toLocaleString();
+        }
 
         function renderImportForm() {
             const T = translations[currentLanguage];
             const importFormEl = document.getElementById('import-form');
             importFormEl.innerHTML = `
                 <div class="col-md-4"> <label for="import-product-id" class="form-label">${T.product_id}</label> <div class="position-relative"> <input type="text" id="import-product-id" class="form-control" required autocomplete="off" placeholder="${T.search_placeholder}"> <div id="import-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
-                <div class="col-md-4"> <label for="import-product-name" class="form-label">${T.product_name}</label> <input type="text" id="import-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-4"> <label for="import-customer" class="form-label">${T.customer}</label> <input type="text" id="import-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-3"> <label for="import-erp-code" class="form-label">${T.erp_code}</label> <input type="text" id="import-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-5"> <label for="import-product-name" class="form-label">${T.product_name}</label> <input type="text" id="import-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
                 <div class="col-md-3"> <label for="import-fullbox" class="form-label">${T.import_fullbox}</label> <input type="text" id="import-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-3"> <label for="import-quantity" class="form-label">${T.import_quantity}</label> <input type="number" id="import-quantity" class="form-control" required min="1"> </div>
-                <div class="col-md-3"> <label for="import-prod-date" class="form-label">${T.production_date}</label> <input type="date" id="import-prod-date" class="form-control" required> </div>
-                <div class="col-12"> <label for="import-remarks" class="form-label">${T.remarks}</label> <textarea id="import-remarks" class="form-control" rows="2"></textarea> </div>
+                <div class="col-md-6"> <label for="import-customer" class="form-label">${T.customer}</label> <input type="text" id="import-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-6"> <label for="import-erp-code" class="form-label">${T.erp_code}</label> <input type="text" id="import-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <hr class="my-3">
+                <div id="import-lots-container" class="col-12"></div>
+                <div class="col-12"><button type="button" id="add-import-lot-btn" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-circle-fill me-1"></i>${T.import_add_lot_button}</button></div>
+                <hr class="my-3">
+                <div class="col-md-4"> <label for="import-total-quantity" class="form-label">${T.import_total_quantity}</label> <input type="text" id="import-total-quantity" class="form-control fw-bold" readonly style="background-color: #e9ecef; font-size: 1.2rem;"> </div>
+                <div class="col-md-8"> <label for="import-remarks" class="form-label">${T.remarks}</label> <textarea id="import-remarks" class="form-control" rows="2"></textarea> </div>
                 <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${T.import_warning}</p> </div>
                 <div class="col-12"> <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-2"></i>${T.import_save_button}</button> <button type="button" id="clear-import-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>${T.clear_form_button}</button> </div>`;
+            addImportLotRow();
         }
 
         function renderExportForm() {
@@ -2118,14 +2221,16 @@
             const exportFormEl = document.getElementById('export-form');
             exportFormEl.innerHTML = `
                 <div class="col-md-4"> <label for="export-product-id" class="form-label">${T.product_id}</label> <div class="position-relative"> <input type="text" id="export-product-id" class="form-control" required autocomplete="off" placeholder="${T.search_placeholder}"> <div id="export-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
-                <div class="col-md-4"> <label for="export-product-name" class="form-label">${T.product_name}</label> <input type="text" id="export-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-4"> <label for="export-customer" class="form-label">${T.customer}</label> <input type="text" id="export-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-3"> <label for="export-erp-code" class="form-label">${T.erp_code}</label> <input type="text" id="export-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-5"> <label for="export-lot" class="form-label">${T.export_lot_select}</label> <select id="export-lot" class="form-select" required></select> </div>
-                <div class="col-md-4"> <label for="export-fullbox" class="form-label">${T.import_fullbox}</label> <input type="text" id="export-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-4"> <label for="export-quantity" class="form-label">${T.export_quantity}</label> <input type="number" id="export-quantity" class="form-control" required min="1"> </div>
+                <div class="col-md-5"> <label for="export-product-name" class="form-label">${T.product_name}</label> <input type="text" id="export-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-3"> <label for="export-fullbox" class="form-label">${T.import_fullbox}</label> <input type="text" id="export-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-6"> <label for="export-customer" class="form-label">${T.customer}</label> <input type="text" id="export-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <div class="col-md-6"> <label for="export-erp-code" class="form-label">${T.erp_code}</label> <input type="text" id="export-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+                <hr class="my-3">
+                <div class="col-12"><label class="form-label fw-bold">${T.export_lot_select}</label><div id="export-lots-container" class="border rounded p-2 bg-light"></div></div>
+                <hr class="my-3">
+                <div class="col-md-4"> <label for="export-total-quantity" class="form-label">${T.export_total_quantity}</label> <input type="text" id="export-total-quantity" class="form-control fw-bold" value="0" readonly style="background-color: #e9ecef; font-size: 1.2rem;"> </div>
                 <div class="col-md-4"> <label for="export-invoice-number" class="form-label">${T.export_invoice}</label> <input type="text" id="export-invoice-number" class="form-control" required> </div>
-                <div class="col-12"> <label for="export-remarks" class="form-label">${T.remarks}</label> <textarea id="export-remarks" class="form-control" rows="2"></textarea> </div>
+                <div class="col-md-4"> <label for="export-remarks" class="form-label">${T.remarks}</label> <textarea id="export-remarks" class="form-control" rows="1"></textarea> </div>
                 <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${T.export_warning}</p> </div>
                 <div class="col-12 mt-3"> <button type="submit" class="btn btn-success"><i class="bi bi-send-check-fill me-2"></i>${T.export_save_button}</button> <button type="button" id="clear-export-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>${T.clear_form_button}</button> </div>`;
         }
