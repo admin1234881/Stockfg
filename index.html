@@ -369,7 +369,7 @@
             </div>
         </div>
     </div>
-   
+    
     <div class="modal fade" id="editHistoryModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius: var(--border-radius);">
@@ -469,7 +469,7 @@
             export_lot_select: "ล็อตวันที่ผลิต",
             export_quantity: "จำนวนที่ส่งออก",
             export_invoice: "เลขที่ Invoice",
-            export_warning: "การส่งออกสินค้าควรคำนึงถึงหลัก FIFO (เข้าก่อน-ออกก่อน)",
+            export_warning: "การส่งออกสินค้าควรคำนึกถึงหลัก FIFO (เข้าก่อน-ออกก่อน)",
             export_save_button: "บันทึกการส่งออก",
             // History Tab
             history_filter_from: "จากวันที่",
@@ -1803,6 +1803,22 @@
             logoutBtn.addEventListener('click', () => confirmAction(translations[currentLanguage].confirm_logout_title, '', showLoginPage));
             document.getElementById('refresh-stock-summary-btn').addEventListener('click', () => loadDataFromSheet(true));
             
+            // *** FIX: Add event listeners for backup buttons ***
+            document.getElementById('backup-stock-btn').addEventListener('click', () => {
+                const stockBackupData = generateStockBackupData();
+                backupToCSV(stockBackupData, 'stock_summary_backup.csv');
+            });
+            document.getElementById('backup-products-btn').addEventListener('click', () => {
+                backupToCSV(db.products, 'products_backup.csv');
+            });
+            document.getElementById('backup-users-btn').addEventListener('click', () => {
+                backupToCSV(db.users, 'users_backup.csv');
+            });
+            document.getElementById('backup-history-btn').addEventListener('click', () => {
+                const historyData = getFilteredHistory();
+                backupToCSV(historyData, 'history_backup.csv');
+            });
+
             // Delegated event listeners for dynamic content
             document.body.addEventListener('input', (e) => {
                 if (e.target.id === 'import-product-id') {
@@ -1949,6 +1965,42 @@
             if (invoiceSearch) { filteredHistory = filteredHistory.filter(item => item.invoiceNumber && item.invoiceNumber.toLowerCase().includes(invoiceSearch));}
             
             return filteredHistory;
+        }
+        
+        // *** NEW: Function to generate summarized stock data for backup ***
+        function generateStockBackupData() {
+            const T = translations[currentLanguage];
+            const stockSummary = {};
+
+            db.stock.forEach(lot => {
+                if (lot.quantity > 0) {
+                    const date = formatDate(lot.productionDate);
+                    const key = `${lot.productId}_${date}`;
+
+                    if (!stockSummary[key]) {
+                        let productInfo = db.products.find(p => String(p.id).trim() === String(lot.productId).trim());
+                        if (!productInfo) {
+                             productInfo = { name: T.product_not_found.replace('{id}', lot.productId), customer: '-', erpCode: '-' };
+                        }
+                        stockSummary[key] = {
+                            productId: lot.productId,
+                            productName: productInfo.name,
+                            customer: productInfo.customer,
+                            erpCode: productInfo.erpCode,
+                            productionDate: date,
+                            totalQuantity: 0
+                        };
+                    }
+                    stockSummary[key].totalQuantity += lot.quantity;
+                }
+            });
+
+            // Convert the summary object back to an array and sort it
+            return Object.values(stockSummary).sort((a, b) => {
+                if (a.productId < b.productId) return -1;
+                if (a.productId > b.productId) return 1;
+                return new Date(a.productionDate) - new Date(b.productionDate);
+            });
         }
 
         function populateUserManagementTable() { 
@@ -2323,4 +2375,3 @@
     </script>
 </body>
 </html>
-
