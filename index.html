@@ -369,7 +369,7 @@
             </div>
         </div>
     </div>
-    
+   
     <div class="modal fade" id="editHistoryModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius: var(--border-radius);">
@@ -1006,25 +1006,27 @@
                 confirmAction(translations[currentLanguage].confirm_delete_title, confirmText, async () => {
                     const dbBackup = JSON.parse(JSON.stringify(db));
                     
-                    const lotsToDelete = db.stock
-                        .filter(lot => String(lot.productId).trim() === String(productId).trim() && formatDate(lot.productionDate) === productionDate)
-                        .map(lot => lot.lotId);
+                    const originalStockCount = db.stock.length;
+                    db.stock = db.stock.filter(lot => !(
+                        String(lot.productId).trim() === String(productId).trim() && 
+                        formatDate(lot.productionDate) === productionDate
+                    ));
 
-                    if (lotsToDelete.length === 0) {
+                    if (db.stock.length === originalStockCount) {
                         showError('Error!', translations[currentLanguage].delete_lot_error);
                         return;
                     }
 
-                    db.stock = db.stock.filter(lot => !lotsToDelete.includes(lot.lotId));
-                    populateAll();
                     lotDetailModal.hide();
+                    populateStockSummary();
+                    
                     showSuccess(translations[currentLanguage].delete_lot_success);
 
                     try {
                         await saveDataToSheet();
                     } catch (error) {
                         db = dbBackup;
-                        populateAll();
+                        populateStockSummary();
                         showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
                     }
                 });
@@ -1035,7 +1037,7 @@
                 const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
                 if (product) {
                     document.getElementById('product-id').value = product.id;
-                    document.getElementById('product-id').readOnly = true;
+                    document.getElementById('product-id').readOnly = true; // Lock Product ID on edit
                     document.getElementById('product-name').value = product.name;
                     document.getElementById('product-customer').value = product.customer || '';
                     document.getElementById('product-fullBoxQuantity').value = product.fullBoxQuantity;
@@ -1389,7 +1391,8 @@
             if (editingProductId) {
                 const productIndex = db.products.findIndex(p => String(p.id).trim() === String(editingProductId).trim());
                 if (productIndex > -1) {
-                    db.products[productIndex] = { ...db.products[productIndex], ...productData };
+                    // Prevent changing the ID, but update other fields
+                    db.products[productIndex] = { ...db.products[productIndex], ...productData, id: editingProductId };
                     successMessage = translations[currentLanguage].product_update_success;
                 }
             } else {
@@ -1690,7 +1693,7 @@
                 }
                 const lots = db.stock.filter(s => String(s.productId).trim() === id);
                 const totalQuantity = lots.reduce((sum, item) => sum + item.quantity, 0);
-                const hasOldStock = lots.some(s => new Date(formatDate(s.productionDate)) < threeMonthsAgo);
+                const hasOldStock = lots.some(s => s.quantity > 0 && new Date(formatDate(s.productionDate)) < threeMonthsAgo);
                 return { ...productInfo, totalQuantity, hasOldStock };
             });
             
@@ -1803,7 +1806,6 @@
             logoutBtn.addEventListener('click', () => confirmAction(translations[currentLanguage].confirm_logout_title, '', showLoginPage));
             document.getElementById('refresh-stock-summary-btn').addEventListener('click', () => loadDataFromSheet(true));
             
-            // *** FIX: Add event listeners for backup buttons ***
             document.getElementById('backup-stock-btn').addEventListener('click', () => {
                 const stockBackupData = generateStockBackupData();
                 backupToCSV(stockBackupData, 'stock_summary_backup.csv');
@@ -1909,7 +1911,7 @@
                 }
                 if (e.target.closest('.suggestions-container')) {
                      if (!e.target.closest('.position-relative')) {
-                        document.querySelectorAll('.suggestions-container').forEach(c => c.innerHTML = '');
+                         document.querySelectorAll('.suggestions-container').forEach(c => c.innerHTML = '');
                     }
                 }
             });
@@ -1967,7 +1969,6 @@
             return filteredHistory;
         }
         
-        // *** NEW: Function to generate summarized stock data for backup ***
         function generateStockBackupData() {
             const T = translations[currentLanguage];
             const stockSummary = {};
@@ -2087,7 +2088,7 @@
             const announcementsDisplayArea = document.getElementById('announcements-display-area');
             announcementsDisplayArea.innerHTML = '';
             const activeAnnouncements = db.announcements.filter(ann => ann.isActive)
-                                                         .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+                                                      .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
 
             if (activeAnnouncements.length === 0) return;
 
@@ -2180,7 +2181,7 @@
                 const date = formatDate(lot.productionDate);
                 if (!acc[date]) acc[date] = { quantity: 0, isOld: false };
                 acc[date].quantity += lot.quantity;
-                if (new Date(date) < threeMonthsAgo) acc[date].isOld = true;
+                if (new Date(date) < threeMonthsAgo && date !== 'Manual Adjustment') acc[date].isOld = true;
                 return acc;
             }, {});
 
@@ -2375,4 +2376,3 @@
     </script>
 </body>
 </html>
-
