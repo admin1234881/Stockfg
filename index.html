@@ -836,7 +836,7 @@
         };
 
         // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLwRB6s5Ii3Pktg-3HKSWiY8XfhrrqQTOWGsE34M6mubn8GYehQ8dGVpgLD3N-ZjhO/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbye2XB1x13RiFdahJogpod0h0Oi8b6maahWfkudvwqhX70Q2NJaXoHPqx2EfgaVu9_RDg/exec';
 
         // --- DATABASE SIMULATION & PERSISTENCE ---
         let db = { users: [], products: [], stock: [], history: [], announcements: [] };
@@ -1559,6 +1559,11 @@
             }
         }
 
+        /**
+         * Handles the submission of the announcement form.
+         * It either creates a new announcement or updates an existing one.
+         * After updating the local 'db' object, it saves the changes to the Google Sheet.
+         */
         async function handleAnnouncementFormSubmit(e) {
             e.preventDefault();
             const dbBackup = JSON.parse(JSON.stringify(db));
@@ -1573,20 +1578,21 @@
                 return;
             }
 
+            // Check if we are editing an existing announcement
             if (editingAnnouncementId) {
                 const index = db.announcements.findIndex(a => String(a.id) === String(editingAnnouncementId));
                 if (index > -1) {
                     db.announcements[index] = { ...db.announcements[index], title, message, isActive };
                     successMessage = translations[currentLanguage].announcement_update_success;
                 }
-            } else {
+            } else { // Or creating a new one
                 const newId = db.announcements.length > 0 ? Math.max(...db.announcements.map(a => a.id)) + 1 : 1;
                 db.announcements.push({ id: newId, title, message, postedBy: currentUser.username, postedDate: new Date().toISOString(), isActive });
                 successMessage = translations[currentLanguage].announcement_add_success;
             }
             
             clearAnnouncementForm();
-            populateAll();
+            populateAll(); // Refresh all UI components including the announcement table and display
             showSuccess(successMessage);
 
              try {
@@ -1642,8 +1648,8 @@
             populateUserManagementTable(); 
             populateProductManagementTable(); 
             populateHistoryTable(); 
-            populateAnnouncementsTable();
-            displayActiveAnnouncements();
+            populateAnnouncementsTable(); // Renders the management table for admins
+            displayActiveAnnouncements(); // Renders the announcements for users on the main page
             if (currentUser.role === 'admin') { 
                 document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); 
             } else { 
@@ -2040,6 +2046,10 @@
             });
         }
 
+        /**
+         * Renders the table of all announcements in the admin management tab.
+         * Fetches all announcements from the 'db', sorts them by date, and creates table rows.
+         */
         function populateAnnouncementsTable() {
             const T = translations[currentLanguage];
             const header = document.getElementById('announcement-management-table-header');
@@ -2083,6 +2093,10 @@
             });
         }
 
+        /**
+         * Filters for active announcements and displays them in the dedicated area
+         * on the main stock dashboard for all users to see.
+         */
         function displayActiveAnnouncements() {
             const T = translations[currentLanguage];
             const announcementsDisplayArea = document.getElementById('announcements-display-area');
@@ -2207,7 +2221,7 @@
 
         function clearProductForm() { editingProductId = null; document.getElementById('product-form').reset(); document.getElementById('product-id').readOnly = false; }
         function clearUserForm() { originalUsernameForEdit = null; document.getElementById('user-form').reset(); }
-        function clearAnnouncementForm() { editingAnnouncementId = null; document.getElementById('announcement-form').reset(); document.getElementById('announcement-id').value = ''; document.getElementById('announcement-active').checked = true; }
+        function clearAnnouncementForm() { editingAnnouncementId = null; document.getElementById('announcement-form').reset(); document.getElementById('announcement-active').checked = true; }
 
         function addImportLotRow() {
             const T = translations[currentLanguage];
@@ -2311,6 +2325,10 @@
                 <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.user_save_button}</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
         }
         
+        /**
+         * Renders the announcement creation/editing form.
+         * If an announcement object is passed, it populates the form for editing.
+         */
         function renderAnnouncementForm(announcement = {}) {
             const T = translations[currentLanguage];
             const announcementFormEl = document.getElementById('announcement-form');
