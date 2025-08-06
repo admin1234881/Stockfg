@@ -12,15 +12,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #0d6efd; /* สีน้ำเงินหลัก */
-            --secondary-color: #6c757d; /* สีเทา */
-            --success-color: #198754; /* สีเขียว */
-            --danger-color: #dc3545; /* สีแดง */
-            --warning-color: #ffc107; /* สีเหลือง */
-            --bg-color: #f0f2f5; /* สีพื้นหลังเทาอ่อน (แก้ไขแล้ว) */
+            --primary-color: #0d6efd; /* Main blue */
+            --secondary-color: #6c757d; /* Gray */
+            --success-color: #198754; /* Green */
+            --danger-color: #dc3545; /* Red */
+            --warning-color: #ffc107; /* Yellow */
+            --bg-color: #f0f2f5; /* Light gray background */
             --text-color: #212529;
             --border-radius: 12px;
-            --header-bg: #e7f1ff; /* สีพื้นหลังหัวข้อฟ้าอ่อน */
+            --header-bg: #e7f1ff; /* Light blue header background */
         }
         body { 
             background-color: var(--bg-color); 
@@ -591,7 +591,8 @@
             history_not_found_for_edit: "ไม่พบประวัติที่ต้องการแก้ไข",
             history_edit_no_lot: "ไม่พบสต็อกล็อตเดิมของประวัติรายการนี้",
             history_edit_not_enough: "ไม่สามารถแก้ไขจำนวนได้ สต็อกคงเหลือในล็อตนี้ (รวมที่คืน) มีเพียง {qty} ชิ้น",
-            history_edit_import_not_enough: "ไม่สามารถลดจำนวนรับเข้าให้ต่ำกว่า {qty} ได้ เนื่องจากมีสินค้าถูกใช้ไปแล้ว {qty} ชิ้น",
+            // *** FIXED ERROR HERE ***
+            history_edit_import_not_enough: "ไม่สามารถลดจำนวนรับเข้าให้ต่ำกว่า {qty} ชิ้นได้ เนื่องจากมีสินค้าจำนวนดังกล่าวถูกใช้ไปแล้ว",
             product_not_found_error: "ไม่พบสินค้า",
             success_title: "เรียบร้อย!",
             import_success: "รับสินค้า {name} เข้ามาแล้วจ้า",
@@ -786,7 +787,8 @@
             history_not_found_for_edit: "Could not find the history record to edit.",
             history_edit_no_lot: "Original stock lot for this history record not found.",
             history_edit_not_enough: "Cannot edit quantity. Stock available in this lot (including returned items) is only {qty}.",
-            history_edit_import_not_enough: "Cannot reduce import quantity below {qty}, as {qty} units have already been used.",
+            // *** FIXED ERROR HERE ***
+            history_edit_import_not_enough: "Cannot reduce import quantity below {qty}, as that many units have already been used.",
             product_not_found_error: "Product not found",
             success_title: "Success!",
             import_success: "Imported {name} successfully.",
