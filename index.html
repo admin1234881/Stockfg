@@ -60,6 +60,7 @@
         .history-import { border-left: 5px solid var(--success-color); }
         .history-export { border-left: 5px solid #0dcaf0; }
         .history-adjustment { border-left: 5px solid var(--warning-color); }
+        .history-reversal { border-left: 5px solid var(--danger-color); background-color: #fff5f5; text-decoration: line-through; }
         .suggestions-container { z-index: 1050; }
         .suggestions-container a:hover { background-color: var(--primary-color); color: white; }
         .filter-card { overflow: visible; }
@@ -369,7 +370,7 @@
             </div>
         </div>
     </div>
-    
+   
     <div class="modal fade" id="editHistoryModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius: var(--border-radius);">
@@ -483,6 +484,7 @@
             history_filter_type_import: "รับเข้า",
             history_filter_type_export: "ส่งออก",
             history_filter_type_adjustment: "ปรับปรุงยอด",
+            history_filter_type_reversal: "ยกเลิกรายการ",
             history_table_title: "ประวัติการทำรายการ",
             backup_history: "ดาวน์โหลดประวัติ (CSV)",
             history_table_type: "ประเภท",
@@ -515,12 +517,12 @@
             // Modals
             lot_modal_title: "รายละเอียดล็อตของ",
             lot_modal_balance: "จำนวนคงเหลือ",
-            edit_stock_modal_title: "แก้ไขยอดรวมในสต็อก",
+            edit_stock_modal_title: "ปรับยอดสต็อกด้วยตนเอง",
             edit_stock_new_total: "ยอดรวมใหม่",
-            edit_stock_note: "การบันทึกจะล้างล็อตเก่าทั้งหมด และสร้างล็อตใหม่ขึ้นมาแทน",
+            edit_stock_note: "การบันทึกจะสร้างรายการ 'ปรับปรุงยอด' ใหม่ในประวัติ",
             edit_stock_save_button: "บันทึกยอดใหม่",
             edit_stock_confirm_title: "ยืนยันการปรับยอดสต็อก?",
-            edit_stock_confirm_text: "การกระทำนี้จะลบข้อมูลล็อตการผลิตทั้งหมดของสินค้า {productId} และแทนที่ด้วยยอดใหม่คือ {quantity} ชิ้น การกระทำนี้ไม่สามารถย้อนกลับได้!",
+            edit_stock_confirm_text: "ระบบจะสร้างรายการใหม่เพื่อปรับยอดสต็อกของสินค้า {productId} ให้เป็น {quantity} ชิ้น",
             // Refresh Note
             refresh_title: "รีเฟรช (F5)",
             refresh_desc: "เพื่อข้อมูลล่าสุด",
@@ -548,13 +550,11 @@
             confirm_delete_user_text: "ผู้ใช้ {username} จะถูกลบออกจากระบบ",
             delete_user_admin_error: "ไม่สามารถลบผู้ใช้ admin หลักได้ค่ะ",
             delete_user_success: "ลบผู้ใช้เรียบร้อยแล้ว",
-            confirm_delete_history_title: "ยืนยันการลบประวัติ?",
-            delete_history_export_text: "การดำเนินการนี้จะคืนสินค้ากลับเข้าสต็อก และไม่สามารถย้อนกลับได้",
-            delete_history_import_text: "การดำเนินการนี้จะหักสินค้าออกจากสต็อก และไม่สามารถย้อนกลับได้",
-            delete_history_import_error_no_lot: "ไม่พบสต็อกล็อตเดิมของรายการนี้ ไม่สามารถลบได้",
-            delete_history_import_error_not_enough: "สต็อกในล็อตนี้ถูกใช้ไปแล้ว (คงเหลือ {stockQty}) ไม่สามารถหักจำนวน {historyQty} ได้",
-            delete_history_success: "ลบประวัติและปรับสต็อกเรียบร้อย",
-            confirm_logout_title: "ต้องการออกจากระบบ?",
+            confirm_reverse_history_title: "ยืนยันการยกเลิกรายการ?",
+            reverse_history_export_text: "การดำเนินการนี้จะคืนสินค้ากลับเข้าสต็อก และไม่สามารถย้อนกลับได้",
+            reverse_history_import_text: "การดำเนินการนี้จะหักสินค้าออกจากสต็อก และไม่สามารถย้อนกลับได้",
+            reverse_history_import_error_not_enough: "สต็อกในล็อตนี้ถูกใช้ไปแล้ว ไม่สามารถยกเลิกรายการรับเข้าได้",
+            reverse_history_success: "ยกเลิกรายการและปรับสต็อกเรียบร้อย",
             // Dynamic texts
             user_role_display: "สิทธิ์: {role}",
             history_total_quantity_display: "ยอดรวม: {total}",
@@ -563,6 +563,7 @@
             history_type_import: "รับเข้า",
             history_type_export: "ส่งออก",
             history_type_adjustment: "ปรับปรุงยอด",
+            history_type_reversal: "ยกเลิก",
             announcement_status_active: "ใช้งานอยู่",
             announcement_status_inactive: "ไม่ใช้งาน",
             announcement_posted_by_on: "ประกาศโดย: {user} เมื่อ: {date}",
@@ -591,7 +592,6 @@
             history_not_found_for_edit: "ไม่พบประวัติที่ต้องการแก้ไข",
             history_edit_no_lot: "ไม่พบสต็อกล็อตเดิมของประวัติรายการนี้",
             history_edit_not_enough: "ไม่สามารถแก้ไขจำนวนได้ สต็อกคงเหลือในล็อตนี้ (รวมที่คืน) มีเพียง {qty} ชิ้น",
-            // *** FIXED ERROR HERE ***
             history_edit_import_not_enough: "ไม่สามารถลดจำนวนรับเข้าให้ต่ำกว่า {qty} ชิ้นได้ เนื่องจากมีสินค้าจำนวนดังกล่าวถูกใช้ไปแล้ว",
             product_not_found_error: "ไม่พบสินค้า",
             success_title: "เรียบร้อย!",
@@ -679,6 +679,7 @@
             history_filter_type_import: "Import",
             history_filter_type_export: "Export",
             history_filter_type_adjustment: "Adjustment",
+            history_filter_type_reversal: "Reversal",
             history_table_title: "Transaction History",
             backup_history: "Download History (CSV)",
             history_table_type: "Type",
@@ -711,12 +712,12 @@
             // Modals
             lot_modal_title: "Lot Details for",
             lot_modal_balance: "Remaining Quantity",
-            edit_stock_modal_title: "Edit Total Stock",
+            edit_stock_modal_title: "Manual Stock Adjustment",
             edit_stock_new_total: "New Total Quantity",
-            edit_stock_note: "Saving will clear all old lots and create a new one.",
+            edit_stock_note: "Saving will create a new 'Adjustment' entry in the history.",
             edit_stock_save_button: "Save New Total",
             edit_stock_confirm_title: "Confirm Stock Adjustment?",
-            edit_stock_confirm_text: "This action will ERASE all production lots for product {productId} and replace them with a new total of {quantity}. This action is irreversible!",
+            edit_stock_confirm_text: "A new transaction will be created to adjust the stock for product {productId} to {quantity} units.",
             // Refresh Note
             refresh_title: "Refresh (F5)",
             refresh_desc: "for the latest data",
@@ -744,13 +745,11 @@
             confirm_delete_user_text: "User {username} will be removed from the system.",
             delete_user_admin_error: "Cannot delete the main admin user.",
             delete_user_success: "User deleted successfully.",
-            confirm_delete_history_title: "Confirm History Deletion?",
-            delete_history_export_text: "This action will return the items to stock and cannot be undone.",
-            delete_history_import_text: "This action will deduct the items from stock and cannot be undone.",
-            delete_history_import_error_no_lot: "Original stock lot not found for this transaction. Cannot delete.",
-            delete_history_import_error_not_enough: "Stock from this lot has already been used (Remaining: {stockQty}). Cannot deduct {historyQty}.",
-            delete_history_success: "History deleted and stock adjusted successfully.",
-            confirm_logout_title: "Do you want to log out?",
+            confirm_reverse_history_title: "Confirm Transaction Reversal?",
+            reverse_history_export_text: "This action will return the items to stock and cannot be undone.",
+            reverse_history_import_text: "This action will deduct the items from stock and cannot be undone.",
+            reverse_history_import_error_not_enough: "Stock from this lot has already been used. Cannot reverse this import.",
+            reverse_history_success: "Transaction reversed and stock adjusted successfully.",
             // Dynamic texts
             user_role_display: "Role: {role}",
             history_total_quantity_display: "Total: {total}",
@@ -759,6 +758,7 @@
             history_type_import: "Import",
             history_type_export: "Export",
             history_type_adjustment: "Adjustment",
+            history_type_reversal: "Reversal",
             announcement_status_active: "Active",
             announcement_status_inactive: "Inactive",
             announcement_posted_by_on: "Posted by: {user} on: {date}",
@@ -787,7 +787,6 @@
             history_not_found_for_edit: "Could not find the history record to edit.",
             history_edit_no_lot: "Original stock lot for this history record not found.",
             history_edit_not_enough: "Cannot edit quantity. Stock available in this lot (including returned items) is only {qty}.",
-            // *** FIXED ERROR HERE ***
             history_edit_import_not_enough: "Cannot reduce import quantity below {qty}, as that many units have already been used.",
             product_not_found_error: "Product not found",
             success_title: "Success!",
@@ -851,7 +850,8 @@
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbye2XB1x13RiFdahJogpod0h0Oi8b6maahWfkudvwqhX70Q2NJaXoHPqx2EfgaVu9_RDg/exec';
 
         // --- DATABASE SIMULATION & PERSISTENCE ---
-        let db = { users: [], products: [], stock: [], history: [], announcements: [] };
+        let db = { users: [], products: [], history: [], announcements: [] };
+        let calculatedStock = []; // This will hold the stock calculated from history
         let dataSyncInterval = null;
         let inactivityTimer = null;
         let editingAnnouncementId = null; 
@@ -887,7 +887,6 @@
 
         function startDataSync() {
             if (dataSyncInterval) clearInterval(dataSyncInterval);
-            // Fetch data every 30 seconds for background updates
             dataSyncInterval = setInterval(() => loadDataFromSheet(false), 30000);
         }
 
@@ -897,6 +896,40 @@
                 dataSyncInterval = null;
             }
         }
+        
+        /**
+         * Generic function to call the Google Apps Script backend.
+         * @param {string} action - The action to perform (e.g., 'appendHistory', 'updateProduct').
+         * @param {object} payload - The data to send with the action.
+         * @returns {Promise<object>} - The JSON response from the server.
+         */
+        async function callAppsScript(action, payload) {
+            const requestBody = {
+                action: action,
+                payload: payload
+            };
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(requestBody),
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    console.error("Error Body from Server:", errorBody);
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error(`Error calling Apps Script action '${action}':`, error);
+                throw error;
+            }
+        }
+
 
         async function loadDataFromSheet(isInitialLoad = false) {
             if (isInitialLoad) {
@@ -909,6 +942,7 @@
             }
 
             try {
+                // The GET request now only fetches data, it doesn't contain stock.
                 const response = await fetch(SCRIPT_URL, {
                     method: 'GET',
                     redirect: 'follow'
@@ -920,35 +954,31 @@
                 }
                 const newData = await response.json();
                 
-                // =================================================================
-                // ENHANCED BUG FIX: Sanity check to prevent data wipeout from server error
-                // =================================================================
                 const isProductDataWiped = db.products && db.products.length > 0 && newData.products && newData.products.length === 0;
-                const isHistoryDataWiped = db.history && db.history.length > 0 && newData.history && newData.history.length === 0;
+                const isUserDataWiped = db.users && db.users.length > 0 && newData.users && newData.users.length === 0;
 
-                if (isProductDataWiped || isHistoryDataWiped) {
-                    console.error("Critical Error Prevented: Server returned an empty critical data array (products or history). Halting data sync to prevent overwrite. Please check the Google Sheet and Apps Script logs.");
+                if (isProductDataWiped || isUserDataWiped) {
+                    console.error("Critical Error Prevented: Server returned an empty critical data array. Halting data sync.");
                     if (isInitialLoad) {
                         showError(translations[currentLanguage].critical_load_error_title, translations[currentLanguage].critical_load_error_text);
                     }
+                    stopDataSync(); 
                     return; 
                 }
 
-                // Ensure all data arrays exist
-                newData.stock = newData.stock || [];
+                // Ensure all data arrays exist to prevent errors
                 newData.products = newData.products || [];
                 newData.users = newData.users || [];
                 newData.history = newData.history || [];
                 newData.announcements = newData.announcements || [];
-
-                // Standardize date formats upon loading
-                newData.stock.forEach(item => { item.productionDate = formatDate(item.productionDate); });
                 
-                // Only update and re-render if data has actually changed
                 if (JSON.stringify(db) !== JSON.stringify(newData)) {
                     db = newData;
                     console.log('Data updated from Google Sheet at:', new Date().toLocaleTimeString());
-                    if (currentUser) populateAll();
+                    if (currentUser) {
+                        calculateStockFromHistory(); // Recalculate stock after getting new history
+                        populateAll();
+                    }
                     
                     if (!isInitialLoad) {
                         const Toast = Swal.mixin({
@@ -962,32 +992,6 @@
             } catch (error) {
                 console.error('Error loading data from Google Sheet:', error);
                 if (isInitialLoad) showError(translations[currentLanguage].load_error_title, translations[currentLanguage].load_error_text.replace('{error}', error.message));
-            }
-        }
-
-        async function saveDataToSheet() {
-            try {
-                const payload = { action: 'saveDb', payload: db };
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8',
-                    },
-                });
-
-                if (!response.ok) {
-                    const errorBody = await response.text();
-                    console.error("Error Body from Server:", errorBody);
-                    throw new Error(`Server responded with status: ${response.status}`);
-                }
-                
-                console.log('Save successful');
-                return true;
-
-            } catch (error) {
-                console.error('Error saving data to Google Sheet:', error);
-                throw error;
             }
         }
         
@@ -1027,74 +1031,24 @@
 
         // --- GLOBAL APP OBJECT ---
         window.app = {
-            deleteLotsByDate: (productId, productionDate) => {
-                if (currentUser.role !== 'admin') return;
-                const confirmText = translations[currentLanguage].confirm_delete_lot_text
-                    .replace('{productId}', productId)
-                    .replace('{productionDate}', productionDate);
-
-                confirmDestructiveAction(confirmText, async () => {
-                    const dbBackup = JSON.parse(JSON.stringify(db));
-                    
-                    const originalStockCount = db.stock.length;
-                    db.stock = db.stock.filter(lot => !(
-                        String(lot.productId).trim() === String(productId).trim() && 
-                        formatDate(lot.productionDate) === productionDate
-                    ));
-
-                    if (db.stock.length === originalStockCount) {
-                        showError('Error!', translations[currentLanguage].delete_lot_error);
-                        return;
-                    }
-
-                    lotDetailModal.hide();
-                    populateStockSummary();
-                    
-                    showSuccess(translations[currentLanguage].delete_lot_success);
-
-                    try {
-                        await saveDataToSheet();
-                    } catch (error) {
-                        db = dbBackup;
-                        populateStockSummary();
-                        showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
-                    }
-                });
-            },
-            editProduct: (productId) => {
-                if (currentUser.role !== 'admin') return;
-                editingProductId = productId;
-                const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
-                if (product) {
-                    document.getElementById('product-id').value = product.id;
-                    document.getElementById('product-id').readOnly = true; // Lock Product ID on edit
-                    document.getElementById('product-name').value = product.name;
-                    document.getElementById('product-customer').value = product.customer || '';
-                    document.getElementById('product-fullBoxQuantity').value = product.fullBoxQuantity;
-                    document.getElementById('product-erpCode').value = product.erpCode;
-                    document.getElementById('product-unitPrice').value = product.unitPrice;
-                }
-            },
             deleteProduct: (productId) => {
                 if (currentUser.role !== 'admin') return;
-                const isProductInStock = db.stock.some(s => String(s.productId).trim() === String(productId).trim() && s.quantity > 0);
-                if (isProductInStock) {
+                const productStock = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim() && s.totalQuantity > 0);
+
+                if (productStock) {
                     showError('Cannot Delete!', translations[currentLanguage].delete_product_error);
                     return;
                 }
                 const confirmText = translations[currentLanguage].confirm_delete_product_text.replace('{productId}', productId);
                 confirmDestructiveAction(confirmText, async () => {
-                    const dbBackup = JSON.parse(JSON.stringify(db));
-                    db.products = db.products.filter(p => String(p.id).trim() !== String(productId).trim());
-                    populateAll();
-                    showSuccess(translations[currentLanguage].delete_product_success);
-
                     try {
-                        await saveDataToSheet();
-                    } catch (error) {
-                        db = dbBackup;
+                        await callAppsScript('deleteProduct', { id: productId });
+                        // Optimistic update
+                        db.products = db.products.filter(p => String(p.id).trim() !== String(productId).trim());
                         populateAll();
-                        showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
+                        showSuccess(translations[currentLanguage].delete_product_success);
+                    } catch (error) {
+                         showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
                     }
                 });
             },
@@ -1103,9 +1057,7 @@
                 originalUsernameForEdit = username;
                 const user = db.users.find(u => u.username === username);
                 if (user) {
-                    document.getElementById('user-username').value = user.username;
-                    document.getElementById('user-password').value = user.password;
-                    document.getElementById('user-role-select').value = user.role;
+                    renderUserForm(user);
                 }
             },
             deleteUser: (username) => {
@@ -1116,73 +1068,54 @@
                 }
                 const confirmText = translations[currentLanguage].confirm_delete_user_text.replace('{username}', username);
                 confirmDestructiveAction(confirmText, async () => {
-                    const dbBackup = JSON.parse(JSON.stringify(db));
-                    db.users = db.users.filter(u => u.username !== username);
-                    populateAll();
-                    showSuccess(translations[currentLanguage].delete_user_success);
-                    
                     try {
-                        await saveDataToSheet();
-                    } catch (error) {
-                        db = dbBackup;
+                        await callAppsScript('deleteUser', { username: username });
+                        // Optimistic update
+                        db.users = db.users.filter(u => u.username !== username);
                         populateAll();
+                        showSuccess(translations[currentLanguage].delete_user_success);
+                    } catch (error) {
                         showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
                     }
                 });
             },
-            editHistory: (historyId) => {
-                if (currentUser.role !== 'admin') return;
-                const historyItem = db.history.find(h => h.date === historyId);
-                const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
-
-                if (historyItem && stockLot) {
-                    renderEditHistoryForm(historyItem, stockLot);
-                    editHistoryModal.show();
-                }
-            },
-            deleteHistory: (historyId) => {
+            reverseHistory: (historyId) => {
                 if (currentUser.role !== 'admin') return;
                 
-                const historyIndex = db.history.findIndex(h => h.date === historyId);
-                if (historyIndex === -1) return;
-                const historyItem = db.history[historyIndex];
+                const historyItem = db.history.find(h => h.id === historyId);
+                if (!historyItem || historyItem.type === 'reversal') return; // Cannot reverse a reversal
 
                 const message = historyItem.type === 'export' 
-                    ? translations[currentLanguage].delete_history_export_text
-                    : translations[currentLanguage].delete_history_import_text;
+                    ? translations[currentLanguage].reverse_history_export_text
+                    : translations[currentLanguage].reverse_history_import_text;
 
-                confirmDestructiveAction(message, async () => {
-                    const dbBackup = JSON.parse(JSON.stringify(db));
-                    
-                    const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
-
-                    if (historyItem.type === 'export') {
-                        if (stockLot) {
-                            stockLot.quantity += historyItem.quantity;
-                        } else {
-                            db.stock.push({ lotId: historyItem.lotId, productId: historyItem.productId, quantity: historyItem.quantity, productionDate: 'N/A (Reverted)' });
+                confirmAction(translations[currentLanguage].confirm_reverse_history_title, message, async () => {
+                    // Check if reversal is possible for imports
+                    if (historyItem.type === 'import') {
+                        calculateStockFromHistory(); // Ensure stock is up-to-date
+                        const lotStock = calculatedStock.flatMap(p => p.lots).find(l => l.lotId === historyItem.lotId);
+                        if (lotStock && lotStock.quantity < historyItem.quantity) {
+                             showError('Cannot Reverse!', translations[currentLanguage].reverse_history_import_error_not_enough);
+                             return;
                         }
-                    } else { // import
-                        if (!stockLot) { showError('Error!', translations[currentLanguage].delete_history_import_error_no_lot); return; }
-                        if (stockLot.quantity < historyItem.quantity) { 
-                            const errorText = translations[currentLanguage].delete_history_import_error_not_enough
-                                .replace('{stockQty}', stockLot.quantity)
-                                .replace('{historyQty}', historyItem.quantity);
-                            showError('Cannot Delete!', errorText); 
-                            return; 
-                        }
-                        stockLot.quantity -= historyItem.quantity;
                     }
 
-                    db.history.splice(historyIndex, 1);
-                    populateAll();
-                    showSuccess(translations[currentLanguage].delete_history_success);
+                    const reversalEntry = {
+                        ...historyItem,
+                        id: 'rev-' + Date.now(), // Unique ID for reversal
+                        type: 'reversal',
+                        user: currentUser.username,
+                        date: new Date().toISOString(),
+                        remarks: `Reversal of transaction ID: ${historyItem.id}. Original remarks: ${historyItem.remarks || ''}`
+                    };
 
                     try {
-                        await saveDataToSheet();
-                    } catch (error) {
-                        db = dbBackup;
+                        const newHistory = await callAppsScript('appendHistory', reversalEntry);
+                        db.history.unshift(newHistory); // Add the new reversal entry
+                        calculateStockFromHistory();
                         populateAll();
+                        showSuccess(translations[currentLanguage].reverse_history_success);
+                    } catch (error) {
                         showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
                     }
                 });
@@ -1191,10 +1124,8 @@
                 if (currentUser.role !== 'admin') return;
                 const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
                 if (product) {
-                    const totalQuantity = db.stock
-                        .filter(s => String(s.productId).trim() === String(productId).trim())
-                        .reduce((sum, item) => sum + item.quantity, 0);
-                    
+                    const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim());
+                    const totalQuantity = stockInfo ? stockInfo.totalQuantity : 0;
                     renderEditStockForm(product, totalQuantity);
                     editStockModal.show();
                 }
@@ -1215,16 +1146,12 @@
             deleteAnnouncement: (announcementId) => {
                 if (currentUser.role !== 'admin') return;
                 confirmDestructiveAction('This announcement will be permanently deleted.', async () => {
-                    const dbBackup = JSON.parse(JSON.stringify(db));
-                    db.announcements = db.announcements.filter(a => String(a.id) !== String(announcementId));
-                    populateAll();
-                    showSuccess(translations[currentLanguage].announcement_update_success);
-                    
-                    try {
-                        await saveDataToSheet();
-                    } catch (error) {
-                        db = dbBackup;
+                     try {
+                        await callAppsScript('deleteAnnouncement', { id: announcementId });
+                        db.announcements = db.announcements.filter(a => String(a.id) !== String(announcementId));
                         populateAll();
+                        showSuccess(translations[currentLanguage].announcement_update_success);
+                    } catch (error) {
                         showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
                     }
                 });
@@ -1233,16 +1160,13 @@
                 if (currentUser.role !== 'admin') return;
                 const announcement = db.announcements.find(a => String(a.id) === String(announcementId));
                 if (announcement) {
-                    const dbBackup = JSON.parse(JSON.stringify(db));
-                    announcement.isActive = !announcement.isActive;
-                    populateAll();
-                    showSuccess(translations[currentLanguage].announcement_status_update_success);
-
+                    const updatedAnnouncement = { ...announcement, isActive: !announcement.isActive };
                     try {
-                        await saveDataToSheet();
-                    } catch (error) {
-                        db = dbBackup;
+                        await callAppsScript('updateAnnouncement', updatedAnnouncement);
+                        announcement.isActive = !announcement.isActive; // Optimistic update
                         populateAll();
+                        showSuccess(translations[currentLanguage].announcement_status_update_success);
+                    } catch (error) {
                         showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
                     }
                 }
@@ -1250,8 +1174,8 @@
         };
 
         async function init() {
-            setLanguage(currentLanguage); // Set initial language
-            await loadDataFromSheet(true); // Initial load with spinner
+            setLanguage(currentLanguage);
+            await loadDataFromSheet(true);
             checkLoginState();
             addEventListeners();
         }
@@ -1270,28 +1194,9 @@
                 showLoginPage();
             }
         }
-
-        function addHistory(type, product, quantity, user, lotId = null, invoiceNumber = null, remarks = '') { 
-            const historyEntry = { 
-                date: new Date().toISOString(), 
-                type: type, 
-                productId: product.id, 
-                productName: product.name, 
-                customer: product.customer || '',
-                erpCode: product.erpCode || '',
-                quantity: quantity, 
-                user: user, 
-                lotId: lotId, 
-                invoiceNumber: invoiceNumber, 
-                remarks: remarks 
-            };
-            db.history.unshift(historyEntry); 
-            return historyEntry;
-        }
-
+        
         async function handleImport(e) {
             e.preventDefault();
-            
             const productId = document.getElementById('import-product-id').value;
             const productName = document.getElementById('import-product-name').value;
             if (!productName) {
@@ -1299,67 +1204,63 @@
                 return;
             }
             
-            const dbBackup = JSON.parse(JSON.stringify(db));
-            const newStockEntries = [];
+            const productForHistory = {
+                id: productId,
+                name: productName,
+                customer: document.getElementById('import-customer').value,
+                erpCode: document.getElementById('import-erp-code').value
+            };
+            const remarks = document.getElementById('import-remarks').value;
+            const lotRows = document.querySelectorAll('#import-lots-container .import-lot-row');
             const newHistoryEntries = [];
 
-            const lotRows = document.querySelectorAll('#import-lots-container .import-lot-row');
-            
             for(const row of lotRows) {
                 const quantity = parseInt(row.querySelector('.import-quantity').value);
                 const productionDate = row.querySelector('.import-prod-date').value;
 
                 if (quantity > 0 && productionDate) {
-                    const newStock = {
-                        lotId: (db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) : 0) + newStockEntries.length + 1,
-                        productId: productId,
+                    newHistoryEntries.push({
+                        id: 'imp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                        date: new Date().toISOString(),
+                        type: 'import',
+                        productId: productForHistory.id,
+                        productName: productForHistory.name,
+                        customer: productForHistory.customer,
+                        erpCode: productForHistory.erpCode,
                         quantity: quantity,
-                        productionDate: productionDate
-                    };
-                    db.stock.push(newStock);
-                    newStockEntries.push(newStock);
-
-                    const productForHistory = {
-                        id: productId,
-                        name: productName,
-                        customer: document.getElementById('import-customer').value,
-                        erpCode: document.getElementById('import-erp-code').value
-                    };
-                    const remarks = document.getElementById('import-remarks').value;
-                    const newHistory = addHistory('import', productForHistory, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
-                    newHistoryEntries.push(newHistory);
+                        productionDate: productionDate,
+                        user: currentUser.username,
+                        invoiceNumber: null,
+                        remarks: remarks
+                    });
                 }
             }
 
-            if (newStockEntries.length === 0) {
+            if (newHistoryEntries.length === 0) {
                 showError(translations[currentLanguage].form_incomplete, "Please add at least one valid lot.");
                 return;
             }
 
-            populateAll();
-            showSuccess(translations[currentLanguage].import_success.replace('{name}', productName));
-            renderImportForm();
-
             try {
-                await saveDataToSheet();
-            } catch (error) {
-                console.error("Import save failed. Rolling back.");
-                db = dbBackup;
+                Swal.fire({ title: translations[currentLanguage].saving, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const results = await callAppsScript('appendBatchHistory', newHistoryEntries);
+                results.forEach(newEntry => db.history.unshift(newEntry));
+                calculateStockFromHistory();
                 populateAll();
-                showError(
-                    translations[currentLanguage].save_error_title, 
-                    translations[currentLanguage].save_error_text.replace('{error}', error.message)
-                );
+                Swal.close();
+                showSuccess(translations[currentLanguage].import_success.replace('{name}', productName));
+                renderImportForm();
+            } catch (error) {
+                Swal.close();
+                showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
             }
         }
 
         async function handleExport(e) {
             e.preventDefault();
-
             const productId = document.getElementById('export-product-id').value;
             const invoiceNumber = document.getElementById('export-invoice-number').value;
             const remarks = document.getElementById('export-remarks').value;
-            
             const lotRows = document.querySelectorAll('#export-lots-container .export-lot-row:has(input[type="checkbox"]:checked)');
 
             if (!productId || lotRows.length === 0) {
@@ -1367,46 +1268,61 @@
                 return;
             }
 
-            const dbBackup = JSON.parse(JSON.stringify(db));
             let product = db.products.find(p => String(p.id).trim() === String(productId).trim()) || { id: productId, name: 'N/A' };
+            const newHistoryEntries = [];
             
+            // Validate quantities before creating history
+            for(const row of lotRows) {
+                 const productionDate = row.dataset.date;
+                 const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
+                 const lotInfo = calculatedStock.find(p => p.productId === productId)?.lots.find(l => l.productionDate === productionDate);
+                 const availableQty = lotInfo ? lotInfo.quantity : 0;
+                 if (quantityToExport > availableQty) {
+                     showError('Not Enough Stock', translations[currentLanguage].export_not_enough.replace('{qty}', availableQty));
+                     return;
+                 }
+            }
+
+
             for(const row of lotRows) {
                 const productionDate = row.dataset.date;
                 const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
 
                 if (isNaN(quantityToExport) || quantityToExport <= 0) continue;
 
-                let remainingToExport = quantityToExport;
-                const lotsForDate = db.stock
-                    .filter(s => String(s.productId).trim() === String(productId).trim() && formatDate(s.productionDate) === productionDate && s.quantity > 0)
-                    .sort((a, b) => a.lotId - b.lotId);
-
-                for (const stockLot of lotsForDate) {
-                    if (remainingToExport <= 0) break;
-                    const quantityFromThisLot = Math.min(remainingToExport, stockLot.quantity);
-                    stockLot.quantity -= quantityFromThisLot;
-                    addHistory('export', product, quantityFromThisLot, currentUser.username, stockLot.lotId, invoiceNumber, remarks);
-                    remainingToExport -= quantityFromThisLot;
-                }
+                 newHistoryEntries.push({
+                    id: 'exp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                    date: new Date().toISOString(),
+                    type: 'export',
+                    productId: product.id,
+                    productName: product.name,
+                    customer: product.customer,
+                    erpCode: product.erpCode,
+                    quantity: quantityToExport,
+                    productionDate: productionDate,
+                    user: currentUser.username,
+                    invoiceNumber: invoiceNumber,
+                    remarks: remarks
+                });
             }
 
-            populateAll();
-            showSuccess(translations[currentLanguage].export_success.replace('{name}', product.name));
-            renderExportForm();
-
             try {
-                await saveDataToSheet();
-            } catch (error) {
-                console.error("Export save failed. Rolling back.");
-                db = dbBackup;
+                 Swal.fire({ title: translations[currentLanguage].saving, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const results = await callAppsScript('appendBatchHistory', newHistoryEntries);
+                results.forEach(newEntry => db.history.unshift(newEntry));
+                calculateStockFromHistory();
                 populateAll();
+                Swal.close();
+                showSuccess(translations[currentLanguage].export_success.replace('{name}', product.name));
+                renderExportForm();
+            } catch (error) {
+                Swal.close();
                 showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
             }
         }
 
         async function handleProductFormSubmit(e) {
             e.preventDefault();
-            const dbBackup = JSON.parse(JSON.stringify(db));
             let successMessage = '';
             
             const productData = {
@@ -1418,147 +1334,68 @@
                 unitPrice: parseFloat(document.getElementById('product-unitPrice').value)
             };
 
-            if (editingProductId) {
-                const productIndex = db.products.findIndex(p => String(p.id).trim() === String(editingProductId).trim());
-                if (productIndex > -1) {
-                    // Prevent changing the ID, but update other fields
-                    db.products[productIndex] = { ...db.products[productIndex], ...productData, id: editingProductId };
-                    successMessage = translations[currentLanguage].product_update_success;
-                }
-            } else {
-                if (db.products.some(p => String(p.id).trim() === String(productData.id).trim())) { showError('Duplicate ID!', translations[currentLanguage].product_id_exists); return; }
-                db.products.push(productData);
-                successMessage = translations[currentLanguage].product_add_success;
-            }
-            
-            clearProductForm();
-            populateAll();
-            showSuccess(successMessage);
-
             try {
-                await saveDataToSheet();
-            } catch (error) {
-                db = dbBackup;
+                if (editingProductId) {
+                    await callAppsScript('updateProduct', productData);
+                    const productIndex = db.products.findIndex(p => String(p.id).trim() === String(editingProductId).trim());
+                    if (productIndex > -1) db.products[productIndex] = productData;
+                    successMessage = translations[currentLanguage].product_update_success;
+                } else {
+                    if (db.products.some(p => String(p.id).trim() === String(productData.id).trim())) { showError('Duplicate ID!', translations[currentLanguage].product_id_exists); return; }
+                    await callAppsScript('addProduct', productData);
+                    db.products.push(productData);
+                    successMessage = translations[currentLanguage].product_add_success;
+                }
+                
+                clearProductForm();
                 populateAll();
+                showSuccess(successMessage);
+            } catch (error) {
                 showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
             }
         }
         
         async function handleUserFormSubmit(e) {
             e.preventDefault();
-            const dbBackup = JSON.parse(JSON.stringify(db));
             let successMessage = '';
 
-            const newUsername = document.getElementById('user-username').value;
-            const newPassword = document.getElementById('user-password').value;
-            const newRole = document.getElementById('user-role-select').value;
+            const userData = {
+                username: document.getElementById('user-username').value,
+                password: document.getElementById('user-password').value,
+                role: document.getElementById('user-role-select').value
+            };
             
-            if (!originalUsernameForEdit) {
-                if (db.users.some(u => u.username === newUsername)) { showError('Duplicate Username!', translations[currentLanguage].username_exists); return; }
-                db.users.push({ username: newUsername, password: newPassword, role: newRole });
-                successMessage = translations[currentLanguage].user_add_success;
-            } else {
-                 const userIndex = db.users.findIndex(u => u.username === originalUsernameForEdit);
-                if (userIndex === -1) { showError('Error', translations[currentLanguage].user_not_found_for_edit); clearUserForm(); return; }
-                const isUsernameTaken = db.users.some(u => u.username === newUsername && u.username !== originalUsernameForEdit);
-                if (isUsernameTaken) { showError('Duplicate Username!', translations[currentLanguage].username_exists); return; }
+            try {
+                if (!originalUsernameForEdit) { // Adding new user
+                    if (db.users.some(u => u.username === userData.username)) { showError('Duplicate Username!', translations[currentLanguage].username_exists); return; }
+                    await callAppsScript('addUser', userData);
+                    db.users.push(userData);
+                    successMessage = translations[currentLanguage].user_add_success;
+                } else { // Editing existing user
+                    const isUsernameTaken = db.users.some(u => u.username === userData.username && u.username !== originalUsernameForEdit);
+                    if (isUsernameTaken) { showError('Duplicate Username!', translations[currentLanguage].username_exists); return; }
+                    
+                    await callAppsScript('updateUser', { oldUsername: originalUsernameForEdit, ...userData });
 
-                if (currentUser.username === originalUsernameForEdit) {
-                    currentUser.username = newUsername;
-                    currentUser.password = newPassword;
-                    currentUser.role = newRole;
-                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-                }
-                if (originalUsernameForEdit !== newUsername) {
-                    db.history.forEach(record => { if (record.user === originalUsernameForEdit) { record.user = newUsername; } });
-                    db.announcements.forEach(ann => { if (ann.postedBy === originalUsernameForEdit) { ann.postedBy = newUsername; } });
+                    // Optimistic update
+                    const userIndex = db.users.findIndex(u => u.username === originalUsernameForEdit);
+                    if (userIndex > -1) db.users[userIndex] = userData;
+
+                    if (currentUser.username === originalUsernameForEdit) {
+                        sessionStorage.setItem('currentUser', JSON.stringify(userData));
+                        currentUser = userData;
+                    }
+                    successMessage = translations[currentLanguage].user_update_success;
                 }
                 
-                const userToUpdate = db.users[userIndex];
-                userToUpdate.username = newUsername;
-                userToUpdate.password = newPassword;
-                userToUpdate.role = newRole;
-                successMessage = translations[currentLanguage].user_update_success;
-            }
-            
-            clearUserForm();
-            populateAll();
-            showSuccess(successMessage);
-
-            try {
-                await saveDataToSheet();
-                 if (currentUser.username === newUsername) {
-                    showDashboard();
-                }
-            } catch (error) {
-                db = dbBackup;
+                clearUserForm();
                 populateAll();
+                showSuccess(successMessage);
+            } catch (error) {
                 showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
             }
         }
-
-        async function handleEditHistorySubmit(e) {
-            e.preventDefault();
-            const dbBackup = JSON.parse(JSON.stringify(db));
-
-            const historyId = document.getElementById('edit-history-id').value;
-            const newQuantity = parseInt(document.getElementById('edit-history-quantity').value);
-            const newInvoice = document.getElementById('edit-history-invoice').value;
-            const newRemarks = document.getElementById('edit-history-remarks').value;
-            const newProdDate = document.getElementById('edit-history-prod-date').value;
-
-            const historyIndex = db.history.findIndex(h => h.date === historyId);
-            if (historyIndex === -1) { showError('Error', translations[currentLanguage].history_not_found_for_edit); return; }
-            const historyItem = db.history[historyIndex];
-            const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
-            if (!stockLot) { showError('Error', translations[currentLanguage].history_edit_no_lot); return; }
-            
-            let originalLotQuantity = stockLot.quantity;
-            if (historyItem.type === 'export') {
-                originalLotQuantity += historyItem.quantity;
-            } else { 
-                originalLotQuantity -= historyItem.quantity;
-            }
-
-            if (historyItem.type === 'import') {
-                const amountUsed = historyItem.quantity - stockLot.quantity;
-                if (newQuantity < amountUsed) {
-                    const errorText = translations[currentLanguage].history_edit_import_not_enough.replaceAll('{qty}', amountUsed);
-                    showError('Invalid Quantity', errorText);
-                    return;
-                }
-            } else { 
-                if (newQuantity > originalLotQuantity) {
-                    const errorText = translations[currentLanguage].export_not_enough.replace('{qty}', originalLotQuantity);
-                    showError('Not Enough Stock', errorText);
-                    return;
-                }
-            }
-
-            if (historyItem.type === 'export') {
-                stockLot.quantity = originalLotQuantity - newQuantity;
-            } else { 
-                stockLot.quantity = originalLotQuantity + newQuantity;
-            }
-
-            stockLot.productionDate = newProdDate;
-            historyItem.quantity = newQuantity;
-            historyItem.remarks = newRemarks;
-            if (historyItem.type === 'export') { historyItem.invoiceNumber = newInvoice; }
-            
-            populateAll();
-            editHistoryModal.hide();
-            showSuccess(translations[currentLanguage].history_edit_success);
-
-            try {
-                await saveDataToSheet();
-            } catch (error) {
-                db = dbBackup; 
-                populateAll();
-                showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
-            }
-        }
-
+        
         async function handleEditStockSubmit(e) {
             e.preventDefault();
             const T = translations[currentLanguage];
@@ -1569,73 +1406,73 @@
             const confirmText = T.edit_stock_confirm_text.replace('{productId}', productId).replace('{quantity}', newTotalQuantity);
 
             confirmAction(confirmTitle, confirmText, async () => {
-                const dbBackup = JSON.parse(JSON.stringify(db));
                 const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
                 if (!product) { showError('Error', T.product_not_found_error); return; }
                 
-                const originalTotal = db.stock.filter(s => String(s.productId).trim() === String(productId).trim()).reduce((sum, item) => sum + item.quantity, 0);
-                db.stock = db.stock.filter(s => String(s.productId).trim() !== String(productId).trim());
-                const newLotId = db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1;
-                db.stock.push({ lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' });
-                
-                const remarks = `Adjusted from ${originalTotal} to ${newTotalQuantity}`;
-                addHistory('adjustment', product, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
-                
-                populateAll();
-                editStockModal.hide();
-                showSuccess(T.stock_update_success);
+                const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim());
+                const originalTotal = stockInfo ? stockInfo.totalQuantity : 0;
+
+                const adjustmentEntry = {
+                    id: 'adj-' + Date.now(),
+                    date: new Date().toISOString(),
+                    type: 'adjustment',
+                    productId: productId,
+                    productName: product.name,
+                    customer: product.customer,
+                    erpCode: product.erpCode,
+                    quantity: newTotalQuantity - originalTotal,
+                    productionDate: 'Manual Adjustment',
+                    user: currentUser.username,
+                    remarks: `Adjusted from ${originalTotal} to ${newTotalQuantity}`
+                };
 
                 try {
-                    await saveDataToSheet();
-                } catch (error) {
-                    db = dbBackup;
+                    const newHistory = await callAppsScript('appendHistory', adjustmentEntry);
+                    db.history.unshift(newHistory);
+                    calculateStockFromHistory();
                     populateAll();
+                    editStockModal.hide();
+                    showSuccess(T.stock_update_success);
+                } catch (error) {
                     showError(T.save_error_title, T.save_error_text.replace('{error}', error.message));
                 }
             });
         }
 
-        /**
-         * Handles the submission of the announcement form.
-         * It either creates a new announcement or updates an existing one.
-         * After updating the local 'db' object, it saves the changes to the Google Sheet.
-         */
         async function handleAnnouncementFormSubmit(e) {
             e.preventDefault();
-            const dbBackup = JSON.parse(JSON.stringify(db));
             let successMessage = '';
             
-            const title = document.getElementById('announcement-title').value;
-            const message = document.getElementById('announcement-message').value;
-            const isActive = document.getElementById('announcement-active').checked;
+            const announcementData = {
+                id: editingAnnouncementId || 'ann-' + Date.now(),
+                title: document.getElementById('announcement-title').value,
+                message: document.getElementById('announcement-message').value,
+                isActive: document.getElementById('announcement-active').checked,
+                postedBy: currentUser.username,
+                postedDate: new Date().toISOString()
+            };
 
-            if (!title || !message) {
+            if (!announcementData.title || !announcementData.message) {
                 showError(translations[currentLanguage].form_incomplete, 'Please provide a title and message.');
                 return;
             }
 
-            // Check if we are editing an existing announcement
-            if (editingAnnouncementId) {
-                const index = db.announcements.findIndex(a => String(a.id) === String(editingAnnouncementId));
-                if (index > -1) {
-                    db.announcements[index] = { ...db.announcements[index], title, message, isActive };
+            try {
+                if (editingAnnouncementId) {
+                    await callAppsScript('updateAnnouncement', announcementData);
+                    const index = db.announcements.findIndex(a => String(a.id) === String(editingAnnouncementId));
+                    if (index > -1) db.announcements[index] = announcementData;
                     successMessage = translations[currentLanguage].announcement_update_success;
+                } else {
+                    await callAppsScript('addAnnouncement', announcementData);
+                    db.announcements.unshift(announcementData);
+                    successMessage = translations[currentLanguage].announcement_add_success;
                 }
-            } else { // Or creating a new one
-                const newId = db.announcements.length > 0 ? Math.max(...db.announcements.map(a => a.id)) + 1 : 1;
-                db.announcements.push({ id: newId, title, message, postedBy: currentUser.username, postedDate: new Date().toISOString(), isActive });
-                successMessage = translations[currentLanguage].announcement_add_success;
-            }
-            
-            clearAnnouncementForm();
-            populateAll(); // Refresh all UI components including the announcement table and display
-            showSuccess(successMessage);
-
-             try {
-                await saveDataToSheet();
-            } catch (error) {
-                db = dbBackup;
+                
+                clearAnnouncementForm();
                 populateAll();
+                showSuccess(successMessage);
+            } catch (error) {
                 showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
             }
         }
@@ -1673,6 +1510,7 @@
                 stockContentColumn.classList.add('col-lg-12');
             }
             
+            calculateStockFromHistory();
             populateAll(); 
             startDataSync(); 
             setupActivityListeners();
@@ -1684,8 +1522,8 @@
             populateUserManagementTable(); 
             populateProductManagementTable(); 
             populateHistoryTable(); 
-            populateAnnouncementsTable(); // Renders the management table for admins
-            displayActiveAnnouncements(); // Renders the announcements for users on the main page
+            populateAnnouncementsTable();
+            displayActiveAnnouncements();
             if (currentUser.role === 'admin') { 
                 document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); 
             } else { 
@@ -1716,27 +1554,18 @@
             </tr>`;
             
             stockSummaryTable.innerHTML = '';
-            const productIdsInStock = [...new Set(db.stock.map(s => String(s.productId).trim()))];
             const filterOldStock = showOldStockFilter.checked;
             const searchTerm = stockSearchInput.value.toLowerCase();
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-            let summary = productIdsInStock.map(id => {
-                let productInfo = db.products.find(p => String(p.id).trim() === id);
-                if (!productInfo) {
-                    const latestHistoryEntry = db.history.find(h => String(h.productId).trim() === id);
-                    productInfo = {
-                        id: id,
-                        name: latestHistoryEntry ? latestHistoryEntry.productName : T.product_not_found.replace('{id}', id),
-                        customer: latestHistoryEntry ? latestHistoryEntry.customer || '-' : '-',
-                        erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode || '-' : '-',
-                    };
+            let summary = calculatedStock.map(stockItem => {
+                let productInfo = db.products.find(p => String(p.id).trim() === stockItem.productId);
+                 if (!productInfo) {
+                    productInfo = { id: stockItem.productId, name: T.product_not_found.replace('{id}', stockItem.productId), customer: '-', erpCode: '-' };
                 }
-                const lots = db.stock.filter(s => String(s.productId).trim() === id);
-                const totalQuantity = lots.reduce((sum, item) => sum + item.quantity, 0);
-                const hasOldStock = lots.some(s => s.quantity > 0 && new Date(formatDate(s.productionDate)) < threeMonthsAgo);
-                return { ...productInfo, totalQuantity, hasOldStock };
+                const hasOldStock = stockItem.lots.some(l => l.quantity > 0 && new Date(formatDate(l.productionDate)) < threeMonthsAgo);
+                return { ...productInfo, ...stockItem, hasOldStock };
             });
             
             summary = summary.filter(p => p.totalQuantity > 0);
@@ -1805,7 +1634,7 @@
             }
 
             const filteredHistory = getFilteredHistory();
-            const totalQuantity = filteredHistory.reduce((sum, item) => sum + item.quantity, 0);
+            const totalQuantity = filteredHistory.reduce((sum, item) => sum + (item.type === 'reversal' ? 0 : item.quantity), 0);
             document.getElementById('history-total-quantity').textContent = T.history_total_quantity_display.replace('{total}', totalQuantity.toLocaleString());
 
             if (filteredHistory.length === 0) {
@@ -1815,8 +1644,6 @@
             filteredHistory.forEach(item => {
                 const row = document.createElement('tr');
                 let typeHtml, rowClass;
-                // Find the production date from the stock data using lotId
-                const lot = db.stock.find(s => s.lotId === item.lotId);
                 switch (item.type) {
                     case 'import':
                         typeHtml = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill"><i class="bi bi-arrow-down me-1"></i>${T.history_type_import}</span>`;
@@ -1830,14 +1657,18 @@
                         typeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill"><i class="bi bi-pencil-fill me-1"></i>${T.history_type_adjustment}</span>`;
                         rowClass = 'history-adjustment';
                         break;
+                    case 'reversal':
+                        typeHtml = `<span class="badge bg-danger-subtle text-danger-emphasis rounded-pill"><i class="bi bi-x-circle-fill me-1"></i>${T.history_type_reversal}</span>`;
+                        rowClass = 'history-reversal';
+                        break;
                 }
                 row.classList.add(rowClass);
                 const formattedDate = new Date(item.date).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB', {
                     year: 'numeric', month: 'short', day: 'numeric',
                     hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
                 });
-                const actionsContent = `<button class="btn btn-warning btn-sm" onclick="window.app.editHistory('${item.date}')"><i class="bi bi-pencil-fill"></i></button> <button class="btn btn-danger btn-sm" onclick="window.app.deleteHistory('${item.date}')"><i class="bi bi-trash3-fill"></i></button>`;
-                row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${item.quantity.toLocaleString()}</td> <td>${lot ? formatDate(lot.productionDate) : 'N/A'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${item.remarks || ''}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
+                const actionsContent = item.type !== 'reversal' ? `<button class="btn btn-danger btn-sm" onclick="window.app.reverseHistory('${item.id}')"><i class="bi bi-x-circle-fill"></i></button>` : '';
+                row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${item.quantity.toLocaleString()}</td> <td>${formatDate(item.productionDate) || 'N/A'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${item.remarks || ''}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
                 historyTable.appendChild(row);
             });
         }
@@ -1874,7 +1705,7 @@
                 if (e.target.id === 'export-product-id') {
                     const searchTerm = e.target.value;
                     const suggestionsContainer = document.getElementById('export-product-suggestions');
-                    const productsInStockIds = [...new Set(db.stock.filter(s => s.quantity > 0).map(s => String(s.productId).trim()))];
+                    const productsInStockIds = calculatedStock.filter(s => s.totalQuantity > 0).map(s => s.productId);
                     const productSource = db.products.filter(p => productsInStockIds.includes(String(p.id).trim()));
                     showSuggestions(e.target, suggestionsContainer, productSource, searchTerm);
                 }
@@ -1992,7 +1823,6 @@
             }).then((r) => { if (r.isConfirmed) callback(); }); 
         }
         
-        // NEW: Enhanced confirmation for destructive actions
         function confirmDestructiveAction(text, callback) {
             const T = translations[currentLanguage];
             const confirmWord = T.confirm_delete_prompt === "Please type 'delete' to confirm" ? "delete" : "ลบ";
@@ -2044,37 +1874,26 @@
         
         function generateStockBackupData() {
             const T = translations[currentLanguage];
-            const stockSummary = {};
-
-            db.stock.forEach(lot => {
-                if (lot.quantity > 0) {
-                    const date = formatDate(lot.productionDate);
-                    const key = `${lot.productId}_${date}`;
-
-                    if (!stockSummary[key]) {
-                        let productInfo = db.products.find(p => String(p.id).trim() === String(lot.productId).trim());
+            const stockBackup = [];
+            calculatedStock.forEach(product => {
+                product.lots.forEach(lot => {
+                    if (lot.quantity > 0) {
+                        let productInfo = db.products.find(p => String(p.id).trim() === String(product.productId).trim());
                         if (!productInfo) {
-                             productInfo = { name: T.product_not_found.replace('{id}', lot.productId), customer: '-', erpCode: '-' };
+                            productInfo = { name: T.product_not_found.replace('{id}', product.productId), customer: '-', erpCode: '-' };
                         }
-                        stockSummary[key] = {
-                            productId: lot.productId,
+                        stockBackup.push({
+                            productId: product.productId,
                             productName: productInfo.name,
                             customer: productInfo.customer,
                             erpCode: productInfo.erpCode,
-                            productionDate: date,
-                            totalQuantity: 0
-                        };
+                            productionDate: lot.productionDate,
+                            quantity: lot.quantity
+                        });
                     }
-                    stockSummary[key].totalQuantity += lot.quantity;
-                }
+                });
             });
-
-            // Convert the summary object back to an array and sort it
-            return Object.values(stockSummary).sort((a, b) => {
-                if (a.productId < b.productId) return -1;
-                if (a.productId > b.productId) return 1;
-                return new Date(a.productionDate) - new Date(b.productionDate);
-            });
+            return stockBackup;
         }
 
         function populateUserManagementTable() { 
@@ -2113,10 +1932,6 @@
             });
         }
 
-        /**
-         * Renders the table of all announcements in the admin management tab.
-         * Fetches all announcements from the 'db', sorts them by date, and creates table rows.
-         */
         function populateAnnouncementsTable() {
             const T = translations[currentLanguage];
             const header = document.getElementById('announcement-management-table-header');
@@ -2160,10 +1975,6 @@
             });
         }
 
-        /**
-         * Filters for active announcements and displays them in the dedicated area
-         * on the main stock dashboard for all users to see.
-         */
         function displayActiveAnnouncements() {
             const T = translations[currentLanguage];
             const announcementsDisplayArea = document.getElementById('announcements-display-area');
@@ -2202,32 +2013,27 @@
                 return;
             }
 
-            const lots = db.stock.filter(s => String(s.productId).trim() === String(productId).trim() && s.quantity > 0);
+            const productStock = calculatedStock.find(p => p.productId === productId);
+            const lots = productStock ? productStock.lots.filter(l => l.quantity > 0) : [];
+
             if (lots.length === 0) {
                 container.innerHTML = `<p class="text-muted text-center">${T.export_lot_placeholder_no_stock}</p>`;
                 return;
             }
+            
+            lots.sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate));
 
-            const lotsByDate = lots.reduce((acc, lot) => {
-                const date = formatDate(lot.productionDate);
-                if (!acc[date]) acc[date] = 0;
-                acc[date] += lot.quantity;
-                return acc;
-            }, {});
-
-            const sortedDates = Object.keys(lotsByDate).sort((a, b) => new Date(a) - new Date(b));
-
-            sortedDates.forEach(date => {
-                const totalQuantity = lotsByDate[date];
+            lots.forEach(lot => {
+                const totalQuantity = lot.quantity;
                 const row = document.createElement('div');
                 row.className = 'row g-2 mb-2 align-items-center export-lot-row';
-                row.dataset.date = date;
+                row.dataset.date = lot.productionDate;
                 row.innerHTML = `
                     <div class="col-auto">
                         <input class="form-check-input" type="checkbox">
                     </div>
                     <div class="col">
-                        <label class="form-check-label">${T.export_lot_option.replace('{date}', date).replace('{qty}', totalQuantity.toLocaleString())}</label>
+                        <label class="form-check-label">${T.export_lot_option.replace('{date}', lot.productionDate).replace('{qty}', totalQuantity.toLocaleString())}</label>
                     </div>
                     <div class="col-4">
                         <input type="number" class="form-control form-control-sm export-quantity" placeholder="${T.quantity}" min="1" max="${totalQuantity}" disabled>
@@ -2243,42 +2049,30 @@
             header.innerHTML = `<tr>
                 <th>${T.production_date}</th>
                 <th>${T.lot_modal_balance}</th>
-                <th class="admin-only-cell">${T.actions}</th>
             </tr>`;
             
             const lotDetailTable = document.getElementById('lot-detail-table');
             lotDetailTable.innerHTML = '';
             
-            const lots = db.stock.filter(s => String(s.productId).trim() === String(productId).trim() && s.quantity > 0);
+            const productStock = calculatedStock.find(p => p.productId === productId);
+            const lots = productStock ? productStock.lots.filter(l => l.quantity > 0) : [];
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
             if(lots.length === 0) {
-                lotDetailTable.innerHTML = `<tr><td colspan="3" class="text-center">${T.lot_modal_no_data}</td></tr>`;
+                lotDetailTable.innerHTML = `<tr><td colspan="2" class="text-center">${T.lot_modal_no_data}</td></tr>`;
                 return;
             }
 
-            const lotsByDate = lots.reduce((acc, lot) => {
-                const date = formatDate(lot.productionDate);
-                if (!acc[date]) acc[date] = { quantity: 0, isOld: false };
-                acc[date].quantity += lot.quantity;
-                if (new Date(date) < threeMonthsAgo && date !== 'Manual Adjustment') acc[date].isOld = true;
-                return acc;
-            }, {});
+            lots.sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate));
 
-            const sortedDates = Object.keys(lotsByDate).sort((a, b) => new Date(a) - new Date(b));
-
-            sortedDates.forEach(date => {
-                const lotGroup = lotsByDate[date];
-                const isOld = lotGroup.isOld;
+            lots.forEach(lot => {
+                const isOld = new Date(lot.productionDate) < threeMonthsAgo && lot.productionDate !== 'Manual Adjustment';
                 const row = document.createElement('tr');
                 if (isOld) row.classList.add('table-warning');
                 row.innerHTML = `
-                    <td>${date} ${isOld ? '<i class="bi bi-exclamation-triangle-fill text-danger ms-2"></i>' : ''}</td>
-                    <td>${lotGroup.quantity.toLocaleString()}</td>
-                    <td class="admin-only-cell">
-                        <button class="btn btn-danger btn-sm" onclick="window.app.deleteLotsByDate('${productId}', '${date}')"><i class="bi bi-trash3-fill"></i></button>
-                    </td>`;
+                    <td>${lot.productionDate} ${isOld ? '<i class="bi bi-exclamation-triangle-fill text-danger ms-2"></i>' : ''}</td>
+                    <td>${lot.quantity.toLocaleString()}</td>`;
                 lotDetailTable.appendChild(row);
             });
         }
@@ -2287,8 +2081,8 @@
         function showFilterSuggestions(inputEl, containerEl, productSource, searchTerm) { const hiddenInputEl = document.getElementById('filter-product-id'); containerEl.innerHTML = ''; if (!searchTerm) { hiddenInputEl.value = ''; return; } const lowerCaseSearchTerm = searchTerm.toLowerCase().trim(); const filteredProducts = productSource.filter(p => String(p.id).trim().toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.slice(0, 5).forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'p-2'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = `${item.id} - ${item.name}`; hiddenInputEl.value = item.id; containerEl.innerHTML = ''; }); containerEl.appendChild(suggestionEl); }); }
 
         function clearProductForm() { editingProductId = null; document.getElementById('product-form').reset(); document.getElementById('product-id').readOnly = false; }
-        function clearUserForm() { originalUsernameForEdit = null; document.getElementById('user-form').reset(); }
-        function clearAnnouncementForm() { editingAnnouncementId = null; document.getElementById('announcement-form').reset(); document.getElementById('announcement-active').checked = true; }
+        function clearUserForm() { originalUsernameForEdit = null; renderUserForm(); }
+        function clearAnnouncementForm() { editingAnnouncementId = null; renderAnnouncementForm(); }
 
         function addImportLotRow() {
             const T = translations[currentLanguage];
@@ -2382,20 +2176,16 @@
                 <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.product_save_button}</button> <button type="button" id="clear-product-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
         }
 
-        function renderUserForm() {
+        function renderUserForm(user = {}) {
             const T = translations[currentLanguage];
             const userFormEl = document.getElementById('user-form');
             userFormEl.innerHTML = `
-                <div class="col-12"> <label for="user-username" class="form-label">${T.username_label}</label> <input type="text" id="user-username" class="form-control" required> </div>
-                <div class="col-12"> <label for="user-password" class="form-label">${T.password_label}</label> <input type="password" id="user-password" class="form-control" required> </div>
-                <div class="col-12"> <label for="user-role-select" class="form-label">${T.user_role}</label> <select id="user-role-select" class="form-select" required><option value="user">User</option><option value="admin">Admin</option></select> </div>
+                <div class="col-12"> <label for="user-username" class="form-label">${T.username_label}</label> <input type="text" id="user-username" class="form-control" required value="${user.username || ''}"> </div>
+                <div class="col-12"> <label for="user-password" class="form-label">${T.password_label}</label> <input type="password" id="user-password" class="form-control" required value="${user.password || ''}"> </div>
+                <div class="col-12"> <label for="user-role-select" class="form-label">${T.user_role}</label> <select id="user-role-select" class="form-select" required><option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option><option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option></select> </div>
                 <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.user_save_button}</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
         }
         
-        /**
-         * Renders the announcement creation/editing form.
-         * If an announcement object is passed, it populates the form for editing.
-         */
         function renderAnnouncementForm(announcement = {}) {
             const T = translations[currentLanguage];
             const announcementFormEl = document.getElementById('announcement-form');
@@ -2418,32 +2208,12 @@
             historyFilterForm.innerHTML = `
                 <div class="col-lg-2 col-md-6"> <label for="filter-start-date" class="form-label">${T.history_filter_from}</label> <input type="date" id="filter-start-date" class="form-control form-control-sm"> </div>
                 <div class="col-lg-2 col-md-6"> <label for="filter-end-date" class="form-label">${T.history_filter_to}</label> <input type="date" id="filter-end-date" class="form-control form-control-sm"> </div>
-                <div class="col-lg-2 col-md-6"> <label for="filter-type" class="form-label">${T.history_filter_type}</label> <select id="filter-type" class="form-select form-select-sm"> <option value="">${T.history_filter_type_all}</option> <option value="import">${T.history_filter_type_import}</option> <option value="export">${T.history_filter_type_export}</option> <option value="adjustment">${T.history_filter_type_adjustment}</option> </select> </div>
+                <div class="col-lg-2 col-md-6"> <label for="filter-type" class="form-label">${T.history_filter_type}</label> <select id="filter-type" class="form-select form-select-sm"> <option value="">${T.history_filter_type_all}</option> <option value="import">${T.history_filter_type_import}</option> <option value="export">${T.history_filter_type_export}</option> <option value="adjustment">${T.history_filter_type_adjustment}</option><option value="reversal">${T.history_filter_type_reversal}</option> </select> </div>
                 <div class="col-lg-2 col-md-6"> <label for="filter-product-search" class="form-label">${T.history_filter_product}</label> <div class="position-relative"> <input type="text" id="filter-product-search" class="form-control form-control-sm" placeholder="${T.history_filter_type_all}" autocomplete="off"> <input type="hidden" id="filter-product-id"> <div id="filter-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
                 <div class="col-lg-2 col-md-6"> <label for="filter-invoice-search" class="form-label">${T.history_filter_invoice}</label> <input type="text" id="filter-invoice-search" class="form-control form-control-sm" placeholder="${T.search_placeholder}" autocomplete="off"> </div>
                 <div class="col-lg-2 col-md-12 d-flex mt-auto"> <button type="submit" class="btn btn-primary btn-sm flex-grow-1 me-1"><i class="bi bi-search me-1"></i>${T.history_filter_search}</button> <button type="reset" id="history-filter-reset-btn" class="btn btn-secondary btn-sm flex-grow-1 ms-1">${T.history_filter_clear}</button> </div>`;
         }
-
-        function renderEditHistoryForm(historyItem, stockLot) {
-            const T = translations[currentLanguage];
-            const editHistoryForm = document.getElementById('edit-history-form');
-            const isExport = historyItem.type === 'export';
-            
-            const title = isExport ? 'แก้ไขประวัติการส่งออก' : 'แก้ไขประวัติการรับเข้า';
-            const quantityLabel = isExport ? T.export_quantity : T.import_quantity;
-
-            document.getElementById('edit-history-modal-title').innerHTML = `<i class="bi bi-pencil-square me-2"></i>${title}`;
-
-            editHistoryForm.innerHTML = `
-                <input type="hidden" id="edit-history-id" value="${historyItem.date}">
-                <div class="mb-3"> <label class="form-label">${T.product_name}</label> <input type="text" id="edit-history-product-name" class="form-control" value="${historyItem.productName} (Lot ID: ${historyItem.lotId})" readonly> </div>
-                <div class="mb-3"> <label for="edit-history-prod-date" class="form-label">${T.production_date}</label> <input type="date" id="edit-history-prod-date" class="form-control" value="${formatDate(stockLot.productionDate)}" required> </div>
-                <div class="mb-3"> <label for="edit-history-quantity" class="form-label">${quantityLabel}</label> <input type="number" id="edit-history-quantity" class="form-control" value="${historyItem.quantity}" required min="0"> </div>
-                <div class="mb-3" id="edit-history-invoice-group" style="display: ${isExport ? 'block' : 'none'}"> <label for="edit-history-invoice" class="form-label">${T.export_invoice}</label> <input type="text" id="edit-history-invoice" class="form-control" value="${historyItem.invoiceNumber || ''}" ${isExport ? 'required' : ''}> </div>
-                <div class="mb-3"> <label for="edit-history-remarks" class="form-label">${T.remarks}</label> <textarea id="edit-history-remarks" class="form-control" rows="2">${historyItem.remarks || ''}</textarea> </div>
-                <div class="d-grid"> <button type="submit" class="btn btn-primary">${T.save_button}</button> </div>`;
-        }
-
+        
         function renderEditStockForm(product, totalQuantity) {
             const T = translations[currentLanguage];
             const editStockForm = document.getElementById('edit-stock-form');
@@ -2453,6 +2223,62 @@
                 <div class="mb-3"> <label for="edit-stock-quantity" class="form-label">${T.edit_stock_new_total}</label> <input type="number" id="edit-stock-quantity" class="form-control" value="${totalQuantity}" required min="0"> </div>
                 <div class="form-text text-danger">${T.edit_stock_note}</div>
                 <div class="d-grid mt-3"> <button type="submit" class="btn btn-primary">${T.edit_stock_save_button}</button> </div>`;
+        }
+
+        function calculateStockFromHistory() {
+            const stockMap = new Map();
+            // Sort history from oldest to newest to process transactions in order
+            const sortedHistory = [...db.history].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            for (const item of sortedHistory) {
+                const key = `${item.productId}::${formatDate(item.productionDate)}`;
+                if (!stockMap.has(key)) {
+                    stockMap.set(key, { 
+                        productId: item.productId, 
+                        productionDate: formatDate(item.productionDate), 
+                        quantity: 0 
+                    });
+                }
+                
+                let quantityChange = item.quantity;
+                
+                // Handle reversals: find original and negate its effect
+                if (item.type === 'reversal') {
+                    const originalItem = db.history.find(h => h.id === item.id.replace('rev-', ''));
+                    if (originalItem) {
+                        if (originalItem.type === 'import' || originalItem.type === 'adjustment') {
+                            quantityChange = -originalItem.quantity;
+                        } else if (originalItem.type === 'export') {
+                            quantityChange = originalItem.quantity;
+                        }
+                    }
+                } else {
+                     if (item.type === 'export') {
+                        quantityChange = -item.quantity;
+                    }
+                }
+                
+                const current = stockMap.get(key);
+                current.quantity += quantityChange;
+                stockMap.set(key, current);
+            }
+
+            // Group by product ID
+            const productStockMap = new Map();
+            for (const lot of stockMap.values()) {
+                if (!productStockMap.has(lot.productId)) {
+                    productStockMap.set(lot.productId, {
+                        productId: lot.productId,
+                        totalQuantity: 0,
+                        lots: []
+                    });
+                }
+                const product = productStockMap.get(lot.productId);
+                product.totalQuantity += lot.quantity;
+                product.lots.push(lot);
+            }
+
+            calculatedStock = Array.from(productStockMap.values());
         }
         
         // --- START THE APP ---
