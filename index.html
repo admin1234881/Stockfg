@@ -104,6 +104,7 @@
 </head>
 <body>
 
+    <!-- Login Page -->
     <div id="login-page" class="container">
         <div class="login-container">
             <div class="col-md-6 col-lg-4">
@@ -133,10 +134,12 @@
         </div>
     </div>
 
+    <!-- Main Dashboard -->
     <div id="main-dashboard" class="container-fluid p-4">
         <header class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
             <h1 class="h4"><i class="bi bi-box2-heart-fill me-2" style="color: var(--primary-color);"></i>STOCK IN-OUT FG</h1>
             <div class="d-flex align-items-center">
+                <!-- Language Switcher -->
                 <div class="dropdown me-3">
                     <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="language-switcher" data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="bi bi-translate me-1"></i> <span id="language-switcher-label">ภาษา</span>
@@ -151,6 +154,7 @@
             </div>
         </header>
 
+        <!-- Navigation Tabs -->
         <ul class="nav nav-pills nav-fill mb-4" id="pills-tab" role="tablist">
             <li class="nav-item m-1" role="presentation">
                 <button class="nav-link active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab"><i class="bi bi-house-heart-fill me-2"></i><span data-lang-key="nav_stock">สต็อกคงเหลือ</span></button>
@@ -175,7 +179,9 @@
             </li>
         </ul>
 
+        <!-- Tab Content -->
         <div class="tab-content" id="pills-tabContent">
+            <!-- Stock Tab -->
             <div class="tab-pane fade show active" id="pills-stock" role="tabpanel">
                 <div id="announcements-display-area" class="mb-4"></div>
                 <div class="row">
@@ -218,6 +224,7 @@
                 </div>
             </div>
 
+            <!-- Other tabs remain structurally the same, but their content will be translated by JS -->
             <div class="tab-pane fade" id="pills-import" role="tabpanel">
                 <div class="card">
                     <div class="card-header fw-bold"><i class="bi bi-box-arrow-in-down me-2"></i><span data-lang-key="import_form_title">ฟอร์มรับเข้าสินค้า</span></div>
@@ -342,6 +349,7 @@
         </div>
     </div>
 
+    <!-- Modals -->
     <div class="modal fade" id="lotDetailModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius: var(--border-radius);">
@@ -361,7 +369,7 @@
             </div>
         </div>
     </div>
-   
+    
     <div class="modal fade" id="editHistoryModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius: var(--border-radius);">
@@ -390,6 +398,7 @@
         </div>
     </div>
 
+    <!-- Refresh Note -->
     <div class="refresh-note">
         <i class="bi bi-arrow-clockwise fs-5 me-2"></i>
         <div>
@@ -510,6 +519,8 @@
             edit_stock_new_total: "ยอดรวมใหม่",
             edit_stock_note: "การบันทึกจะล้างล็อตเก่าทั้งหมด และสร้างล็อตใหม่ขึ้นมาแทน",
             edit_stock_save_button: "บันทึกยอดใหม่",
+            edit_stock_confirm_title: "ยืนยันการปรับยอดสต็อก?",
+            edit_stock_confirm_text: "การกระทำนี้จะลบข้อมูลล็อตการผลิตทั้งหมดของสินค้า {productId} และแทนที่ด้วยยอดใหม่คือ {quantity} ชิ้น การกระทำนี้ไม่สามารถย้อนกลับได้!",
             // Refresh Note
             refresh_title: "รีเฟรช (F5)",
             refresh_desc: "เพื่อข้อมูลล่าสุด",
@@ -520,6 +531,8 @@
             data_updated: "ข้อมูลอัปเดตแล้ว!",
             load_error_title: "โหลดข้อมูลไม่สำเร็จ!",
             load_error_text: "ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ ({error}) กรุณาลองรีเฟรชหน้าเว็บใหม่อีกครั้ง",
+            critical_load_error_title: "ข้อผิดพลาดร้ายแรงในการโหลดข้อมูล",
+            critical_load_error_text: "เซิร์ฟเวอร์ส่งคืนรายการสินค้าที่ว่างเปล่า แต่ข้อมูลเดิมยังมีอยู่ การดำเนินการถูกยกเลิกเพื่อป้องกันข้อมูลสูญหาย กรุณาติดต่อผู้ดูแลระบบ",
             save_error_title: "บันทึกข้อมูลไม่สำเร็จ!",
             save_error_text: "เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก: {error}",
             session_expired_title: "หมดเวลาใช้งาน",
@@ -700,6 +713,8 @@
             edit_stock_new_total: "New Total Quantity",
             edit_stock_note: "Saving will clear all old lots and create a new one.",
             edit_stock_save_button: "Save New Total",
+            edit_stock_confirm_title: "Confirm Stock Adjustment?",
+            edit_stock_confirm_text: "This action will ERASE all production lots for product {productId} and replace them with a new total of {quantity}. This action is irreversible!",
             // Refresh Note
             refresh_title: "Refresh (F5)",
             refresh_desc: "for the latest data",
@@ -710,6 +725,8 @@
             data_updated: "Data updated!",
             load_error_title: "Failed to Load Data!",
             load_error_text: "Could not connect to the database ({error}). Please try refreshing the page.",
+            critical_load_error_title: "Critical Load Error",
+            critical_load_error_text: "The server returned an empty product list, but local data exists. The operation has been cancelled to prevent data loss. Please contact an administrator.",
             save_error_title: "Failed to Save Data!",
             save_error_text: "An error occurred while saving data: {error}",
             session_expired_title: "Session Expired",
@@ -827,7 +844,7 @@
         };
 
         // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyLwRB6s5Ii3Pktg-3HKSWiY8XfhrrqQTOWGsE34M6mubn8GYehQ8dGVpgLD3N-ZjhO/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbye2XB1x13RiFdahJogpod0h0Oi8b6maahWfkudvwqhX70Q2NJaXoHPqx2EfgaVu9_RDg/exec';
 
         // --- DATABASE SIMULATION & PERSISTENCE ---
         let db = { users: [], products: [], stock: [], history: [], announcements: [] };
@@ -895,6 +912,18 @@
                 }
                 const newData = await response.json();
                 
+                // =================================================================
+                // BUG FIX: Sanity check to prevent data wipeout from server error
+                // =================================================================
+                if (db.products && db.products.length > 0 && newData.products && newData.products.length === 0) {
+                    console.error("Critical Error Prevented: Server returned an empty product list. Halting data sync to prevent overwrite. Please check the Google Sheet and Apps Script logs.");
+                    if (isInitialLoad) {
+                        showError(translations[currentLanguage].critical_load_error_title, translations[currentLanguage].critical_load_error_text);
+                    }
+                    // We must not proceed with the empty data.
+                    return; 
+                }
+
                 // Ensure all data arrays exist
                 newData.stock = newData.stock || [];
                 newData.products = newData.products || [];
@@ -1038,6 +1067,7 @@
             },
             deleteProduct: (productId) => {
                 if (currentUser.role !== 'admin') return;
+                // This check depends on the local db.stock being accurate. The fix in loadDataFromSheet helps ensure this.
                 const isProductInStock = db.stock.some(s => String(s.productId).trim() === String(productId).trim() && s.quantity > 0);
                 if (isProductInStock) {
                     showError('Cannot Delete!', translations[currentLanguage].delete_product_error);
@@ -1215,29 +1245,6 @@
             await loadDataFromSheet(true); // Initial load with spinner
             checkLoginState();
             addEventListeners();
-            
-            // New listener for closing suggestion dropdowns
-            document.addEventListener('click', (e) => {
-                let targetElement = e.target;
-                let isClickInside = false;
-                // Traverse up the DOM from the click target
-                do {
-                    if (targetElement && targetElement.classList && (
-                        targetElement.classList.contains('suggestions-container') || 
-                        targetElement.id === 'import-product-id' ||
-                        targetElement.id === 'export-product-id' ||
-                        targetElement.id === 'filter-product-search'
-                    )) {
-                        isClickInside = true;
-                        break;
-                    }
-                    targetElement = targetElement.parentElement;
-                } while (targetElement);
-
-                if (!isClickInside) {
-                    document.querySelectorAll('.suggestions-container').forEach(c => c.innerHTML = '');
-                }
-            });
         }
 
         function checkLoginState() {
@@ -1545,34 +1552,45 @@
 
         async function handleEditStockSubmit(e) {
             e.preventDefault();
-            const dbBackup = JSON.parse(JSON.stringify(db));
-
+            const T = translations[currentLanguage];
             const productId = document.getElementById('edit-stock-product-id').value;
             const newTotalQuantity = parseInt(document.getElementById('edit-stock-quantity').value);
-            const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
-            if (!product) { showError('Error', translations[currentLanguage].product_not_found_error); return; }
             
-            const originalTotal = db.stock.filter(s => String(s.productId).trim() === String(productId).trim()).reduce((sum, item) => sum + item.quantity, 0);
-            db.stock = db.stock.filter(s => String(s.productId).trim() !== String(productId).trim());
-            const newLotId = db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1;
-            db.stock.push({ lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' });
-            
-            const remarks = `Adjusted from ${originalTotal} to ${newTotalQuantity}`;
-            addHistory('adjustment', product, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
-            
-            populateAll();
-            editStockModal.hide();
-            showSuccess(translations[currentLanguage].stock_update_success);
+            const confirmTitle = T.edit_stock_confirm_title;
+            const confirmText = T.edit_stock_confirm_text.replace('{productId}', productId).replace('{quantity}', newTotalQuantity);
 
-            try {
-                await saveDataToSheet();
-            } catch (error) {
-                db = dbBackup;
+            confirmAction(confirmTitle, confirmText, async () => {
+                const dbBackup = JSON.parse(JSON.stringify(db));
+                const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
+                if (!product) { showError('Error', T.product_not_found_error); return; }
+                
+                const originalTotal = db.stock.filter(s => String(s.productId).trim() === String(productId).trim()).reduce((sum, item) => sum + item.quantity, 0);
+                db.stock = db.stock.filter(s => String(s.productId).trim() !== String(productId).trim());
+                const newLotId = db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1;
+                db.stock.push({ lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' });
+                
+                const remarks = `Adjusted from ${originalTotal} to ${newTotalQuantity}`;
+                addHistory('adjustment', product, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
+                
                 populateAll();
-                showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
-            }
+                editStockModal.hide();
+                showSuccess(T.stock_update_success);
+
+                try {
+                    await saveDataToSheet();
+                } catch (error) {
+                    db = dbBackup;
+                    populateAll();
+                    showError(T.save_error_title, T.save_error_text.replace('{error}', error.message));
+                }
+            });
         }
 
+        /**
+         * Handles the submission of the announcement form.
+         * It either creates a new announcement or updates an existing one.
+         * After updating the local 'db' object, it saves the changes to the Google Sheet.
+         */
         async function handleAnnouncementFormSubmit(e) {
             e.preventDefault();
             const dbBackup = JSON.parse(JSON.stringify(db));
@@ -1587,20 +1605,21 @@
                 return;
             }
 
+            // Check if we are editing an existing announcement
             if (editingAnnouncementId) {
                 const index = db.announcements.findIndex(a => String(a.id) === String(editingAnnouncementId));
                 if (index > -1) {
                     db.announcements[index] = { ...db.announcements[index], title, message, isActive };
                     successMessage = translations[currentLanguage].announcement_update_success;
                 }
-            } else {
+            } else { // Or creating a new one
                 const newId = db.announcements.length > 0 ? Math.max(...db.announcements.map(a => a.id)) + 1 : 1;
                 db.announcements.push({ id: newId, title, message, postedBy: currentUser.username, postedDate: new Date().toISOString(), isActive });
                 successMessage = translations[currentLanguage].announcement_add_success;
             }
             
             clearAnnouncementForm();
-            populateAll();
+            populateAll(); // Refresh all UI components including the announcement table and display
             showSuccess(successMessage);
 
              try {
@@ -1656,8 +1675,8 @@
             populateUserManagementTable(); 
             populateProductManagementTable(); 
             populateHistoryTable(); 
-            populateAnnouncementsTable();
-            displayActiveAnnouncements();
+            populateAnnouncementsTable(); // Renders the management table for admins
+            displayActiveAnnouncements(); // Renders the announcements for users on the main page
             if (currentUser.role === 'admin') { 
                 document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); 
             } else { 
@@ -1694,35 +1713,22 @@
             const threeMonthsAgo = new Date();
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-            // ***** START OF FIX #1 *****
             let summary = productIdsInStock.map(id => {
-                const productInfo = db.products.find(p => String(p.id).trim() === id);
-                let name = T.product_not_found.replace('{id}', id);
-                let customer = '-';
-                let erpCode = '-';
-
-                if (productInfo) {
-                    // If product is found in the main list, use its data
-                    name = productInfo.name || name;
-                    customer = productInfo.customer || customer;
-                    erpCode = productInfo.erpCode || erpCode;
-                } else {
-                    // Otherwise, try to find details from the latest history entry
+                let productInfo = db.products.find(p => String(p.id).trim() === id);
+                if (!productInfo) {
                     const latestHistoryEntry = db.history.find(h => String(h.productId).trim() === id);
-                    if (latestHistoryEntry) {
-                        name = latestHistoryEntry.productName || name;
-                        customer = latestHistoryEntry.customer || customer;
-                        erpCode = latestHistoryEntry.erpCode || erpCode;
-                    }
+                    productInfo = {
+                        id: id,
+                        name: latestHistoryEntry ? latestHistoryEntry.productName : T.product_not_found.replace('{id}', id),
+                        customer: latestHistoryEntry ? latestHistoryEntry.customer || '-' : '-',
+                        erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode || '-' : '-',
+                    };
                 }
-                
                 const lots = db.stock.filter(s => String(s.productId).trim() === id);
                 const totalQuantity = lots.reduce((sum, item) => sum + item.quantity, 0);
-                const hasOldStock = lots.some(s => s.quantity > 0 && s.productionDate !== 'Manual Adjustment' && new Date(formatDate(s.productionDate)) < threeMonthsAgo);
-
-                return { id, name, customer, erpCode, totalQuantity, hasOldStock };
+                const hasOldStock = lots.some(s => s.quantity > 0 && new Date(formatDate(s.productionDate)) < threeMonthsAgo);
+                return { ...productInfo, totalQuantity, hasOldStock };
             });
-            // ***** END OF FIX #1 *****
             
             summary = summary.filter(p => p.totalQuantity > 0);
             if (filterOldStock) summary = summary.filter(p => p.hasOldStock);
@@ -1921,8 +1927,6 @@
                 if(e.target.id === 'edit-stock-form') handleEditStockSubmit(e);
             });
 
-            // ***** START OF FIX #2 *****
-            // The buggy listener block was removed from here
             document.body.addEventListener('click', function(e) {
                 if (e.target.id === 'add-import-lot-btn') addImportLotRow();
                 if (e.target.classList.contains('remove-import-lot-btn')) {
@@ -1938,9 +1942,12 @@
                     document.getElementById('filter-product-id').value = '';
                     setTimeout(() => populateHistoryTable(), 0);
                 }
-                // The faulty 'if (e.target.closest('.suggestions-container'))' block has been deleted.
+                if (e.target.closest('.suggestions-container')) {
+                     if (!e.target.closest('.position-relative')) {
+                         document.querySelectorAll('.suggestions-container').forEach(c => c.innerHTML = '');
+                    }
+                }
             });
-            // ***** END OF FIX #2 *****
         }
         function handleLogin(e) { e.preventDefault(); const username = document.getElementById('username').value; const password = document.getElementById('password').value; const foundUser = db.users.find(u => u.username === username && u.password === password); if (foundUser) { sessionStorage.setItem('currentUser', JSON.stringify(foundUser)); checkLoginState(); } else { errorMessage.classList.remove('d-none'); } }
         
@@ -2066,6 +2073,10 @@
             });
         }
 
+        /**
+         * Renders the table of all announcements in the admin management tab.
+         * Fetches all announcements from the 'db', sorts them by date, and creates table rows.
+         */
         function populateAnnouncementsTable() {
             const T = translations[currentLanguage];
             const header = document.getElementById('announcement-management-table-header');
@@ -2109,12 +2120,16 @@
             });
         }
 
+        /**
+         * Filters for active announcements and displays them in the dedicated area
+         * on the main stock dashboard for all users to see.
+         */
         function displayActiveAnnouncements() {
             const T = translations[currentLanguage];
             const announcementsDisplayArea = document.getElementById('announcements-display-area');
             announcementsDisplayArea.innerHTML = '';
             const activeAnnouncements = db.announcements.filter(ann => ann.isActive)
-                                                      .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+                                                        .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
 
             if (activeAnnouncements.length === 0) return;
 
@@ -2233,7 +2248,7 @@
 
         function clearProductForm() { editingProductId = null; document.getElementById('product-form').reset(); document.getElementById('product-id').readOnly = false; }
         function clearUserForm() { originalUsernameForEdit = null; document.getElementById('user-form').reset(); }
-        function clearAnnouncementForm() { editingAnnouncementId = null; document.getElementById('announcement-form').reset(); document.getElementById('announcement-id').value = ''; document.getElementById('announcement-active').checked = true; }
+        function clearAnnouncementForm() { editingAnnouncementId = null; document.getElementById('announcement-form').reset(); document.getElementById('announcement-active').checked = true; }
 
         function addImportLotRow() {
             const T = translations[currentLanguage];
@@ -2337,6 +2352,10 @@
                 <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.user_save_button}</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
         }
         
+        /**
+         * Renders the announcement creation/editing form.
+         * If an announcement object is passed, it populates the form for editing.
+         */
         function renderAnnouncementForm(announcement = {}) {
             const T = translations[currentLanguage];
             const announcementFormEl = document.getElementById('announcement-form');
@@ -2392,7 +2411,7 @@
                 <input type="hidden" id="edit-stock-product-id" value="${product.id}">
                 <div class="mb-3"> <label class="form-label">${T.product_name}</label> <input type="text" id="edit-stock-product-name" class="form-control" value="${product.id} - ${product.name}" readonly> </div>
                 <div class="mb-3"> <label for="edit-stock-quantity" class="form-label">${T.edit_stock_new_total}</label> <input type="number" id="edit-stock-quantity" class="form-control" value="${totalQuantity}" required min="0"> </div>
-                <div class="form-text">${T.edit_stock_note}</div>
+                <div class="form-text text-danger">${T.edit_stock_note}</div>
                 <div class="d-grid mt-3"> <button type="submit" class="btn btn-primary">${T.edit_stock_save_button}</button> </div>`;
         }
         
