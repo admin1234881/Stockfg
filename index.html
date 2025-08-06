@@ -532,12 +532,13 @@
             load_error_title: "โหลดข้อมูลไม่สำเร็จ!",
             load_error_text: "ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ ({error}) กรุณาลองรีเฟรชหน้าเว็บใหม่อีกครั้ง",
             critical_load_error_title: "ข้อผิดพลาดร้ายแรงในการโหลดข้อมูล",
-            critical_load_error_text: "เซิร์ฟเวอร์ส่งคืนรายการสินค้าที่ว่างเปล่า แต่ข้อมูลเดิมยังมีอยู่ การดำเนินการถูกยกเลิกเพื่อป้องกันข้อมูลสูญหาย กรุณาติดต่อผู้ดูแลระบบ",
+            critical_load_error_text: "เซิร์ฟเวอร์ส่งคืนข้อมูลที่สำคัญ (เช่น รายการสินค้า) ที่ว่างเปล่า แต่ข้อมูลเดิมยังมีอยู่ การดำเนินการถูกยกเลิกเพื่อป้องกันข้อมูลสูญหาย กรุณาติดต่อผู้ดูแลระบบ",
             save_error_title: "บันทึกข้อมูลไม่สำเร็จ!",
             save_error_text: "เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก: {error}",
             session_expired_title: "หมดเวลาใช้งาน",
             session_expired_text: "ไม่มีการใช้งานระบบเกิน 30 นาที กรุณาลงชื่อเข้าใช้ใหม่",
-            confirm_delete_title: "แน่ใจว่าจะลบ?",
+            confirm_delete_title: "ยืนยันการลบถาวร?",
+            confirm_delete_prompt: "โปรดพิมพ์ 'ลบ' เพื่อยืนยัน",
             confirm_delete_lot_text: "ล็อตทั้งหมดของสินค้า {productId} ที่ผลิตวันที่ {productionDate} จะถูกลบอย่างถาวร!",
             delete_lot_success: "ลบล็อตสินค้าตามวันที่เรียบร้อยแล้วค่ะ",
             delete_lot_error: "ไม่พบล็อตที่ต้องการลบ",
@@ -726,12 +727,13 @@
             load_error_title: "Failed to Load Data!",
             load_error_text: "Could not connect to the database ({error}). Please try refreshing the page.",
             critical_load_error_title: "Critical Load Error",
-            critical_load_error_text: "The server returned an empty product list, but local data exists. The operation has been cancelled to prevent data loss. Please contact an administrator.",
+            critical_load_error_text: "The server returned a critical empty data set (e.g., product list), but local data exists. The operation has been cancelled to prevent data loss. Please contact an administrator.",
             save_error_title: "Failed to Save Data!",
             save_error_text: "An error occurred while saving data: {error}",
             session_expired_title: "Session Expired",
             session_expired_text: "You have been inactive for over 30 minutes. Please log in again.",
-            confirm_delete_title: "Are you sure?",
+            confirm_delete_title: "Confirm Permanent Deletion?",
+            confirm_delete_prompt: "Please type 'delete' to confirm",
             confirm_delete_lot_text: "All lots for product {productId} produced on {productionDate} will be permanently deleted!",
             delete_lot_success: "Lots deleted successfully.",
             delete_lot_error: "Could not find the lots to delete.",
@@ -905,7 +907,11 @@
             }
 
             try {
-                const response = await fetch(SCRIPT_URL);
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+
                 if (!response.ok) {
                     if (isInitialLoad) throw new Error(`Network response was not ok. Status: ${response.status}`);
                     else { console.error('Background refresh failed.'); return; }
@@ -913,14 +919,16 @@
                 const newData = await response.json();
                 
                 // =================================================================
-                // BUG FIX: Sanity check to prevent data wipeout from server error
+                // ENHANCED BUG FIX: Sanity check to prevent data wipeout from server error
                 // =================================================================
-                if (db.products && db.products.length > 0 && newData.products && newData.products.length === 0) {
-                    console.error("Critical Error Prevented: Server returned an empty product list. Halting data sync to prevent overwrite. Please check the Google Sheet and Apps Script logs.");
+                const isProductDataWiped = db.products && db.products.length > 0 && newData.products && newData.products.length === 0;
+                const isHistoryDataWiped = db.history && db.history.length > 0 && newData.history && newData.history.length === 0;
+
+                if (isProductDataWiped || isHistoryDataWiped) {
+                    console.error("Critical Error Prevented: Server returned an empty critical data array (products or history). Halting data sync to prevent overwrite. Please check the Google Sheet and Apps Script logs.");
                     if (isInitialLoad) {
                         showError(translations[currentLanguage].critical_load_error_title, translations[currentLanguage].critical_load_error_text);
                     }
-                    // We must not proceed with the empty data.
                     return; 
                 }
 
@@ -1023,7 +1031,7 @@
                     .replace('{productId}', productId)
                     .replace('{productionDate}', productionDate);
 
-                confirmAction(translations[currentLanguage].confirm_delete_title, confirmText, async () => {
+                confirmDestructiveAction(confirmText, async () => {
                     const dbBackup = JSON.parse(JSON.stringify(db));
                     
                     const originalStockCount = db.stock.length;
@@ -1067,14 +1075,13 @@
             },
             deleteProduct: (productId) => {
                 if (currentUser.role !== 'admin') return;
-                // This check depends on the local db.stock being accurate. The fix in loadDataFromSheet helps ensure this.
                 const isProductInStock = db.stock.some(s => String(s.productId).trim() === String(productId).trim() && s.quantity > 0);
                 if (isProductInStock) {
                     showError('Cannot Delete!', translations[currentLanguage].delete_product_error);
                     return;
                 }
                 const confirmText = translations[currentLanguage].confirm_delete_product_text.replace('{productId}', productId);
-                confirmAction(translations[currentLanguage].confirm_delete_title, confirmText, async () => {
+                confirmDestructiveAction(confirmText, async () => {
                     const dbBackup = JSON.parse(JSON.stringify(db));
                     db.products = db.products.filter(p => String(p.id).trim() !== String(productId).trim());
                     populateAll();
@@ -1106,7 +1113,7 @@
                     return;
                 }
                 const confirmText = translations[currentLanguage].confirm_delete_user_text.replace('{username}', username);
-                confirmAction(translations[currentLanguage].confirm_delete_title, confirmText, async () => {
+                confirmDestructiveAction(confirmText, async () => {
                     const dbBackup = JSON.parse(JSON.stringify(db));
                     db.users = db.users.filter(u => u.username !== username);
                     populateAll();
@@ -1142,7 +1149,7 @@
                     ? translations[currentLanguage].delete_history_export_text
                     : translations[currentLanguage].delete_history_import_text;
 
-                confirmAction(translations[currentLanguage].confirm_delete_history_title, message, async () => {
+                confirmDestructiveAction(message, async () => {
                     const dbBackup = JSON.parse(JSON.stringify(db));
                     
                     const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
@@ -1205,7 +1212,7 @@
             },
             deleteAnnouncement: (announcementId) => {
                 if (currentUser.role !== 'admin') return;
-                confirmAction(translations[currentLanguage].confirm_delete_title, 'This announcement will be permanently deleted.', async () => {
+                confirmDestructiveAction('This announcement will be permanently deleted.', async () => {
                     const dbBackup = JSON.parse(JSON.stringify(db));
                     db.announcements = db.announcements.filter(a => String(a.id) !== String(announcementId));
                     populateAll();
@@ -1982,6 +1989,37 @@
                 cancelButtonColor: '#6c757d'
             }).then((r) => { if (r.isConfirmed) callback(); }); 
         }
+        
+        // NEW: Enhanced confirmation for destructive actions
+        function confirmDestructiveAction(text, callback) {
+            const T = translations[currentLanguage];
+            const confirmWord = T.confirm_delete_prompt === "Please type 'delete' to confirm" ? "delete" : "ลบ";
+
+            Swal.fire({
+                title: T.confirm_delete_title,
+                text: text,
+                icon: 'warning',
+                input: 'text',
+                inputPlaceholder: T.confirm_delete_prompt,
+                showCancelButton: true,
+                confirmButtonText: T.ok_button,
+                cancelButtonText: T.cancel_button,
+                confirmButtonColor: '#dc3545',
+                preConfirm: (inputValue) => {
+                    if (inputValue.toLowerCase() !== confirmWord) {
+                        Swal.showValidationMessage(`Please type "${confirmWord}" to proceed.`);
+                        return false;
+                    }
+                    return true;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    callback();
+                }
+            });
+        }
+
+
         function backupToCSV(data, filename) { if (!data || data.length === 0) { showError('No Data', translations[currentLanguage].backup_no_data); return; } const headers = Object.keys(data[0]); const csvRows = [headers.join(',')]; data.forEach(row => { const values = headers.map(header => `"${('' + row[header]).replace(/"/g, '""')}"`); csvRows.push(values.join(',')); }); const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' })); link.setAttribute('download', filename); document.body.appendChild(link); link.click(); document.body.removeChild(link); showSuccess(translations[currentLanguage].backup_downloading.replace('{filename}', filename)); }
         
         function getFilteredHistory() {
