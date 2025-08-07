@@ -71,25 +71,6 @@
             font-size: 0.8rem;
         }
         .small-text { font-size: 0.85rem; color: #6c757d; }
-        /* New styles for announcements */
-        .announcement-card {
-            border-left: 5px solid var(--primary-color);
-            background-color: #e7f1ff;
-        }
-        .announcement-card .card-header {
-            background-color: #d0e7ff;
-            color: var(--primary-color);
-            font-weight: bold;
-        }
-        .announcement-card .card-body {
-            font-size: 0.95rem;
-        }
-        .announcement-card .card-footer {
-            font-size: 0.8rem;
-            color: var(--secondary-color);
-            background-color: #e7f1ff;
-            border-top: 1px solid #c0d8f7;
-        }
     </style>
 </head>
 <body>
@@ -152,17 +133,10 @@
             <li class="nav-item m-1 admin-nav" role="presentation">
                 <button class="nav-link" id="pills-users-tab" data-bs-toggle="pill" data-bs-target="#pills-users" type="button" role="tab" aria-controls="pills-users" aria-selected="false"><i class="bi bi-people-fill me-2"></i>จัดการผู้ใช้</button>
             </li>
-            <li class="nav-item m-1 admin-nav" role="presentation">
-                <button class="nav-link" id="pills-announcements-tab" data-bs-toggle="pill" data-bs-target="#pills-announcements" type="button" role="tab" aria-controls="pills-announcements" aria-selected="false"><i class="bi bi-megaphone-fill me-2"></i>จัดการประกาศ</button>
-            </li>
         </ul>
 
         <div class="tab-content" id="pills-tabContent">
             <div class="tab-pane fade show active" id="pills-stock" role="tabpanel" aria-labelledby="pills-stock-tab">
-                <!-- Announcement Display Area -->
-                <div id="announcements-display-area" class="mb-4">
-                    <!-- Announcements will be loaded here -->
-                </div>
                 <div class="row">
                     <div class="col-lg-3">
                         <div class="card admin-nav mb-4">
@@ -336,7 +310,7 @@
             </div>
 
             <div class="tab-pane fade" id="pills-users" role="tabpanel" aria-labelledby="pills-users-tab">
-                   <div class="row">
+                 <div class="row">
                     <div class="col-lg-4 mb-4">
                         <div class="card">
                             <div class="card-header fw-bold"><i class="bi bi-person-plus-fill me-2"></i>ฟอร์มข้อมูลผู้ใช้</div>
@@ -359,41 +333,6 @@
                                             </tr>
                                         </thead>
                                         <tbody id="user-management-table"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- New tab for Announcements -->
-            <div class="tab-pane fade" id="pills-announcements" role="tabpanel" aria-labelledby="pills-announcements-tab">
-                <div class="row">
-                    <div class="col-lg-4 mb-4">
-                        <div class="card">
-                            <div class="card-header fw-bold"><i class="bi bi-megaphone me-2"></i>สร้าง/แก้ไขประกาศ</div>
-                            <div class="card-body">
-                                <form id="announcement-form" class="row g-3"></form>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-8">
-                        <div class="card">
-                            <div class="card-header fw-bold"><i class="bi bi-card-list me-2"></i>รายการประกาศทั้งหมด</div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>หัวข้อ</th>
-                                                <th>สถานะ</th>
-                                                <th>ผู้ประกาศ</th>
-                                                <th>วันที่ประกาศ</th>
-                                                <th>ดำเนินการ</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="announcement-management-table"></tbody>
                                     </table>
                                 </div>
                             </div>
@@ -452,7 +391,7 @@
                     <label for="edit-history-quantity" class="form-label" id="edit-history-quantity-label"></label>
                     <input type="number" id="edit-history-quantity" class="form-control" required min="0">
                 </div>
-                   <div class="mb-3" id="edit-history-invoice-group">
+                 <div class="mb-3" id="edit-history-invoice-group">
                     <label for="edit-history-invoice" class="form-label">เลขที่ Invoice</label>
                     <input type="text" id="edit-history-invoice" class="form-control" required>
                 </div>
@@ -511,14 +450,12 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzHMnacSNx9DIYmnaG4S3ezgzEpsS_-qBTn2CFmRVoa2lfdChEkb_iOLIQBVX-XvctBGA/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxx3XJxQlVDzHxcFZ77G0aSZu0RiqFkPf0FiRiX6_j9P2Pt8yHO-tMha4bi1GroSke_xg/exec';
 
         // --- DATABASE SIMULATION & PERSISTENCE ---
-        // Added 'announcements' array to the db object
-        let db = { users: [], products: [], stock: [], history: [], announcements: [] };
+        let db = { users: [], products: [], stock: [], history: [] };
         let dataSyncInterval = null;
         let inactivityTimer = null;
-        let editingAnnouncementId = null; // New state variable for announcement editing
 
         // --- INACTIVITY & SYNC FUNCTIONS ---
         function resetInactivityTimer() {
@@ -583,26 +520,23 @@
                 }
                 const newData = await response.json();
                 
-                // Ensure all expected properties exist, initialize if missing
-                newData.stock = newData.stock || [];
-                newData.products = newData.products || [];
-                newData.users = newData.users || [];
-                newData.history = newData.history || [];
-                newData.announcements = newData.announcements || []; // Initialize announcements
-
-                newData.stock.forEach(item => { item.productionDate = formatDate(item.productionDate); });
-                
-                if (JSON.stringify(db) !== JSON.stringify(newData)) {
-                    db = newData;
-                    console.log('Data updated from Google Sheet at:', new Date().toLocaleTimeString());
-                    populateAll();
+                if (newData && newData.stock && newData.products && newData.users && newData.history) {
+                    newData.stock.forEach(item => { item.productionDate = formatDate(item.productionDate); });
                     
-                    if (!isInitialLoad) {
-                        const Toast = Swal.mixin({
-                            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
-                        });
-                        Toast.fire({ icon: 'success', title: 'ข้อมูลอัปเดตแล้ว!' });
+                    if (JSON.stringify(db) !== JSON.stringify(newData)) {
+                        db = newData;
+                        console.log('Data updated from Google Sheet at:', new Date().toLocaleTimeString());
+                        populateAll();
+                        
+                        if (!isInitialLoad) {
+                            const Toast = Swal.mixin({
+                              toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
+                            });
+                            Toast.fire({ icon: 'success', title: 'ข้อมูลอัปเดตแล้ว!' });
+                        }
                     }
+                } else {
+                    if (isInitialLoad) throw new Error('Invalid data structure received from server.');
                 }
                 
                 if (isInitialLoad) Swal.close();
@@ -612,19 +546,27 @@
             }
         }
 
-        async function saveDataToSheet() {
-             try {
-                const payload = { action: 'saveDb', payload: db };
-                const response = await fetch(SCRIPT_URL, {
+        // [NEW] More robust data saving function
+        async function sendDataUpdate(payload) {
+            console.log("Sending update to backend:", payload);
+            // This function sends a specific action and its data to the backend.
+            // This is much more efficient than sending the whole database.
+            // The Google Apps Script needs to be updated to handle these specific actions
+            // (e.g., 'addImport', 'deleteProduct', etc.) instead of just overwriting sheets.
+            try {
+                // IMPORTANT: For a real implementation, mode should be 'cors' to read the response.
+                // This would allow handling server-side errors properly.
+                // We keep 'no-cors' to match the original setup's limitations.
+                await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(payload),
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    mode: 'no-cors'
+                    mode: 'no-cors' 
                 });
-                console.log('Save request sent to Google Sheet.');
             } catch (error) {
-                console.error('Error saving data to Google Sheet:', error);
-                showError('บันทึกข้อมูลไม่สำเร็จ!', 'เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก');
+                console.error('Error sending update to Google Sheet:', error);
+                showError('บันทึกข้อมูลไม่สำเร็จ!', 'เกิดข้อผิดพลาดในการเชื่อมต่อเพื่อบันทึกข้อมูล');
+                // Optional: Implement a retry mechanism or a way to revert optimistic UI updates.
             }
         }
         
@@ -653,9 +595,6 @@
         const userManagementTable = document.getElementById('user-management-table');
         const productManagementTable = document.getElementById('product-management-table');
         const historyTable = document.getElementById('history-table');
-        const announcementFormEl = document.getElementById('announcement-form'); // New announcement form element
-        const announcementManagementTable = document.getElementById('announcement-management-table'); // New announcement table element
-        const announcementsDisplayArea = document.getElementById('announcements-display-area'); // New announcement display area
 
         // --- STATE MANAGEMENT ---
         let currentUser = null;
@@ -667,10 +606,7 @@
             deleteLotsByDate: (productId, productionDate) => {
                 if (currentUser.role !== 'admin') return;
 
-                const lotsToDelete = db.stock
-                    .filter(lot => String(lot.productId) === String(productId) && formatDate(lot.productionDate) === productionDate)
-                    .map(lot => lot.lotId);
-
+                const lotsToDelete = db.stock.filter(lot => String(lot.productId) === String(productId) && formatDate(lot.productionDate) === productionDate);
                 if (lotsToDelete.length === 0) {
                     showError('ผิดพลาด!', 'ไม่พบล็อตที่ต้องการลบ');
                     return;
@@ -678,15 +614,16 @@
 
                 confirmAction('แน่ใจว่าจะลบ?', `ล็อตทั้งหมดของสินค้า ${productId} ที่ผลิตวันที่ ${productionDate} จะถูกลบอย่างถาวร!`, () => {
                     stopDataSync();
-                    db.stock = db.stock.filter(lot => !lotsToDelete.includes(lot.lotId));
+                    // Optimistic UI update
+                    db.stock = db.stock.filter(lot => !(String(lot.productId) === String(productId) && formatDate(lot.productionDate) === productionDate));
+                    
+                    // Send update to backend
+                    sendDataUpdate({ action: 'deleteLotsByDate', payload: { productId, productionDate } });
                     
                     populateAll();
                     lotDetailModal.hide();
                     showSuccess('ลบล็อตสินค้าตามวันที่เรียบร้อยแล้วค่ะ');
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    startDataSync();
                 });
             },
             editProduct: (productId) => {
@@ -713,12 +650,10 @@
                 confirmAction('แน่ใจว่าจะลบสินค้า?', `สินค้า ${productId} จะถูกลบออกจากระบบอย่างถาวร`, () => {
                     stopDataSync();
                     db.products = db.products.filter(p => String(p.id) !== String(productId));
+                    sendDataUpdate({ action: 'deleteProduct', payload: { productId } });
                     populateAll();
                     showSuccess('ลบสินค้าเรียบร้อยแล้ว');
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    startDataSync();
                 });
             },
             editUser: (username) => {
@@ -740,12 +675,10 @@
                 confirmAction('แน่ใจว่าจะลบผู้ใช้?', `ผู้ใช้ ${username} จะถูกลบออกจากระบบ`, () => {
                     stopDataSync();
                     db.users = db.users.filter(u => u.username !== username);
+                    sendDataUpdate({ action: 'deleteUser', payload: { username } });
                     populateAll();
                     showSuccess('ลบผู้ใช้เรียบร้อยแล้ว');
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    startDataSync();
                 });
             },
             editHistory: (historyId) => {
@@ -793,26 +726,29 @@
                 confirmAction('ยืนยันการลบประวัติ?', message, () => {
                     stopDataSync();
                     const stockLot = db.stock.find(s => s.lotId === historyItem.lotId);
+                    let updatedStockLot;
 
                     if (historyItem.type === 'export') {
                         if (stockLot) {
                             stockLot.quantity += historyItem.quantity;
+                            updatedStockLot = { ...stockLot };
                         } else {
-                             db.stock.push({ lotId: historyItem.lotId, productId: historyItem.productId, quantity: historyItem.quantity, productionDate: 'N/A (Reverted)' });
+                            showError('ผิดพลาด!', 'ไม่พบสต็อกล็อตเดิมของรายการนี้ ไม่สามารถคืนสต็อกได้');
+                            startDataSync();
+                            return;
                         }
                     } else { // import
                         if (!stockLot) { showError('ผิดพลาด!', 'ไม่พบสต็อกล็อตเดิมของรายการนี้ ไม่สามารถลบได้'); startDataSync(); return; }
                         if (stockLot.quantity < historyItem.quantity) { showError('ลบไม่ได้!', `สต็อกในล็อตนี้ถูกใช้ไปแล้ว (คงเหลือ ${stockLot.quantity}) ไม่สามารถหักจำนวน ${historyItem.quantity} ได้`); startDataSync(); return; }
                         stockLot.quantity -= historyItem.quantity;
+                        updatedStockLot = { ...stockLot };
                     }
 
                     db.history.splice(historyIndex, 1);
+                    sendDataUpdate({ action: 'deleteHistory', payload: { historyId, updatedStockLot } });
                     populateAll();
                     showSuccess('ลบประวัติและปรับสต็อกเรียบร้อย');
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
+                    startDataSync();
                 });
             },
             editStockTotal: (productId) => {
@@ -877,45 +813,6 @@
                 else { lotDetailTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none'); }
 
                 lotDetailModal.show();
-            },
-            // New functions for Announcement Management
-            editAnnouncement: (announcementId) => {
-                if (currentUser.role !== 'admin') return;
-                editingAnnouncementId = announcementId;
-                const announcement = db.announcements.find(a => String(a.id) === String(announcementId));
-                if (announcement) {
-                    document.getElementById('announcement-id').value = announcement.id;
-                    document.getElementById('announcement-id').readOnly = true;
-                    document.getElementById('announcement-title').value = announcement.title;
-                    document.getElementById('announcement-message').value = announcement.message;
-                    document.getElementById('announcement-active').checked = announcement.isActive;
-                }
-            },
-            deleteAnnouncement: (announcementId) => {
-                if (currentUser.role !== 'admin') return;
-                confirmAction('แน่ใจว่าจะลบประกาศ?', 'ประกาศนี้จะถูกลบอย่างถาวร', () => {
-                    stopDataSync();
-                    db.announcements = db.announcements.filter(a => String(a.id) !== String(announcementId));
-                    populateAll();
-                    showSuccess('ลบประกาศเรียบร้อยแล้ว');
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
-                });
-            },
-            toggleAnnouncementStatus: (announcementId) => {
-                if (currentUser.role !== 'admin') return;
-                const announcement = db.announcements.find(a => String(a.id) === String(announcementId));
-                if (announcement) {
-                    announcement.isActive = !announcement.isActive;
-                    populateAll();
-                    showSuccess('อัปเดตสถานะประกาศเรียบร้อยแล้ว');
-                    saveDataToSheet();
-                    setTimeout(() => {
-                        loadDataFromSheet(false).then(() => startDataSync());
-                    }, 3000);
-                }
             }
         };
 
@@ -942,7 +839,7 @@
         }
 
         function addHistory(type, product, quantity, user, lotId = null, invoiceNumber = null, remarks = '') { 
-            db.history.unshift({ 
+            const newHistoryRecord = { 
                 date: new Date().toISOString(), 
                 type: type, 
                 productId: product.id, 
@@ -954,7 +851,9 @@
                 lotId: lotId, 
                 invoiceNumber: invoiceNumber, 
                 remarks: remarks 
-            }); 
+            };
+            db.history.unshift(newHistoryRecord);
+            return newHistoryRecord;
         }
 
         function handleImport(e) {
@@ -966,12 +865,7 @@
             const customer = document.getElementById('import-customer').value;
             const erpCode = document.getElementById('import-erp-code').value;
 
-            const productForHistory = {
-                id: productId,
-                name: productName,
-                customer: customer,
-                erpCode: erpCode
-            };
+            const productForHistory = { id: productId, name: productName, customer: customer, erpCode: erpCode };
             
             if (!productName) {
                 showError('ข้อมูลไม่ครบถ้วน', 'กรุณาระบุชื่อสินค้า');
@@ -986,18 +880,19 @@
                 quantity: parseInt(document.getElementById('import-quantity').value),
                 productionDate: document.getElementById('import-prod-date').value
             };
+
+            // Optimistic UI update
             db.stock.push(newStock);
-            addHistory('import', productForHistory, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
+            const newHistoryRecord = addHistory('import', productForHistory, newStock.quantity, currentUser.username, newStock.lotId, null, remarks);
+            
+            // Send only the new data to the backend
+            sendDataUpdate({ action: 'addImport', payload: { stock: newStock, history: newHistoryRecord } });
             
             populateAll();
             showSuccess(`รับสินค้า ${productName} เข้ามาแล้วจ้า`);
             importFormEl.reset();
             ['import-product-name', 'import-customer', 'import-erp-code', 'import-fullbox'].forEach(id => document.getElementById(id).value = '');
-            
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            startDataSync();
         }
 
         function handleExport(e) {
@@ -1036,36 +931,31 @@
             let product = db.products.find(p => String(p.id) === String(productId));
             if (!product) {
                 const latestHistoryEntry = db.history.find(h => String(h.productId) === String(productId));
-                product = { 
-                    id: productId, 
-                    name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${productId})`,
-                    customer: latestHistoryEntry ? latestHistoryEntry.customer : '',
-                    erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode : ''
-                };
+                product = { id: productId, name: latestHistoryEntry ? latestHistoryEntry.productName : `(ไม่มีข้อมูลสินค้า ${productId})`, customer: latestHistoryEntry ? latestHistoryEntry.customer : '', erpCode: latestHistoryEntry ? latestHistoryEntry.erpCode : '' };
             }
+
+            let quantityToExportOriginal = quantityToExport;
+            let updatedLots = [];
+            let newHistoryRecords = [];
 
             for (const stockLot of lotsForDate) {
                 if (quantityToExport <= 0) break;
-
                 const quantityFromThisLot = Math.min(quantityToExport, stockLot.quantity);
-                
                 stockLot.quantity -= quantityFromThisLot;
-                addHistory('export', product, quantityFromThisLot, currentUser.username, stockLot.lotId, invoiceNumber, remarks);
-
                 quantityToExport -= quantityFromThisLot;
+                updatedLots.push({ lotId: stockLot.lotId, quantity: stockLot.quantity });
+                const newHistoryRecord = addHistory('export', product, quantityFromThisLot, currentUser.username, stockLot.lotId, invoiceNumber, remarks);
+                newHistoryRecords.push(newHistoryRecord);
             }
             
+            sendDataUpdate({ action: 'addExport', payload: { updatedLots, history: newHistoryRecords } });
+
             populateAll();
             showSuccess(`ส่งออกสินค้า ${product.name} เรียบร้อยแล้วค่ะ`);
             exportFormEl.reset();
             ['export-product-name', 'export-customer', 'export-erp-code', 'export-fullbox'].forEach(id => document.getElementById(id).value = '');
             document.getElementById('export-lot').innerHTML = '<option value="">-- กรุณาเลือกสินค้าก่อน --</option>';
-
-
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 4000);
+            startDataSync();
         }
 
         function handleProductFormSubmit(e) {
@@ -1092,59 +982,55 @@
                 showSuccess('เพิ่มสินค้าใหม่เรียบร้อย');
             }
             
+            sendDataUpdate({ action: 'saveProduct', payload: productData });
+            
             clearProductForm();
             populateAll();
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            startDataSync();
         }
         
         function handleUserFormSubmit(e) {
             e.preventDefault();
             stopDataSync();
 
-            const newUsername = document.getElementById('user-username').value;
-            const newPassword = document.getElementById('user-password').value;
-            const newRole = document.getElementById('user-role-select').value;
+            const userData = {
+                username: document.getElementById('user-username').value,
+                password: document.getElementById('user-password').value,
+                role: document.getElementById('user-role-select').value
+            };
             
             if (!originalUsernameForEdit) {
-                if (db.users.some(u => u.username === newUsername)) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); startDataSync(); return; }
-                db.users.push({ username: newUsername, password: newPassword, role: newRole });
+                if (db.users.some(u => u.username === userData.username)) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); startDataSync(); return; }
+                db.users.push(userData);
                 showSuccess('เพิ่มผู้ใช้ใหม่เรียบร้อย');
             } else {
                 const userIndex = db.users.findIndex(u => u.username === originalUsernameForEdit);
                 if (userIndex === -1) { showError('ผิดพลาด', 'ไม่พบผู้ใช้ที่ต้องการแก้ไข'); clearUserForm(); startDataSync(); return; }
-                const isUsernameTaken = db.users.some(u => u.username === newUsername && u.username !== originalUsernameForEdit);
+                const isUsernameTaken = db.users.some(u => u.username === userData.username && u.username !== originalUsernameForEdit);
                 if (isUsernameTaken) { showError('ชื่อผู้ใช้ซ้ำ!', 'มีชื่อผู้ใช้นี้ในระบบแล้วค่ะ'); startDataSync(); return; }
 
-                if (currentUser.username === originalUsernameForEdit) { // Update current user's session if their own profile is edited
-                    currentUser.username = newUsername;
-                    currentUser.password = newPassword;
-                    currentUser.role = newRole;
-                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-                    showDashboard(); // Re-render dashboard to reflect role changes immediately
+                if (originalUsernameForEdit !== userData.username) {
+                    db.history.forEach(record => { if (record.user === originalUsernameForEdit) { record.user = userData.username; } });
                 }
-                // Update history records if username changed
-                if (originalUsernameForEdit !== newUsername) {
-                    db.history.forEach(record => { if (record.user === originalUsernameForEdit) { record.user = newUsername; } });
-                    db.announcements.forEach(ann => { if (ann.postedBy === originalUsernameForEdit) { ann.postedBy = newUsername; } }); // Update announcements too
-                }
-                
-                const userToUpdate = db.users[userIndex];
-                userToUpdate.username = newUsername;
-                userToUpdate.password = newPassword;
-                userToUpdate.role = newRole;
 
+                const userToUpdate = db.users[userIndex];
+                userToUpdate.username = userData.username;
+                userToUpdate.password = userData.password;
+                userToUpdate.role = userData.role;
+
+                if (currentUser.username === originalUsernameForEdit) {
+                    currentUser = { ...userToUpdate };
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    showDashboard();
+                }
                 showSuccess('อัปเดตข้อมูลผู้ใช้เรียบร้อย');
             }
             
+            sendDataUpdate({ action: 'saveUser', payload: { user: userData, originalUsername: originalUsernameForEdit } });
+
             clearUserForm();
             populateAll();
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            startDataSync();
         }
 
         function handleEditHistorySubmit(e) {
@@ -1174,13 +1060,12 @@
             historyItem.remarks = newRemarks;
             if (historyItem.type === 'export') { historyItem.invoiceNumber = newInvoice; }
             
+            sendDataUpdate({ action: 'editHistory', payload: { history: historyItem, stock: stockLot } });
+
             populateAll();
             editHistoryModal.hide();
             showSuccess('แก้ไขประวัติเรียบร้อย');
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            startDataSync();
         }
 
         function handleEditStockSubmit(e) {
@@ -1195,65 +1080,17 @@
             const originalTotal = db.stock.filter(s => String(s.productId) === String(productId)).reduce((sum, item) => sum + item.quantity, 0);
             db.stock = db.stock.filter(s => String(s.productId) !== String(productId));
             const newLotId = db.stock.length > 0 ? Math.max(...db.stock.map(s => s.lotId)) + 1 : 1;
-            db.stock.push({ lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' });
+            const newStockLot = { lotId: newLotId, productId: productId, quantity: newTotalQuantity, productionDate: 'Manual Adjustment' };
+            db.stock.push(newStockLot);
             const remarks = `ปรับยอดจาก ${originalTotal} เป็น ${newTotalQuantity}`;
-            addHistory('adjustment', product, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
+            const newHistoryRecord = addHistory('adjustment', product, newTotalQuantity, currentUser.username, newLotId, 'ADJUSTMENT', remarks);
+            
+            sendDataUpdate({ action: 'adjustStock', payload: { productId, newStockLot, history: newHistoryRecord } });
             
             populateAll();
             editStockModal.hide();
             showSuccess('ปรับปรุงยอดสต็อกเรียบร้อย');
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
-        }
-
-        // New function for handling Announcement form submission
-        function handleAnnouncementFormSubmit(e) {
-            e.preventDefault();
-            stopDataSync();
-
-            const announcementId = document.getElementById('announcement-id').value;
-            const title = document.getElementById('announcement-title').value;
-            const message = document.getElementById('announcement-message').value;
-            const isActive = document.getElementById('announcement-active').checked;
-
-            if (!title || !message) {
-                showError('ข้อมูลไม่ครบถ้วน', 'กรุณาระบุหัวข้อและข้อความประกาศ');
-                startDataSync();
-                return;
-            }
-
-            if (editingAnnouncementId) {
-                const index = db.announcements.findIndex(a => String(a.id) === String(editingAnnouncementId));
-                if (index > -1) {
-                    db.announcements[index] = {
-                        ...db.announcements[index],
-                        title,
-                        message,
-                        isActive
-                    };
-                    showSuccess('อัปเดตประกาศเรียบร้อยแล้ว');
-                }
-            } else {
-                const newId = db.announcements.length > 0 ? Math.max(...db.announcements.map(a => a.id)) + 1 : 1;
-                db.announcements.push({
-                    id: newId,
-                    title,
-                    message,
-                    postedBy: currentUser.username,
-                    postedDate: new Date().toISOString(),
-                    isActive
-                });
-                showSuccess('เพิ่มประกาศใหม่เรียบร้อยแล้ว');
-            }
-            
-            clearAnnouncementForm();
-            populateAll();
-            saveDataToSheet();
-            setTimeout(() => {
-                loadDataFromSheet(false).then(() => startDataSync());
-            }, 3000);
+            startDataSync();
         }
         
         function showLoginPage() { 
@@ -1298,15 +1135,7 @@
             resetInactivityTimer();
         }
 
-        function populateAll() { 
-            populateStockSummary(); 
-            populateUserManagementTable(); 
-            populateProductManagementTable(); 
-            populateHistoryTable(); 
-            populateAnnouncementsTable(); // New: Populate announcements table
-            displayActiveAnnouncements(); // New: Display active announcements on dashboard
-        }
-
+        function populateAll() { populateStockSummary(); populateUserManagementTable(); populateProductManagementTable(); populateHistoryTable(); }
         function renderAllForms() {
             importFormEl.innerHTML = `
                 <div class="col-md-4"> <label for="import-product-id" class="form-label">รหัสสินค้า</label> <div class="position-relative"> <input type="text" id="import-product-id" class="form-control" required autocomplete="off" placeholder="พิมพ์เพื่อค้นหา..."> <div id="import-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
@@ -1339,21 +1168,8 @@
                 <div class="col-12"> <label for="product-erpCode" class="form-label">รหัส ERP</label> <input type="text" id="product-erpCode" class="form-control"> </div>
                 <div class="col-12"> <label for="product-unitPrice" class="form-label">ราคาต่อหน่วย</label> <input type="number" step="0.01" id="product-unitPrice" class="form-control" required min="0"> </div>
                 <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>บันทึกข้อมูลสินค้า</button> <button type="button" id="clear-product-form-btn" class="btn btn-secondary w-100 mt-2">ล้างฟอร์ม</button> </div>`;
-            userFormEl.innerHTML = ` <div class="col-12"> <label for="user-username" class="form-label">ชื่อผู้ใช้</label> <input type="text" id="user-username" class="form-control" required> </div> <div class="col-12"> <label for="user-password" class="form-label">รหัสผ่าน</label> <input type="password" id="user-password" class="form-control" required> </div> <div class="col-12"> <label for="user-role-select" class="form-label">สิทธิ์</label> <select id="user-role-select" class="form-select" required> <option value="user">User</option> <option value="admin">Admin</option> </select> </div> <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>บันทึกข้อมูลผู้ใช้</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">ล้างฟอร์m</button> </div>`;
-            // New announcement form HTML
-            announcementFormEl.innerHTML = `
-                <input type="hidden" id="announcement-id">
-                <div class="col-12"> <label for="announcement-title" class="form-label">หัวข้อประกาศ</label> <input type="text" id="announcement-title" class="form-control" required> </div>
-                <div class="col-12"> <label for="announcement-message" class="form-label">ข้อความประกาศ</label> <textarea id="announcement-message" class="form-control" rows="4" required></textarea> </div>
-                <div class="col-12">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" role="switch" id="announcement-active" checked>
-                        <label class="form-check-label" for="announcement-active">แสดงประกาศนี้</label>
-                    </div>
-                </div>
-                <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>บันทึกประกาศ</button> <button type="button" id="clear-announcement-form-btn" class="btn btn-secondary w-100 mt-2">ล้างฟอร์ม</button> </div>`;
+            userFormEl.innerHTML = ` <div class="col-12"> <label for="user-username" class="form-label">ชื่อผู้ใช้</label> <input type="text" id="user-username" class="form-control" required> </div> <div class="col-12"> <label for="user-password" class="form-label">รหัสผ่าน</label> <input type="password" id="user-password" class="form-control" required> </div> <div class="col-12"> <label for="user-role-select" class="form-label">สิทธิ์</label> <select id="user-role-select" class="form-select" required> <option value="user">User</option> <option value="admin">Admin</option> </select> </div> <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>บันทึกข้อมูลผู้ใช้</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">ล้างฟอร์ม</button> </div>`;
         }
-
         function addEventListeners() {
             loginForm.addEventListener('submit', handleLogin);
             logoutBtn.addEventListener('click', handleLogout);
@@ -1389,10 +1205,6 @@
             document.getElementById('clear-product-form-btn').addEventListener('click', clearProductForm);
             userFormEl.addEventListener('submit', handleUserFormSubmit);
             document.getElementById('clear-user-form-btn').addEventListener('click', clearUserForm);
-            // New event listeners for Announcement Management
-            announcementFormEl.addEventListener('submit', handleAnnouncementFormSubmit);
-            document.getElementById('clear-announcement-form-btn').addEventListener('click', clearAnnouncementForm);
-
             document.getElementById('backup-stock-btn').addEventListener('click', () => backupToCSV(db.stock, 'stock_backup.csv'));
             document.getElementById('backup-products-btn').addEventListener('click', () => backupToCSV(db.products, 'products_backup.csv'));
             document.getElementById('backup-users-btn').addEventListener('click', () => backupToCSV(db.users, 'users_backup.csv'));
@@ -1521,19 +1333,6 @@
         }
         function populateHistoryTable() {
             historyTable.innerHTML = '';
-            const startDate = document.getElementById('filter-start-date').value;
-            const endDate = document.getElementById('filter-end-date').value;
-            const type = document.getElementById('filter-type').value;
-            const productId = document.getElementById('filter-product-id').value;
-            const invoiceSearch = document.getElementById('filter-invoice-search').value.toLowerCase();
-
-            // Check if any filter criteria are provided
-            if (!startDate && !endDate && !type && !productId && !invoiceSearch) {
-                document.getElementById('history-total-quantity').textContent = `ยอดรวม: 0`;
-                historyTable.innerHTML = `<tr><td colspan="8" class="text-center p-4">กรุณาใส่ข้อมูลเพื่อค้นหาประวัติการทำรายการค่ะ <i class="bi bi-info-circle-fill"></i></td></tr>`;
-                return;
-            }
-
             const filteredHistory = getFilteredHistory();
             const totalQuantity = filteredHistory.reduce((sum, item) => sum + item.quantity, 0);
             document.getElementById('history-total-quantity').textContent = `ยอดรวม: ${totalQuantity.toLocaleString()}`;
@@ -1579,14 +1378,7 @@
                 historyTable.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none');
             }
         }
-        function populateUserManagementTable() { 
-            userManagementTable.innerHTML = ''; 
-            db.users.forEach(u => { 
-                const r = document.createElement('tr'); 
-                r.innerHTML = `<td><i class="bi bi-person-circle me-2"></i>${u.username}</td><td><span class="badge rounded-pill ${u.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}">${u.role}</span></td><td><button class="btn btn-warning btn-sm" onclick="window.app.editUser('${u.username}')"><i class="bi bi-pencil-fill"></i></button> ${u.username !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="window.app.deleteUser('${u.username}')"><i class="bi bi-trash3-fill"></i></button>` : ''}</td>`; 
-                userManagementTable.appendChild(r); 
-            }); 
-        }
+        function populateUserManagementTable() { userManagementTable.innerHTML = ''; db.users.forEach(u => { const r = document.createElement('tr'); r.innerHTML = `<td><i class="bi bi-person-circle me-2"></i>${u.username}</td><td><span class="badge rounded-pill ${u.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}">${u.role}</span></td><td><button class="btn btn-warning btn-sm" onclick="window.app.editUser('${u.username}')"><i class="bi bi-pencil-fill"></i></button> <button class="btn btn-danger btn-sm" onclick="window.app.deleteUser('${u.username}')"><i class="bi bi-trash3-fill"></i></button></td>`; userManagementTable.appendChild(r); }); }
         function populateProductManagementTable() {
             productManagementTable.innerHTML = '';
             db.products.forEach(p => {
@@ -1595,82 +1387,6 @@
                 productManagementTable.appendChild(r);
             });
         }
-        function populateAnnouncementsTable() {
-            announcementManagementTable.innerHTML = '';
-            // Sort announcements by postedDate, newest first
-            const sortedAnnouncements = [...db.announcements].sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
-
-            if (sortedAnnouncements.length === 0) {
-                announcementManagementTable.innerHTML = `<tr><td colspan="5" class="text-center p-4">ยังไม่มีประกาศค่ะ</td></tr>`;
-                return;
-            }
-
-            sortedAnnouncements.forEach(ann => {
-                const row = document.createElement('tr');
-                const formattedDate = new Date(ann.postedDate).toLocaleString('th-TH', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    timeZone: 'Asia/Bangkok'
-                });
-                const statusBadge = ann.isActive 
-                    ? `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">ใช้งานอยู่</span>`
-                    : `<span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">ไม่ใช้งาน</span>`;
-                
-                row.innerHTML = `
-                    <td>${ann.title}</td>
-                    <td>${statusBadge}</td>
-                    <td>${ann.postedBy}</td>
-                    <td>${formattedDate}</td>
-                    <td>
-                        <button class="btn btn-warning btn-sm" onclick="window.app.editAnnouncement('${ann.id}')"><i class="bi bi-pencil-fill"></i></button>
-                        <button class="btn btn-info btn-sm" onclick="window.app.toggleAnnouncementStatus('${ann.id}')"><i class="bi bi-toggle-${ann.isActive ? 'on' : 'off'}"></i></button>
-                        <button class="btn btn-danger btn-sm" onclick="window.app.deleteAnnouncement('${ann.id}')"><i class="bi bi-trash3-fill"></i></button>
-                    </td>
-                `;
-                announcementManagementTable.appendChild(row);
-            });
-        }
-
-        function displayActiveAnnouncements() {
-            announcementsDisplayArea.innerHTML = '';
-            const activeAnnouncements = db.announcements.filter(ann => ann.isActive)
-                                                         .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate)); // Newest first
-
-            if (activeAnnouncements.length === 0) {
-                return; // No active announcements to display
-            }
-
-            activeAnnouncements.forEach(ann => {
-                const formattedDate = new Date(ann.postedDate).toLocaleString('th-TH', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    timeZone: 'Asia/Bangkok'
-                });
-                const announcementHtml = `
-                    <div class="card announcement-card mb-3">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-megaphone-fill me-2"></i>${ann.title}</span>
-                            <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill">ประกาศ</span>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">${ann.message}</p>
-                        </div>
-                        <div class="card-footer text-end">
-                            ประกาศโดย: ${ann.postedBy} เมื่อ: ${formattedDate}
-                        </div>
-                    </div>
-                `;
-                announcementsDisplayArea.insertAdjacentHTML('beforeend', announcementHtml);
-            });
-        }
-
-
         function populateExportLotDropdown(productId) {
             const dropdown = document.getElementById('export-lot');
             dropdown.innerHTML = '<option value="">-- เลือกล็อตตามวันที่ผลิต --</option>';
@@ -1709,7 +1425,6 @@
         }
         function clearProductForm() { editingProductId = null; productFormEl.reset(); document.getElementById('product-id').readOnly = false; }
         function clearUserForm() { originalUsernameForEdit = null; userFormEl.reset(); }
-        function clearAnnouncementForm() { editingAnnouncementId = null; announcementFormEl.reset(); document.getElementById('announcement-id').value = ''; document.getElementById('announcement-id').readOnly = false; document.getElementById('announcement-active').checked = true; } // New clear form function
         function showSuggestions(inputEl, containerEl, productSource, searchTerm) { containerEl.innerHTML = ''; if (!searchTerm) { return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => String(p.id).toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = item.id; containerEl.innerHTML = ''; inputEl.dispatchEvent(new Event('change', { bubbles: true })); }); containerEl.appendChild(suggestionEl); }); }
         function showFilterSuggestions(inputEl, containerEl, productSource, searchTerm) { const hiddenInputEl = document.getElementById('filter-product-id'); containerEl.innerHTML = ''; if (!searchTerm) { hiddenInputEl.value = ''; return; } const lowerCaseSearchTerm = searchTerm.toLowerCase(); const filteredProducts = productSource.filter(p => String(p.id).toLowerCase().includes(lowerCaseSearchTerm) || p.name.toLowerCase().includes(lowerCaseSearchTerm)); filteredProducts.forEach(item => { const suggestionEl = document.createElement('a'); suggestionEl.href = '#'; suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'p-2'); suggestionEl.textContent = `${item.id} - ${item.name}`; suggestionEl.addEventListener('click', (e) => { e.preventDefault(); inputEl.value = `${item.id} - ${item.name}`; hiddenInputEl.value = item.id; containerEl.innerHTML = ''; }); containerEl.appendChild(suggestionEl); }); }
         
