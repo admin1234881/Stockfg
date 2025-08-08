@@ -1701,8 +1701,16 @@
             }
 
             const filteredHistory = getFilteredHistory();
-            const totalQuantity = filteredHistory.reduce((sum, item) => sum + (item.type === 'reversal' ? 0 : item.quantity), 0);
-            document.getElementById('history-total-quantity').textContent = T.history_total_quantity_display.replace('{total}', totalQuantity.toLocaleString());
+            
+            // FIX: Ensure quantity is treated as a number and handle potential non-numeric values.
+            const totalQuantity = filteredHistory.reduce((sum, item) => {
+                const qty = parseFloat(item.quantity);
+                return sum + (item.type === 'reversal' || isNaN(qty) ? 0 : qty);
+            }, 0);
+
+            // FIX: Use toFixed(2) for floating point numbers or toLocaleString() for integers to prevent long decimals.
+            const formattedTotal = totalQuantity % 1 === 0 ? totalQuantity.toLocaleString() : totalQuantity.toFixed(2);
+            document.getElementById('history-total-quantity').textContent = T.history_total_quantity_display.replace('{total}', formattedTotal);
 
             if (filteredHistory.length === 0) {
                 historyTable.innerHTML = `<tr><td colspan="8" class="text-center p-4">${T.no_history_for_filter_message}</td></tr>`;
