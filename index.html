@@ -556,6 +556,7 @@
             reverse_history_import_text: "การดำเนินการนี้จะหักสินค้าออกจากสต็อก และไม่สามารถย้อนกลับได้",
             reverse_history_import_error_not_enough: "สต็อกในล็อตนี้ถูกใช้ไปแล้ว ไม่สามารถยกเลิกรายการรับเข้าได้",
             reverse_history_success: "ยกเลิกรายการและปรับสต็อกเรียบร้อย",
+            reverse_history_find_error: "ไม่พบรายการที่ต้องการยกเลิก อาจเกิดจากข้อมูลกำลังซิงค์ กรุณารอสักครู่แล้วลองใหม่อีกครั้ง",
             // Dynamic texts
             user_role_display: "สิทธิ์: {role}",
             history_total_quantity_display: "ยอดรวม: {total}",
@@ -752,6 +753,7 @@
             reverse_history_import_text: "This action will deduct the items from stock and cannot be undone.",
             reverse_history_import_error_not_enough: "Stock from this lot has already been used. Cannot reverse this import.",
             reverse_history_success: "Transaction reversed and stock adjusted successfully.",
+            reverse_history_find_error: "Could not find the transaction to reverse. The data might be syncing. Please wait a moment and try again.",
             // Dynamic texts
             user_role_display: "Role: {role}",
             history_total_quantity_display: "Total: {total}",
@@ -1118,21 +1120,24 @@
                     }
                 });
             },
-            reverseHistory: (historyId) => {
-                if (currentUser.role !== 'admin') return;
-                
-                const historyItem = db.history.find(h => h.id === historyId);
-                if (!historyItem || historyItem.type === 'reversal') return; // Cannot reverse a reversal
+            // FIX: The function now accepts the full historyItem object instead of just the ID.
+            // This prevents race conditions where the data refreshes between the button being rendered and clicked.
+            reverseHistory: (historyItem) => {
+                if (currentUser.role !== 'admin' || !historyItem || historyItem.type === 'reversal') {
+                    return;
+                }
 
                 const message = historyItem.type === 'export' 
                     ? translations[currentLanguage].reverse_history_export_text
                     : translations[currentLanguage].reverse_history_import_text;
 
                 confirmAction(translations[currentLanguage].confirm_reverse_history_title, message, async () => {
-                    // Check if reversal is possible for imports
                     if (historyItem.type === 'import') {
-                        calculateStockFromHistory(); // Ensure stock is up-to-date
-                        const lotStock = calculatedStock.flatMap(p => p.lots).find(l => l.lotId === historyItem.lotId);
+                        calculateStockFromHistory(); 
+                        
+                        const productLots = calculatedStock.find(p => p.productId === historyItem.productId);
+                        const lotStock = productLots?.lots.find(l => l.productionDate === formatDate(historyItem.productionDate));
+                        
                         if (lotStock && lotStock.quantity < historyItem.quantity) {
                              showError('Cannot Reverse!', translations[currentLanguage].reverse_history_import_error_not_enough);
                              return;
@@ -1150,7 +1155,7 @@
 
                     try {
                         const newHistory = await callAppsScript('appendHistory', reversalEntry);
-                        db.history.unshift(newHistory); // Add the new reversal entry
+                        db.history.unshift(newHistory); 
                         calculateStockFromHistory();
                         populateAll();
                         showSuccess(translations[currentLanguage].reverse_history_success);
@@ -1725,9 +1730,13 @@
                     year: 'numeric', month: 'short', day: 'numeric',
                     hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
                 });
-                const actionsContent = item.type !== 'reversal' ? `<button class="btn btn-danger btn-sm" onclick="window.app.reverseHistory('${item.id}')"><i class="bi bi-x-circle-fill"></i></button>` : '';
                 
-                // FIX: Check for different capitalizations of productionDate from the data object
+                // FIX: Embed the entire history item as a JSON string in a data attribute.
+                // This makes the button self-contained and avoids race conditions with data refreshes.
+                // Use single quotes for the attribute value to handle double quotes within the JSON.
+                const itemString = JSON.stringify(item).replace(/'/g, '&apos;'); // Escape single quotes just in case
+                const actionsContent = item.type !== 'reversal' ? `<button class="btn btn-danger btn-sm reverse-history-btn" data-history-item='${itemString}'><i class="bi bi-x-circle-fill"></i></button>` : '';
+                
                 const prodDate = item.productionDate || item.ProductionDate || item.production_date;
 
                 row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${item.quantity.toLocaleString()}</td> <td>${formatDate(prodDate) || 'N/A'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${item.remarks || ''}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
@@ -1846,6 +1855,22 @@
                 }
                 if (!e.target.closest('.position-relative')) {
                     document.querySelectorAll('.suggestions-container').forEach(c => c.innerHTML = '');
+                }
+
+                // FIX: Changed the delegated event listener to read the full history item from the data attribute.
+                // This resolves the race condition.
+                if (e.target.closest('.reverse-history-btn')) {
+                    const button = e.target.closest('.reverse-history-btn');
+                    const historyItemString = button.dataset.historyItem;
+                    if (historyItemString) {
+                        try {
+                            const historyItem = JSON.parse(historyItemString);
+                            window.app.reverseHistory(historyItem);
+                        } catch (err) {
+                            console.error("Failed to parse history item from data attribute:", err);
+                            showError("Error", "Could not process the request.");
+                        }
+                    }
                 }
             });
         }
