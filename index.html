@@ -1623,7 +1623,8 @@
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
             let summary = calculatedStock.map(stockItem => {
-                let productInfo = db.products.find(p => String(p.id).trim() === stockItem.productId);
+                // FIX: Ensure both sides of the comparison are strings to handle numeric-only IDs correctly.
+                let productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim());
                  if (!productInfo) {
                      productInfo = { id: stockItem.productId, name: T.product_not_found.replace('{id}', stockItem.productId), customer: '-', erpCode: '-' };
                 }
