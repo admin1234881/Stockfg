@@ -1700,15 +1700,16 @@
                 return;
             }
 
-            const filteredHistory = getFilteredHistory();
+            let filteredHistory = getFilteredHistory();
             
-            // FIX: Ensure quantity is treated as a number and handle potential non-numeric values.
+            // FIX: Sort the history data so the newest items are always on top.
+            filteredHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
             const totalQuantity = filteredHistory.reduce((sum, item) => {
                 const qty = parseFloat(item.quantity);
                 return sum + (item.type === 'reversal' || isNaN(qty) ? 0 : qty);
             }, 0);
 
-            // FIX: Use toFixed(2) for floating point numbers or toLocaleString() for integers to prevent long decimals.
             const formattedTotal = totalQuantity % 1 === 0 ? totalQuantity.toLocaleString() : totalQuantity.toFixed(2);
             document.getElementById('history-total-quantity').textContent = T.history_total_quantity_display.replace('{total}', formattedTotal);
 
@@ -1743,10 +1744,7 @@
                     hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
                 });
                 
-                // FIX: Embed the entire history item as a JSON string in a data attribute.
-                // This makes the button self-contained and avoids race conditions with data refreshes.
-                // Use single quotes for the attribute value to handle double quotes within the JSON.
-                const itemString = JSON.stringify(item).replace(/'/g, '&apos;'); // Escape single quotes just in case
+                const itemString = JSON.stringify(item).replace(/'/g, '&apos;'); 
                 const actionsContent = item.type !== 'reversal' ? `<button class="btn btn-danger btn-sm reverse-history-btn" data-history-item='${itemString}'><i class="bi bi-x-circle-fill"></i></button>` : '';
                 
                 const prodDate = item.productionDate || item.ProductionDate || item.production_date;
