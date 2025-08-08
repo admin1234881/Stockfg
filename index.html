@@ -849,7 +849,8 @@
         };
 
         // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbye2XB1x13RiFdahJogpod0h0Oi8b6maahWfkudvwqhX70Q2NJaXoHPqx2EfgaVu9_RDg/exec';
+        // FIX: Updated the SCRIPT_URL with the new one provided by the user.
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCkFTL-1agoy8W8XZeUgz77f0maFtVwoJ4PLh3g_A-ozd7GevFkNV7ENrWtTL-BQ1lzQ/exec';
 
         // --- DATABASE SIMULATION & PERSISTENCE ---
         let db = { users: [], products: [], history: [], announcements: [] };
@@ -910,24 +911,41 @@
                 action: action,
                 payload: payload
             };
+            let response; // Define response here to access it in catch block
             try {
-                const response = await fetch(SCRIPT_URL, {
+                response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify(requestBody),
                     headers: {
                         'Content-Type': 'text/plain;charset=utf-8',
-                    },
+                    }
                 });
 
+                const responseText = await response.text();
+
                 if (!response.ok) {
-                    const errorBody = await response.text();
-                    console.error("Error Body from Server:", errorBody);
-                    throw new Error(`Server responded with status: ${response.status}`);
+                    console.error("Server responded with an error:", {
+                        status: response.status,
+                        statusText: response.statusText,
+                        body: responseText
+                    });
+                    throw new Error(`Server error (${response.status}). Check Apps Script logs.`);
                 }
                 
-                return await response.json();
+                try {
+                    // Attempt to parse the text as JSON
+                    return JSON.parse(responseText);
+                } catch (e) {
+                    // If parsing fails, it's likely the HTML of a Google login page
+                    console.error("Failed to parse server response as JSON. This is the most common symptom of a Google Apps Script deployment permission error. The web app was likely redirected to a login page.", {
+                        responseBody: responseText
+                    });
+                    throw new Error("Invalid response from server. Please re-deploy your Apps Script and ensure 'Who has access' is set to 'Anyone'.");
+                }
+
             } catch (error) {
                 console.error(`Error calling Apps Script action '${action}':`, error);
+                // Re-throw the original or a new error to be caught by the calling function
                 throw error;
             }
         }
