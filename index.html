@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบรับเข้า-ส่งออกสินค้า FG (Google Sheets)</title>
+    <title>ระบบรับเข้า-ส่งออกสินค้า ATECH FG V1</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -60,7 +60,7 @@
         .history-import { border-left: 5px solid var(--success-color); }
         .history-export { border-left: 5px solid #0dcaf0; }
         .history-adjustment { border-left: 5px solid var(--warning-color); }
-        .history-reversal { border-left: 5px solid var(--danger-color); background-color: #fff5f5; text-decoration: line-through; }
+        .history-reversal { border-left: 5px solid var(--danger-color); background-color: #fff5f5; }
         .suggestions-container { z-index: 1050; }
         .suggestions-container a:hover { background-color: var(--primary-color); color: white; }
         .filter-card { overflow: visible; }
@@ -371,7 +371,7 @@
             </div>
         </div>
     </div>
-   
+    
     <div class="modal fade" id="editHistoryModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius: var(--border-radius);">
@@ -585,7 +585,7 @@
             product_management_no_data: "ยังไม่มีข้อมูลสินค้าค่ะ",
             user_management_no_data: "ยังไม่มีข้อมูลผู้ใช้ค่ะ",
             announcement_management_no_data: "ยังไม่มีประกาศค่ะ",
-            form_incomplete: "ข้อมูลไม่ครบถ้วน",
+            form_incomplete: "ข้อมูลไม่ถูกต้อง",
             product_name_required: "กรุณาระบุชื่อสินค้า",
             export_data_incomplete: "กรุณาเลือกสินค้า, วันที่ผลิต, และระบุจำนวนที่ต้องการส่งออก",
             export_no_stock_for_date: "ไม่พบสต็อกสำหรับวันที่ผลิตที่เลือก",
@@ -1174,18 +1174,30 @@
                         }
                     }
 
+                    // --- NEW LOGIC START ---
+                    const reversalQuantity = historyItem.type === 'export' 
+                        ? parseFloat(historyItem.quantity)    // Return to stock -> positive
+                        : -parseFloat(historyItem.quantity);   // Deduct from stock -> negative
+
                     const reversalEntry = {
-                        ...historyItem,
-                        id: 'rev-' + Date.now(), // Unique ID for reversal
+                        productId: historyItem.productId,
+                        productName: historyItem.productName,
+                        customer: historyItem.customer,
+                        erpCode: historyItem.erpCode,
+                        productionDate: historyItem.productionDate || historyItem.ProductionDate || historyItem.production_date,
+                        invoiceNumber: historyItem.invoiceNumber,
+                        id: 'rev-' + Date.now(),
                         type: 'reversal',
                         user: currentUser.username,
                         date: new Date().toISOString(),
+                        quantity: reversalQuantity, // Use the signed quantity
                         remarks: `Reversal of transaction ID: ${historyItem.id}. Original remarks: ${historyItem.remarks || ''}`
                     };
+                    // --- NEW LOGIC END ---
 
                     try {
-                        const newHistory = await callAppsScript('appendHistory', reversalEntry);
-                        db.history.unshift(newHistory); 
+                        await callAppsScript('appendHistory', reversalEntry);
+                        db.history.unshift(reversalEntry); 
                         calculateStockFromHistory();
                         populateAll();
                         showSuccess(translations[currentLanguage].reverse_history_success);
@@ -1331,14 +1343,10 @@
 
             try {
                 Swal.fire({ title: T.saving, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                const results = await callAppsScript('appendBatchHistory', newHistoryEntries);
+                await callAppsScript('appendBatchHistory', newHistoryEntries);
                 
-                if (Array.isArray(results)) {
-                    results.forEach(newEntry => db.history.unshift(newEntry));
-                } else {
-                    console.warn("Server response was not an array. Performing optimistic update.");
-                    newHistoryEntries.forEach(sentEntry => db.history.unshift(sentEntry));
-                }
+                // Optimistic update is more reliable
+                newHistoryEntries.forEach(sentEntry => db.history.unshift(sentEntry));
 
                 calculateStockFromHistory();
                 populateAll();
@@ -1403,14 +1411,10 @@
 
                 try {
                      Swal.fire({ title: T.saving, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                    const results = await callAppsScript('appendBatchHistory', newHistoryEntries);
+                    await callAppsScript('appendBatchHistory', newHistoryEntries);
 
-                    if (Array.isArray(results)) {
-                        results.forEach(newEntry => db.history.unshift(newEntry));
-                    } else {
-                        console.warn("Server response was not an array. Performing optimistic update.");
-                        newHistoryEntries.forEach(sentEntry => db.history.unshift(sentEntry));
-                    }
+                    // Optimistic update is more reliable
+                    newHistoryEntries.forEach(sentEntry => db.history.unshift(sentEntry));
 
                     calculateStockFromHistory();
                     populateAll();
@@ -1553,8 +1557,8 @@
                 };
 
                 try {
-                    const newHistory = await callAppsScript('appendHistory', adjustmentEntry);
-                    db.history.unshift(newHistory);
+                    await callAppsScript('appendHistory', adjustmentEntry);
+                    db.history.unshift(adjustmentEntry);
                     calculateStockFromHistory();
                     populateAll();
                     editStockModal.hide();
@@ -1767,7 +1771,7 @@
 
             const totalQuantity = filteredHistory.reduce((sum, item) => {
                 const qty = parseFloat(item.quantity);
-                return sum + (item.type === 'reversal' || isNaN(qty) ? 0 : qty);
+                return sum + (isNaN(qty) ? 0 : qty); // Simplified total calculation
             }, 0);
 
             const formattedTotal = totalQuantity % 1 === 0 ? totalQuantity.toLocaleString() : totalQuantity.toFixed(2);
@@ -1795,8 +1799,8 @@
                         rowClass = 'history-adjustment';
                         break;
                     case 'reversal':
-                        typeHtml = `<span class="badge bg-danger-subtle text-danger-emphasis rounded-pill"><i class="bi bi-x-circle-fill me-1"></i>${T.history_type_reversal}</span>`;
-                        rowClass = 'history-reversal';
+                        typeHtml = `<span class="badge bg-danger-subtle text-danger-emphasis rounded-pill"><i class="bi bi-arrow-repeat me-1"></i>${T.history_type_reversal}</span>`;
+                        rowClass = 'history-reversal'; // No more strikethrough
                         break;
                 }
                 row.classList.add(rowClass);
@@ -1806,11 +1810,18 @@
                 });
                 
                 const itemString = JSON.stringify(item).replace(/'/g, '&apos;'); 
-                const actionsContent = item.type !== 'reversal' ? `<button class="btn btn-danger btn-sm reverse-history-btn" data-history-item='${itemString}'><i class="bi bi-x-circle-fill"></i></button>` : '';
+                const actionsContent = (item.type === 'import' || item.type === 'export') ? `<button class="btn btn-danger btn-sm reverse-history-btn" data-history-item='${itemString}'><i class="bi bi-x-circle-fill"></i></button>` : '';
                 
                 const prodDate = item.productionDate || item.ProductionDate || item.production_date;
+                
+                // Display quantity with sign for adjustment and reversal
+                let quantityDisplay = item.quantity.toLocaleString();
+                if (item.type === 'adjustment' || item.type === 'reversal') {
+                    quantityDisplay = (item.quantity > 0 ? '+' : '') + item.quantity.toLocaleString();
+                }
 
-                row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${item.quantity.toLocaleString()}</td> <td>${formatDate(prodDate) || 'N/A'}</td> <td class="small-text">${item.erpCode || '-'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${item.remarks || ''}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
+
+                row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${quantityDisplay}</td> <td>${formatDate(prodDate) || 'N/A'}</td> <td class="small-text">${item.erpCode || '-'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${item.remarks || ''}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
                 historyTable.appendChild(row);
             });
         }
@@ -2515,35 +2526,26 @@
         }
 
         /**
-         * Recalculates the entire stock from the beginning of history.
-         * This ledger-style approach ensures accuracy, especially with reversals.
+         * Recalculates the entire stock from the beginning of history using a direct summation logic.
          */
         function calculateStockFromHistory() {
             const stockLedger = new Map();
+            // Sort history from oldest to newest to process transactions in order
             const sortedHistory = [...db.history].sort((a, b) => new Date(a.date) - new Date(b.date));
-            const reversedTransactionIds = new Set();
 
-            // First pass: identify all reversed transaction IDs
-            sortedHistory.forEach(item => {
-                if (item.type === 'reversal') {
-                    const match = /Reversal of transaction ID: ([\w-]+)/.exec(item.remarks);
-                    if (match) {
-                        reversedTransactionIds.add(match[1]);
-                    }
-                }
-            });
-
-            // Second pass: process only valid, non-reversed transactions
             for (const item of sortedHistory) {
-                if (!item || !item.productId || item.type === 'reversal' || reversedTransactionIds.has(item.id)) {
-                    continue; // Skip malformed, reversal, or reversed transactions
+                // Skip any malformed items
+                if (!item || !item.productId) {
+                    continue; 
                 }
 
                 const prodDate = item.productionDate || item.ProductionDate || item.production_date;
                 const isManualAdjustment = prodDate === 'Manual Adjustment';
+                // For adjustments, use the transaction date as the lot date
                 const lotDate = isManualAdjustment ? formatDate(item.date) : formatDate(prodDate);
                 const key = `${String(item.productId).trim()}::${lotDate}`;
 
+                // Initialize the lot in our ledger if it's the first time we see it
                 if (!stockLedger.has(key)) {
                     stockLedger.set(key, {
                         productId: String(item.productId).trim(),
@@ -2556,13 +2558,18 @@
                 let quantityChange = 0;
                 const itemQuantity = parseFloat(item.quantity) || 0;
 
+                // Determine how the stock quantity changes based on the transaction type
                 switch (item.type) {
                     case 'import':
-                    case 'adjustment':
-                        quantityChange = itemQuantity;
+                        quantityChange = itemQuantity; // Add to stock
                         break;
                     case 'export':
-                        quantityChange = -itemQuantity;
+                        quantityChange = -itemQuantity; // Subtract from stock
+                        break;
+                    case 'adjustment':
+                    case 'reversal': 
+                        // For these types, the 'quantity' field already has the correct sign (+ or -)
+                        quantityChange = itemQuantity;
                         break;
                 }
                 
@@ -2573,7 +2580,7 @@
                 currentLot.quantity += quantityChange;
             }
 
-            // Final aggregation step
+            // Aggregate all the calculated lots by product ID
             const productStockMap = new Map();
             for (const lot of stockLedger.values()) {
                 if (!productStockMap.has(lot.productId)) {
@@ -2588,6 +2595,7 @@
                 product.lots.push(lot);
             }
 
+            // Update the global calculatedStock variable
             calculatedStock = Array.from(productStockMap.values());
         }
         
