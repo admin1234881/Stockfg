@@ -562,6 +562,7 @@
             user_role_display: "สิทธิ์: {role}",
             history_total_quantity_display: "ยอดรวม: {total}",
             no_history_found_message: "กรุณาใส่ข้อมูลเพื่อค้นหาประวัติการทำรายการค่ะ",
+            history_no_transactions_yet: "ยังไม่มีประวัติการทำรายการค่ะ",
             no_history_for_filter_message: "ไม่พบข้อมูลตามเงื่อนไขที่กำหนดค่ะ",
             history_type_import: "รับเข้า",
             history_type_export: "ส่งออก",
@@ -762,6 +763,7 @@
             user_role_display: "Role: {role}",
             history_total_quantity_display: "Total: {total}",
             no_history_found_message: "Please provide filter criteria to search for transaction history.",
+            history_no_transactions_yet: "No transaction history yet.",
             no_history_for_filter_message: "No data found for the specified criteria.",
             history_type_import: "Import",
             history_type_export: "Export",
@@ -821,6 +823,8 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         
+        let hasHistoryBeenSearched = false;
+
         // --- GLOBAL FUNCTION FOR LANGUAGE SWITCHING ---
         window.setLanguage = (lang) => {
             currentLanguage = lang;
@@ -1290,15 +1294,19 @@
 
             for(const row of lotRows) {
                 const quantity = parseInt(row.querySelector('.import-quantity').value);
-                const productionDate = row.querySelector('.import-prod-date').value;
+                const productionDateStr = row.querySelector('.import-prod-date').value;
+                if (!productionDateStr) continue; // Skip if date is empty
                 
-                // FIX: Add validation to prevent selecting a future date.
-                if (new Date(productionDate) > today) {
+                // FIX: Correctly parse date string to avoid timezone issues
+                const parts = productionDateStr.split('-');
+                const productionDate = new Date(parts[0], parts[1] - 1, parts[2]);
+
+                if (productionDate > today) {
                     showError(T.form_incomplete, T.future_date_error);
                     return;
                 }
 
-                if (quantity > 0 && productionDate) {
+                if (quantity > 0) {
                     newHistoryEntries.push({
                         id: 'imp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
                         date: new Date().toISOString(),
@@ -1308,7 +1316,7 @@
                         customer: productForHistory.customer,
                         erpCode: productForHistory.erpCode,
                         quantity: quantity,
-                        productionDate: productionDate,
+                        productionDate: productionDateStr,
                         user: currentUser.username,
                         invoiceNumber: null,
                         remarks: remarks
@@ -1732,6 +1740,7 @@
                 <th>${T.product_name}</th>
                 <th>${T.quantity}</th>
                 <th>${T.production_date}</th>
+                <th>${T.erp_code}</th>
                 <th>${T.history_table_invoice_remarks}</th>
                 <th>${T.history_table_timestamp}</th>
                 <th>${T.history_table_user}</th>
@@ -1739,19 +1748,20 @@
             </tr>`;
 
             historyTable.innerHTML = '';
-            const startDate = document.getElementById('filter-start-date').value;
-            const endDate = document.getElementById('filter-end-date').value;
-            const type = document.getElementById('filter-type').value;
-            const productId = document.getElementById('filter-product-id').value;
-            const invoiceSearch = document.getElementById('filter-invoice-search').value.toLowerCase();
 
-            if (!startDate && !endDate && !type && !productId && !invoiceSearch) {
-                document.getElementById('history-total-quantity').textContent = T.history_total_quantity_display.replace('{total}', '0');
-                historyTable.innerHTML = `<tr><td colspan="8" class="text-center p-4">${T.no_history_found_message} <i class="bi bi-info-circle-fill"></i></td></tr>`;
+            if (db.history.length === 0) {
+                document.getElementById('history-total-quantity').textContent = '';
+                historyTable.innerHTML = `<tr><td colspan="9" class="text-center p-4">${T.history_no_transactions_yet}</td></tr>`;
                 return;
             }
 
-            let filteredHistory = getFilteredHistory();
+            if (!hasHistoryBeenSearched) {
+                document.getElementById('history-total-quantity').textContent = '';
+                historyTable.innerHTML = `<tr><td colspan="9" class="text-center p-4">${T.no_history_found_message}</td></tr>`;
+                return;
+            }
+
+            const filteredHistory = getFilteredHistory();
             
             filteredHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -1764,9 +1774,10 @@
             document.getElementById('history-total-quantity').textContent = T.history_total_quantity_display.replace('{total}', formattedTotal);
 
             if (filteredHistory.length === 0) {
-                historyTable.innerHTML = `<tr><td colspan="8" class="text-center p-4">${T.no_history_for_filter_message}</td></tr>`;
+                historyTable.innerHTML = `<tr><td colspan="9" class="text-center p-4">${T.no_history_for_filter_message}</td></tr>`;
                 return;
             }
+            
             filteredHistory.forEach(item => {
                 const row = document.createElement('tr');
                 let typeHtml, rowClass;
@@ -1799,7 +1810,7 @@
                 
                 const prodDate = item.productionDate || item.ProductionDate || item.production_date;
 
-                row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${item.quantity.toLocaleString()}</td> <td>${formatDate(prodDate) || 'N/A'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${item.remarks || ''}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
+                row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${item.quantity.toLocaleString()}</td> <td>${formatDate(prodDate) || 'N/A'}</td> <td class="small-text">${item.erpCode || '-'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${item.remarks || ''}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
                 historyTable.appendChild(row);
             });
         }
@@ -1921,7 +1932,11 @@
                 if(e.target.id === 'product-form') handleProductFormSubmit(e);
                 if(e.target.id === 'user-form') handleUserFormSubmit(e);
                 if(e.target.id === 'announcement-form') handleAnnouncementFormSubmit(e);
-                if(e.target.id === 'history-filter-form') { e.preventDefault(); populateHistoryTable(); }
+                if(e.target.id === 'history-filter-form') {
+                    e.preventDefault();
+                    hasHistoryBeenSearched = true;
+                    populateHistoryTable();
+                }
                 if(e.target.id === 'edit-history-form') handleEditHistorySubmit(e);
                 if(e.target.id === 'edit-stock-form') handleEditStockSubmit(e);
             });
@@ -1939,6 +1954,7 @@
                 if (e.target.id === 'clear-announcement-form-btn') clearAnnouncementForm();
                 if (e.target.id === 'history-filter-reset-btn') {
                     document.getElementById('filter-product-id').value = '';
+                    hasHistoryBeenSearched = false;
                     setTimeout(() => populateHistoryTable(), 0);
                 }
                 if (!e.target.closest('.position-relative')) {
