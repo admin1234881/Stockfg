@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบรับเข้า-ส่งออกสินค้า ATECH FG V1</title>
+    <title>ระบบรับเข้า-ส่งออกสินค้า FG (Google Sheets)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -585,7 +585,7 @@
             product_management_no_data: "ยังไม่มีข้อมูลสินค้าค่ะ",
             user_management_no_data: "ยังไม่มีข้อมูลผู้ใช้ค่ะ",
             announcement_management_no_data: "ยังไม่มีประกาศค่ะ",
-            form_incomplete: "ข้อมูลไม่ถูกต้อง",
+            form_incomplete: "ข้อมูลไม่ครบถ้วน",
             product_name_required: "กรุณาระบุชื่อสินค้า",
             export_data_incomplete: "กรุณาเลือกสินค้า, วันที่ผลิต, และระบุจำนวนที่ต้องการส่งออก",
             export_no_stock_for_date: "ไม่พบสต็อกสำหรับวันที่ผลิตที่เลือก",
@@ -1174,10 +1174,9 @@
                         }
                     }
 
-                    // --- NEW LOGIC START ---
                     const reversalQuantity = historyItem.type === 'export' 
-                        ? parseFloat(historyItem.quantity)    // Return to stock -> positive
-                        : -parseFloat(historyItem.quantity);   // Deduct from stock -> negative
+                        ? parseFloat(historyItem.quantity)
+                        : -parseFloat(historyItem.quantity);
 
                     const reversalEntry = {
                         productId: historyItem.productId,
@@ -1190,10 +1189,9 @@
                         type: 'reversal',
                         user: currentUser.username,
                         date: new Date().toISOString(),
-                        quantity: reversalQuantity, // Use the signed quantity
+                        quantity: reversalQuantity,
                         remarks: `Reversal of transaction ID: ${historyItem.id}. Original remarks: ${historyItem.remarks || ''}`
                     };
-                    // --- NEW LOGIC END ---
 
                     try {
                         await callAppsScript('appendHistory', reversalEntry);
@@ -1542,6 +1540,10 @@
                 const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim());
                 const originalTotal = stockInfo ? stockInfo.totalQuantity : 0;
 
+                // --- FIX: Add a machine-readable part to the remark for reliable parsing ---
+                const humanReadableRemark = `Adjusted from ${originalTotal} to ${newTotalQuantity}`;
+                const machineReadableRemark = `MANUAL_ADJ_NEW_TOTAL:${newTotalQuantity}|${humanReadableRemark}`;
+
                 const adjustmentEntry = {
                     id: 'adj-' + Date.now(),
                     date: new Date().toISOString(),
@@ -1553,7 +1555,7 @@
                     quantity: newTotalQuantity - originalTotal,
                     productionDate: 'Manual Adjustment',
                     user: currentUser.username,
-                    remarks: `Adjusted from ${originalTotal} to ${newTotalQuantity}`
+                    remarks: machineReadableRemark
                 };
 
                 try {
@@ -1820,8 +1822,12 @@
                     quantityDisplay = (item.quantity > 0 ? '+' : '') + item.quantity.toLocaleString();
                 }
 
+                let displayRemark = item.remarks || '';
+                if(item.type === 'adjustment') {
+                    displayRemark = (displayRemark.split('|')[1] || displayRemark).trim();
+                }
 
-                row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${quantityDisplay}</td> <td>${formatDate(prodDate) || 'N/A'}</td> <td class="small-text">${item.erpCode || '-'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${item.remarks || ''}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
+                row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${quantityDisplay}</td> <td>${formatDate(prodDate) || 'N/A'}</td> <td class="small-text">${item.erpCode || '-'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${displayRemark}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
                 historyTable.appendChild(row);
             });
         }
@@ -2526,61 +2532,75 @@
         }
 
         /**
-         * Recalculates the entire stock from the beginning of history using a direct summation logic.
+         * Recalculates the entire stock from history using a "wipe and replace" logic for adjustments.
          */
         function calculateStockFromHistory() {
             const stockLedger = new Map();
-            // Sort history from oldest to newest to process transactions in order
             const sortedHistory = [...db.history].sort((a, b) => new Date(a.date) - new Date(b.date));
 
             for (const item of sortedHistory) {
-                // Skip any malformed items
-                if (!item || !item.productId) {
-                    continue; 
+                if (!item || !item.productId) continue;
+
+                const productId = String(item.productId).trim();
+                
+                if (item.type === 'adjustment') {
+                    // Find all existing lots for this product in the ledger and delete them
+                    const keysToDelete = Array.from(stockLedger.keys()).filter(key => key.startsWith(`${productId}::`));
+                    keysToDelete.forEach(key => stockLedger.delete(key));
+
+                    // Parse the new total from the machine-readable part of the remark
+                    let newTotalQuantity = 0;
+                    const remarks = item.remarks || '';
+                    const match = remarks.match(/^MANUAL_ADJ_NEW_TOTAL:(\d+(\.\d+)?)/);
+                    if (match) {
+                        newTotalQuantity = parseFloat(match[1]);
+                    } else { // Fallback for old format
+                        const oldMatch = remarks.match(/to (\d+)/);
+                        if (oldMatch) newTotalQuantity = parseInt(oldMatch[1], 10);
+                    }
+                    
+                    // Create a new single pseudo-lot representing the adjusted total
+                    const adjustmentDate = formatDate(item.date);
+                    const newKey = `${productId}::${adjustmentDate}`;
+                    stockLedger.set(newKey, {
+                        productId: productId,
+                        productionDate: adjustmentDate,
+                        quantity: newTotalQuantity,
+                        isAdjustment: true
+                    });
+                    
+                    continue; // Move to the next history item
                 }
-
+                
+                // Regular logic for import, export, reversal
                 const prodDate = item.productionDate || item.ProductionDate || item.production_date;
-                const isManualAdjustment = prodDate === 'Manual Adjustment';
-                // For adjustments, use the transaction date as the lot date
-                const lotDate = isManualAdjustment ? formatDate(item.date) : formatDate(prodDate);
-                const key = `${String(item.productId).trim()}::${lotDate}`;
+                const lotDate = formatDate(prodDate);
+                if (!lotDate) continue; // Skip items without a valid lot date
+                
+                const key = `${productId}::${lotDate}`;
 
-                // Initialize the lot in our ledger if it's the first time we see it
                 if (!stockLedger.has(key)) {
                     stockLedger.set(key, {
-                        productId: String(item.productId).trim(),
+                        productId: productId,
                         productionDate: lotDate,
                         quantity: 0,
-                        isAdjustment: isManualAdjustment
+                        isAdjustment: false
                     });
                 }
 
-                let quantityChange = 0;
                 const itemQuantity = parseFloat(item.quantity) || 0;
-
-                // Determine how the stock quantity changes based on the transaction type
-                switch (item.type) {
-                    case 'import':
-                        quantityChange = itemQuantity; // Add to stock
-                        break;
-                    case 'export':
-                        quantityChange = -itemQuantity; // Subtract from stock
-                        break;
-                    case 'adjustment':
-                    case 'reversal': 
-                        // For these types, the 'quantity' field already has the correct sign (+ or -)
-                        quantityChange = itemQuantity;
-                        break;
-                }
-                
                 const currentLot = stockLedger.get(key);
-                if (item.type === 'adjustment') {
-                    currentLot.isAdjustment = true;
+                
+                if (item.type === 'import') {
+                    currentLot.quantity += itemQuantity;
+                } else if (item.type === 'export') {
+                    currentLot.quantity -= itemQuantity;
+                } else if (item.type === 'reversal') {
+                    currentLot.quantity += itemQuantity;
                 }
-                currentLot.quantity += quantityChange;
             }
 
-            // Aggregate all the calculated lots by product ID
+            // Final aggregation step
             const productStockMap = new Map();
             for (const lot of stockLedger.values()) {
                 if (!productStockMap.has(lot.productId)) {
@@ -2595,7 +2615,6 @@
                 product.lots.push(lot);
             }
 
-            // Update the global calculatedStock variable
             calculatedStock = Array.from(productStockMap.values());
         }
         
