@@ -436,7 +436,7 @@
             packaging_type: "ประเภทบรรจุภัณฑ์",
             packaging_std: "แพ็คกิ้งสแตนดาร์ด",
             packaging_temp: "แพ็คกิ้งชั่วคราว",
-            packaging_placeholder: "-- เลือกประเภท --", // NEW
+            packaging_placeholder: "-- เลือกประเภท --", 
             // Login
             login_header: "ระบบสต็อกสินค้า",
             login_button: "เข้าสู่ระบบ",
@@ -496,6 +496,7 @@
             history_table_title: "ประวัติการทำรายการ",
             backup_history: "ดาวน์โหลดประวัติ (CSV)",
             history_table_type: "ประเภท",
+            history_table_packaging: "ประเภทบรรจุภัณฑ์", // NEW
             history_table_invoice_remarks: "Invoice / หมายเหตุ",
             history_table_timestamp: "วันที่ทำรายการ",
             history_table_user: "ผู้ทำรายการ",
@@ -643,7 +644,7 @@
             packaging_type: "Packaging Type",
             packaging_std: "Standard Packing",
             packaging_temp: "Temporary Packing",
-            packaging_placeholder: "-- Select Type --", // NEW
+            packaging_placeholder: "-- Select Type --",
             // Login
             login_header: "Stock System",
             login_button: "Login",
@@ -703,6 +704,7 @@
             history_table_title: "Transaction History",
             backup_history: "Download History (CSV)",
             history_table_type: "Type",
+            history_table_packaging: "Packaging", // NEW
             history_table_invoice_remarks: "Invoice / Remarks",
             history_table_timestamp: "Timestamp",
             history_table_user: "User",
@@ -1784,6 +1786,7 @@
                 <th>${T.product_name}</th>
                 <th>${T.quantity}</th>
                 <th>${T.production_date}</th>
+                <th>${T.history_table_packaging}</th>
                 <th>${T.erp_code}</th>
                 <th>${T.history_table_invoice_remarks}</th>
                 <th>${T.history_table_timestamp}</th>
@@ -1795,13 +1798,13 @@
 
             if (db.history.length === 0) {
                 document.getElementById('history-total-quantity').textContent = '';
-                historyTable.innerHTML = `<tr><td colspan="9" class="text-center p-4">${T.history_no_transactions_yet}</td></tr>`;
+                historyTable.innerHTML = `<tr><td colspan="10" class="text-center p-4">${T.history_no_transactions_yet}</td></tr>`;
                 return;
             }
 
             if (!hasHistoryBeenSearched) {
                 document.getElementById('history-total-quantity').textContent = '';
-                historyTable.innerHTML = `<tr><td colspan="9" class="text-center p-4">${T.no_history_found_message}</td></tr>`;
+                historyTable.innerHTML = `<tr><td colspan="10" class="text-center p-4">${T.no_history_found_message}</td></tr>`;
                 return;
             }
 
@@ -1818,7 +1821,7 @@
             document.getElementById('history-total-quantity').textContent = T.history_total_quantity_display.replace('{total}', formattedTotal);
 
             if (filteredHistory.length === 0) {
-                historyTable.innerHTML = `<tr><td colspan="9" class="text-center p-4">${T.no_history_for_filter_message}</td></tr>`;
+                historyTable.innerHTML = `<tr><td colspan="10" class="text-center p-4">${T.no_history_for_filter_message}</td></tr>`;
                 return;
             }
             
@@ -1865,7 +1868,29 @@
                     displayRemark = (displayRemark.split('|')[1] || displayRemark).trim();
                 }
 
-                row.innerHTML = ` <td>${typeHtml}</td> <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td> <td>${quantityDisplay}</td> <td>${formatDate(prodDate) || 'N/A'}</td> <td class="small-text">${item.erpCode || '-'}</td> <td> <div>${item.invoiceNumber || '-'}</div> <small class="text-muted">${displayRemark}</small> </td> <td>${formattedDate}</td> <td>${item.user}</td> <td class="admin-only-cell">${actionsContent}</td> `;
+                let packagingBadge = '';
+                if (item.type === 'import' || item.type === 'export' || item.type === 'reversal') {
+                    if (item.packagingType === 'temporary') {
+                        packagingBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">${T.packaging_temp}</span>`;
+                    } else {
+                        packagingBadge = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">${T.packaging_std}</span>`;
+                    }
+                } else {
+                    packagingBadge = '-';
+                }
+
+                row.innerHTML = `
+                    <td>${typeHtml}</td>
+                    <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td>
+                    <td>${quantityDisplay}</td>
+                    <td>${formatDate(prodDate) || 'N/A'}</td>
+                    <td>${packagingBadge}</td>
+                    <td class="small-text">${item.erpCode || '-'}</td>
+                    <td><div>${item.invoiceNumber || '-'}</div><small class="text-muted">${displayRemark}</small></td>
+                    <td>${formattedDate}</td>
+                    <td>${item.user}</td>
+                    <td class="admin-only-cell">${actionsContent}</td>
+                `;
                 historyTable.appendChild(row);
             });
         }
