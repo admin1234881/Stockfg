@@ -353,7 +353,7 @@
 
     <!-- Modals -->
     <div class="modal fade" id="lotDetailModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg"> <!-- Changed to modal-lg for more space -->
             <div class="modal-content" style="border-radius: var(--border-radius);">
                 <div class="modal-header" style="background-color: #ffe8f0;">
                     <h5 class="modal-title" id="lotDetailModalLabel"><i class="bi bi-card-list me-2"></i><span data-lang-key="lot_modal_title">รายละเอียดล็อตของ</span>: <span id="modal-product-name" class="fw-bold"></span></h5>
@@ -433,6 +433,10 @@
             search_placeholder: "ค้นหา...",
             ok_button: "ตกลง",
             cancel_button: "ยกเลิก",
+            packaging_type: "ประเภทบรรจุภัณฑ์",
+            packaging_std: "แพ็คกิ้งสแตนดาร์ด",
+            packaging_temp: "แพ็คกิ้งชั่วคราว",
+            packaging_placeholder: "-- เลือกประเภท --", // NEW
             // Login
             login_header: "ระบบสต็อกสินค้า",
             login_button: "เข้าสู่ระบบ",
@@ -474,6 +478,8 @@
             export_invoice: "เลขที่ Invoice",
             export_warning: "การส่งออกสินค้าควรคำนึงถึงหลัก FIFO (เข้าก่อน-ออกก่อน)",
             export_save_button: "บันทึกการส่งออก",
+            export_temp_confirm_title: "ยืนยันการส่งออก?",
+            export_temp_confirm_text: "คุณกำลังจะส่งออกสินค้าที่เป็น 'แพ็คกิ้งชั่วคราว' ยืนยันที่จะดำเนินการต่อใช่ไหม?",
             // History Tab
             history_filter_from: "จากวันที่",
             history_filter_to: "ถึงวันที่",
@@ -634,6 +640,10 @@
             search_placeholder: "Search...",
             ok_button: "OK",
             cancel_button: "Cancel",
+            packaging_type: "Packaging Type",
+            packaging_std: "Standard Packing",
+            packaging_temp: "Temporary Packing",
+            packaging_placeholder: "-- Select Type --", // NEW
             // Login
             login_header: "Stock System",
             login_button: "Login",
@@ -675,6 +685,8 @@
             export_invoice: "Invoice No.",
             export_warning: "Exports should follow the FIFO (First-In, First-Out) principle.",
             export_save_button: "Save Export",
+            export_temp_confirm_title: "Confirm Export?",
+            export_temp_confirm_text: "You are about to export an item with 'Temporary Packing'. Are you sure you want to proceed?",
             // History Tab
             history_filter_from: "From Date",
             history_filter_to: "To Date",
@@ -862,7 +874,7 @@
         };
 
         // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwCkFTL-1agoy8W8XZeUgz77f0maFtVwoJ4PLh3g_A-ozd7GevFkNV7ENrWtTL-BQ1lzQ/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgzdhHP5E9P8AF1BDcBOzFtLW3uVw_cCuXj2E_pV_g3Au2p6jcpCEwTMmHI83LUWwB9A/exec';
 
         // --- DATABASE SIMULATION & PERSISTENCE ---
         let db = { users: [], products: [], history: [], announcements: [] };
@@ -1190,7 +1202,8 @@
                         user: currentUser.username,
                         date: new Date().toISOString(),
                         quantity: reversalQuantity,
-                        remarks: `Reversal of transaction ID: ${historyItem.id}. Original remarks: ${historyItem.remarks || ''}`
+                        remarks: `Reversal of transaction ID: ${historyItem.id}. Original remarks: ${historyItem.remarks || ''}`,
+                        packagingType: historyItem.packagingType // Carry over packaging type
                     };
 
                     try {
@@ -1305,6 +1318,7 @@
             for(const row of lotRows) {
                 const quantity = parseInt(row.querySelector('.import-quantity').value);
                 const productionDateStr = row.querySelector('.import-prod-date').value;
+                const packagingType = row.querySelector('.import-packaging-type').value; // NEW: Get packaging type
                 if (!productionDateStr) continue; // Skip if date is empty
                 
                 // FIX: Correctly parse date string to avoid timezone issues
@@ -1329,7 +1343,8 @@
                         productionDate: productionDateStr,
                         user: currentUser.username,
                         invoiceNumber: null,
-                        remarks: remarks
+                        remarks: remarks,
+                        packagingType: packagingType // NEW: Add to history object
                     });
                 }
             }
@@ -1387,6 +1402,7 @@
 
                 for(const row of selectedLotRows) {
                     const productionDate = row.dataset.date;
+                    const packagingType = row.dataset.packaging; // Get packaging type from row
                     const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
 
                     if (isNaN(quantityToExport) || quantityToExport <= 0) continue;
@@ -1403,7 +1419,8 @@
                         productionDate: productionDate,
                         user: currentUser.username,
                         invoiceNumber: invoiceNumber,
-                        remarks: remarks
+                        remarks: remarks,
+                        packagingType: packagingType // NEW: Add to history object
                     });
                 }
 
@@ -1425,27 +1442,48 @@
                 }
             };
 
-            // FIFO Validation Logic
+            // NEW: Temporary Packing Validation
             const productStock = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim());
-            const availableLots = productStock ? productStock.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate)) : [];
-            const selectedLotDates = Array.from(selectedLotRows).map(row => row.dataset.date);
-
-            let isFifoViolated = false;
-            if (availableLots.length > 0 && selectedLotRows.length > 0) {
-                const oldestAvailableDateStr = availableLots[0].productionDate;
-                
-                const isOldestSelected = selectedLotDates.includes(oldestAvailableDateStr);
-                if (!isOldestSelected) {
-                    isFifoViolated = true;
+            let isExportingTemp = false;
+            if (productStock) {
+                for (const row of selectedLotRows) {
+                    const lotDate = row.dataset.date;
+                    const lotInfo = productStock.lots.find(l => l.productionDate === lotDate);
+                    if (lotInfo && lotInfo.packagingType === 'temporary') {
+                        isExportingTemp = true;
+                        break;
+                    }
                 }
             }
 
-            if (isFifoViolated) {
-                const oldestDate = availableLots[0].productionDate;
-                const warningText = T.fifo_warning_text.replace('{date}', oldestDate);
-                confirmAction(T.fifo_warning_title, warningText, performExport);
+            const runExportProcess = () => {
+                // FIFO Validation Logic (existing)
+                const availableLots = productStock ? productStock.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate)) : [];
+                const selectedLotDates = Array.from(selectedLotRows).map(row => row.dataset.date);
+
+                let isFifoViolated = false;
+                if (availableLots.length > 0 && selectedLotRows.length > 0) {
+                    const oldestAvailableDateStr = availableLots[0].productionDate;
+                    
+                    const isOldestSelected = selectedLotDates.includes(oldestAvailableDateStr);
+                    if (!isOldestSelected) {
+                        isFifoViolated = true;
+                    }
+                }
+
+                if (isFifoViolated) {
+                    const oldestDate = availableLots[0].productionDate;
+                    const warningText = T.fifo_warning_text.replace('{date}', oldestDate);
+                    confirmAction(T.fifo_warning_title, warningText, performExport);
+                } else {
+                    performExport();
+                }
+            };
+            
+            if (isExportingTemp) {
+                confirmAction(T.export_temp_confirm_title, T.export_temp_confirm_text, runExportProcess);
             } else {
-                await performExport();
+                runExportProcess();
             }
         }
 
@@ -2139,7 +2177,8 @@
                             customer: productInfo.customer,
                             erpCode: productInfo.erpCode,
                             productionDate: lot.productionDate,
-                            quantity: lot.quantity
+                            quantity: lot.quantity,
+                            packagingType: lot.packagingType // NEW: Add to backup data
                         });
                     }
                 });
@@ -2279,12 +2318,20 @@
                 const row = document.createElement('div');
                 row.className = 'row g-2 mb-2 align-items-center export-lot-row';
                 row.dataset.date = lot.productionDate;
+                row.dataset.packaging = lot.packagingType; // NEW: Add packaging type to dataset
+
+                // NEW: Add a badge for temporary packing
+                let packagingBadge = '';
+                if (lot.packagingType === 'temporary') {
+                    packagingBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill ms-2">${T.packaging_temp}</span>`;
+                }
+
                 row.innerHTML = `
                     <div class="col-auto">
                         <input class="form-check-input" type="checkbox">
                     </div>
                     <div class="col">
-                        <label class="form-check-label">${T.export_lot_option.replace('{date}', lot.productionDate).replace('{qty}', totalQuantity.toLocaleString())}</label>
+                        <label class="form-check-label">${T.export_lot_option.replace('{date}', lot.productionDate).replace('{qty}', totalQuantity.toLocaleString())}${packagingBadge}</label>
                     </div>
                     <div class="col-4">
                         <input type="number" class="form-control form-control-sm export-quantity" placeholder="${T.export_quantity_placeholder.replace('{qty}', totalQuantity)}" min="1" max="${totalQuantity}" disabled>
@@ -2297,8 +2344,10 @@
         function populateLotDetailsTable(productId) {
             const T = translations[currentLanguage];
             const header = document.getElementById('lot-detail-table-header');
+            // NEW: Add packaging type column to header
             header.innerHTML = `<tr>
                 <th>${T.production_date}</th>
+                <th>${T.packaging_type}</th>
                 <th>${T.lot_modal_balance}</th>
             </tr>`;
             
@@ -2311,7 +2360,7 @@
             threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
             if(lots.length === 0) {
-                lotDetailTable.innerHTML = `<tr><td colspan="2" class="text-center">${T.lot_modal_no_data}</td></tr>`;
+                lotDetailTable.innerHTML = `<tr><td colspan="3" class="text-center">${T.lot_modal_no_data}</td></tr>`; // Changed colspan to 3
                 return;
             }
 
@@ -2321,8 +2370,18 @@
                 const isOld = new Date(lot.productionDate) < threeMonthsAgo && !lot.isAdjustment;
                 const row = document.createElement('tr');
                 if (isOld) row.classList.add('table-warning');
+
+                // NEW: Create badge for packaging type
+                let packagingBadge;
+                if (lot.packagingType === 'temporary') {
+                    packagingBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">${T.packaging_temp}</span>`;
+                } else {
+                    packagingBadge = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">${T.packaging_std}</span>`;
+                }
+                
                 row.innerHTML = `
                     <td>${lot.productionDate} ${lot.isAdjustment ? '(Manual Adjustment)' : ''} ${isOld ? '<i class="bi bi-exclamation-triangle-fill text-danger ms-2"></i>' : ''}</td>
+                    <td>${packagingBadge}</td>
                     <td>${lot.quantity.toLocaleString()}</td>`;
                 lotDetailTable.appendChild(row);
             });
@@ -2395,12 +2454,21 @@
             const container = document.getElementById('import-lots-container');
             const newRow = document.createElement('div');
             newRow.className = 'row g-2 mb-2 align-items-center import-lot-row';
+            // UPDATED: Added required attribute and a disabled default option
             newRow.innerHTML = `
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <label class="form-label visually-hidden">${T.production_date}</label>
                     <input type="date" class="form-control import-prod-date" required>
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-3">
+                    <label class="form-label visually-hidden">${T.packaging_type}</label>
+                    <select class="form-select import-packaging-type" required>
+                        <option value="" selected disabled>${T.packaging_placeholder}</option>
+                        <option value="standard">${T.packaging_std}</option>
+                        <option value="temporary">${T.packaging_temp}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
                     <label class="form-label visually-hidden">${T.quantity}</label>
                     <input type="number" class="form-control import-quantity" placeholder="${T.quantity}" required min="1">
                 </div>
@@ -2566,7 +2634,8 @@
                         productId: productId,
                         productionDate: adjustmentDate,
                         quantity: newTotalQuantity,
-                        isAdjustment: true
+                        isAdjustment: true,
+                        packagingType: 'standard' // Adjustments are considered standard
                     });
                     
                     continue; // Move to the next history item
@@ -2584,7 +2653,9 @@
                         productId: productId,
                         productionDate: lotDate,
                         quantity: 0,
-                        isAdjustment: false
+                        isAdjustment: false,
+                        // NEW: Set packaging type, default to 'standard' for old data
+                        packagingType: item.packagingType || 'standard'
                     });
                 }
 
