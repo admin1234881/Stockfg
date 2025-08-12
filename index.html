@@ -546,6 +546,7 @@
             critical_load_error_text: "เซิร์ฟเวอร์ส่งคืนข้อมูลที่สำคัญ (เช่น รายการสินค้า) ที่ว่างเปล่า แต่ข้อมูลเดิมยังมีอยู่ การดำเนินการถูกยกเลิกเพื่อป้องกันข้อมูลสูญหาย กรุณาติดต่อผู้ดูแลระบบ",
             save_error_title: "บันทึกข้อมูลไม่สำเร็จ!",
             save_error_text: "เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก: {error}",
+            background_save_error: "เกิดข้อผิดพลาดระหว่างการบันทึกเบื้องหลัง กรุณารีเฟรชหน้าเว็บเพื่อซิงค์ข้อมูล", // NEW
             session_expired_title: "หมดเวลาใช้งาน",
             session_expired_text: "ไม่มีการใช้งานระบบเกิน 30 นาที กรุณาลงชื่อเข้าใช้ใหม่",
             confirm_delete_title: "ยืนยันการลบถาวร?",
@@ -754,6 +755,7 @@
             critical_load_error_text: "The server returned a critical empty data set (e.g., product list), but local data exists. The operation has been cancelled to prevent data loss. Please contact an administrator.",
             save_error_title: "Failed to Save Data!",
             save_error_text: "An error occurred while saving data: {error}",
+            background_save_error: "An error occurred during the background save. Please refresh the page to sync data.", // NEW
             session_expired_title: "Session Expired",
             session_expired_text: "You have been inactive for over 30 minutes. Please log in again.",
             confirm_delete_title: "Confirm Permanent Deletion?",
@@ -1320,10 +1322,9 @@
             for(const row of lotRows) {
                 const quantity = parseInt(row.querySelector('.import-quantity').value);
                 const productionDateStr = row.querySelector('.import-prod-date').value;
-                const packagingType = row.querySelector('.import-packaging-type').value; // NEW: Get packaging type
-                if (!productionDateStr) continue; // Skip if date is empty
+                const packagingType = row.querySelector('.import-packaging-type').value;
+                if (!productionDateStr) continue;
                 
-                // FIX: Correctly parse date string to avoid timezone issues
                 const parts = productionDateStr.split('-');
                 const productionDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
@@ -1346,7 +1347,7 @@
                         user: currentUser.username,
                         invoiceNumber: null,
                         remarks: remarks,
-                        packagingType: packagingType // NEW: Add to history object
+                        packagingType: packagingType
                     });
                 }
             }
@@ -1356,21 +1357,19 @@
                 return;
             }
 
-            try {
-                Swal.fire({ title: T.saving, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                await callAppsScript('appendBatchHistory', newHistoryEntries);
-                
-                // Optimistic update is more reliable
-                newHistoryEntries.forEach(sentEntry => db.history.unshift(sentEntry));
+            // --- Optimistic Update ---
+            newHistoryEntries.forEach(entry => db.history.unshift(entry));
+            calculateStockFromHistory();
+            populateAll();
+            showSuccess(T.import_success.replace('{name}', productName));
+            renderImportForm();
 
-                calculateStockFromHistory();
-                populateAll();
-                Swal.close();
-                showSuccess(T.import_success.replace('{name}', productName));
-                renderImportForm();
+            // --- Background Save ---
+            try {
+                await callAppsScript('appendBatchHistory', newHistoryEntries);
+                console.log(`Background save successful for ${productName}`);
             } catch (error) {
-                Swal.close();
-                showError(T.save_error_title, T.save_error_text.replace('{error}', error.message));
+                showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
             }
         }
 
@@ -1385,7 +1384,7 @@
                 return;
             }
 
-            const performExport = async () => {
+            const performExport = () => {
                 const invoiceNumber = document.getElementById('export-invoice-number').value;
                 const remarks = document.getElementById('export-remarks').value;
                 let product = db.products.find(p => String(p.id).trim() === String(productId).trim()) || { id: productId, name: 'N/A' };
@@ -1398,13 +1397,13 @@
                      const availableQty = lotInfo ? lotInfo.quantity : 0;
                      if (quantityToExport > availableQty) {
                          showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
-                         return; // Stop the export process
+                         return; 
                      }
                 }
 
                 for(const row of selectedLotRows) {
                     const productionDate = row.dataset.date;
-                    const packagingType = row.dataset.packaging; // Get packaging type from row
+                    const packagingType = row.dataset.packaging;
                     const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
 
                     if (isNaN(quantityToExport) || quantityToExport <= 0) continue;
@@ -1422,29 +1421,28 @@
                         user: currentUser.username,
                         invoiceNumber: invoiceNumber,
                         remarks: remarks,
-                        packagingType: packagingType // NEW: Add to history object
+                        packagingType: packagingType
                     });
                 }
 
-                try {
-                     Swal.fire({ title: T.saving, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                    await callAppsScript('appendBatchHistory', newHistoryEntries);
+                // --- Optimistic Update ---
+                newHistoryEntries.forEach(entry => db.history.unshift(entry));
+                calculateStockFromHistory();
+                populateAll();
+                showSuccess(T.export_success.replace('{name}', product.name));
+                renderExportForm();
 
-                    // Optimistic update is more reliable
-                    newHistoryEntries.forEach(sentEntry => db.history.unshift(sentEntry));
-
-                    calculateStockFromHistory();
-                    populateAll();
-                    Swal.close();
-                    showSuccess(T.export_success.replace('{name}', product.name));
-                    renderExportForm();
-                } catch (error) {
-                    Swal.close();
-                    showError(T.save_error_title, T.save_error_text.replace('{error}', error.message));
-                }
+                // --- Background Save ---
+                (async () => {
+                    try {
+                        await callAppsScript('appendBatchHistory', newHistoryEntries);
+                        console.log(`Background export successful for ${product.name}`);
+                    } catch (error) {
+                        showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
+                    }
+                })();
             };
 
-            // NEW: Temporary Packing Validation
             const productStock = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim());
             let isExportingTemp = false;
             if (productStock) {
@@ -1459,7 +1457,6 @@
             }
 
             const runExportProcess = () => {
-                // FIFO Validation Logic (existing)
                 const availableLots = productStock ? productStock.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate)) : [];
                 const selectedLotDates = Array.from(selectedLotRows).map(row => row.dataset.date);
 
@@ -1953,11 +1950,10 @@
                 }
                 if (e.target.id === 'export-product-id') {
                     const searchTerm = e.target.value;
-                    const suggestionsContainer = document.getElementById('export-product-suggestions');
                     // FIX: Trim the productId from calculatedStock to ensure consistent matching against trimmed product IDs.
                     const productsInStockIds = calculatedStock.filter(s => s.totalQuantity > 0).map(s => String(s.productId).trim());
                     const productSource = db.products.filter(p => productsInStockIds.includes(String(p.id).trim()));
-                    showSuggestions(e.target, suggestionsContainer, productSource, searchTerm);
+                    showSuggestions(e.target, document.getElementById('export-product-suggestions'), productSource, searchTerm);
                 }
                 if (e.target.id === 'filter-product-search') {
                     const searchTerm = e.target.value;
@@ -2136,7 +2132,7 @@
             });
         }
 
-        function backupToCSV(data, filename) {
+        function backupToCSV(data, filename, footer = null) {
             if (!data || data.length === 0) {
                 showError('No Data', translations[currentLanguage].backup_no_data);
                 return;
@@ -2157,6 +2153,16 @@
                 });
                 csvRows.push(values.join(','));
             });
+
+            if (footer) {
+                csvRows.push(''); 
+                csvRows.push(''); 
+                
+                const footerCols = new Array(headers.length).fill('');
+                footerCols[0] = `"${footer.left}"`; 
+                footerCols[headers.length - 1] = `"${footer.right}"`; 
+                csvRows.push(footerCols.join(','));
+            }
 
             const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
