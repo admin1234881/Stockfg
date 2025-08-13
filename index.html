@@ -96,9 +96,21 @@
             background-color: #e7f1ff;
             border-top: 1px solid #c0d8f7;
         }
-        #export-lots-container, #stock-count-product-list {
-            max-height: 400px;
+        #export-lots-container { /* Removed max-height here as it's not the scrolling container */
+            max-height: 400px; /* Keep this for export lots if desired */
             overflow-y: auto;
+        }
+        /* NEW CSS for Stock Count Modal Body and List */
+        .modal-body {
+            display: flex;
+            flex-direction: column; /* Arrange content vertically */
+            flex-grow: 1; /* Allow the body to take full height of the modal */
+            overflow: hidden; /* Prevent scrollbars on the body itself */
+        }
+        #stock-count-product-list {
+            flex-grow: 1; /* Allow the product list to fill available vertical space */
+            overflow-y: auto; /* Enable vertical scrolling within the list if content overflows */
+            /* Removed the problematic max-height: 400px; from here */
         }
         .variance-positive { color: var(--success-color); font-weight: bold; }
         .variance-negative { color: var(--danger-color); font-weight: bold; }
@@ -439,7 +451,7 @@
         </div>
     </div>
 
-       
+        
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -555,6 +567,7 @@
             stock_count_no_history: "ยังไม่มีประวัติการนับสต็อก",
             stock_count_approve_error_already_approved: "รายการนับสต็อกนี้ได้รับการอนุมัติไปแล้ว",
             stock_count_approve_success: "อนุมัติและปรับยอดสต็อกเรียบร้อยแล้ว",
+            stock_count_at_least_one_item: "กรุณากรอกจำนวนอย่างน้อยหนึ่งรายการ", // NEW
             // Product Management
             product_form_title: "ฟอร์มข้อมูลสินค้า",
             product_fullbox_rack: "จำนวนเต็มกล่อง/แร็ค",
@@ -796,6 +809,7 @@
             stock_count_no_history: "No stock count history yet.",
             stock_count_approve_error_already_approved: "This stock count has already been approved.",
             stock_count_approve_success: "Adjustment approved and stock updated successfully.",
+            stock_count_at_least_one_item: "Please enter a quantity for at least one item.", // NEW
             // Product Management
             product_form_title: "Product Information Form",
             product_fullbox_rack: "Full Box/Rack Qty",
@@ -1211,7 +1225,7 @@
                         populateAll();
                         showSuccess(translations[currentLanguage].delete_product_success);
                     } catch (error) {
-                         showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
+                            showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
                     }
                 });
             },
@@ -1341,7 +1355,7 @@
             deleteAnnouncement: (announcementId) => {
                 if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canManageAnnouncements)) return;
                 confirmDestructiveAction('This announcement will be permanently deleted.', async () => {
-                     try {
+                    try {
                         await callAppsScript('deleteAnnouncement', { id: announcementId });
                         db.announcements = db.announcements.filter(a => String(a.id) !== String(announcementId));
                         populateAll();
@@ -1378,19 +1392,30 @@
                 
                 rows.forEach(row => {
                     const countedQtyInput = row.querySelector('.counted-qty-input');
-                    // Only include items that were actually counted
-                    if (countedQtyInput.value !== '') {
+                    const rawValue = countedQtyInput.value.trim();
+
+                    // Only include items that were actually counted (value is not empty string)
+                    if (rawValue !== '') { 
+                        const parsedQty = parseInt(rawValue, 10);
+
+                        // Basic validation: ensure it's a number and not negative (though type="number" with min="0" helps)
+                        if (isNaN(parsedQty) || parsedQty < 0) {
+                            console.warn(`Invalid quantity skipped for product ${row.dataset.productId}: ${rawValue}`);
+                            // Optionally, you could show an error and return early here if stricter validation is needed.
+                            return; 
+                        }
+
                         countItems.push({
                             productId: row.dataset.productId,
                             productName: row.dataset.productName,
                             systemQty: parseInt(row.dataset.systemQty, 10),
-                            countedQty: parseInt(countedQtyInput.value, 10)
+                            countedQty: parsedQty // Use the parsed quantity
                         });
                     }
                 });
 
                 if (countItems.length === 0) {
-                    showError(T.form_incomplete, "Please count at least one item.");
+                    showError(T.form_incomplete, T.stock_count_at_least_one_item); // Use translated string
                     return;
                 }
 
@@ -1454,7 +1479,7 @@
                                 productionDate: 'Stock Count Adjustment',
                                 user: currentUser.username,
                                 remarks: machineReadableRemark,
-                                packagingType: 'standard' // Adjustments are standard
+                                packagingType: 'standard' // Adjustments are considered standard
                             });
                         }
                     });
@@ -1607,14 +1632,14 @@
                 const newHistoryEntries = [];
                 
                 for(const row of selectedLotRows) {
-                     const productionDate = row.dataset.date;
-                     const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
-                     const lotInfo = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim())?.lots.find(l => l.productionDate === productionDate);
-                     const availableQty = lotInfo ? lotInfo.quantity : 0;
-                     if (quantityToExport > availableQty) {
-                         showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
-                         return; 
-                     }
+                    const productionDate = row.dataset.date;
+                    const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
+                    const lotInfo = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim())?.lots.find(l => l.productionDate === productionDate);
+                    const availableQty = lotInfo ? lotInfo.quantity : 0;
+                    if (quantityToExport > availableQty) {
+                        showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
+                        return; 
+                    }
                 }
 
                 for(const row of selectedLotRows) {
@@ -1957,8 +1982,8 @@
 
             let summary = calculatedStock.map(stockItem => {
                 let productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim());
-                 if (!productInfo) {
-                     productInfo = { id: stockItem.productId, name: T.product_not_found.replace('{id}', stockItem.productId), customer: '-', erpCode: '-' };
+                    if (!productInfo) {
+                        productInfo = { id: stockItem.productId, name: T.product_not_found.replace('{id}', stockItem.productId), customer: '-', erpCode: '-' };
                 }
                 const hasOldStock = stockItem.lots.some(l => l.quantity > 0 && new Date(formatDate(l.productionDate)) < threeMonthsAgo);
                 return { ...productInfo, ...stockItem, hasOldStock };
@@ -2201,7 +2226,7 @@
                 if (e.target.classList.contains('export-quantity')) {
                     updateExportTotal();
                 }
-                 if (e.target.id === 'stock-search-input') {
+                    if (e.target.id === 'stock-search-input') {
                     populateStockSummary();
                 }
             });
@@ -2231,7 +2256,7 @@
                     }
                     updateExportTotal();
                 }
-                 if (e.target.id === 'show-old-stock-filter') {
+                    if (e.target.id === 'show-old-stock-filter') {
                     populateStockSummary();
                 }
             });
@@ -2297,7 +2322,7 @@
                 }
                 const approveBtn = e.target.closest('.approve-stock-count-btn');
                 if (approveBtn) {
-                     window.app.approveStockCount(approveBtn.dataset.countId);
+                    window.app.approveStockCount(approveBtn.dataset.countId);
                 }
             });
         }
@@ -2550,7 +2575,7 @@
             const announcementsDisplayArea = document.getElementById('announcements-display-area');
             announcementsDisplayArea.innerHTML = '';
             const activeAnnouncements = db.announcements.filter(ann => ann.isActive)
-                                                      .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+                                                         .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
 
             if (activeAnnouncements.length === 0) return;
 
@@ -2902,88 +2927,95 @@
          * Recalculates the entire stock from history using a "wipe and replace" logic for adjustments.
          */
         function calculateStockFromHistory() {
-            const stockLedger = new Map();
+            const stockLedger = new Map(); // Map to store stock by productId::productionDate
+            // Sort history by date to ensure adjustments are processed in order
             const sortedHistory = [...db.history].sort((a, b) => new Date(a.date) - new Date(b.date));
 
             for (const item of sortedHistory) {
-                if (!item || !item.productId) continue;
+                if (!item || !item.productId) continue; // Skip invalid history items
 
                 const productId = String(item.productId).trim();
                 
+                // Handle 'adjustment' type transactions
                 if (item.type === 'adjustment') {
-                    // This logic handles adjustments by effectively resetting the stock for a product
-                    // and then applying subsequent transactions.
+                    // For an adjustment, we effectively reset the stock for this product
+                    // and then apply the adjustment quantity as a new 'pseudo-lot'.
+                    // This ensures that future transactions for this product are calculated
+                    // based on the new adjusted total, and previous lots are 'wiped'.
                     
-                    // Find all existing lots for this product in the ledger and delete them
+                    // Find all existing lots for this product in the ledger and remove them
                     const keysToDelete = Array.from(stockLedger.keys()).filter(key => key.startsWith(`${productId}::`));
                     keysToDelete.forEach(key => stockLedger.delete(key));
 
-                    // Parse the new total from the machine-readable part of the remark
+                    // Determine the new total quantity from the remark or item quantity
                     let newTotalQuantity = 0;
                     const remarks = item.remarks || '';
-                    let match = remarks.match(/^MANUAL_ADJ_NEW_TOTAL:(\d+(\.\d+)?)/);
-                    if (!match) {
-                        match = remarks.match(/^STOCK_COUNT_ADJ:/);
-                    }
-
-                    if (match) {
-                        // For manual adjustments, the new total is in the remark.
-                        // For stock count adjustments, the quantity is the variance.
-                        if (remarks.startsWith('MANUAL_ADJ')) {
-                            newTotalQuantity = parseFloat(remarks.split(':')[1].split('|')[0]);
-                        } else { // Stock Count
-                            newTotalQuantity = parseFloat(item.quantity);
-                        }
-                    } else { // Fallback for old format
-                         const oldMatch = remarks.match(/to (\d+)/);
-                         if (oldMatch) newTotalQuantity = parseInt(oldMatch[1], 10);
-                         else newTotalQuantity = parseFloat(item.quantity); // For stock count adjustments
+                    // Check for machine-readable format for manual adjustments
+                    let manualAdjMatch = remarks.match(/^MANUAL_ADJ_NEW_TOTAL:(\d+(\.\d+)?)/);
+                    if (manualAdjMatch) {
+                        newTotalQuantity = parseFloat(manualAdjMatch[1]);
+                    } else if (remarks.startsWith('STOCK_COUNT_ADJ:')) {
+                        // For stock count adjustments, the quantity is the variance, so add it to 0 to get the new total
+                        // This assumes the stock count adjustment is the *final* quantity for that product
+                        // If it's a variance to be applied to existing stock, the logic would be different.
+                        // Based on the previous code, it seems to be setting a new total.
+                        newTotalQuantity = parseFloat(item.quantity);
+                    } else { 
+                        // Fallback for older formats or if machine-readable part is missing
+                        // This might be less reliable if old remarks varied widely
+                        const oldMatch = remarks.match(/to (\d+)/);
+                        if (oldMatch) newTotalQuantity = parseInt(oldMatch[1], 10);
+                        else newTotalQuantity = parseFloat(item.quantity); // Default to item quantity if no specific format found
                     }
                     
                     // Create a new single pseudo-lot representing the adjusted total
-                    const adjustmentDate = formatDate(item.date);
+                    const adjustmentDate = formatDate(item.date); // Use the transaction date as the 'production date' for the adjustment lot
                     const newKey = `${productId}::${adjustmentDate}`;
                     stockLedger.set(newKey, {
                         productId: productId,
                         productionDate: adjustmentDate,
                         quantity: newTotalQuantity,
-                        isAdjustment: true,
-                        packagingType: 'standard' // Adjustments are considered standard
+                        isAdjustment: true, // Flag to indicate this is an adjustment lot
+                        packagingType: 'standard' // Adjustments are generally considered standard for stock purposes
                     });
                     
-                    continue; // Move to the next history item
+                    continue; // Move to the next history item, as this adjustment has reset the stock for this product
                 }
                 
-                // Regular logic for import, export, reversal
+                // Regular logic for 'import', 'export', 'reversal' transactions
                 const prodDate = item.productionDate || item.ProductionDate || item.production_date;
                 const lotDate = formatDate(prodDate);
                 if (!lotDate) continue; // Skip items without a valid lot date
-                
+
+                // Create a unique key for each product-lot combination
                 const key = `${productId}::${lotDate}`;
 
+                // Initialize lot in ledger if it doesn't exist
                 if (!stockLedger.has(key)) {
                     stockLedger.set(key, {
                         productId: productId,
                         productionDate: lotDate,
                         quantity: 0,
-                        isAdjustment: false,
-                        packagingType: item.packagingType || 'standard'
+                        isAdjustment: false, // Not an adjustment lot
+                        packagingType: item.packagingType || 'standard' // Default to standard if not specified
                     });
                 }
 
                 const itemQuantity = parseFloat(item.quantity) || 0;
                 const currentLot = stockLedger.get(key);
                 
+                // Apply quantity changes based on transaction type
                 if (item.type === 'import') {
                     currentLot.quantity += itemQuantity;
                 } else if (item.type === 'export') {
                     currentLot.quantity -= itemQuantity;
                 } else if (item.type === 'reversal') {
+                    // Reversals add or subtract based on their own quantity (which is signed)
                     currentLot.quantity += itemQuantity;
                 }
             }
 
-            // Final aggregation step
+            // Final aggregation step: Group lots by product and calculate total quantity
             const productStockMap = new Map();
             for (const lot of stockLedger.values()) {
                 if (!productStockMap.has(lot.productId)) {
@@ -2998,6 +3030,7 @@
                 product.lots.push(lot);
             }
 
+            // Convert map values to an array for `calculatedStock`
             calculatedStock = Array.from(productStockMap.values());
         }
 
