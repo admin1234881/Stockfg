@@ -56,7 +56,6 @@
         .table-hover tbody tr:hover { background-color: #eef5ff; transform: scale(1.01); transition: all 0.2s ease-in-out; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         thead { background-color: var(--header-bg); }
         #main-dashboard { display: none; }
-        .admin-nav { display: none; }
         .history-import { border-left: 5px solid var(--success-color); }
         .history-export { border-left: 5px solid #0dcaf0; }
         .history-adjustment { border-left: 5px solid var(--warning-color); }
@@ -97,10 +96,12 @@
             background-color: #e7f1ff;
             border-top: 1px solid #c0d8f7;
         }
-        #export-lots-container {
-            max-height: 250px;
+        #export-lots-container, #stock-count-product-list {
+            max-height: 400px;
             overflow-y: auto;
         }
+        .variance-positive { color: var(--success-color); font-weight: bold; }
+        .variance-negative { color: var(--danger-color); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -160,22 +161,25 @@
             <li class="nav-item m-1" role="presentation">
                 <button class="nav-link active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab"><i class="bi bi-house-heart-fill me-2"></i><span data-lang-key="nav_stock">สต็อกคงเหลือ</span></button>
             </li>
-            <li class="nav-item m-1" role="presentation">
+            <li class="nav-item m-1" role="presentation" id="nav-import-item">
                 <button class="nav-link" id="pills-import-tab" data-bs-toggle="pill" data-bs-target="#pills-import" type="button" role="tab"><i class="bi bi-arrow-down-square-fill me-2"></i><span data-lang-key="nav_import">รับเข้าสินค้า</span></button>
             </li>
-            <li class="nav-item m-1" role="presentation">
+            <li class="nav-item m-1" role="presentation" id="nav-export-item">
                 <button class="nav-link" id="pills-export-tab" data-bs-toggle="pill" data-bs-target="#pills-export" type="button" role="tab"><i class="bi bi-arrow-up-square-fill me-2"></i><span data-lang-key="nav_export">ส่งออกสินค้า</span></button>
             </li>
-            <li class="nav-item m-1" role="presentation">
+            <li class="nav-item m-1" role="presentation" id="nav-history-item">
                 <button class="nav-link" id="pills-history-tab" data-bs-toggle="pill" data-bs-target="#pills-history" type="button" role="tab"><i class="bi bi-clock-history me-2"></i><span data-lang-key="nav_history">ประวัติ</span></button>
             </li>
-            <li class="nav-item m-1 admin-nav" role="presentation">
+            <li class="nav-item m-1" role="presentation" id="nav-stock-count-item">
+                <button class="nav-link" id="pills-stock-count-tab" data-bs-toggle="pill" data-bs-target="#pills-stock-count" type="button" role="tab"><i class="bi bi-clipboard2-check-fill me-2"></i><span data-lang-key="nav_stock_count">นับสต็อก</span></button>
+            </li>
+            <li class="nav-item m-1" role="presentation" id="nav-products-item">
                 <button class="nav-link" id="pills-products-tab" data-bs-toggle="pill" data-bs-target="#pills-products" type="button" role="tab"><i class="bi bi-box-seam me-2"></i><span data-lang-key="nav_products">จัดการสินค้า</span></button>
             </li>
-            <li class="nav-item m-1 admin-nav" role="presentation">
+            <li class="nav-item m-1" role="presentation" id="nav-users-item">
                 <button class="nav-link" id="pills-users-tab" data-bs-toggle="pill" data-bs-target="#pills-users" type="button" role="tab"><i class="bi bi-people-fill me-2"></i><span data-lang-key="nav_users">จัดการผู้ใช้</span></button>
             </li>
-            <li class="nav-item m-1 admin-nav" role="presentation">
+            <li class="nav-item m-1" role="presentation" id="nav-announcements-item">
                 <button class="nav-link" id="pills-announcements-tab" data-bs-toggle="pill" data-bs-target="#pills-announcements" type="button" role="tab"><i class="bi bi-megaphone-fill me-2"></i><span data-lang-key="nav_announcements">จัดการประกาศ</span></button>
             </li>
         </ul>
@@ -187,8 +191,8 @@
             <!-- Stock Tab -->
             <div class="tab-pane fade show active" id="pills-stock" role="tabpanel">
                 <div class="row">
-                    <div class="col-lg-3">
-                        <div class="card admin-nav mb-4">
+                    <div class="col-lg-3" id="backup-card-container">
+                        <div class="card mb-4">
                             <div class="card-header fw-bold"><i class="bi bi-cloud-arrow-down-fill me-2"></i><span data-lang-key="backup_title">สำรองข้อมูล</span></div>
                             <div class="card-body">
                                 <p class="text-center mb-2" data-lang-key="backup_desc">ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV</p>
@@ -226,7 +230,7 @@
                 </div>
             </div>
 
-            <!-- Other tabs remain structurally the same, but their content will be translated by JS -->
+            <!-- Import Tab -->
             <div class="tab-pane fade" id="pills-import" role="tabpanel">
                 <div class="card">
                     <div class="card-header fw-bold"><i class="bi bi-box-arrow-in-down me-2"></i><span data-lang-key="import_form_title">ฟอร์มรับเข้าสินค้า</span></div>
@@ -236,6 +240,7 @@
                 </div>
             </div>
 
+            <!-- Export Tab -->
             <div class="tab-pane fade" id="pills-export" role="tabpanel">
                 <div class="card">
                     <div class="card-header fw-bold"><i class="bi bi-box-arrow-up me-2"></i><span data-lang-key="export_form_title">ฟอร์มส่งออกสินค้า</span></div>
@@ -245,6 +250,7 @@
                 </div>
             </div>
 
+            <!-- History Tab -->
             <div class="tab-pane fade" id="pills-history" role="tabpanel">
                 <div class="card mb-3 filter-card">
                     <div class="card-body" style="background-color: #fdf2f5;">
@@ -258,7 +264,7 @@
                             <span data-lang-key="history_table_title">ประวัติการทำรายการ</span>
                             <span id="history-total-quantity" class="badge bg-primary ms-2"></span>
                         </div>
-                        <button id="backup-history-btn" class="btn btn-info btn-sm admin-nav"><i class="bi bi-download me-1"></i><span data-lang-key="backup_history">ดาวน์โหลดประวัติ (CSV)</span></button>
+                        <button id="backup-history-btn" class="btn btn-info btn-sm"><i class="bi bi-download me-1"></i><span data-lang-key="backup_history">ดาวน์โหลดประวัติ (CSV)</span></button>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -270,7 +276,15 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Stock Count Tab -->
+            <div class="tab-pane fade" id="pills-stock-count" role="tabpanel">
+                <div id="stock-count-main-view">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+            </div>
 
+            <!-- Product Management Tab -->
             <div class="tab-pane fade" id="pills-products" role="tabpanel">
                 <div class="row">
                     <div class="col-lg-4 mb-4">
@@ -297,9 +311,10 @@
                 </div>
             </div>
 
+            <!-- User Management Tab -->
             <div class="tab-pane fade" id="pills-users" role="tabpanel">
                 <div class="row">
-                    <div class="col-lg-4 mb-4">
+                    <div class="col-lg-5 mb-4">
                         <div class="card">
                             <div class="card-header fw-bold"><i class="bi bi-person-plus-fill me-2"></i><span data-lang-key="user_form_title">ฟอร์มข้อมูลผู้ใช้</span></div>
                             <div class="card-body">
@@ -307,7 +322,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-lg-8">
+                    <div class="col-lg-7">
                         <div class="card">
                             <div class="card-header fw-bold"><i class="bi bi-list-ul me-2"></i><span data-lang-key="user_table_title">รายการผู้ใช้ทั้งหมด</span></div>
                             <div class="card-body">
@@ -323,6 +338,7 @@
                 </div>
             </div>
 
+            <!-- Announcement Management Tab -->
             <div class="tab-pane fade" id="pills-announcements" role="tabpanel">
                 <div class="row">
                     <div class="col-lg-4 mb-4">
@@ -353,9 +369,9 @@
 
     <!-- Modals -->
     <div class="modal fade" id="lotDetailModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg"> <!-- Changed to modal-lg for more space -->
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content" style="border-radius: var(--border-radius);">
-                <div class="modal-header" style="background-color: #ffe8f0;">
+                <div class="modal-header" style="background-color: #e7f1ff;">
                     <h5 class="modal-title" id="lotDetailModalLabel"><i class="bi bi-card-list me-2"></i><span data-lang-key="lot_modal_title">รายละเอียดล็อตของ</span>: <span id="modal-product-name" class="fw-bold"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -366,35 +382,58 @@
                     </table>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="background-color: #bbb;" data-lang-key="close_button">ปิด</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-lang-key="close_button">ปิด</button>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="modal fade" id="editHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="editStockModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius: var(--border-radius);">
-                <div class="modal-header" style="background-color: #fff0f3;">
-                    <h5 class="modal-title" id="edit-history-modal-title"></h5>
+                <div class="modal-header" style="background-color: #fffbe6;">
+                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i><span data-lang-key="edit_stock_modal_title">ปรับยอดสต็อกด้วยตนเอง</span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="edit-history-form"></form>
+                    <form id="edit-stock-form"></form>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="modal fade" id="editStockModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: var(--border-radius);">
-                <div class="modal-header" style="background-color: #fff0f3;">
-                    <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i><span data-lang-key="edit_stock_modal_title">แก้ไขยอดรวมในสต็อก</span></h5>
+    <!-- Stock Count Modal (for counting) -->
+    <div class="modal fade" id="stockCountModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: var(--header-bg);">
+                    <h5 class="modal-title" id="stockCountModalLabel"><i class="bi bi-clipboard2-check-fill me-2"></i><span data-lang-key="stock_count_modal_title">บันทึกการนับสต็อก</span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <form id="edit-stock-form"></form>
+                <div class="modal-body" id="stockCountModalBody">
+                    <!-- Content will be populated by JS -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-lang-key="cancel_button">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" id="save-stock-count-btn"><i class="bi bi-save-fill me-2"></i><span data-lang-key="stock_count_save_button">บันทึกผลการนับ</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Count Report Modal (for viewing/approving) -->
+    <div class="modal fade" id="stockCountReportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #e6fff3;">
+                    <h5 class="modal-title" id="stockCountReportModalLabel"><i class="bi bi-file-earmark-spreadsheet-fill me-2"></i><span data-lang-key="stock_count_report_title">รายงานผลการนับสต็อก</span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="stockCountReportModalBody">
+                    <!-- Content will be populated by JS -->
+                </div>
+                <div class="modal-footer" id="stockCountReportModalFooter">
+                    <!-- Buttons will be populated by JS -->
                 </div>
             </div>
         </div>
@@ -448,6 +487,7 @@
             nav_import: "รับเข้าสินค้า",
             nav_export: "ส่งออกสินค้า",
             nav_history: "ประวัติ",
+            nav_stock_count: "นับสต็อก",
             nav_products: "จัดการสินค้า",
             nav_users: "จัดการผู้ใช้",
             nav_announcements: "จัดการประกาศ",
@@ -496,10 +536,33 @@
             history_table_title: "ประวัติการทำรายการ",
             backup_history: "ดาวน์โหลดประวัติ (CSV)",
             history_table_type: "ประเภท",
-            history_table_packaging: "ประเภทบรรจุภัณฑ์", // NEW
+            history_table_packaging: "ประเภทบรรจุภัณฑ์",
             history_table_invoice_remarks: "Invoice / หมายเหตุ",
             history_table_timestamp: "วันที่ทำรายการ",
             history_table_user: "ผู้ทำรายการ",
+            // Stock Count Tab
+            stock_count_title: "การนับสต็อก",
+            stock_count_start_button: "เริ่มนับสต็อกใหม่",
+            stock_count_history_title: "ประวัติการนับสต็อก",
+            stock_count_modal_title: "บันทึกการนับสต็อก",
+            stock_count_save_button: "บันทึกผลการนับ",
+            stock_count_system_qty: "ยอดในระบบ",
+            stock_count_counted_qty: "ยอดที่นับได้",
+            stock_count_table_id: "รหัสการนับ",
+            stock_count_table_date: "วันที่นับ",
+            stock_count_table_user: "ผู้ดำเนินการ",
+            stock_count_table_status: "สถานะ",
+            stock_count_status_pending: "รอตรวจสอบ",
+            stock_count_status_approved: "อนุมัติแล้ว",
+            stock_count_report_title: "รายงานผลการนับสต็อก",
+            stock_count_variance: "ผลต่าง",
+            stock_count_approve_button: "ยืนยันการปรับยอด",
+            stock_count_confirm_approve_title: "ยืนยันการปรับยอด?",
+            stock_count_confirm_approve_text: "ระบบจะสร้างรายการ 'ปรับปรุงยอด' ในประวัติเพื่อทำให้ยอดสต็อกตรงกับยอดที่นับได้",
+            stock_count_adjustment_remark: "ปรับยอดจากการนับสต็อก {countId} (นับโดย: {countedBy})",
+            stock_count_no_history: "ยังไม่มีประวัติการนับสต็อก",
+            stock_count_approve_error_already_approved: "รายการนับสต็อกนี้ได้รับการอนุมัติไปแล้ว",
+            stock_count_approve_success: "อนุมัติและปรับยอดสต็อกเรียบร้อยแล้ว",
             // Product Management
             product_form_title: "ฟอร์มข้อมูลสินค้า",
             product_fullbox_rack: "จำนวนเต็มกล่อง/แร็ค",
@@ -510,6 +573,14 @@
             // User Management
             user_form_title: "ฟอร์มข้อมูลผู้ใช้",
             user_role: "สิทธิ์",
+            user_permissions: "สิทธิ์การใช้งาน",
+            permission_canImport: "รับเข้าสินค้า",
+            permission_canExport: "ส่งออกสินค้า",
+            permission_canViewHistory: "ดูประวัติ",
+            permission_canCountStock: "นับสต็อก",
+            permission_canManageProducts: "จัดการสินค้า",
+            permission_canManageUsers: "จัดการผู้ใช้",
+            permission_canManageAnnouncements: "จัดการประกาศ",
             user_save_button: "บันทึกข้อมูลผู้ใช้",
             user_table_title: "รายการผู้ใช้ทั้งหมด",
             // Announcement Management
@@ -546,7 +617,7 @@
             critical_load_error_text: "เซิร์ฟเวอร์ส่งคืนข้อมูลที่สำคัญ (เช่น รายการสินค้า) ที่ว่างเปล่า แต่ข้อมูลเดิมยังมีอยู่ การดำเนินการถูกยกเลิกเพื่อป้องกันข้อมูลสูญหาย กรุณาติดต่อผู้ดูแลระบบ",
             save_error_title: "บันทึกข้อมูลไม่สำเร็จ!",
             save_error_text: "เกิดข้อผิดพลาดในการส่งข้อมูลไปบันทึก: {error}",
-            background_save_error: "เกิดข้อผิดพลาดระหว่างการบันทึกเบื้องหลัง กรุณารีเฟรชหน้าเว็บเพื่อซิงค์ข้อมูล", // NEW
+            background_save_error: "เกิดข้อผิดพลาดระหว่างการบันทึกเบื้องหลัง กรุณารีเฟรชหน้าเว็บเพื่อซิงค์ข้อมูล",
             session_expired_title: "หมดเวลาใช้งาน",
             session_expired_text: "ไม่มีการใช้งานระบบเกิน 30 นาที กรุณาลงชื่อเข้าใช้ใหม่",
             confirm_delete_title: "ยืนยันการลบถาวร?",
@@ -657,6 +728,7 @@
             nav_import: "Import Goods",
             nav_export: "Export Goods",
             nav_history: "History",
+            nav_stock_count: "Stock Count",
             nav_products: "Manage Products",
             nav_users: "Manage Users",
             nav_announcements: "Manage Announcements",
@@ -705,10 +777,33 @@
             history_table_title: "Transaction History",
             backup_history: "Download History (CSV)",
             history_table_type: "Type",
-            history_table_packaging: "Packaging", // NEW
+            history_table_packaging: "Packaging",
             history_table_invoice_remarks: "Invoice / Remarks",
             history_table_timestamp: "Timestamp",
             history_table_user: "User",
+            // Stock Count Tab
+            stock_count_title: "Stock Count",
+            stock_count_start_button: "Start New Stock Count",
+            stock_count_history_title: "Stock Count History",
+            stock_count_modal_title: "Record Stock Count",
+            stock_count_save_button: "Save Count Results",
+            stock_count_system_qty: "System Qty",
+            stock_count_counted_qty: "Counted Qty",
+            stock_count_table_id: "Count ID",
+            stock_count_table_date: "Count Date",
+            stock_count_table_user: "Performed By",
+            stock_count_table_status: "Status",
+            stock_count_status_pending: "Pending Review",
+            stock_count_status_approved: "Approved",
+            stock_count_report_title: "Stock Count Report",
+            stock_count_variance: "Variance",
+            stock_count_approve_button: "Approve Adjustment",
+            stock_count_confirm_approve_title: "Confirm Adjustment?",
+            stock_count_confirm_approve_text: "This will create an 'Adjustment' entry in the history to match the counted quantity.",
+            stock_count_adjustment_remark: "Adjustment from Stock Count {countId} (Counted by: {countedBy})",
+            stock_count_no_history: "No stock count history yet.",
+            stock_count_approve_error_already_approved: "This stock count has already been approved.",
+            stock_count_approve_success: "Adjustment approved and stock updated successfully.",
             // Product Management
             product_form_title: "Product Information Form",
             product_fullbox_rack: "Full Box/Rack Qty",
@@ -719,6 +814,14 @@
             // User Management
             user_form_title: "User Information Form",
             user_role: "Role",
+            user_permissions: "Permissions",
+            permission_canImport: "Import Goods",
+            permission_canExport: "Export Goods",
+            permission_canViewHistory: "View History",
+            permission_canCountStock: "Perform Stock Count",
+            permission_canManageProducts: "Manage Products",
+            permission_canManageUsers: "Manage Users",
+            permission_canManageAnnouncements: "Manage Announcements",
             user_save_button: "Save User Data",
             user_table_title: "All Users List",
             // Announcement Management
@@ -755,7 +858,7 @@
             critical_load_error_text: "The server returned a critical empty data set (e.g., product list), but local data exists. The operation has been cancelled to prevent data loss. Please contact an administrator.",
             save_error_title: "Failed to Save Data!",
             save_error_text: "An error occurred while saving data: {error}",
-            background_save_error: "An error occurred during the background save. Please refresh the page to sync data.", // NEW
+            background_save_error: "An error occurred during the background save. Please refresh the page to sync data.",
             session_expired_title: "Session Expired",
             session_expired_text: "You have been inactive for over 30 minutes. Please log in again.",
             confirm_delete_title: "Confirm Permanent Deletion?",
@@ -878,10 +981,10 @@
         };
 
         // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgzdhHP5E9P8AF1BDcBOzFtLW3uVw_cCuXj2E_pV_g3Au2p6jcpCEwTMmHI83LUWwB9A/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQeZcOb2ezP9ezB6GLd3CE_7pzQTxwva0nLBhqIygzlnjHIRHH-fBR3bPvVmAs3X6qjw/exec';
 
         // --- DATABASE SIMULATION & PERSISTENCE ---
-        let db = { users: [], products: [], history: [], announcements: [] };
+        let db = { users: [], products: [], history: [], announcements: [], stockCounts: [] };
         let calculatedStock = []; // This will hold the stock calculated from history
         let dataSyncInterval = null;
         let inactivityTimer = null;
@@ -1023,6 +1126,7 @@
                 newData.users = newData.users || [];
                 newData.history = newData.history || [];
                 newData.announcements = newData.announcements || [];
+                newData.stockCounts = newData.stockCounts || [];
                 
                 if (JSON.stringify(db) !== JSON.stringify(newData)) {
                     db = newData;
@@ -1059,7 +1163,6 @@
         const lotDetailTable = document.getElementById('lot-detail-table');
         const modalProductName = document.getElementById('modal-product-name');
         const showOldStockFilter = document.getElementById('show-old-stock-filter');
-        const editHistoryModal = new bootstrap.Modal(document.getElementById('editHistoryModal'));
         const editStockModal = new bootstrap.Modal(document.getElementById('editStockModal'));
         const stockSearchInput = document.getElementById('stock-search-input');
         const importFormEl = document.getElementById('import-form');
@@ -1067,7 +1170,6 @@
         const productFormEl = document.getElementById('product-form');
         const userFormEl = document.getElementById('user-form');
         const historyFilterForm = document.getElementById('history-filter-form');
-        const editHistoryForm = document.getElementById('edit-history-form');
         const editStockForm = document.getElementById('edit-stock-form');
         const userManagementTable = document.getElementById('user-management-table');
         const productManagementTable = document.getElementById('product-management-table');
@@ -1075,6 +1177,8 @@
         const announcementFormEl = document.getElementById('announcement-form');
         const announcementManagementTable = document.getElementById('announcement-management-table');
         const announcementsDisplayArea = document.getElementById('announcements-display-area');
+        const stockCountModal = new bootstrap.Modal(document.getElementById('stockCountModal'));
+        const stockCountReportModal = new bootstrap.Modal(document.getElementById('stockCountReportModal'));
 
         // --- STATE MANAGEMENT ---
         let currentUser = null;
@@ -1084,7 +1188,7 @@
         // --- GLOBAL APP OBJECT ---
         window.app = {
             editProduct: (productId) => {
-                if (currentUser.role !== 'admin') return;
+                if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canManageProducts)) return;
                 const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
                 if (product) {
                     editingProductId = productId;
@@ -1102,7 +1206,7 @@
                 }
             },
             deleteProduct: (productId) => {
-                if (currentUser.role !== 'admin') return;
+                if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canManageProducts)) return;
                 const productStock = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim() && s.totalQuantity > 0);
 
                 if (productStock) {
@@ -1123,7 +1227,7 @@
                 });
             },
             editUser: (username) => {
-                if (currentUser.role !== 'admin') return;
+                if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canManageUsers)) return;
                 const user = db.users.find(u => u.username === username);
                 if (user) {
                     originalUsernameForEdit = username;
@@ -1132,7 +1236,7 @@
                 }
             },
             deleteUser: (username) => {
-                if (currentUser.role !== 'admin') return;
+                if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canManageUsers)) return;
                 if (username === 'admin') {
                     showError('Cannot Delete!', translations[currentLanguage].delete_user_admin_error);
                     return;
@@ -1151,7 +1255,8 @@
                 });
             },
             reverseHistory: (historyItem) => {
-                if (currentUser.role !== 'admin' || !historyItem || historyItem.type === 'reversal') {
+                if (!currentUser || currentUser.role !== 'admin') return;
+                if (!historyItem || historyItem.type === 'reversal') {
                     return;
                 }
 
@@ -1222,7 +1327,7 @@
                 });
             },
             editStockTotal: (productId) => {
-                if (currentUser.role !== 'admin') return;
+                if (!currentUser || currentUser.role !== 'admin') return;
                 const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
                 if (product) {
                     const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim());
@@ -1237,7 +1342,7 @@
                 lotDetailModal.show();
             },
             editAnnouncement: (announcementId) => {
-                if (currentUser.role !== 'admin') return;
+                if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canManageAnnouncements)) return;
                 const announcement = db.announcements.find(a => String(a.id) === String(announcementId));
                 if (announcement) {
                     editingAnnouncementId = announcementId;
@@ -1245,7 +1350,7 @@
                 }
             },
             deleteAnnouncement: (announcementId) => {
-                if (currentUser.role !== 'admin') return;
+                if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canManageAnnouncements)) return;
                 confirmDestructiveAction('This announcement will be permanently deleted.', async () => {
                      try {
                         await callAppsScript('deleteAnnouncement', { id: announcementId });
@@ -1258,7 +1363,7 @@
                 });
             },
             toggleAnnouncementStatus: async (announcementId) => {
-                if (currentUser.role !== 'admin') return;
+                if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canManageAnnouncements)) return;
                 const announcement = db.announcements.find(a => String(a.id) === String(announcementId));
                 if (announcement) {
                     const updatedAnnouncement = { ...announcement, isActive: !announcement.isActive };
@@ -1271,6 +1376,128 @@
                         showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
                     }
                 }
+            },
+            // NEW: Stock Count Functions
+            startNewStockCount: () => {
+                renderStockCountModalBody();
+                stockCountModal.show();
+            },
+            saveStockCount: async () => {
+                const T = translations[currentLanguage];
+                const countItems = [];
+                const rows = document.querySelectorAll('#stock-count-product-list .stock-count-row');
+                
+                rows.forEach(row => {
+                    const countedQtyInput = row.querySelector('.counted-qty-input');
+                    // Only include items that were actually counted
+                    if (countedQtyInput.value !== '') {
+                        countItems.push({
+                            productId: row.dataset.productId,
+                            productName: row.dataset.productName,
+                            systemQty: parseInt(row.dataset.systemQty, 10),
+                            countedQty: parseInt(countedQtyInput.value, 10)
+                        });
+                    }
+                });
+
+                if (countItems.length === 0) {
+                    showError(T.form_incomplete, "Please count at least one item.");
+                    return;
+                }
+
+                const newCount = {
+                    id: 'sc-' + Date.now(),
+                    date: new Date().toISOString(),
+                    user: currentUser.username,
+                    status: 'pending',
+                    items: countItems
+                };
+
+                // Optimistic Update
+                db.stockCounts.unshift(newCount);
+                populateStockCountMainView();
+                stockCountModal.hide();
+                showSuccess(T.success_title, T.stock_count_save_button);
+
+                // Background Save
+                try {
+                    await callAppsScript('addStockCount', newCount);
+                    console.log(`Background save successful for stock count ${newCount.id}`);
+                } catch (error) {
+                    showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
+                }
+            },
+            viewStockCountReport: (countId) => {
+                const count = db.stockCounts.find(sc => sc.id === countId);
+                if (count) {
+                    renderStockCountReportModalBody(count);
+                    stockCountReportModal.show();
+                }
+            },
+            approveStockCount: (countId) => {
+                const T = translations[currentLanguage];
+                const count = db.stockCounts.find(sc => sc.id === countId);
+
+                if (!count || count.status === 'approved') {
+                    showError('Error', T.stock_count_approve_error_already_approved);
+                    return;
+                }
+                
+                const confirmText = T.stock_count_confirm_approve_text;
+                confirmAction(T.stock_count_confirm_approve_title, confirmText, async () => {
+                    const adjustmentEntries = [];
+                    count.items.forEach(item => {
+                        const variance = item.countedQty - item.systemQty;
+                        if (variance !== 0) {
+                            const product = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
+                            const humanReadableRemark = T.stock_count_adjustment_remark.replace('{countId}', count.id).replace('{countedBy}', count.user);
+                            const machineReadableRemark = `STOCK_COUNT_ADJ:${count.id}|${humanReadableRemark}`;
+                            
+                            adjustmentEntries.push({
+                                id: 'adj-' + Date.now() + '-' + item.productId,
+                                date: new Date().toISOString(),
+                                type: 'adjustment',
+                                productId: item.productId,
+                                productName: product ? product.name : item.productName,
+                                customer: product ? product.customer : '',
+                                erpCode: product ? product.erpCode : '',
+                                quantity: variance, // This is the difference
+                                productionDate: 'Stock Count Adjustment',
+                                user: currentUser.username,
+                                remarks: machineReadableRemark,
+                                packagingType: 'standard' // Adjustments are standard
+                            });
+                        }
+                    });
+
+                    // Optimistic Update
+                    const originalStatus = count.status;
+                    count.status = 'approved';
+                    adjustmentEntries.forEach(entry => db.history.unshift(entry));
+                    
+                    calculateStockFromHistory();
+                    populateAll();
+                    stockCountReportModal.hide();
+                    showSuccess(T.success_title, T.stock_count_approve_success);
+
+                    // Background Save
+                    try {
+                        // First, save all the adjustments
+                        if (adjustmentEntries.length > 0) {
+                            await callAppsScript('appendBatchHistory', adjustmentEntries);
+                        }
+                        // Then, update the status of the count
+                        await callAppsScript('updateStockCountStatus', { id: countId, status: 'approved' });
+                        console.log(`Successfully approved and adjusted stock for count ${countId}`);
+                    } catch (error) {
+                        // Rollback optimistic update on failure
+                        count.status = originalStatus;
+                        db.history.splice(0, adjustmentEntries.length);
+                        calculateStockFromHistory();
+                        populateAll();
+                        showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
+                    }
+                });
             }
         };
 
@@ -1527,7 +1754,14 @@
             const userData = {
                 username: document.getElementById('user-username').value,
                 password: document.getElementById('user-password').value,
-                role: document.getElementById('user-role-select').value
+                role: document.getElementById('user-role-select').value,
+                canImport: document.getElementById('permission-canImport').checked,
+                canExport: document.getElementById('permission-canExport').checked,
+                canViewHistory: document.getElementById('permission-canViewHistory').checked,
+                canCountStock: document.getElementById('permission-canCountStock').checked,
+                canManageProducts: document.getElementById('permission-canManageProducts').checked,
+                canManageUsers: document.getElementById('permission-canManageUsers').checked,
+                canManageAnnouncements: document.getElementById('permission-canManageAnnouncements').checked,
             };
             
             try {
@@ -1666,12 +1900,19 @@
             userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`; 
             userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`; 
             
-            const adminElements = document.querySelectorAll('.admin-nav'); 
-            const displayStyle = currentUser.role === 'admin' ? 'block' : 'none'; 
-            adminElements.forEach(el => el.style.display = displayStyle); 
+            // NEW: Granular permission checks for UI elements
+            const isAdmin = currentUser.role === 'admin';
+            document.getElementById('nav-import-item').style.display = isAdmin || currentUser.canImport ? '' : 'none';
+            document.getElementById('nav-export-item').style.display = isAdmin || currentUser.canExport ? '' : 'none';
+            document.getElementById('nav-history-item').style.display = isAdmin || currentUser.canViewHistory ? '' : 'none';
+            document.getElementById('nav-stock-count-item').style.display = isAdmin || currentUser.canCountStock ? '' : 'none';
+            document.getElementById('nav-products-item').style.display = isAdmin || currentUser.canManageProducts ? '' : 'none';
+            document.getElementById('nav-users-item').style.display = isAdmin || currentUser.canManageUsers ? '' : 'none';
+            document.getElementById('nav-announcements-item').style.display = isAdmin || currentUser.canManageAnnouncements ? '' : 'none';
+            document.getElementById('backup-card-container').style.display = isAdmin ? '' : 'none';
 
             const stockContentColumn = document.getElementById('stock-content-column');
-            if (currentUser.role === 'admin') {
+            if (isAdmin) {
                 stockContentColumn.classList.remove('col-lg-12');
                 stockContentColumn.classList.add('col-lg-9');
             } else {
@@ -1693,11 +1934,7 @@
             populateHistoryTable(); 
             populateAnnouncementsTable();
             displayActiveAnnouncements();
-            if (currentUser.role === 'admin') { 
-                document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'table-cell'); 
-            } else { 
-                document.querySelectorAll('.admin-only-cell').forEach(el => el.style.display = 'none'); 
-            } 
+            populateStockCountMainView();
         }
 
         // --- RENDER FUNCTIONS (for dynamic content) ---
@@ -1713,13 +1950,14 @@
         function populateStockSummary() {
             const T = translations[currentLanguage];
             const header = document.getElementById('stock-summary-table-header');
+            const isAdmin = currentUser.role === 'admin';
             header.innerHTML = `<tr>
                 <th></th>
                 <th>${T.stock_table_product}</th>
                 <th>${T.erp_code}</th>
                 <th>${T.customer}</th>
                 <th>${T.stock_table_balance}</th>
-                <th class="admin-only-cell">${T.actions}</th>
+                ${isAdmin ? `<th>${T.actions}</th>` : ''}
             </tr>`;
             
             stockSummaryTable.innerHTML = '';
@@ -1750,7 +1988,7 @@
 
             if (summary.length === 0) {
                 const message = searchTerm ? T.stock_summary_no_results : (filterOldStock ? T.stock_summary_no_old_stock : T.stock_summary_no_stock);
-                stockSummaryTable.innerHTML = `<tr><td colspan="6" class="text-center p-4">${message} <i class="bi bi-emoji-wink"></i></td></tr>`;
+                stockSummaryTable.innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}" class="text-center p-4">${message} <i class="bi bi-emoji-wink"></i></td></tr>`;
                 return;
             }
 
@@ -1767,9 +2005,8 @@
                     <td class="small-text">${item.erpCode || '-'}</td>
                     <td class="small-text">${item.customer || '-'}</td>
                     <td><span class="fw-bold">${item.totalQuantity.toLocaleString()}</span></td>
-                    <td class="admin-only-cell">
-                        <button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')" title="${T.edit_stock_modal_title}"><i class="bi bi-pencil-fill"></i></button>
-                    </td>`;
+                    ${isAdmin ? `<td><button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')" title="${T.edit_stock_modal_title}"><i class="bi bi-pencil-fill"></i></button></td>` : ''}
+                `;
                 row.addEventListener('click', () => window.app.showLotDetails(item.id));
                 stockSummaryTable.appendChild(row);
             });
@@ -1778,6 +2015,7 @@
         function populateHistoryTable() {
             const T = translations[currentLanguage];
             const header = document.getElementById('history-table-header');
+            const isAdmin = currentUser.role === 'admin';
             header.innerHTML = `<tr>
                 <th>${T.history_table_type}</th>
                 <th>${T.product_name}</th>
@@ -1788,20 +2026,21 @@
                 <th>${T.history_table_invoice_remarks}</th>
                 <th>${T.history_table_timestamp}</th>
                 <th>${T.history_table_user}</th>
-                <th class="admin-only-cell">${T.actions}</th>
+                ${isAdmin ? `<th>${T.actions}</th>` : ''}
             </tr>`;
 
             historyTable.innerHTML = '';
+            const colspan = isAdmin ? 10 : 9;
 
             if (db.history.length === 0) {
                 document.getElementById('history-total-quantity').textContent = '';
-                historyTable.innerHTML = `<tr><td colspan="10" class="text-center p-4">${T.history_no_transactions_yet}</td></tr>`;
+                historyTable.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-4">${T.history_no_transactions_yet}</td></tr>`;
                 return;
             }
 
             if (!hasHistoryBeenSearched) {
                 document.getElementById('history-total-quantity').textContent = '';
-                historyTable.innerHTML = `<tr><td colspan="10" class="text-center p-4">${T.no_history_found_message}</td></tr>`;
+                historyTable.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-4">${T.no_history_found_message}</td></tr>`;
                 return;
             }
 
@@ -1818,7 +2057,7 @@
             document.getElementById('history-total-quantity').textContent = T.history_total_quantity_display.replace('{total}', formattedTotal);
 
             if (filteredHistory.length === 0) {
-                historyTable.innerHTML = `<tr><td colspan="10" class="text-center p-4">${T.no_history_for_filter_message}</td></tr>`;
+                historyTable.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-4">${T.no_history_for_filter_message}</td></tr>`;
                 return;
             }
             
@@ -1850,7 +2089,7 @@
                 });
                 
                 const itemString = JSON.stringify(item).replace(/'/g, '&apos;'); 
-                const actionsContent = (item.type === 'import' || item.type === 'export') ? `<button class="btn btn-danger btn-sm reverse-history-btn" data-history-item='${itemString}'><i class="bi bi-x-circle-fill"></i></button>` : '';
+                const actionsContent = (isAdmin && (item.type === 'import' || item.type === 'export')) ? `<button class="btn btn-danger btn-sm reverse-history-btn" data-history-item='${itemString}'><i class="bi bi-x-circle-fill"></i></button>` : '';
                 
                 const prodDate = item.productionDate || item.ProductionDate || item.production_date;
                 
@@ -1886,7 +2125,7 @@
                     <td><div>${item.invoiceNumber || '-'}</div><small class="text-muted">${displayRemark}</small></td>
                     <td>${formattedDate}</td>
                     <td>${item.user}</td>
-                    <td class="admin-only-cell">${actionsContent}</td>
+                    ${isAdmin ? `<td>${actionsContent}</td>` : ''}
                 `;
                 historyTable.appendChild(row);
             });
@@ -1936,8 +2175,14 @@
 
                     return newItem;
                 });
+                
+                const footerText = `Downloaded by: ${currentUser.username} on ${new Date().toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB')}`;
+                const footer = {
+                    left: 'FS-112',
+                    right: footerText
+                };
 
-                backupToCSV(dataToExport, 'history_backup.csv');
+                backupToCSV(dataToExport, 'history_backup.csv', footer);
             });
 
             // Delegated event listeners for dynamic content
@@ -2013,7 +2258,6 @@
                     hasHistoryBeenSearched = true;
                     populateHistoryTable();
                 }
-                if(e.target.id === 'edit-history-form') handleEditHistorySubmit(e);
                 if(e.target.id === 'edit-stock-form') handleEditStockSubmit(e);
             });
 
@@ -2050,6 +2294,22 @@
                         }
                     }
                 }
+
+                // NEW: Stock Count Listeners
+                if (e.target.id === 'start-stock-count-btn') {
+                    window.app.startNewStockCount();
+                }
+                if (e.target.id === 'save-stock-count-btn') {
+                    window.app.saveStockCount();
+                }
+                const viewReportBtn = e.target.closest('.view-stock-count-report-btn');
+                if (viewReportBtn) {
+                    window.app.viewStockCountReport(viewReportBtn.dataset.countId);
+                }
+                const approveBtn = e.target.closest('.approve-stock-count-btn');
+                if (approveBtn) {
+                     window.app.approveStockCount(approveBtn.dataset.countId);
+                }
             });
         }
 
@@ -2074,7 +2334,7 @@
         
         // --- HELPER FUNCTIONS ---
         function formatDate(dateInput) {
-            if (!dateInput || dateInput === 'Manual Adjustment') return dateInput;
+            if (!dateInput || dateInput === 'Manual Adjustment' || dateInput === 'Stock Count Adjustment') return dateInput;
             let date;
             if (!isNaN(dateInput) && Number.isFinite(Number(dateInput))) { date = new Date(Number(dateInput)); } 
             else if (typeof dateInput === 'string' && dateInput.includes('T')) { date = new Date(dateInput); } 
@@ -2089,7 +2349,7 @@
             return `${year}-${month}-${day}`;
         }
 
-        function showSuccess(title) { Swal.fire({ title: translations[currentLanguage].success_title, text: title, icon: 'success', timer: 2000, showConfirmButton: false }); }
+        function showSuccess(title, text='') { Swal.fire({ title: title, text: text, icon: 'success', timer: 2000, showConfirmButton: false }); }
         function showError(title, text) { Swal.fire(title, text, 'error'); }
         function confirmAction(title, text, callback) { 
             Swal.fire({ 
@@ -2209,7 +2469,7 @@
                             erpCode: productInfo.erpCode,
                             productionDate: lot.productionDate,
                             quantity: lot.quantity,
-                            packagingType: lot.packagingType // NEW: Add to backup data
+                            packagingType: lot.packagingType
                         });
                     }
                 });
@@ -2301,7 +2561,7 @@
             const announcementsDisplayArea = document.getElementById('announcements-display-area');
             announcementsDisplayArea.innerHTML = '';
             const activeAnnouncements = db.announcements.filter(ann => ann.isActive)
-                                                         .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+                                                      .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
 
             if (activeAnnouncements.length === 0) return;
 
@@ -2472,6 +2732,7 @@
             originalUsernameForEdit = null;
             userFormEl.reset();
             document.getElementById('user-username').readOnly = false;
+            renderUserForm();
         }
 
         function clearAnnouncementForm() {
@@ -2584,11 +2845,29 @@
         function renderUserForm(user = {}) {
             const T = translations[currentLanguage];
             const userFormEl = document.getElementById('user-form');
+            const permissions = [
+                { key: 'canImport', label: T.permission_canImport },
+                { key: 'canExport', label: T.permission_canExport },
+                { key: 'canViewHistory', label: T.permission_canViewHistory },
+                { key: 'canCountStock', label: T.permission_canCountStock },
+                { key: 'canManageProducts', label: T.permission_canManageProducts },
+                { key: 'canManageUsers', label: T.permission_canManageUsers },
+                { key: 'canManageAnnouncements', label: T.permission_canManageAnnouncements }
+            ];
+
+            let permissionsHtml = permissions.map(p => `
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="permission-${p.key}" ${user[p.key] ? 'checked' : ''}>
+                    <label class="form-check-label" for="permission-${p.key}">${p.label}</label>
+                </div>
+            `).join('');
+
             userFormEl.innerHTML = `
                 <div class="col-12"> <label for="user-username" class="form-label">${T.username_label}</label> <input type="text" id="user-username" class="form-control" required value="${user.username || ''}"> </div>
                 <div class="col-12"> <label for="user-password" class="form-label">${T.password_label}</label> <input type="password" id="user-password" class="form-control" required value="${user.password || ''}"> </div>
                 <div class="col-12"> <label for="user-role-select" class="form-label">${T.user_role}</label> <select id="user-role-select" class="form-select" required><option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option><option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option></select> </div>
-                <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.user_save_button}</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
+                <div class="col-12 mt-3"> <label class="form-label fw-bold">${T.user_permissions}</label> <div class="border rounded p-2 bg-light">${permissionsHtml}</div> </div>
+                <div class="col-12 mt-4"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.user_save_button}</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
         }
         
         function renderAnnouncementForm(announcement = {}) {
@@ -2643,6 +2922,9 @@
                 const productId = String(item.productId).trim();
                 
                 if (item.type === 'adjustment') {
+                    // This logic handles adjustments by effectively resetting the stock for a product
+                    // and then applying subsequent transactions.
+                    
                     // Find all existing lots for this product in the ledger and delete them
                     const keysToDelete = Array.from(stockLedger.keys()).filter(key => key.startsWith(`${productId}::`));
                     keysToDelete.forEach(key => stockLedger.delete(key));
@@ -2650,12 +2932,23 @@
                     // Parse the new total from the machine-readable part of the remark
                     let newTotalQuantity = 0;
                     const remarks = item.remarks || '';
-                    const match = remarks.match(/^MANUAL_ADJ_NEW_TOTAL:(\d+(\.\d+)?)/);
+                    let match = remarks.match(/^MANUAL_ADJ_NEW_TOTAL:(\d+(\.\d+)?)/);
+                    if (!match) {
+                        match = remarks.match(/^STOCK_COUNT_ADJ:/);
+                    }
+
                     if (match) {
-                        newTotalQuantity = parseFloat(match[1]);
+                        // For manual adjustments, the new total is in the remark.
+                        // For stock count adjustments, the quantity is the variance.
+                        if (remarks.startsWith('MANUAL_ADJ')) {
+                            newTotalQuantity = parseFloat(remarks.split(':')[1].split('|')[0]);
+                        } else { // Stock Count
+                            newTotalQuantity = parseFloat(item.quantity);
+                        }
                     } else { // Fallback for old format
-                        const oldMatch = remarks.match(/to (\d+)/);
-                        if (oldMatch) newTotalQuantity = parseInt(oldMatch[1], 10);
+                         const oldMatch = remarks.match(/to (\d+)/);
+                         if (oldMatch) newTotalQuantity = parseInt(oldMatch[1], 10);
+                         else newTotalQuantity = parseFloat(item.quantity); // For stock count adjustments
                     }
                     
                     // Create a new single pseudo-lot representing the adjusted total
@@ -2685,7 +2978,6 @@
                         productionDate: lotDate,
                         quantity: 0,
                         isAdjustment: false,
-                        // NEW: Set packaging type, default to 'standard' for old data
                         packagingType: item.packagingType || 'standard'
                     });
                 }
@@ -2718,6 +3010,187 @@
             }
 
             calculatedStock = Array.from(productStockMap.values());
+        }
+
+        // --- NEW: STOCK COUNT UI FUNCTIONS ---
+
+        function populateStockCountMainView() {
+            const T = translations[currentLanguage];
+            const view = document.getElementById('stock-count-main-view');
+            const isAdmin = currentUser.role === 'admin';
+            const canCount = isAdmin || currentUser.canCountStock;
+
+            let historyHtml = '';
+            const sortedCounts = [...db.stockCounts].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            if (sortedCounts.length === 0) {
+                historyHtml = `<tr><td colspan="5" class="text-center p-4">${T.stock_count_no_history}</td></tr>`;
+            } else {
+                historyHtml = sortedCounts.map(count => {
+                    const formattedDate = new Date(count.date).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB', {
+                        year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
+                    });
+                    let statusBadge;
+                    if (count.status === 'approved') {
+                        statusBadge = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">${T.stock_count_status_approved}</span>`;
+                    } else {
+                        statusBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">${T.stock_count_status_pending}</span>`;
+                    }
+                    return `
+                        <tr class="view-stock-count-report-btn" data-count-id="${count.id}" style="cursor: pointer;">
+                            <td>${count.id}</td>
+                            <td>${formattedDate}</td>
+                            <td>${count.user}</td>
+                            <td>${statusBadge}</td>
+                            <td><i class="bi bi-search"></i></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            view.innerHTML = `
+                <div class="card">
+                    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-clipboard-data-fill me-2"></i>${T.stock_count_title}</span>
+                        ${canCount ? `<button id="start-stock-count-btn" class="btn btn-primary"><i class="bi bi-plus-circle-fill me-2"></i>${T.stock_count_start_button}</button>` : ''}
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">${T.stock_count_history_title}</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>${T.stock_count_table_id}</th>
+                                        <th>${T.stock_count_table_date}</th>
+                                        <th>${T.stock_count_table_user}</th>
+                                        <th>${T.stock_count_table_status}</th>
+                                        <th>${T.actions}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${historyHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStockCountModalBody() {
+            const T = translations[currentLanguage];
+            const body = document.getElementById('stockCountModalBody');
+            
+            const productsWithStock = calculatedStock.filter(s => s.totalQuantity > 0);
+            const productsWithoutStock = db.products.filter(p => !calculatedStock.some(s => String(s.productId).trim() === String(p.id).trim() && s.totalQuantity > 0));
+
+            const allProductsToCount = [
+                ...productsWithStock.map(s => {
+                    const productInfo = db.products.find(p => String(p.id).trim() === String(s.productId).trim()) || { name: s.productId };
+                    return { ...s, name: productInfo.name };
+                }),
+                ...productsWithoutStock.map(p => ({
+                    productId: p.id,
+                    name: p.name,
+                    totalQuantity: 0
+                }))
+            ].sort((a,b) => String(a.productId).localeCompare(String(b.productId)));
+
+
+            const productListHtml = allProductsToCount.map(p => {
+                return `
+                    <div class="row g-3 align-items-center mb-2 p-2 border rounded stock-count-row" data-product-id="${p.productId}" data-product-name="${p.name}" data-system-qty="${p.totalQuantity}">
+                        <div class="col-md-5">
+                            <label class="form-label mb-0">${p.productId} - ${p.name}</label>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">${T.stock_count_system_qty}</span>
+                                <input type="text" class="form-control" value="${p.totalQuantity.toLocaleString()}" readonly style="background-color: #e9ecef;">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">${T.stock_count_counted_qty}</span>
+                                <input type="number" class="form-control counted-qty-input" min="0" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            body.innerHTML = `
+                <div class="container-fluid">
+                    <div id="stock-count-product-list">
+                        ${productListHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStockCountReportModalBody(count) {
+            const T = translations[currentLanguage];
+            const body = document.getElementById('stockCountReportModalBody');
+            const footer = document.getElementById('stockCountReportModalFooter');
+            const isAdmin = currentUser.role === 'admin';
+            const canApprove = isAdmin && count.status === 'pending';
+
+            const formattedDate = new Date(count.date).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB', { dateStyle: 'long', timeStyle: 'short' });
+            document.getElementById('stockCountReportModalLabel').innerHTML = `<i class="bi bi-file-earmark-spreadsheet-fill me-2"></i>${T.stock_count_report_title} - ${count.id}`;
+
+            const itemsHtml = count.items.map(item => {
+                const variance = item.countedQty - item.systemQty;
+                let varianceClass = '';
+                let varianceText = variance;
+                if (variance > 0) {
+                    varianceClass = 'variance-positive';
+                    varianceText = `+${variance}`;
+                } else if (variance < 0) {
+                    varianceClass = 'variance-negative';
+                }
+                const rowClass = variance !== 0 ? 'table-danger' : '';
+
+                return `
+                    <tr class="${rowClass}">
+                        <td>${item.productId}</td>
+                        <td>${item.productName}</td>
+                        <td class="text-end">${item.systemQty.toLocaleString()}</td>
+                        <td class="text-end fw-bold">${item.countedQty.toLocaleString()}</td>
+                        <td class="text-end ${varianceClass}">${varianceText.toLocaleString()}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            body.innerHTML = `
+                <div class="container-fluid">
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>${T.stock_count_table_id}:</strong> ${count.id}</div>
+                        <div class="col-md-4"><strong>${T.stock_count_table_date}:</strong> ${formattedDate}</div>
+                        <div class="col-md-4"><strong>${T.stock_count_table_user}:</strong> ${count.user}</div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>${T.product_id}</th>
+                                    <th>${T.product_name}</th>
+                                    <th class="text-end">${T.stock_count_system_qty}</th>
+                                    <th class="text-end">${T.stock_count_counted_qty}</th>
+                                    <th class="text-end">${T.stock_count_variance}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            footer.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${T.close_button}</button>
+                ${canApprove ? `<button type="button" class="btn btn-success approve-stock-count-btn" data-count-id="${count.id}"><i class="bi bi-check-circle-fill me-2"></i>${T.stock_count_approve_button}</button>` : ''}
+            `;
         }
         
         // --- START THE APP ---
