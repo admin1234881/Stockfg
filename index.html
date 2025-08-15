@@ -96,7 +96,7 @@
             background-color: #e7f1ff;
             border-top: 1px solid #c0d8f7;
         }
-        #export-lots-container, #stock-count-product-list {
+        #export-lots-container {
             max-height: 400px;
             overflow-y: auto;
         }
@@ -161,6 +161,10 @@
             <li class="nav-item m-1" role="presentation">
                 <button class="nav-link active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab"><i class="bi bi-house-heart-fill me-2"></i><span data-lang-key="nav_stock">สต็อกคงเหลือ</span></button>
             </li>
+            <!-- NEW: Dashboard Tab -->
+            <li class="nav-item m-1" role="presentation">
+                <button class="nav-link" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard" type="button" role="tab"><i class="bi bi-speedometer2 me-2"></i><span data-lang-key="nav_dashboard">แดชบอร์ด</span></button>
+            </li>
             <li class="nav-item m-1" role="presentation" id="nav-import-item">
                 <button class="nav-link" id="pills-import-tab" data-bs-toggle="pill" data-bs-target="#pills-import" type="button" role="tab"><i class="bi bi-arrow-down-square-fill me-2"></i><span data-lang-key="nav_import">รับเข้าสินค้า</span></button>
             </li>
@@ -222,6 +226,84 @@
                                     <table class="table table-hover align-middle">
                                         <thead id="stock-summary-table-header"></thead>
                                         <tbody id="stock-summary-table"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Tab (NEW) -->
+            <div class="tab-pane fade" id="pills-dashboard" role="tabpanel">
+                <div class="row g-4">
+                    <!-- Dashboard Cards -->
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card h-100 bg-primary-subtle text-primary-emphasis">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="card-title mb-2" data-lang-key="dashboard_total_stock_value_title">มูลค่าสต็อกสินค้าทั้งหมด</h5>
+                                        <h2 class="card-text fw-bold" id="dashboard-total-stock-value">...</h2>
+                                        <small class="text-muted" id="dashboard-total-stock-quantity">...</small>
+                                    </div>
+                                    <i class="bi bi-currency-dollar" style="font-size: 3rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card h-100 bg-success-subtle text-success-emphasis">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h5 class="card-title mb-2" data-lang-key="dashboard_total_sales_title">ยอดขายทั้งหมด (ช่วงวันที่)</h5>
+                                        <h2 class="card-text fw-bold" id="dashboard-total-sales-quantity">...</h2>
+                                        <small class="text-muted" id="dashboard-total-sales-value">...</small>
+                                    </div>
+                                    <i class="bi bi-graph-up-arrow" style="font-size: 3rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-12">
+                        <div class="card h-100">
+                            <div class="card-header fw-bold" data-lang-key="dashboard_filter_date_range_title">เลือกช่วงวันที่ดูยอดขาย</div>
+                            <div class="card-body">
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label for="dashboard-start-date" class="form-label small-text" data-lang-key="dashboard_filter_from">จากวันที่</label>
+                                        <input type="date" id="dashboard-start-date" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="dashboard-end-date" class="form-label small-text" data-lang-key="dashboard_filter_to">ถึงวันที่</label>
+                                        <input type="date" id="dashboard-end-date" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="col-12 mt-3">
+                                        <button class="btn btn-primary w-100" id="dashboard-filter-btn" data-lang-key="dashboard_show_data">แสดงข้อมูล</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sales Summary by Customer Table -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header fw-bold" data-lang-key="dashboard_sales_by_customer_title">สรุปยอดขายแยกตามลูกค้า (ช่วงวันที่)</div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th data-lang-key="customer">ลูกค้า</th>
+                                                <th data-lang-key="dashboard_sales_qty">ยอดขาย (จำนวน)</th>
+                                                <th data-lang-key="dashboard_sales_value">ยอดขาย (มูลค่า)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dashboard-sales-table">
+                                            <tr><td colspan="3" class="text-center text-muted p-4">กรุณาเลือกช่วงวันที่แล้วกด "แสดงข้อมูล"</td></tr>
+                                        </tbody>
                                     </table>
                                 </div>
                             </div>
@@ -483,6 +565,20 @@
             nav_products: "จัดการสินค้า",
             nav_users: "จัดการผู้ใช้",
             nav_announcements: "จัดการประกาศ",
+            // NEW: Dashboard
+            nav_dashboard: "แดชบอร์ด",
+            dashboard_total_stock_value_title: "มูลค่าสต็อกสินค้าทั้งหมด",
+            dashboard_total_sales_title: "ยอดขายทั้งหมด (ช่วงวันที่)",
+            dashboard_sales_by_customer_title: "สรุปยอดขายแยกตามลูกค้า (ช่วงวันที่)",
+            dashboard_filter_date_range_title: "เลือกช่วงวันที่ดูยอดขาย",
+            dashboard_filter_from: "จากวันที่",
+            dashboard_filter_to: "ถึงวันที่",
+            dashboard_show_data: "แสดงข้อมูล",
+            dashboard_sales_qty: "ยอดขาย (จำนวน)",
+            dashboard_sales_value: "ยอดขาย (มูลค่า)",
+            dashboard_no_sales_data: "ไม่พบข้อมูลยอดขายสำหรับช่วงวันที่ที่เลือก",
+            dashboard_qty_label: "จำนวน: ", // NEW
+            dashboard_pieces_label: " ชิ้น", // NEW
             // Stock Tab
             backup_title: "สำรองข้อมูล",
             backup_desc: "ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV",
@@ -594,7 +690,7 @@
             edit_stock_note: "การบันทึกจะสร้างรายการ 'ปรับปรุงยอด' ใหม่ในประวัติ",
             edit_stock_save_button: "บันทึกยอดใหม่",
             edit_stock_confirm_title: "ยืนยันการปรับยอดสต็อก?",
-            edit_stock_confirm_text: "ระบบจะสร้างรายการใหม่เพื่อปรับยอดสต็อกของสินค้า {productId} ให้เป็น {quantity} ชิ้น",
+            edit_stock_confirm_text: "A new transaction will be created to adjust the stock for product {productId} to {quantity} units.",
             // Refresh Note
             refresh_title: "รีเฟรช (F5)",
             refresh_desc: "เพื่อข้อมูลล่าสุด",
@@ -724,6 +820,20 @@
             nav_products: "Manage Products",
             nav_users: "Manage Users",
             nav_announcements: "Manage Announcements",
+            // NEW: Dashboard
+            nav_dashboard: "Dashboard",
+            dashboard_total_stock_value_title: "Total Stock Value",
+            dashboard_total_sales_title: "Total Sales (Date Range)",
+            dashboard_sales_by_customer_title: "Sales Summary by Customer (Date Range)",
+            dashboard_filter_date_range_title: "Select Date Range for Sales",
+            dashboard_filter_from: "From Date",
+            dashboard_filter_to: "To Date",
+            dashboard_show_data: "Show Data",
+            dashboard_sales_qty: "Sales (Quantity)",
+            dashboard_sales_value: "Sales (Value)",
+            dashboard_no_sales_data: "No sales data found for the selected date range.",
+            dashboard_qty_label: "Quantity: ", // NEW
+            dashboard_pieces_label: " pcs", // NEW
             // Stock Tab
             backup_title: "Backup Data",
             backup_desc: "Download various data as CSV files.",
@@ -1168,6 +1278,16 @@
         const announcementsDisplayArea = document.getElementById('announcements-display-area');
         const stockCountModal = new bootstrap.Modal(document.getElementById('stockCountModal'));
         const stockCountReportModal = new bootstrap.Modal(document.getElementById('stockCountReportModal'));
+        // NEW: Dashboard elements
+        const dashboardFilterBtn = document.getElementById('dashboard-filter-btn');
+        const dashboardStartDateInput = document.getElementById('dashboard-start-date');
+        const dashboardEndDateInput = document.getElementById('dashboard-end-date');
+        const dashboardTotalStockValue = document.getElementById('dashboard-total-stock-value');
+        const dashboardTotalStockQuantity = document.getElementById('dashboard-total-stock-quantity');
+        const dashboardTotalSalesQuantity = document.getElementById('dashboard-total-sales-quantity');
+        const dashboardTotalSalesValue = document.getElementById('dashboard-total-sales-value');
+        const dashboardSalesTable = document.getElementById('dashboard-sales-table');
+
 
         // --- STATE MANAGEMENT ---
         let currentUser = null;
@@ -1289,17 +1409,17 @@
                         : -parseFloat(historyItem.quantity);
 
                     const reversalEntry = {
+                        id: 'rev-' + Date.now(),
+                        date: new Date().toISOString(),
+                        type: 'reversal',
                         productId: historyItem.productId,
                         productName: historyItem.productName,
                         customer: historyItem.customer,
                         erpCode: historyItem.erpCode,
                         productionDate: historyItem.productionDate || historyItem.ProductionDate || historyItem.production_date,
                         invoiceNumber: historyItem.invoiceNumber,
-                        id: 'rev-' + Date.now(),
-                        type: 'reversal',
-                        user: currentUser.username,
-                        date: new Date().toISOString(),
                         quantity: reversalQuantity,
+                        user: currentUser.username,
                         remarks: `Reversal of transaction ID: ${historyItem.id}. Original remarks: ${historyItem.remarks || ''}`,
                         packagingType: historyItem.packagingType // Carry over packaging type
                     };
@@ -1454,7 +1574,7 @@
                                 productionDate: 'Stock Count Adjustment',
                                 user: currentUser.username,
                                 remarks: machineReadableRemark,
-                                packagingType: 'standard' // Adjustments are standard
+                                packagingType: 'standard' // Adjustments are considered standard
                             });
                         }
                     });
@@ -1487,6 +1607,18 @@
                         showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
                     }
                 });
+            },
+            // NEW: Dashboard functions
+            populateDashboard: () => {
+                populateStockDashboard();
+                // Initial call for sales dashboard, set default dates to current month
+                const today = new Date();
+                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+                dashboardStartDateInput.value = formatDate(firstDayOfMonth);
+                dashboardEndDateInput.value = formatDate(lastDayOfMonth);
+                populateSalesDashboard(firstDayOfMonth, lastDayOfMonth);
             }
         };
 
@@ -1541,7 +1673,7 @@
                 const packagingType = row.querySelector('.import-packaging-type').value;
                 if (!productionDateStr) continue;
                 
-                const parts = productionDateStr.split('-');
+                const parts = productionDateDateStr.split('-');
                 const productionDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
                 if (productionDate > today) {
@@ -1607,14 +1739,14 @@
                 const newHistoryEntries = [];
                 
                 for(const row of selectedLotRows) {
-                       const productionDate = row.dataset.date;
-                       const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
-                       const lotInfo = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim())?.lots.find(l => l.productionDate === productionDate);
-                       const availableQty = lotInfo ? lotInfo.quantity : 0;
-                       if (quantityToExport > availableQty) {
-                           showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
-                           return; 
-                       }
+                        const productionDate = row.dataset.date;
+                        const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
+                        const lotInfo = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim())?.lots.find(l => l.productionDate === productionDate);
+                        const availableQty = lotInfo ? lotInfo.quantity : 0;
+                        if (quantityToExport > availableQty) {
+                            showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
+                            return; 
+                        }
                 }
 
                 for(const row of selectedLotRows) {
@@ -1924,6 +2056,7 @@
             populateAnnouncementsTable();
             displayActiveAnnouncements();
             populateStockCountMainView();
+            window.app.populateDashboard(); // NEW: Call dashboard population
         }
 
         // --- RENDER FUNCTIONS (for dynamic content) ---
@@ -1957,9 +2090,9 @@
 
             let summary = calculatedStock.map(stockItem => {
                 let productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim());
-                 if (!productInfo) {
-                      productInfo = { id: stockItem.productId, name: T.product_not_found.replace('{id}', stockItem.productId), customer: '-', erpCode: '-' };
-                 }
+                   if (!productInfo) {
+                       productInfo = { id: stockItem.productId, name: T.product_not_found.replace('{id}', stockItem.productId), customer: '-', erpCode: '-' };
+                   }
                 const hasOldStock = stockItem.lots.some(l => l.quantity > 0 && new Date(formatDate(l.productionDate)) < threeMonthsAgo);
                 return { ...productInfo, ...stockItem, hasOldStock };
             });
@@ -2201,7 +2334,7 @@
                 if (e.target.classList.contains('export-quantity')) {
                     updateExportTotal();
                 }
-                 if (e.target.id === 'stock-search-input') {
+                   if (e.target.id === 'stock-search-input') {
                     populateStockSummary();
                 }
             });
@@ -2231,7 +2364,7 @@
                     }
                     updateExportTotal();
                 }
-                 if (e.target.id === 'show-old-stock-filter') {
+                   if (e.target.id === 'show-old-stock-filter') {
                     populateStockSummary();
                 }
             });
@@ -2297,7 +2430,18 @@
                 }
                 const approveBtn = e.target.closest('.approve-stock-count-btn');
                 if (approveBtn) {
-                     window.app.approveStockCount(approveBtn.dataset.countId);
+                    window.app.approveStockCount(approveBtn.dataset.countId);
+                }
+
+                // NEW: Dashboard filter button
+                if (e.target.id === 'dashboard-filter-btn') {
+                    const startDate = dashboardStartDateInput.value;
+                    const endDate = dashboardEndDateInput.value;
+                    if (startDate && endDate) {
+                        populateSalesDashboard(new Date(startDate), new Date(endDate));
+                    } else {
+                        showError('ข้อมูลไม่ครบถ้วน', 'กรุณาเลือกวันที่เริ่มต้นและวันที่สิ้นสุด');
+                    }
                 }
             });
         }
@@ -2550,7 +2694,7 @@
             const announcementsDisplayArea = document.getElementById('announcements-display-area');
             announcementsDisplayArea.innerHTML = '';
             const activeAnnouncements = db.announcements.filter(ann => ann.isActive)
-                                                        .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
+                                                           .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
 
             if (activeAnnouncements.length === 0) return;
 
@@ -2603,7 +2747,7 @@
                 // NEW: Add a badge for temporary packing
                 let packagingBadge = '';
                 if (lot.packagingType === 'temporary') {
-                    packagingBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill ms-2">${T.packaging_temp}</span>`;
+                    packagingBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">${T.packaging_temp}</span>`;
                 }
 
                 row.innerHTML = `
@@ -2935,9 +3079,9 @@
                             newTotalQuantity = parseFloat(item.quantity);
                         }
                     } else { // Fallback for old format
-                         const oldMatch = remarks.match(/to (\d+)/);
-                         if (oldMatch) newTotalQuantity = parseInt(oldMatch[1], 10);
-                         else newTotalQuantity = parseFloat(item.quantity); // For stock count adjustments
+                           const oldMatch = remarks.match(/to (\d+)/);
+                           if (oldMatch) newTotalQuantity = parseInt(oldMatch[1], 10);
+                           else newTotalQuantity = parseFloat(item.quantity); // For stock count adjustments
                     }
                     
                     // Create a new single pseudo-lot representing the adjusted total
@@ -3185,6 +3329,88 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${T.close_button}</button>
                 ${canApprove ? `<button type="button" class="btn btn-success approve-stock-count-btn" data-count-id="${count.id}"><i class="bi bi-check-circle-fill me-2"></i>${T.stock_count_approve_button}</button>` : ''}
             `;
+        }
+
+        // --- NEW: DASHBOARD FUNCTIONS ---
+
+        function populateStockDashboard() {
+            const T = translations[currentLanguage];
+            let totalStockQuantity = 0;
+            let totalStockValue = 0;
+            const customerStockValue = new Map(); // Map to store stock value per customer
+
+            calculatedStock.forEach(stockItem => {
+                const productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim());
+                const unitPrice = productInfo ? parseFloat(productInfo.unitPrice) || 0 : 0;
+                const customer = productInfo ? productInfo.customer || 'ไม่ระบุลูกค้า' : 'ไม่ระบุลูกค้า';
+
+                totalStockQuantity += stockItem.totalQuantity;
+                const value = stockItem.totalQuantity * unitPrice;
+                totalStockValue += value;
+
+                // Aggregate stock value by customer
+                customerStockValue.set(customer, (customerStockValue.get(customer) || 0) + value);
+            });
+
+            dashboardTotalStockQuantity.textContent = `${T.dashboard_qty_label}${totalStockQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
+            dashboardTotalStockValue.textContent = `฿ ${totalStockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        function populateSalesDashboard(startDate, endDate) {
+            const T = translations[currentLanguage];
+            let totalSalesQuantity = 0;
+            let totalSalesValue = 0;
+            const customerSales = new Map(); // Map to store sales data per customer
+
+            const filteredSalesHistory = db.history.filter(item => {
+                if (item.type === 'export' || (item.type === 'reversal' && parseFloat(item.quantity) < 0)) {
+                    const itemDate = new Date(item.date);
+                    // Ensure comparison is only by date, not time
+                    const startOfDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+                    const endOfDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), 23, 59, 59, 999);
+                    return itemDate >= startOfDay && itemDate <= endOfDay;
+                }
+                return false;
+            });
+
+            filteredSalesHistory.forEach(item => {
+                const productInfo = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
+                const unitPrice = productInfo ? parseFloat(productInfo.unitPrice) || 0 : 0;
+                const customer = item.customer || 'ไม่ระบุลูกค้า';
+                const quantity = parseFloat(item.quantity) || 0;
+                const value = quantity * unitPrice;
+
+                totalSalesQuantity += quantity;
+                totalSalesValue += value;
+
+                if (!customerSales.has(customer)) {
+                    customerSales.set(customer, { quantity: 0, value: 0 });
+                }
+                const currentSales = customerSales.get(customer);
+                currentSales.quantity += quantity;
+                currentSales.value += value;
+            });
+
+            dashboardTotalSalesQuantity.textContent = `${T.dashboard_qty_label}${totalSalesQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
+            dashboardTotalSalesValue.textContent = `฿ ${totalSalesValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            dashboardSalesTable.innerHTML = '';
+            if (customerSales.size === 0) {
+                dashboardSalesTable.innerHTML = `<tr><td colspan="3" class="text-center text-muted p-4">${T.dashboard_no_sales_data}</td></tr>`;
+            } else {
+                // Sort customers by sales value (descending)
+                const sortedCustomerSales = Array.from(customerSales.entries()).sort((a, b) => b[1].value - a[1].value);
+
+                sortedCustomerSales.forEach(([customer, data]) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${customer}</td>
+                        <td>${data.quantity.toLocaleString()}</td>
+                        <td>฿ ${data.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    `;
+                    dashboardSalesTable.appendChild(row);
+                });
+            }
         }
         
         // --- START THE APP ---
