@@ -112,7 +112,7 @@
             <div class="col-md-6 col-lg-4">
                 <div class="card shadow-lg text-center">
                     <div class="card-header card-header-custom p-3">
-                        <h3><i class="bi bi-box-seam-fill me-2"></i><span data-lang-key="login_header">ระบบสต็อกสินค้า</span></h3>
+                        <h3><i class="bi bi-box-seam-fill me-2"></i><span data-lang-key="login_header">ระบบสต็อกสินค้าของคนสวยชื่อโจ้</span></h3>
                         <h4 class="fw-normal">ATECH FG</h4>
                     </div>
                     <div class="card-body p-4">
@@ -244,8 +244,8 @@
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <h5 class="card-title mb-2" data-lang-key="dashboard_total_stock_value_title">มูลค่าสต็อกสินค้าทั้งหมด</h5>
-                                        <h2 class="card-text fw-bold" id="dashboard-total-stock-value">...</h2>
-                                        <small class="text-muted" id="dashboard-total-stock-quantity">...</small>
+                                        <h2 class="card-text fw-bold" id="dashboard-total-stock-quantity">...</h2> 
+                            		<small class="text-muted" id="dashboard-total-stock-value">...</small> 
                                     </div>
                                     <i class="bi bi-currency-dollar" style="font-size: 3rem;"></i>
                                 </div>
@@ -1332,7 +1332,7 @@
         };
 
         // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwQeZcOb2ezP9ezB6GLd3CE_7pzQTxwva0nLBhqIygzlnjHIRHH-fBR3bPvVmAs3X6qjw/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDGLLwqnY1hOyDqM-Q6UlKRktrSneEAEtHkcsEuBQDaQMsgiBYGZPb30RMEQD2S17_OQ/exec';
 
         // --- DATABASE SIMULATION & PERSISTENCE ---
         let db = { users: [], products: [], history: [], announcements: [], stockCounts: [] };
@@ -1863,14 +1863,24 @@
             // NEW: Dashboard functions
             populateDashboard: () => {
                 populateStockDashboard();
-                // Initial call for sales dashboard, set default dates to current month
-                const today = new Date();
-                const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-                dashboardStartDateInput.value = formatDate(firstDayOfMonth);
-                dashboardEndDateInput.value = formatDate(lastDayOfMonth);
-                populateSalesDashboard(firstDayOfMonth, lastDayOfMonth);
+                let startDate = dashboardStartDateInput.value;
+                let endDate = dashboardEndDateInput.value;
+
+                // หากวันที่ยังไม่ได้ถูกกำหนด (เช่น โหลดครั้งแรก หรือหลังจากรีเซ็ต)
+                // ให้กำหนดเป็นวันที่ 1 ของเดือนปัจจุบัน ถึงวันสุดท้ายของเดือนปัจจุบัน
+                if (!startDate || !endDate) {
+                    const today = new Date();
+                    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    startDate = formatDate(firstDayOfMonth);
+                    endDate = formatDate(lastDayOfMonth);
+                    dashboardStartDateInput.value = startDate;
+                    dashboardEndDateInput.value = endDate;
+                }
+
+                // ใช้ค่าวันที่ปัจจุบันจาก input เสมอในการ populate sales dashboard
+                populateSalesDashboard(new Date(startDate), new Date(endDate));
             }
         };
 
