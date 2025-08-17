@@ -106,9 +106,19 @@
 </head>
 <body>
 
-    <!-- Login Page -->
+       <!-- Login Page -->
     <div id="login-page" class="container">
-        <div class="login-container">
+        <!-- เพิ่ม class 'position-relative' ให้กับ login-container เพื่อให้จัดตำแหน่งปุ่มได้ -->
+        <div class="login-container position-relative">
+            <!-- NEW: Manual Download Button Container -->
+            <!-- ปุ่มดาวน์โหลดจะถูกวางไว้ที่มุมขวาบนของ login-container -->
+            <div id="manual-download-container" class="position-absolute top-0 end-0 p-3" style="z-index: 100;">
+                <a href="https://drive.google.com/uc?id=1tOAPkgK9a8D4ebDqA8wl8-sNrAmr-NKk" download="คู่มือการใช้งานระบบสต็อกสินค้า FG.pdf" class="btn btn-outline-info">
+                    <i class="bi bi-file-earmark-arrow-down-fill me-2"></i>ดาวน์โหลดคู่มือการใช้งาน
+                </a>
+            </div>
+            <!-- END NEW -->
+
             <div class="col-md-6 col-lg-4">
                 <div class="card shadow-lg text-center">
                     <div class="card-header card-header-custom p-3">
@@ -129,12 +139,16 @@
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-primary"><span data-lang-key="login_button">เข้าสู่ระบบ</span> <i class="bi bi-arrow-right-circle-fill"></i></button>
                             </div>
+                            
+                            <!-- REMOVED: ตำแหน่งปุ่มดาวน์โหลดคู่มือเดิม -->
+
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Main Dashboard -->
     <div id="main-dashboard" class="container-fluid p-4">
