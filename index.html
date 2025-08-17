@@ -170,58 +170,62 @@
         </div>
     </div>
     <!-- Main Dashboard -->
-    <div id="main-dashboard" class="container-fluid p-4">
-        <header class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
-            <h1 class="h4"><i class="bi bi-box2-heart-fill me-2" style="color: var(--primary-color);"></i>STOCK IN-OUT FG</h1>
-            <div class="d-flex align-items-center">
-                <!-- Language Switcher -->
-                <div class="dropdown me-3">
-                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="language-switcher" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-translate me-1"></i> <span id="language-switcher-label">ภาษา</span>
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="language-switcher">
-                        <li><a class="dropdown-item" href="#" onclick="setLanguage('th')">ไทย</a></li>
-                        <li><a class="dropdown-item" href="#" onclick="setLanguage('en')">English</a></li>
-                    </ul>
+<div id="main-dashboard" class="container-fluid px-4 pb-4 pt-0">
+        <!-- NEW: Wrapper for sticky elements -->
+        <div style="position: sticky; top: 0; z-index: 1020; background-color: var(--bg-color); padding-top: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <header class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
+                <h1 class="h4"><i class="bi bi-box2-heart-fill me-2" style="color: var(--primary-color);"></i>STOCK IN-OUT FG</h1>
+                <div class="d-flex align-items-center">
+                    <!-- Language Switcher -->
+                    <div class="dropdown me-3">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="language-switcher" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-translate me-1"></i> <span id="language-switcher-label">ภาษา</span>
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="language-switcher">
+                            <li><a class="dropdown-item" href="#" onclick="setLanguage('th')">ไทย</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="setLanguage('en')">English</a></li>
+                        </ul>
+                    </div>
+                    <span id="user-role" class="badge rounded-pill me-2 fs-6 align-middle"></span>
+                    <button id="logout-btn" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i><span data-lang-key="logout_button">ออกจากระบบ</span></button>
                 </div>
-                <span id="user-role" class="badge rounded-pill me-2 fs-6 align-middle"></span>
-                <button id="logout-btn" class="btn btn-outline-danger btn-sm"><i class="bi bi-box-arrow-right me-1"></i><span data-lang-key="logout_button">ออกจากระบบ</span></button>
-            </div>
-        </header>
+            </header>
 
-        <!-- Navigation Tabs -->
-        <ul class="nav nav-pills nav-fill mb-4" id="pills-tab" role="tablist">
-            <li class="nav-item m-1" role="presentation">
-                <button class="nav-link active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab"><i class="bi bi-house-heart-fill me-2"></i><span data-lang-key="nav_stock">สต็อกคงเหลือ</span></button>
-            </li>
-            <!-- NEW: Dashboard Tab -->
-            <li class="nav-item m-1" role="presentation">
-                <button class="nav-link" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard" type="button" role="tab"><i class="bi bi-speedometer2 me-2"></i><span data-lang-key="nav_dashboard">แดชบอร์ด</span></button>
-            </li>
-            <li class="nav-item m-1" role="presentation" id="nav-import-item">
-                <button class="nav-link" id="pills-import-tab" data-bs-toggle="pill" data-bs-target="#pills-import" type="button" role="tab"><i class="bi bi-arrow-down-square-fill me-2"></i><span data-lang-key="nav_import">รับเข้าสินค้า</span></button>
-            </li>
-            <li class="nav-item m-1" role="presentation" id="nav-export-item">
-                <button class="nav-link" id="pills-export-tab" data-bs-toggle="pill" data-bs-target="#pills-export" type="button" role="tab"><i class="bi bi-arrow-up-square-fill me-2"></i><span data-lang-key="nav_export">ส่งออกสินค้า</span></button>
-            </li>
-            <li class="nav-item m-1" role="presentation" id="nav-history-item">
-                <button class="nav-link" id="pills-history-tab" data-bs-toggle="pill" data-bs-target="#pills-history" type="button" role="tab"><i class="bi bi-clock-history me-2"></i><span data-lang-key="nav_history">ประวัติ</span></button>
-            </li>
-            <li class="nav-item m-1" role="presentation" id="nav-stock-count-item">
-                <button class="nav-link" id="pills-stock-count-tab" data-bs-toggle="pill" data-bs-target="#pills-stock-count" type="button" role="tab"><i class="bi bi-clipboard2-check-fill me-2"></i><span data-lang-key="nav_stock_count">นับสต็อก</span></button>
-            </li>
-            <li class="nav-item m-1" role="presentation" id="nav-products-item">
-                <button class="nav-link" id="pills-products-tab" data-bs-toggle="pill" data-bs-target="#pills-products" type="button" role="tab"><i class="bi bi-box-seam me-2"></i><span data-lang-key="nav_products">จัดการสินค้า</span></button>
-            </li>
-            <li class="nav-item m-1" role="presentation" id="nav-users-item">
-                <button class="nav-link" id="pills-users-tab" data-bs-toggle="pill" data-bs-target="#pills-users" type="button" role="tab"><i class="bi bi-people-fill me-2"></i><span data-lang-key="nav_users">จัดการผู้ใช้</span></button>
-            </li>
-            <li class="nav-item m-1" role="presentation" id="nav-announcements-item">
-                <button class="nav-link" id="pills-announcements-tab" data-bs-toggle="pill" data-bs-target="#pills-announcements" type="button" role="tab"><i class="bi bi-megaphone-fill me-2"></i><span data-lang-key="nav_announcements">จัดการประกาศ</span></button>
-            </li>
-        </ul>
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-pills nav-fill mb-4" id="pills-tab" role="tablist">
+                <li class="nav-item m-1" role="presentation">
+                    <button class="nav-link active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab"><i class="bi bi-house-heart-fill me-2"></i><span data-lang-key="nav_stock">สต็อกคงเหลือ</span></button>
+                </li>
+                <!-- NEW: Dashboard Tab -->
+                <li class="nav-item m-1" role="presentation">
+                    <button class="nav-link" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard" type="button" role="tab"><i class="bi bi-speedometer2 me-2"></i><span data-lang-key="nav_dashboard">แดชบอร์ด</span></button>
+                </li>
+                <li class="nav-item m-1" role="presentation" id="nav-import-item">
+                    <button class="nav-link" id="pills-import-tab" data-bs-toggle="pill" data-bs-target="#pills-import" type="button" role="tab"><i class="bi bi-arrow-down-square-fill me-2"></i><span data-lang-key="nav_import">รับเข้าสินค้า</span></button>
+                </li>
+                <li class="nav-item m-1" role="presentation" id="nav-export-item">
+                    <button class="nav-link" id="pills-export-tab" data-bs-toggle="pill" data-bs-target="#pills-export" type="button" role="tab"><i class="bi bi-arrow-up-square-fill me-2"></i><span data-lang-key="nav_export">ส่งออกสินค้า</span></button>
+                </li>
+                <li class="nav-item m-1" role="presentation" id="nav-history-item">
+                    <button class="nav-link" id="pills-history-tab" data-bs-toggle="pill" data-bs-target="#pills-history" type="button" role="tab"><i class="bi bi-clock-history me-2"></i><span data-lang-key="nav_history">ประวัติ</span></button>
+                </li>
+                <li class="nav-item m-1" role="presentation" id="nav-stock-count-item">
+                    <button class="nav-link" id="pills-stock-count-tab" data-bs-toggle="pill" data-bs-target="#pills-stock-count" type="button" role="tab"><i class="bi bi-clipboard2-check-fill me-2"></i><span data-lang-key="nav_stock_count">นับสต็อก</span></button>
+                </li>
+                <li class="nav-item m-1" role="presentation" id="nav-products-item">
+                    <button class="nav-link" id="pills-products-tab" data-bs-toggle="pill" data-bs-target="#pills-products" type="button" role="tab"><i class="bi bi-box-seam me-2"></i><span data-lang-key="nav_products">จัดการสินค้า</span></button>
+                </li>
+                <li class="nav-item m-1" role="presentation" id="nav-users-item">
+                    <button class="nav-link" id="pills-users-tab" data-bs-toggle="pill" data-bs-target="#pills-users" type="button" role="tab"><i class="bi bi-people-fill me-2"></i><span data-lang-key="nav_users">จัดการผู้ใช้</span></button>
+                </li>
+                <li class="nav-item m-1" role="presentation" id="nav-announcements-item">
+                    <button class="nav-link" id="pills-announcements-tab" data-bs-toggle="pill" data-bs-target="#pills-announcements" type="button" role="tab"><i class="bi bi-megaphone-fill me-2"></i><span data-lang-key="nav_announcements">จัดการประกาศ</span></button>
+                </li>
+            </ul>
+        </div>
 
         <div id="announcements-display-area" class="mb-4"></div>
+
 
         <!-- Tab Content -->
         <div class="tab-content" id="pills-tabContent">
