@@ -107,14 +107,18 @@
 <body>
 
        <!-- Login Page -->
+        <!-- Login Page -->
     <div id="login-page" class="container">
         <!-- เพิ่ม class 'position-relative' ให้กับ login-container เพื่อให้จัดตำแหน่งปุ่มได้ -->
         <div class="login-container position-relative">
-            <!-- NEW: Manual Download Button Container -->
-            <!-- ปุ่มดาวน์โหลดจะถูกวางไว้ที่มุมขวาบนของ login-container -->
-            <div id="manual-download-container" class="position-absolute top-0 end-0 p-3" style="z-index: 100;">
+            <!-- NEW: Manual Download Buttons Container -->
+            <!-- ปุ่มดาวน์โหลดจะถูกวางไว้ที่มุมขวาบนของ login-container และจัดเรียงเป็นแนวตั้ง -->
+            <div id="manual-download-container" class="position-absolute top-0 end-0 p-3 d-flex flex-column gap-2" style="z-index: 100;">
                 <a href="https://drive.google.com/uc?id=1tOAPkgK9a8D4ebDqA8wl8-sNrAmr-NKk" download="คู่มือการใช้งานระบบสต็อกสินค้า FG.pdf" class="btn btn-outline-info">
-                    <i class="bi bi-file-earmark-arrow-down-fill me-2"></i>ดาวน์โหลดคู่มือการใช้งาน
+                    <i class="bi bi-file-earmark-arrow-down-fill me-2"></i>ดาวน์โหลดคู่มือการรับเข้าสินค้าระบบ STOCK FG
+                </a>
+                <a href="https://drive.google.com/uc?id=1EX3Bcd7KTKkXdEaGVOb7g8Xo-PTzPCPf" download="คู่มือการรับเข้าสินค้า.pdf" class="btn btn-outline-info">
+                    <i class="bi bi-file-earmark-arrow-down-fill me-2"></i>ดาวน์โหลดคู่มือการรับเข้าสินค้าระบบ ERP
                 </a>
             </div>
             <!-- END NEW -->
@@ -148,7 +152,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- Main Dashboard -->
     <div id="main-dashboard" class="container-fluid p-4">
