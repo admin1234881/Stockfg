@@ -106,53 +106,69 @@
 </head>
 <body>
 
-       <!-- Login Page -->
-        <!-- Login Page -->
+    <!-- Login Page -->
+    <!-- Login Page -->
     <div id="login-page" class="container">
-        <!-- เพิ่ม class 'position-relative' ให้กับ login-container เพื่อให้จัดตำแหน่งปุ่มได้ -->
         <div class="login-container position-relative">
-            <!-- NEW: Manual Download Buttons Container -->
-            <!-- ปุ่มดาวน์โหลดจะถูกวางไว้ที่มุมขวาบนของ login-container และจัดเรียงเป็นแนวตั้ง -->
-            <div id="manual-download-container" class="position-absolute top-0 end-0 p-3 d-flex flex-column gap-2" style="z-index: 100;">
-                <a href="https://drive.google.com/uc?id=1tOAPkgK9a8D4ebDqA8wl8-sNrAmr-NKk" download="คู่มือการใช้งานระบบสต็อกสินค้า FG.pdf" class="btn btn-outline-info">
-                    <i class="bi bi-file-earmark-arrow-down-fill me-2"></i>ดาวน์โหลดคู่มือการรับเข้าสินค้าระบบ STOCK FG
-                </a>
-                <a href="https://drive.google.com/uc?id=1EX3Bcd7KTKkXdEaGVOb7g8Xo-PTzPCPf" download="คู่มือการรับเข้าสินค้า.pdf" class="btn btn-outline-info">
-                    <i class="bi bi-file-earmark-arrow-down-fill me-2"></i>ดาวน์โหลดคู่มือการรับเข้าสินค้าระบบ ERP
-                </a>
+            <!-- Manual Download Buttons Container -->
+            <div class="position-absolute top-0 end-0 p-3" style="z-index: 100;">
+                <div class="dropdown">
+                    <button class="btn btn-light btn-sm dropdown-toggle" type="button" id="manualsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-question-circle-fill me-1"></i> คู่มือการใช้งาน
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="manualsDropdown">
+                        <li>
+                            <a class="dropdown-item" href="https://drive.google.com/uc?id=1tOAPkgK9a8D4ebDqA8wl8-sNrAmr-NKk" download="คู่มือการใช้งานระบบสต็อกสินค้า FG.pdf">
+                                <i class="bi bi-file-earmark-pdf-fill me-2"></i>คู่มือระบบ STOCK FG
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="https://drive.google.com/uc?id=1EX3Bcd7KTKkXdEaGVOb7g8Xo-PTzPCPf" download="คู่มือการรับเข้าสินค้า.pdf">
+                                <i class="bi bi-file-earmark-pdf-fill me-2"></i>คู่มือระบบ ERP
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
             <!-- END NEW -->
 
-            <div class="col-md-6 col-lg-4">
-                <div class="card shadow-lg text-center">
-                    <div class="card-header card-header-custom p-3">
-                        <h3><i class="bi bi-box-seam-fill me-2"></i><span data-lang-key="login_header">ระบบสต็อกสินค้า</span></h3>
-                        <h4 class="fw-normal">ATECH FG</h4>
-                    </div>
-                    <div class="card-body p-4">
-                        <form id="login-form">
-                            <div class="mb-3">
-                                <label for="username" class="form-label" data-lang-key="username_label">ชื่อผู้ใช้</label>
-                                <input type="text" class="form-control" id="username" required autocomplete="off">
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label" data-lang-key="password_label">รหัสผ่าน</label>
-                                <input type="password" class="form-control" id="password" required autocomplete="off">
-                            </div>
-                            <div id="error-message" class="text-danger mb-3 d-none" data-lang-key="login_error">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary"><span data-lang-key="login_button">เข้าสู่ระบบ</span> <i class="bi bi-arrow-right-circle-fill"></i></button>
-                            </div>
-                            
-                            <!-- REMOVED: ตำแหน่งปุ่มดาวน์โหลดคู่มือเดิม -->
+            <!-- NEW LAYOUT: Logo on Left, Form on Right -->
+            <div class="row w-100 align-items-center justify-content-center">
+                <!-- Left Column: Logo & Welcome Text (Hidden on small screens) -->
+                <div class="col-md-6 col-lg-6 text-center d-none d-md-block px-5">
+                    <img src="https://raw.githubusercontent.com/admin1234881/Stockfg/main/291315_logo_20230216140112%20(1).jpeg" alt="Company Logo" class="mb-4" style="max-width: 180px; height: auto; border-radius: 8px;">
+                    <h1 class="display-5 fw-bold" style="color: var(--primary-color);">ATECH FG STOCK</h1>
+                    <p class="lead text-muted">ระบบบริหารจัดการสต็อกสินค้าสำเร็จรูป</p>
+                </div>
 
-                        </form>
+                <!-- Right Column: Login Form -->
+                <div class="col-md-6 col-lg-5">
+                    <div class="card shadow-lg">
+                        <div class="card-header card-header-custom p-3 text-center">
+                            <h3><i class="bi bi-box-seam-fill me-2"></i><span data-lang-key="login_header">ระบบสต็อกสินค้า</span></h3>
+                            <h4 class="fw-normal">ATECH FG</h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <form id="login-form">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label" data-lang-key="username_label">ชื่อผู้ใช้</label>
+                                    <input type="text" class="form-control" id="username" required autocomplete="off">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="password" class="form-label" data-lang-key="password_label">รหัสผ่าน</label>
+                                    <input type="password" class="form-control" id="password" required autocomplete="off">
+                                </div>
+                                <div id="error-message" class="text-danger mb-3 d-none" data-lang-key="login_error">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary"><span data-lang-key="login_button">เข้าสู่ระบบ</span> <i class="bi bi-arrow-right-circle-fill"></i></button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
     <!-- Main Dashboard -->
     <div id="main-dashboard" class="container-fluid p-4">
         <header class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
