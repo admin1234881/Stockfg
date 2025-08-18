@@ -2094,9 +2094,16 @@ async function handleExport(e) {
             // --- ตรวจสอบความถูกต้องของข้อมูลก่อนแสดง Pop-up ---
             for(const row of selectedLotRows) {
                 const productionDate = row.dataset.date;
+                const packagingType = row.dataset.packaging; // <-- [เพิ่ม] ดึงประเภทบรรจุภัณฑ์มาด้วย
                 const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
-                const lotInfo = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim())?.lots.find(l => l.productionDate === productionDate);
+
+                // [แก้ไข] เพิ่มเงื่อนไขเช็ค packagingType ในการค้นหาล็อต
+                const lotInfo = calculatedStock
+                    .find(p => String(p.productId).trim() === String(productId).trim())
+                    ?.lots.find(l => l.productionDate === productionDate && l.packagingType === packagingType); 
+
                 const availableQty = lotInfo ? lotInfo.quantity : 0;
+                
                 if (isNaN(quantityToExport) || quantityToExport <= 0) {
                     showError(T.form_incomplete, T.export_data_incomplete);
                     return;
@@ -2193,7 +2200,8 @@ async function handleExport(e) {
             } catch (error) {
                 showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
             }
-        }        async function handleAnnouncementFormSubmit(e) {
+        }
+                async function handleAnnouncementFormSubmit(e) {
             e.preventDefault();
             let successMessage = '';
             
