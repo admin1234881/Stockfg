@@ -2080,250 +2080,120 @@
             }
         }
 
-        async function handleExport(e) {
-            e.preventDefault();
-            const T = translations[currentLanguage];
-            const productId = document.getElementById('export-product-id').value;
-            const selectedLotRows = document.querySelectorAll('#export-lots-container .export-lot-row:has(input[type="checkbox"]:checked)');
+async function handleExport(e) {
+            e.preventDefault();
+            const T = translations[currentLanguage];
+            const productId = document.getElementById('export-product-id').value;
+            const selectedLotRows = document.querySelectorAll('#export-lots-container .export-lot-row:has(input[type="checkbox"]:checked)');
 
-            if (!productId || selectedLotRows.length === 0) {
-                showError(T.form_incomplete, T.export_data_incomplete);
-                return;
-            }
+            if (!productId || selectedLotRows.length === 0) {
+                showError(T.form_incomplete, T.export_data_incomplete);
+                return;
+            }
+            
+            // --- ตรวจสอบความถูกต้องของข้อมูลก่อนแสดง Pop-up ---
+            for(const row of selectedLotRows) {
+                const productionDate = row.dataset.date;
+                const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
+                const lotInfo = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim())?.lots.find(l => l.productionDate === productionDate);
+                const availableQty = lotInfo ? lotInfo.quantity : 0;
+                if (isNaN(quantityToExport) || quantityToExport <= 0) {
+                    showError(T.form_incomplete, T.export_data_incomplete);
+                    return;
+                }
+                if (quantityToExport > availableQty) {
+                    showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
+                    return;
+                }
+            }
 
-            const performExport = () => {
-                const invoiceNumber = document.getElementById('export-invoice-number').value;
-                const remarks = document.getElementById('export-remarks').value;
-                let product = db.products.find(p => String(p.id).trim() === String(productId).trim()) || { id: productId, name: 'N/A' };
-                const newHistoryEntries = [];
-                
-                for(const row of selectedLotRows) {
-                        const productionDate = row.dataset.date;
-                        const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
-                        const lotInfo = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim())?.lots.find(l => l.productionDate === productionDate);
-                        const availableQty = lotInfo ? lotInfo.quantity : 0;
-                        if (quantityToExport > availableQty) {
-                            showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
-                            return; 
-                        }
-                }
+            // --- ขั้นตอนที่ 1: ตรวจสอบแพ็คกิ้งชั่วคราว ---
+            const isExportingTemp = Array.from(selectedLotRows).some(row => row.dataset.packaging === 'temporary');
+            if (isExportingTemp) {
+                const result = await Swal.fire({
+                    title: T.export_temp_confirm_title,
+                    text: T.export_temp_confirm_text,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: T.ok_button,
+                    cancelButtonText: T.cancel_button
+                });
+                if (!result.isConfirmed) {
+                    return; // ถ้าผู้ใช้กดยกเลิก ให้จบการทำงานทันที
+                }
+            }
 
-                for(const row of selectedLotRows) {
-                    const productionDate = row.dataset.date;
-                    const packagingType = row.dataset.packaging;
-                    const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
+            // --- ขั้นตอนที่ 2: ตรวจสอบ FIFO ---
+            const productStock = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim());
+            const availableLots = productStock ? productStock.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate)) : [];
+            const selectedLotDates = Array.from(selectedLotRows).map(row => row.dataset.date);
+            let isFifoViolated = false;
+            if (availableLots.length > 0 && selectedLotDates.length > 0) {
+                const oldestAvailableDateStr = availableLots[0].productionDate;
+                const isOldestSelected = selectedLotDates.includes(oldestAvailableDateStr);
+                if (!isOldestSelected) {
+                    isFifoViolated = true;
+                }
+            }
 
-                    if (isNaN(quantityToExport) || quantityToExport <= 0) continue;
+            if (isFifoViolated) {
+                const oldestDate = availableLots[0].productionDate;
+                const result = await Swal.fire({
+                    title: T.fifo_warning_title,
+                    text: T.fifo_warning_text.replace('{date}', oldestDate),
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: T.ok_button,
+                    cancelButtonText: T.cancel_button
+                });
+                if (!result.isConfirmed) {
+                    return; // ถ้าผู้ใช้กดยกเลิก ให้จบการทำงานทันที
+                }
+            }
 
-                    newHistoryEntries.push({
-                        id: 'exp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-                        date: new Date().toISOString(),
-                        type: 'export',
-                        productId: product.id,
-                        productName: product.name,
-                        customer: product.customer,
-                        erpCode: product.erpCode,
-                        quantity: quantityToExport,
-                        productionDate: productionDate,
-                        user: currentUser.username,
-                        invoiceNumber: invoiceNumber,
-                        remarks: remarks,
-                        packagingType: packagingType
-                    });
-                }
+            // --- ขั้นตอนที่ 3: ถ้าผ่านทุกการยืนยัน ให้ทำการส่งออก ---
+            const invoiceNumber = document.getElementById('export-invoice-number').value;
+            const remarks = document.getElementById('export-remarks').value;
+            let product = db.products.find(p => String(p.id).trim() === String(productId).trim()) || { id: productId, name: 'N/A' };
+            const newHistoryEntries = [];
 
-                // --- Optimistic Update ---
-                newHistoryEntries.forEach(entry => db.history.unshift(entry));
-                calculateStockFromHistory();
-                populateAll();
-                showSuccess(T.export_success.replace('{name}', product.name));
-                renderExportForm();
+            for(const row of selectedLotRows) {
+                const productionDate = row.dataset.date;
+                const packagingType = row.dataset.packaging;
+                const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
 
-                // --- Background Save ---
-                (async () => {
-                    try {
-                        await callAppsScript('appendBatchHistory', newHistoryEntries);
-                        console.log(`Background export successful for ${product.name}`);
-                    } catch (error) {
-                        showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
-                    }
-                })();
-            };
+                newHistoryEntries.push({
+                    id: 'exp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                    date: new Date().toISOString(),
+                    type: 'export',
+                    productId: product.id,
+                    productName: product.name,
+                    customer: product.customer,
+                    erpCode: product.erpCode,
+                    quantity: quantityToExport,
+                    productionDate: productionDate,
+                    user: currentUser.username,
+                    invoiceNumber: invoiceNumber,
+                    remarks: remarks,
+                    packagingType: packagingType
+                });
+            }
 
-            const productStock = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim());
-            let isExportingTemp = false;
-            if (productStock) {
-                for (const row of selectedLotRows) {
-                    const lotDate = row.dataset.date;
-                    const lotInfo = productStock.lots.find(l => l.productionDate === lotDate);
-                    if (lotInfo && lotInfo.packagingType === 'temporary') {
-                        isExportingTemp = true;
-                        break;
-                    }
-                }
-            }
+            // --- Optimistic Update ---
+            newHistoryEntries.forEach(entry => db.history.unshift(entry));
+            calculateStockFromHistory();
+            populateAll();
+            showSuccess(T.export_success.replace('{name}', product.name));
+            renderExportForm();
 
-            const runExportProcess = () => {
-                const availableLots = productStock ? productStock.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate)) : [];
-                const selectedLotDates = Array.from(selectedLotRows).map(row => row.dataset.date);
-
-                let isFifoViolated = false;
-                if (availableLots.length > 0 && selectedLotDates.length > 0) { // Check if any lot is selected
-                    const oldestAvailableDateStr = availableLots[0].productionDate;
-                    
-                    // Check if the oldest available lot is NOT among the selected lots AND there are selected lots
-                    const isOldestSelected = selectedLotDates.includes(oldestAvailableDateStr);
-                    if (!isOldestSelected) {
-                        isFifoViolated = true;
-                    }
-                }
-
-                if (isFifoViolated) {
-                    const oldestDate = availableLots[0].productionDate;
-                    const warningText = T.fifo_warning_text.replace('{date}', oldestDate);
-                    confirmAction(T.fifo_warning_title, warningText, performExport);
-                } else {
-                    performExport();
-                }
-            };
-            
-            if (isExportingTemp) {
-                confirmAction(T.export_temp_confirm_title, T.export_temp_confirm_text, runExportProcess);
-            } else {
-                runExportProcess();
-            }
-        }
-
-        async function handleProductFormSubmit(e) {
-            e.preventDefault();
-            let successMessage = '';
-            
-            const productData = {
-                id: document.getElementById('product-id').value,
-                name: document.getElementById('product-name').value,
-                customer: document.getElementById('product-customer').value,
-                fullBoxQuantity: parseInt(document.getElementById('product-fullBoxQuantity').value),
-                erpCode: document.getElementById('product-erpCode').value,
-                unitPrice: parseFloat(document.getElementById('product-unitPrice').value)
-            };
-
-            try {
-                if (editingProductId) {
-                    await callAppsScript('updateProduct', productData);
-                    const productIndex = db.products.findIndex(p => String(p.id).trim() === String(editingProductId).trim());
-                    if (productIndex > -1) db.products[productIndex] = productData;
-                    successMessage = translations[currentLanguage].product_update_success;
-                } else {
-                    if (db.products.some(p => String(p.id).trim() === String(productData.id).trim())) { showError('Duplicate ID!', translations[currentLanguage].product_id_exists); return; }
-                    await callAppsScript('addProduct', productData);
-                    db.products.push(productData);
-                    successMessage = translations[currentLanguage].product_add_success;
-                }
-                
-                clearProductForm();
-                populateAll();
-                showSuccess(successMessage);
-            } catch (error) {
-                showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
-            }
-        }
-        
-        async function handleUserFormSubmit(e) {
-            e.preventDefault();
-            let successMessage = '';
-
-            const userData = {
-                username: document.getElementById('user-username').value,
-                password: document.getElementById('user-password').value,
-                role: document.getElementById('user-role-select').value,
-                canImport: document.getElementById('permission-canImport').checked,
-                canExport: document.getElementById('permission-canExport').checked,
-                canViewHistory: document.getElementById('permission-canViewHistory').checked,
-                canCountStock: document.getElementById('permission-canCountStock').checked,
-                canManageProducts: document.getElementById('permission-canManageProducts').checked,
-                canManageUsers: document.getElementById('permission-canManageUsers').checked,
-                canManageAnnouncements: document.getElementById('permission-canManageAnnouncements').checked,
-            };
-            
-            try {
-                if (!originalUsernameForEdit) { // Adding new user
-                    if (db.users.some(u => u.username === userData.username)) { showError('Duplicate Username!', translations[currentLanguage].username_exists); return; }
-                    await callAppsScript('addUser', userData);
-                    db.users.push(userData);
-                    successMessage = translations[currentLanguage].user_add_success;
-                } else { // Editing existing user
-                    const isUsernameTaken = db.users.some(u => u.username === userData.username && u.username !== originalUsernameForEdit);
-                    if (isUsernameTaken) { showError('Duplicate Username!', translations[currentLanguage].username_exists); return; }
-                    
-                    await callAppsScript('updateUser', { oldUsername: originalUsernameForEdit, ...userData });
-
-                    // Optimistic update
-                    const userIndex = db.users.findIndex(u => u.username === originalUsernameForEdit);
-                    if (userIndex > -1) db.users[userIndex] = userData;
-
-                    if (currentUser.username === originalUsernameForEdit) {
-                        sessionStorage.setItem('currentUser', JSON.stringify(userData));
-                        currentUser = userData;
-                    }
-                    successMessage = translations[currentLanguage].user_update_success;
-                }
-                
-                clearUserForm();
-                populateAll();
-                showSuccess(successMessage);
-            } catch (error) {
-                showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
-            }
-        }
-        
-        async function handleEditStockSubmit(e) {
-            e.preventDefault();
-            const T = translations[currentLanguage];
-            const productId = document.getElementById('edit-stock-product-id').value;
-            const newTotalQuantity = parseInt(document.getElementById('edit-stock-quantity').value);
-            
-            const confirmTitle = T.edit_stock_confirm_title;
-            const confirmText = T.edit_stock_confirm_text.replace('{productId}', productId).replace('{quantity}', newTotalQuantity);
-
-            confirmAction(confirmTitle, confirmText, async () => {
-                const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
-                if (!product) { showError('Error', T.product_not_found_error); return; }
-                
-                const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim());
-                const originalTotal = stockInfo ? stockInfo.totalQuantity : 0;
-
-                // --- FIX: Add a machine-readable part to the remark for reliable parsing ---
-                const humanReadableRemark = `Adjusted from ${originalTotal} to ${newTotalQuantity}`;
-                const machineReadableRemark = `MANUAL_ADJ_NEW_TOTAL:${newTotalQuantity}|${humanReadableRemark}`;
-
-                const adjustmentEntry = {
-                    id: 'adj-' + Date.now(),
-                    date: new Date().toISOString(),
-                    type: 'adjustment',
-                    productId: productId,
-                    productName: product.name,
-                    customer: product.customer,
-                    erpCode: product.erpCode,
-                    quantity: newTotalQuantity - originalTotal,
-                    productionDate: 'Manual Adjustment',
-                    user: currentUser.username,
-                    remarks: machineReadableRemark
-                };
-
-                try {
-                    await callAppsScript('appendHistory', adjustmentEntry);
-                    db.history.unshift(adjustmentEntry);
-                    calculateStockFromHistory();
-                    populateAll();
-                    editStockModal.hide();
-                    showSuccess(T.stock_update_success);
-                } catch (error) {
-                    showError(T.save_error_title, T.save_error_text.replace('{error}', error.message));
-                }
-            });
-        }
-
-        async function handleAnnouncementFormSubmit(e) {
+            // --- Background Save ---
+            try {
+                await callAppsScript('appendBatchHistory', newHistoryEntries);
+                console.log(`Background export successful for ${product.name}`);
+            } catch (error) {
+                showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
+            }
+        }        async function handleAnnouncementFormSubmit(e) {
             e.preventDefault();
             let successMessage = '';
             
