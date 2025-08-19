@@ -853,6 +853,7 @@
             history_edit_no_lot: "ไม่พบสต็อกล็อตเดิมของประวัติรายการนี้",
             history_edit_not_enough: "ไม่สามารถแก้ไขจำนวนได้ สต็อกคงเหลือในล็อตนี้ (รวมที่คืน) มีเพียง {qty} ชิ้น",
             history_edit_import_not_enough: "ไม่สามารถลดจำนวนรับเข้าให้ต่ำกว่า {qty} ชิ้นได้ เนื่องจากมีสินค้าจำนวนดังกล่าวถูกใช้ไปแล้ว",
+	        download_by: "ดาวน์โหลดโดย: {user} เมื่อ: {date}",	
             product_not_found_error: "ไม่พบสินค้า",
             success_title: "เรียบร้อย!",
             import_success: "รับสินค้า {name} เข้ามาแล้วจ้า",
@@ -1380,6 +1381,7 @@
             history_edit_no_lot: "Original stock lot for this history record not found.",
             history_edit_not_enough: "Cannot edit quantity. Stock available in this lot (including returned items) is only {qty}.",
             history_edit_import_not_enough: "Cannot reduce import quantity below {qty}, as that many units have already been used.",
+	        download_by: "Downloaded by: {user} on: {date}",
             product_not_found_error: "Product not found",
             success_title: "Success!",
             import_success: "Imported {name} successfully.",
@@ -2097,6 +2099,70 @@
                 showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
             }
         }
+		// Function for handling stock adjustments
+async function handleEditStockSubmit(e) {
+    e.preventDefault();
+    const T = translations[currentLanguage];
+    const productId = document.getElementById('edit-stock-product-id').value;
+    const newQuantity = parseInt(document.getElementById('edit-stock-quantity').value);
+
+    // Get current stock
+    const currentStock = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim()) || { totalQuantity: 0 };
+    const variance = newQuantity - currentStock.totalQuantity;
+
+    if (variance === 0) {
+        showSuccess('ไม่มีการเปลี่ยนแปลง', 'ยอดสต็อกเท่าเดิม ไม่มีการบันทึก');
+        editStockModal.hide();
+        return;
+    }
+
+    const confirmText = T.edit_stock_confirm_text.replace('{productId}', productId).replace('{quantity}', newQuantity.toLocaleString());
+    
+    // Use confirmAction to ask for confirmation before submitting
+    confirmAction(T.edit_stock_confirm_title, confirmText, async () => {
+        try {
+            // Find product information for history record
+            const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
+            const productName = product ? product.name : T.product_not_found.replace('{id}', productId);
+            const erpCode = product ? product.erpCode : '';
+
+            // Create a new history entry for the adjustment
+            const adjustmentEntry = {
+                id: 'adj-' + Date.now(),
+                date: new Date().toISOString(),
+                type: 'adjustment',
+                productId: productId,
+                productName: productName,
+                customer: product ? product.customer : '',
+                erpCode: erpCode,
+                quantity: variance, // Record the difference, not the new total
+                productionDate: 'Manual Adjustment', // Custom production date for adjustments
+                user: currentUser.username,
+                invoiceNumber: null,
+                remarks: `MANUAL_ADJ_NEW_TOTAL:${newQuantity}|Adjusted by ${currentUser.username}`, // Use a machine-readable remark
+                packagingType: 'standard'
+            };
+
+            // Optimistic update
+            db.history.unshift(adjustmentEntry);
+            calculateStockFromHistory();
+            populateAll();
+            editStockModal.hide();
+            showSuccess(T.stock_update_success);
+
+            // Background Save
+            await callAppsScript('appendHistory', adjustmentEntry);
+            console.log(`Background save successful for manual stock adjustment of product ${productId}`);
+
+        } catch (error) {
+            // If save fails, rollback the optimistic update
+            db.history = db.history.filter(h => h.id !== adjustmentEntry.id);
+            calculateStockFromHistory();
+            populateAll();
+            showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
+        }
+    });
+}
 
         async function handleExport(e) {
             e.preventDefault();
@@ -2515,198 +2581,210 @@
         }
         
         // --- ADD EVENT LISTENERS ---
-        function addEventListeners() {
-            loginForm.addEventListener('submit', handleLogin);
-            logoutBtn.addEventListener('click', () => confirmAction(translations[currentLanguage].confirm_logout_title, '', showLoginPage));
-            document.getElementById('refresh-stock-summary-btn').addEventListener('click', () => loadDataFromSheet(true));
-            
-            document.getElementById('backup-stock-btn').addEventListener('click', () => {
-                const stockBackupData = generateStockBackupData();
-                backupToCSV(stockBackupData, 'stock_summary_backup.csv');
-            });
-            document.getElementById('backup-products-btn').addEventListener('click', () => {
-                backupToCSV(db.products, 'products_backup.csv');
-            });
-            document.getElementById('backup-users-btn').addEventListener('click', () => {
-                backupToCSV(db.users, 'users_backup.csv');
-            });
-            
-            document.getElementById('backup-history-btn').addEventListener('click', () => {
-                const T = translations[currentLanguage];
-                const historyData = getFilteredHistory();
+function addEventListeners() {
+    loginForm.addEventListener('submit', handleLogin);
+    logoutBtn.addEventListener('click', () => confirmAction(translations[currentLanguage].confirm_logout_title, '', showLoginPage));
+    document.getElementById('refresh-stock-summary-btn').addEventListener('click', () => loadDataFromSheet(true));
+    
+    // --- แก้ไขโค้ดสำหรับปุ่มดาวน์โหลด ---
+    document.getElementById('backup-stock-btn').addEventListener('click', () => {
+        const T = translations[currentLanguage];
+        const stockBackupData = generateStockBackupData();
+        // สร้าง footer object
+        const footer = {
+            left: 'FS-112',
+            right: `${T.download_by.replace('{user}', currentUser.username).replace('{date}', new Date().toLocaleString())}`
+        };
+        // เรียกใช้ฟังก์ชัน backupToCSV พร้อมส่ง footer เข้าไปด้วย
+        backupToCSV(stockBackupData, 'stock_summary_backup.csv', footer);
+    });
 
-                if (!historyData || historyData.length === 0) {
-                    showError('No Data', T.backup_no_data);
-                    return;
-                }
+    document.getElementById('backup-products-btn').addEventListener('click', () => {
+        const T = translations[currentLanguage];
+        const footer = {
+            left: 'FS-112',
+            right: `${T.download_by.replace('{user}', currentUser.username).replace('{date}', new Date().toLocaleString())}`
+        };
+        backupToCSV(db.products, 'products_backup.csv', footer);
+    });
 
-                // Pre-process the data to format dates correctly for CSV export
-                const dataToExport = historyData.map(item => {
-                    // Create a copy to avoid modifying the original db object
-                    const newItem = { ...item };
+    document.getElementById('backup-users-btn').addEventListener('click', () => {
+        const T = translations[currentLanguage];
+        const footer = {
+            left: 'FS-112',
+            right: `${T.download_by.replace('{user}', currentUser.username).replace('{date}', new Date().toLocaleString())}`
+        };
+        backupToCSV(db.users, 'users_backup.csv', footer);
+    });
+    
+    document.getElementById('backup-history-btn').addEventListener('click', () => {
+        const T = translations[currentLanguage];
+        const historyData = getFilteredHistory();
 
-                    // Format the main transaction timestamp
-                    newItem.date = new Date(item.date).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB', {
-                        year: 'numeric', month: '2-digit', day: '2-digit',
-                        hour: '2-digit', minute: '2-digit', second: '2-digit',
-                        timeZone: 'Asia/Bangkok'
-                    });
-
-                    // Format the production date
-                    const prodDate = item.productionDate || item.ProductionDate || item.production_date;
-                    newItem.productionDate = formatDate(prodDate);
-
-                    return newItem;
-                });
-                
-                const footerText = `Downloaded by: ${currentUser.username} on ${new Date().toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB')}`;
-                const footer = {
-                    left: 'FS-112',
-                    right: footerText
-                };
-
-                backupToCSV(dataToExport, 'history_backup.csv', footer);
-            });
-
-            // Delegated event listeners for dynamic content
-            document.body.addEventListener('input', (e) => {
-                if (e.target.id === 'import-product-id') {
-                    const searchTerm = e.target.value;
-                    const suggestionsContainer = document.getElementById('import-product-suggestions');
-                    const productSource = db.products;
-                    showSuggestions(e.target, suggestionsContainer, productSource, searchTerm);
-                }
-                if (e.target.id === 'export-product-id') {
-                    const searchTerm = e.target.value;
-                    // FIX: Trim the productId from calculatedStock to ensure consistent matching against trimmed product IDs.
-                    const productsInStockIds = calculatedStock.filter(s => s.totalQuantity > 0).map(s => String(s.productId).trim());
-                    const productSource = db.products.filter(p => productsInStockIds.includes(String(p.id).trim()));
-                    showSuggestions(e.target, document.getElementById('export-product-suggestions'), productSource, searchTerm);
-                }
-                if (e.target.id === 'filter-product-search') {
-                    const searchTerm = e.target.value;
-                    const suggestionsContainer = document.getElementById('filter-product-suggestions');
-                    const productSource = db.products;
-                    showFilterSuggestions(e.target, suggestionsContainer, productSource, searchTerm);
-                }
-                if (e.target.classList.contains('import-quantity')) {
-                    updateImportTotal();
-                }
-                if (e.target.classList.contains('export-quantity')) {
-                    updateExportTotal();
-                }
-                   if (e.target.id === 'stock-search-input') {
-                    populateStockSummary();
-                }
-            });
-
-            document.body.addEventListener('change', (e) => {
-                if (e.target.id === 'import-product-id') {
-                    const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
-                    document.getElementById('import-product-name').value = product ? product.name : '';
-                    document.getElementById('import-customer').value = product ? product.customer || '' : '';
-                    document.getElementById('import-erp-code').value = product ? product.erpCode : '';
-                    document.getElementById('import-fullbox').value = product ? product.fullBoxQuantity : '';
-                }
-                if (e.target.id === 'export-product-id') {
-                    const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
-                    document.getElementById('export-product-name').value = product ? product.name : '';
-                    document.getElementById('export-customer').value = product ? product.customer || '' : '';
-                    document.getElementById('export-erp-code').value = product ? product.erpCode : '';
-                    document.getElementById('export-fullbox').value = product ? product.fullBoxQuantity : '';
-                    populateExportLotsList(e.target.value);
-                }
-                if (e.target.type === 'checkbox' && e.target.closest('.export-lot-row')) {
-                    const row = e.target.closest('.export-lot-row');
-                    const quantityInput = row.querySelector('.export-quantity');
-                    quantityInput.disabled = !e.target.checked;
-                    if (!e.target.checked) {
-                        quantityInput.value = '';
-                    }
-                    updateExportTotal();
-                }
-                   if (e.target.id === 'show-old-stock-filter') {
-                    populateStockSummary();
-                }
-            });
-            
-            document.body.addEventListener('submit', function(e) {
-                if(e.target.id === 'import-form') handleImport(e);
-                if(e.target.id === 'export-form') handleExport(e);
-                if(e.target.id === 'product-form') handleProductFormSubmit(e);
-                if(e.target.id === 'user-form') handleUserFormSubmit(e);
-                if(e.target.id === 'announcement-form') handleAnnouncementFormSubmit(e);
-                if(e.target.id === 'history-filter-form') {
-                    e.preventDefault();
-                    hasHistoryBeenSearched = true;
-                    populateHistoryTable();
-                }
-                if(e.target.id === 'edit-stock-form') handleEditStockSubmit(e);
-            });
-
-            document.body.addEventListener('click', function(e) {
-                if (e.target.id === 'add-import-lot-btn') addImportLotRow();
-                if (e.target.classList.contains('remove-import-lot-btn')) {
-                    e.target.closest('.import-lot-row').remove();
-                    updateImportTotal();
-                }
-                if (e.target.id === 'clear-import-form-btn') renderImportForm();
-                if (e.target.id === 'clear-export-form-btn') renderExportForm();
-                if (e.target.id === 'clear-product-form-btn') clearProductForm();
-                if (e.target.id === 'clear-user-form-btn') clearUserForm();
-                if (e.target.id === 'clear-announcement-form-btn') clearAnnouncementForm();
-                if (e.target.id === 'history-filter-reset-btn') {
-                    document.getElementById('filter-product-id').value = '';
-                    hasHistoryBeenSearched = false;
-                    setTimeout(() => populateHistoryTable(), 0);
-                }
-                if (!e.target.closest('.position-relative')) {
-                    document.querySelectorAll('.suggestions-container').forEach(c => c.innerHTML = '');
-                }
-
-                if (e.target.closest('.reverse-history-btn')) {
-                    const button = e.target.closest('.reverse-history-btn');
-                    const historyItemString = button.dataset.historyItem;
-                    if (historyItemString) {
-                        try {
-                            const historyItem = JSON.parse(historyItemString);
-                            window.app.reverseHistory(historyItem);
-                        } catch (err) {
-                            console.error("Failed to parse history item from data attribute:", err);
-                            showError("Error", "Could not process the request.");
-                        }
-                    }
-                }
-
-                // NEW: Stock Count Listeners
-                if (e.target.id === 'start-stock-count-btn') {
-                    window.app.startNewStockCount();
-                }
-                if (e.target.id === 'save-stock-count-btn') {
-                    window.app.saveStockCount();
-                }
-                const viewReportBtn = e.target.closest('.view-stock-count-report-btn');
-                if (viewReportBtn) {
-                    window.app.viewStockCountReport(viewReportBtn.dataset.countId);
-                }
-                const approveBtn = e.target.closest('.approve-stock-count-btn');
-                if (approveBtn) {
-                    window.app.approveStockCount(approveBtn.dataset.countId);
-                }
-
-                // NEW: Dashboard filter button
-                if (e.target.id === 'dashboard-filter-btn') {
-                    const startDate = dashboardStartDateInput.value;
-                    const endDate = dashboardEndDateInput.value;
-                    if (startDate && endDate) {
-                        populateSalesDashboard(new Date(startDate), new Date(endDate));
-                    } else {
-                        showError('ข้อมูลไม่ครบถ้วน', 'กรุณาเลือกวันที่เริ่มต้นและวันที่สิ้นสุด');
-                    }
-                }
-            });
+        if (!historyData || historyData.length === 0) {
+            showError('No Data', T.backup_no_data);
+            return;
         }
 
+        const dataToExport = historyData.map(item => {
+            const newItem = { ...item };
+            newItem.date = new Date(item.date).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                timeZone: 'Asia/Bangkok'
+            });
+            const prodDate = item.productionDate || item.ProductionDate || item.production_date;
+            newItem.productionDate = formatDate(prodDate);
+            return newItem;
+        });
+        
+        const footer = {
+            left: 'FS-112',
+            right: `${T.download_by.replace('{user}', currentUser.username).replace('{date}', new Date().toLocaleString())}`
+        };
+
+        // ส่ง footer object เข้าไปในฟังก์ชัน backupToCSV
+        backupToCSV(dataToExport, 'history_backup.csv', footer);
+    });
+    // --- สิ้นสุดการแก้ไขส่วนดาวน์โหลด ---
+
+    // Delegated event listeners for dynamic content
+    document.body.addEventListener('input', (e) => {
+        if (e.target.id === 'import-product-id') {
+            const searchTerm = e.target.value;
+            const suggestionsContainer = document.getElementById('import-product-suggestions');
+            const productSource = db.products;
+            showSuggestions(e.target, suggestionsContainer, productSource, searchTerm);
+        }
+        if (e.target.id === 'export-product-id') {
+            const searchTerm = e.target.value;
+            const productsInStockIds = calculatedStock.filter(s => s.totalQuantity > 0).map(s => String(s.productId).trim());
+            const productSource = db.products.filter(p => productsInStockIds.includes(String(p.id).trim()));
+            showSuggestions(e.target, document.getElementById('export-product-suggestions'), productSource, searchTerm);
+        }
+        if (e.target.id === 'filter-product-search') {
+            const searchTerm = e.target.value;
+            const suggestionsContainer = document.getElementById('filter-product-suggestions');
+            const productSource = db.products;
+            showFilterSuggestions(e.target, suggestionsContainer, productSource, searchTerm);
+        }
+        if (e.target.classList.contains('import-quantity')) {
+            updateImportTotal();
+        }
+        if (e.target.classList.contains('export-quantity')) {
+            updateExportTotal();
+        }
+        if (e.target.id === 'stock-search-input') {
+            populateStockSummary();
+        }
+    });
+
+    document.body.addEventListener('change', (e) => {
+        if (e.target.id === 'import-product-id') {
+            const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
+            document.getElementById('import-product-name').value = product ? product.name : '';
+            document.getElementById('import-customer').value = product ? product.customer || '' : '';
+            document.getElementById('import-erp-code').value = product ? product.erpCode : '';
+            document.getElementById('import-fullbox').value = product ? product.fullBoxQuantity : '';
+        }
+        if (e.target.id === 'export-product-id') {
+            const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
+            document.getElementById('export-product-name').value = product ? product.name : '';
+            document.getElementById('export-customer').value = product ? product.customer || '' : '';
+            document.getElementById('export-erp-code').value = product ? product.erpCode : '';
+            document.getElementById('export-fullbox').value = product ? product.fullBoxQuantity : '';
+            populateExportLotsList(e.target.value);
+        }
+        if (e.target.type === 'checkbox' && e.target.closest('.export-lot-row')) {
+            const row = e.target.closest('.export-lot-row');
+            const quantityInput = row.querySelector('.export-quantity');
+            quantityInput.disabled = !e.target.checked;
+            if (!e.target.checked) {
+                quantityInput.value = '';
+            }
+            updateExportTotal();
+        }
+        if (e.target.id === 'show-old-stock-filter') {
+            populateStockSummary();
+        }
+    });
+    
+    document.body.addEventListener('submit', function(e) {
+        if(e.target.id === 'import-form') handleImport(e);
+        if(e.target.id === 'export-form') handleExport(e);
+        if(e.target.id === 'product-form') handleProductFormSubmit(e);
+        if(e.target.id === 'user-form') handleUserFormSubmit(e);
+        if(e.target.id === 'announcement-form') handleAnnouncementFormSubmit(e);
+        if(e.target.id === 'history-filter-form') {
+            e.preventDefault();
+            hasHistoryBeenSearched = true;
+            setTimeout(() => populateHistoryTable(), 0);
+        }
+        if(e.target.id === 'edit-stock-form') handleEditStockSubmit(e);
+    });
+
+    document.body.addEventListener('click', function(e) {
+        if (e.target.id === 'add-import-lot-btn') addImportLotRow();
+        if (e.target.classList.contains('remove-import-lot-btn')) {
+            e.target.closest('.import-lot-row').remove();
+            updateImportTotal();
+        }
+        if (e.target.id === 'clear-import-form-btn') renderImportForm();
+        if (e.target.id === 'clear-export-form-btn') renderExportForm();
+        if (e.target.id === 'clear-product-form-btn') clearProductForm();
+        if (e.target.id === 'clear-user-form-btn') clearUserForm();
+        if (e.target.id === 'clear-announcement-form-btn') clearAnnouncementForm();
+        if (e.target.id === 'history-filter-reset-btn') {
+            document.getElementById('filter-product-id').value = '';
+            hasHistoryBeenSearched = false;
+            setTimeout(() => populateHistoryTable(), 0);
+        }
+        if (!e.target.closest('.position-relative')) {
+            document.querySelectorAll('.suggestions-container').forEach(c => c.innerHTML = '');
+        }
+
+        if (e.target.closest('.reverse-history-btn')) {
+            const button = e.target.closest('.reverse-history-btn');
+            const historyItemString = button.dataset.historyItem;
+            if (historyItemString) {
+                try {
+                    const historyItem = JSON.parse(historyItemString);
+                    window.app.reverseHistory(historyItem);
+                } catch (err) {
+                    console.error("Failed to parse history item from data attribute:", err);
+                    showError("Error", "Could not process the request.");
+                }
+            }
+        }
+
+        // NEW: Stock Count Listeners
+        if (e.target.id === 'start-stock-count-btn') {
+            window.app.startNewStockCount();
+        }
+        if (e.target.id === 'save-stock-count-btn') {
+            window.app.saveStockCount();
+        }
+        const viewReportBtn = e.target.closest('.view-stock-count-report-btn');
+        if (viewReportBtn) {
+            window.app.viewStockCountReport(viewReportBtn.dataset.countId);
+        }
+        const approveBtn = e.target.closest('.approve-stock-count-btn');
+        if (approveBtn) {
+            window.app.approveStockCount(approveBtn.dataset.countId);
+        }
+
+        // NEW: Dashboard filter button
+        if (e.target.id === 'dashboard-filter-btn') {
+            const startDate = dashboardStartDateInput.value;
+            const endDate = dashboardEndDateInput.value;
+            if (startDate && endDate) {
+                populateSalesDashboard(new Date(startDate), new Date(endDate));
+            } else {
+                showError('ข้อมูลไม่ครบถ้วน', 'กรุณาเลือกวันที่เริ่มต้นและวันที่สิ้นสุด');
+            }
+        }
+    });
+}
         /**
          * [SECURITY WARNING] This login method is insecure. It fetches all user data, including passwords,
          * to the client-side for validation. In a production environment, the username and password
@@ -2786,48 +2864,58 @@
             });
         }
 
-        function backupToCSV(data, filename, footer = null) {
-            if (!data || data.length === 0) {
-                showError('No Data', translations[currentLanguage].backup_no_data);
-                return;
-            }
+function backupToCSV(data, filename) {
+    const T = translations[currentLanguage];
 
-            const allKeys = new Set();
-            data.forEach(row => {
-                Object.keys(row).forEach(key => allKeys.add(key));
-            });
-            const headers = Array.from(allKeys);
-            const csvRows = [headers.join(',')];
+    if (!data || data.length === 0) {
+        showError('No Data', T.backup_no_data);
+        return;
+    }
 
-            data.forEach(row => {
-                const values = headers.map(header => {
-                    const val = row[header] === null || row[header] === undefined ? '' : row[header];
-                    const escaped = ('' + val).replace(/"/g, '""');
-                    return `"${escaped}"`;
-                });
-                csvRows.push(values.join(','));
-            });
+    const allKeys = new Set();
+    data.forEach(row => {
+        Object.keys(row).forEach(key => allKeys.add(key));
+    });
+    const headers = Array.from(allKeys);
+    
+    // --- สร้างหัวกระดาษ (Header) ---
+    const headerRows = [];
+    const headerCols = new Array(headers.length).fill('');
+    headerCols[0] = '"ประวัติ"';
+    headerRows.push(headerCols.join(','));
+    headerRows.push(new Array(headers.length).fill('').join(',')); // เว้นบรรทัด
+    
+    // รวมหัวกระดาษเข้ากับส่วนหัวตารางข้อมูล
+    const csvRows = [...headerRows, headers.join(',')];
 
-            if (footer) {
-                csvRows.push(''); 
-                csvRows.push(''); 
-                
-                const footerCols = new Array(headers.length).fill('');
-                footerCols[0] = `"${footer.left}"`; 
-                footerCols[headers.length - 1] = `"${footer.right}"`; 
-                csvRows.push(footerCols.join(','));
-            }
+    // --- เพิ่มข้อมูลแต่ละแถว ---
+    data.forEach(row => {
+        const values = headers.map(header => {
+            const val = row[header] === null || row[header] === undefined ? '' : row[header];
+            const escaped = ('' + val).replace(/"/g, '""');
+            return `"${escaped}"`;
+        });
+        csvRows.push(values.join(','));
+    });
 
-            const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showSuccess(translations[currentLanguage].backup_downloading.replace('{filename}', filename));
-        }
-        
+    // --- สร้างท้ายกระดาษ (Footer) ---
+    const footerText = `Downloaded by: ${currentUser.username} on ${new Date().toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB')}`;
+    csvRows.push(''); // เว้นบรรทัดก่อน footer
+    const footerCols = new Array(headers.length).fill('');
+    footerCols[0] = '"FS-112"';
+    footerCols[headers.length - 1] = `"${footerText}"`;
+    csvRows.push(footerCols.join(','));
+
+    // --- สร้างและดาวน์โหลดไฟล์ ---
+    const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showSuccess(T.backup_downloading.replace('{filename}', filename));
+}
         function getFilteredHistory() {
             const startDate = document.getElementById('filter-start-date').value;
             const endDate = document.getElementById('filter-end-date').value;
@@ -3325,50 +3413,50 @@ function renderExportForm() {
 
                 const productId = String(item.productId).trim();
                 
-                if (item.type === 'adjustment') {
-                    // This logic handles adjustments by effectively resetting the stock for a product
-                    // and then applying subsequent transactions.
-                    
-                    // Find all existing lots for this product in the ledger and delete them
-                    const keysToDelete = Array.from(stockLedger.keys()).filter(key => key.startsWith(`${productId}::`));
-                    keysToDelete.forEach(key => stockLedger.delete(key));
+// Find this part of the code inside calculateStockFromHistory():
+if (item.type === 'adjustment') {
+    // This logic handles adjustments by effectively resetting the stock for a product
+    // and then applying subsequent transactions.
 
-                    // Parse the new total from the machine-readable part of the remark
-                    let newTotalQuantity = 0;
-                    const remarks = item.remarks || '';
-                    let match = remarks.match(/^MANUAL_ADJ_NEW_TOTAL:(\d+(\.\d+)?)/);
-                    if (!match) {
-                        match = remarks.match(/^STOCK_COUNT_ADJ:/);
-                    }
+    // Find all existing lots for this product in the ledger and delete them
+    const keysToDelete = Array.from(stockLedger.keys()).filter(key => key.startsWith(`${productId}::`));
+    keysToDelete.forEach(key => stockLedger.delete(key));
 
-                    if (match) {
-                        // For manual adjustments, the new total is in the remark.
-                        // For stock count adjustments, the quantity is the variance.
-                        if (remarks.startsWith('MANUAL_ADJ')) {
-                            newTotalQuantity = parseFloat(remarks.split(':')[1].split('|')[0]);
-                        } else { // Stock Count
-                            newTotalQuantity = parseFloat(item.quantity);
-                        }
-                    } else { // Fallback for old format
-                           const oldMatch = remarks.match(/to (\d+)/);
-                           if (oldMatch) newTotalQuantity = parseInt(oldMatch[1], 10);
-                           else newTotalQuantity = parseFloat(item.quantity); // For stock count adjustments
-                    }
-                    
-                    // Create a new single pseudo-lot representing the adjusted total
-                    const adjustmentDate = formatDate(item.date);
-                    const newKey = `${productId}::${adjustmentDate}`;
-                    stockLedger.set(newKey, {
-                        productId: productId,
-                        productionDate: adjustmentDate,
-                        quantity: newTotalQuantity,
-                        isAdjustment: true,
-                        packagingType: 'standard' // Adjustments are considered standard
-                    });
-                    
-                    continue; // Move to the next history item
-                }
-                
+    // Parse the new total from the machine-readable part of the remark
+    let newTotalQuantity = 0;
+    const remarks = item.remarks || '';
+    let match = remarks.match(/^MANUAL_ADJ_NEW_TOTAL:(\d+(\.\d+)?)/);
+    if (!match) {
+        match = remarks.match(/^STOCK_COUNT_ADJ:/);
+    }
+
+    if (match) {
+        // For manual adjustments, the new total is in the remark.
+        // For stock count adjustments, the quantity is the variance.
+        if (remarks.startsWith('MANUAL_ADJ')) {
+            newTotalQuantity = parseFloat(remarks.split(':')[1].split('|')[0]);
+        } else { // Stock Count
+            newTotalQuantity = parseFloat(item.quantity);
+        }
+    } else { // Fallback for old format
+        const oldMatch = remarks.match(/to (\d+)/);
+        if (oldMatch) newTotalQuantity = parseInt(oldMatch[1], 10);
+        else newTotalQuantity = parseFloat(item.quantity); // For stock count adjustments
+    }
+    
+    // Create a new single pseudo-lot representing the adjusted total
+    const adjustmentDate = formatDate(item.date);
+    const newKey = `${productId}::${adjustmentDate}::standard`;
+    stockLedger.set(newKey, {
+        productId: productId,
+        productionDate: adjustmentDate,
+        quantity: newTotalQuantity,
+        isAdjustment: true,
+        packagingType: 'standard' // Adjustments are considered standard
+    });
+    
+    continue; // Move to the next history item
+}                
                 // Regular logic for import, export, reversal
                 const prodDate = item.productionDate || item.ProductionDate || item.production_date;
                 const lotDate = formatDate(prodDate);
@@ -3630,7 +3718,7 @@ function renderExportForm() {
                 customerStockValue.set(customer, (customerStockValue.get(customer) || 0) + value);
             });
 
-            dashboardTotalStockQuantity.textContent = `${T.dashboard_qty_label}${totalStockQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
+            dashboardTotalStockQuantity.textContent = `${totalStockQuantity.toLocaleString()} ${T.dashboard_pieces_label}`;
             dashboardTotalStockValue.textContent = `฿ ${totalStockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
 
