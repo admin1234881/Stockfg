@@ -691,6 +691,12 @@
             export_save_button: "บันทึกการส่งออก",
             export_temp_confirm_title: "ยืนยันการส่งออก?",
             export_temp_confirm_text: "คุณกำลังจะส่งออกสินค้าที่เป็น 'แพ็คกิ้งชั่วคราว' ยืนยันที่จะดำเนินการต่อใช่ไหม?",
+	        export_type_label: "ประเภทการส่งออก",
+                export_type_sale: "ขายสินค้า (Sale)",
+                export_type_production: "เบิกโดยฝ่ายผลิต (Production)",
+                export_type_qc: "เบิกโดย QC (QC)",
+                export_type_other: "อื่นๆ (Other)",
+                error_invoice_required_for_sale: "กรุณากรอกเลขที่ Invoice สำหรับการขายสินค้า",
             // History Tab
             history_filter_from: "จากวันที่",
             history_filter_to: "ถึงวันที่",
@@ -947,7 +953,13 @@
             export_warning: "Exports should follow the FIFO (First-In, First-Out) principle.",
             export_save_button: "Save Export",
             export_temp_confirm_title: "Confirm Export?",
-            export_temp_confirm_text: "You are about to export an item with 'Temporary Packing'. Are you sure you want to proceed?",
+            export_temp_confirm_text: "You are about to export an item with 'Temporary Packing'. Are you sure you want to proceed?",	      
+       	       export_type_label: "Export Type",
+                export_type_sale: "Sale",
+                export_type_production: "Production Withdrawal",
+                export_type_qc: "QC Withdrawal",
+                export_type_other: "Other",
+                error_invoice_required_for_sale: "Please enter an Invoice Number for sales transactions.",
             // History Tab
             history_filter_from: "From Date",
             history_filter_to: "To Date",
@@ -1209,6 +1221,12 @@
             export_save_button: "Save Export",
             export_temp_confirm_title: "Confirm Export?",
             export_temp_confirm_text: "You are about to export an item with 'Temporary Packing'. Are you sure you want to proceed?",
+	    export_type_label: "Export Type",
+            export_type_sale: "Sale",
+            export_type_production: "Production Withdrawal",
+            export_type_qc: "QC Withdrawal",
+            export_type_other: "Other",
+            error_invoice_required_for_sale: "Please enter an Invoice Number for sales transactions.",
             // History Tab
             history_filter_from: "From Date",
             history_filter_to: "To Date",
@@ -2080,38 +2098,18 @@
             }
         }
 
-async function handleExport(e) {
+        async function handleExport(e) {
             e.preventDefault();
             const T = translations[currentLanguage];
             const productId = document.getElementById('export-product-id').value;
             const selectedLotRows = document.querySelectorAll('#export-lots-container .export-lot-row:has(input[type="checkbox"]:checked)');
             const invoiceNumber = document.getElementById('export-invoice-number').value.trim();
+            const exportType = document.getElementById('export-type').value; // <-- [เพิ่ม] ดึงข้อมูลประเภทการส่งออก
 
-            if (!productId || selectedLotRows.length === 0) {
-                showError(T.form_incomplete, T.export_data_incomplete);
+            // [เพิ่ม] ถ้าเป็นการขาย บังคับให้กรอก Invoice Number
+            if (exportType === 'Sale' && !invoiceNumber) {
+                showError('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกเลขที่ Invoice สำหรับการขายสินค้า');
                 return;
-            }
-
-            // --- ตรวจสอบความถูกต้องของข้อมูลก่อนแสดง Pop-up ---
-            for (const row of selectedLotRows) {
-                const productionDate = row.dataset.date;
-                const packagingType = row.dataset.packaging;
-                const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
-
-                const lotInfo = calculatedStock
-                    .find(p => String(p.productId).trim() === String(productId).trim())
-                    ?.lots.find(l => l.productionDate === productionDate && l.packagingType === packagingType);
-
-                const availableQty = lotInfo ? lotInfo.quantity : 0;
-
-                if (isNaN(quantityToExport) || quantityToExport <= 0) {
-                    showError(T.form_incomplete, T.export_data_incomplete);
-                    return;
-                }
-                if (quantityToExport > availableQty) {
-                    showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
-                    return;
-                }
             }
             
             // --- [แก้ไข] ขั้นตอนที่ 0: ตรวจสอบและ "เตือน" Invoice ซ้ำ ---
@@ -2184,8 +2182,7 @@ async function handleExport(e) {
                 }
             }
 
-            // --- ขั้นตอนที่ 3: ถ้าผ่านทุกการยืนยัน ให้ทำการส่งออก ---
-            const remarks = document.getElementById('export-remarks').value;
+ const remarks = document.getElementById('export-remarks').value;
             let product = db.products.find(p => String(p.id).trim() === String(productId).trim()) || { id: productId, name: 'N/A' };
             const newHistoryEntries = [];
 
@@ -2198,6 +2195,7 @@ async function handleExport(e) {
                     id: 'exp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
                     date: new Date().toISOString(),
                     type: 'export',
+                    exportType: exportType, // <-- [เพิ่ม] บันทึกประเภทการส่งออก
                     productId: product.id,
                     productName: product.name,
                     customer: product.customer,
@@ -3206,26 +3204,36 @@ async function handleExport(e) {
             addImportLotRow();
         }
 
-        function renderExportForm() {
-            const T = translations[currentLanguage];
-            const exportFormEl = document.getElementById('export-form');
-            exportFormEl.innerHTML = `
-                <div class="col-md-4"> <label for="export-product-id" class="form-label">${T.product_id}</label> <div class="position-relative"> <input type="text" id="export-product-id" class="form-control" required autocomplete="off" placeholder="${T.search_placeholder}"> <div id="export-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
-                <div class="col-md-5"> <label for="export-product-name" class="form-label">${T.product_name}</label> <input type="text" id="export-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-3"> <label for="export-fullbox" class="form-label">${T.import_fullbox}</label> <input type="text" id="export-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-6"> <label for="export-customer" class="form-label">${T.customer}</label> <input type="text" id="export-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <div class="col-md-6"> <label for="export-erp-code" class="form-label">${T.erp_code}</label> <input type="text" id="export-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
-                <hr class="my-3">
-                <div class="col-12"><label class="form-label fw-bold">${T.export_lot_select}</label><div id="export-lots-container" class="border rounded p-2 bg-light"></div></div>
-                <hr class="my-3">
-                <div class="col-md-4"> <label for="export-total-quantity" class="form-label">${T.export_total_quantity}</label> <input type="text" id="export-total-quantity" class="form-control fw-bold" value="0" readonly style="background-color: #e9ecef; font-size: 1.2rem;"> </div>
-                <div class="col-md-4"> <label for="export-invoice-number" class="form-label">${T.export_invoice}</label> <input type="text" id="export-invoice-number" class="form-control" required> </div>
-                <div class="col-md-4"> <label for="export-remarks" class="form-label">${T.remarks}</label> <textarea id="export-remarks" class="form-control" rows="1"></textarea> </div>
-                <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${T.export_warning}</p> </div>
-                <div class="col-12 mt-3"> <button type="submit" class="btn btn-success"><i class="bi bi-send-check-fill me-2"></i>${T.export_save_button}</button> <button type="button" id="clear-export-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>${T.clear_form_button}</button> </div>`;
-        }
+function renderExportForm() {
+        const T = translations[currentLanguage];
+        const exportFormEl = document.getElementById('export-form');
+        exportFormEl.innerHTML = `
+            <div class="col-md-4"> <label for="export-product-id" class="form-label">${T.product_id}</label> <div class="position-relative"> <input type="text" id="export-product-id" class="form-control" required autocomplete="off" placeholder="${T.search_placeholder}"> <div id="export-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
+            <div class="col-md-5"> <label for="export-product-name" class="form-label">${T.product_name}</label> <input type="text" id="export-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+            <div class="col-md-3"> <label for="export-fullbox" class="form-label">${T.import_fullbox}</label> <input type="text" id="export-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+            <div class="col-md-6"> <label for="export-customer" class="form-label">${T.customer}</label> <input type="text" id="export-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+            <div class="col-md-6"> <label for="export-erp-code" class="form-label">${T.erp_code}</label> <input type="text" id="export-erp-code" class="form-control" readonly style="background-color: #e9ecef;"> </div>
+            <hr class="my-3">
+            <div class="col-12"><label class="form-label fw-bold">${T.export_lot_select}</label><div id="export-lots-container" class="border rounded p-2 bg-light"></div></div>
+            <hr class="my-3">
+            <div class="col-md-3"> <label for="export-total-quantity" class="form-label">${T.export_total_quantity}</label> <input type="text" id="export-total-quantity" class="form-control fw-bold" value="0" readonly style="background-color: #e9ecef; font-size: 1.2rem;"> </div>
+            
+            <div class="col-md-3"> 
+                <label for="export-type" class="form-label">${T.export_type_label}</label> 
+                <select id="export-type" class="form-select" required>
+                    <option value="Sale" selected>${T.export_type_sale}</option>
+                    <option value="Production">${T.export_type_production}</option>
+                    <option value="QC">${T.export_type_qc}</option>
+                    <option value="Other">${T.export_type_other}</option>
+                </select> 
+            </div>
+            <div class="col-md-3"> <label for="export-invoice-number" class="form-label">${T.export_invoice}</label> <input type="text" id="export-invoice-number" class="form-control"> </div>
+            <div class="col-md-3"> <label for="export-remarks" class="form-label">${T.remarks}</label> <textarea id="export-remarks" class="form-control" rows="1"></textarea> </div>
 
-        function renderProductForm() {
+            <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${T.export_warning}</p> </div>
+            <div class="col-12 mt-3"> <button type="submit" class="btn btn-success"><i class="bi bi-send-check-fill me-2"></i>${T.export_save_button}</button> <button type="button" id="clear-export-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>${T.clear_form_button}</button> </div>`;
+    }        
+		function renderProductForm() {
             const T = translations[currentLanguage];
             const productFormEl = document.getElementById('product-form');
             productFormEl.innerHTML = `
@@ -3626,14 +3634,13 @@ async function handleExport(e) {
             dashboardTotalStockValue.textContent = `฿ ${totalStockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
 
-    function populateSalesDashboard(startDate, endDate) {
+function populateSalesDashboard(startDate, endDate) {
         const T = translations[currentLanguage];
         let totalSalesQuantity = 0;
         let totalSalesValue = 0;
         const customerSales = new Map();
 
-        // --- Customer Categorization ---
-        const autopartCustomers = ["FAURECIA", "Brose Thailand", "TSPT", "TSPT-SA","HANON","VANDAPAC","BOSCH","TGT","MOLTEN","SANKO","YENFENG"]; 
+        const autopartCustomers = ["FAURECIA", "Brose Thailand", "TSPT-SA","HANON","VANDAPAC","BOSCH","TGT","MOLTEN","SANKO","YENFENG","TSPT"]; 
         const electronicCustomers = ["APLA", "SHINSHIN", "SHINSUNG", "LG WM","MIDEA","LG AIR","WINIX"];
         
         const autopartCustomersLower = autopartCustomers.map(c => c.trim().toLowerCase());
@@ -3657,51 +3664,71 @@ async function handleExport(e) {
         });
 
         filteredHistoryForSales.forEach(item => {
-            const productInfo = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
-            const unitPrice = productInfo ? parseFloat(productInfo.unitPrice) || 0 : 0;
-            const customer = item.customer || 'ไม่ระบุลูกค้า';
-            const customerLower = customer.trim().toLowerCase();
-
             let quantityAffectingSales = 0;
-            if (item.type === 'export') {
+
+            // [แก้ไข] ตรรกะการระบุรายการที่เป็น "ยอดขาย"
+            // 1. ต้องเป็นรายการส่งออก (export) และประเภทเป็น 'Sale' (หรือไม่มีการระบุประเภท สำหรับข้อมูลเก่า)
+            const isSaleTransaction = item.type === 'export' && (!item.exportType || item.exportType === 'Sale');
+            
+            // 2. ต้องเป็นการยกเลิก (reversal) ของรายการขายเท่านั้น
+            let isReversalOfSale = false;
+            if (item.type === 'reversal') {
+                const originalIdMatch = (item.remarks || '').match(/Reversal of transaction ID: (exp-[\w-]+)/);
+                if (originalIdMatch) {
+                    const originalId = originalIdMatch[1];
+                    const originalTransaction = db.history.find(h => h.id === originalId);
+                    // ตรวจสอบว่ารายการดั้งเดิมที่ถูกยกเลิก เป็นรายการขายหรือไม่
+                    if (originalTransaction && (!originalTransaction.exportType || originalTransaction.exportType === 'Sale')) {
+                        isReversalOfSale = true;
+                    }
+                }
+            }
+
+            if (isSaleTransaction) {
                 quantityAffectingSales = parseFloat(item.quantity) || 0;
-            } else if (item.type === 'reversal' && parseFloat(item.quantity) > 0) {
+            } else if (isReversalOfSale) {
+                // นำยอดออกจากยอดขาย (Reversal ของ export จะมี quantity เป็นบวก)
                 quantityAffectingSales = - (parseFloat(item.quantity) || 0);
             }
-            
-            const valueAffectingSales = quantityAffectingSales * unitPrice;
 
-            totalSalesQuantity += quantityAffectingSales;
-            totalSalesValue += valueAffectingSales;
+            // ถ้า quantityAffectingSales ไม่ใช่ 0 (คือเป็นรายการที่เกี่ยวกับยอดขาย) ให้คำนวณต่อ
+            if (quantityAffectingSales !== 0) {
+                const productInfo = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
+                const unitPrice = productInfo ? parseFloat(productInfo.unitPrice) || 0 : 0;
+                const customer = item.customer || T.dashboard_customer_unspecified;
+                const customerLower = customer.trim().toLowerCase();
+                const valueAffectingSales = quantityAffectingSales * unitPrice;
 
-            if (autopartCustomersLower.includes(customerLower)) {
-                totalAutopartQuantity += quantityAffectingSales;
-                totalAutopartValue += valueAffectingSales;
-            } else if (electronicCustomersLower.includes(customerLower)) {
-                totalElectronicQuantity += quantityAffectingSales;
-                totalElectronicValue += valueAffectingSales;
+                totalSalesQuantity += quantityAffectingSales;
+                totalSalesValue += valueAffectingSales;
+
+                if (autopartCustomersLower.includes(customerLower)) {
+                    totalAutopartQuantity += quantityAffectingSales;
+                    totalAutopartValue += valueAffectingSales;
+                } else if (electronicCustomersLower.includes(customerLower)) {
+                    totalElectronicQuantity += quantityAffectingSales;
+                    totalElectronicValue += valueAffectingSales;
+                }
+
+                if (!customerSales.has(customer)) {
+                    customerSales.set(customer, { quantity: 0, value: 0 });
+                }
+                const currentSales = customerSales.get(customer);
+                currentSales.quantity += quantityAffectingSales;
+                currentSales.value += valueAffectingSales;
             }
-
-            if (!customerSales.has(customer)) {
-                customerSales.set(customer, { quantity: 0, value: 0 });
-            }
-            const currentSales = customerSales.get(customer);
-            currentSales.quantity += quantityAffectingSales;
-            currentSales.value += valueAffectingSales;
         });
-
-        // Update total sales cards
+        
+        // --- ส่วนที่เหลือของการอัปเดตหน้า Dashboard (เหมือนเดิม) ---
         dashboardTotalSalesQuantity.textContent = `${T.dashboard_qty_label}${totalSalesQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
         dashboardTotalSalesValue.textContent = `฿ ${totalSalesValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-        // Update category cards
         dashboardAutopartSalesQuantity.textContent = `${T.dashboard_qty_label}${totalAutopartQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
         dashboardAutopartSalesValue.textContent = `฿ ${totalAutopartValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         
         dashboardElectronicSalesQuantity.textContent = `${T.dashboard_qty_label}${totalElectronicQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
         dashboardElectronicSalesValue.textContent = `฿ ${totalElectronicValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-        // Update customer sales table
         dashboardSalesTable.innerHTML = '';
         if (customerSales.size === 0) {
             dashboardSalesTable.innerHTML = `<tr><td colspan="5" class="text-center text-muted p-4">${T.dashboard_no_sales_data}</td></tr>`;
@@ -3710,16 +3737,18 @@ async function handleExport(e) {
             
             let rank = 1;
             sortedCustomerSales.forEach(([customer, data]) => {
+                if (data.quantity === 0 && data.value === 0) return; // ไม่แสดงลูกค้าที่ยอดเป็น 0
+
                 const row = document.createElement('tr');
                 
                 let typeBadge = '';
                 const customerLower = customer.trim().toLowerCase();
                 if (autopartCustomersLower.includes(customerLower)) {
-                    typeBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">Autopart</span>`;
+                    typeBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">${T.dashboard_type_autopart}</span>`;
                 } else if (electronicCustomersLower.includes(customerLower)) {
-                    typeBadge = `<span class="badge bg-info-subtle text-info-emphasis rounded-pill">Electronic</span>`;
+                    typeBadge = `<span class="badge bg-info-subtle text-info-emphasis rounded-pill">${T.dashboard_type_electronic}</span>`;
                 } else {
-                     typeBadge = `<span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">Other</span>`;
+                     typeBadge = `<span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${T.dashboard_type_other}</span>`;
                 }
 
                 const percentage = totalSalesValue > 0 ? (data.value / totalSalesValue) * 100 : 0;
