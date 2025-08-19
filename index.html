@@ -2087,10 +2087,36 @@ async function handleExport(e) {
             const selectedLotRows = document.querySelectorAll('#export-lots-container .export-lot-row:has(input[type="checkbox"]:checked)');
             const invoiceNumber = document.getElementById('export-invoice-number').value.trim();
 
-            // --- [เพิ่ม] ขั้นตอนที่ 0: ตรวจสอบ Invoice ซ้ำ (เวอร์ชันแก้ไขแล้ว) ---
+            if (!productId || selectedLotRows.length === 0) {
+                showError(T.form_incomplete, T.export_data_incomplete);
+                return;
+            }
+
+            // --- ตรวจสอบความถูกต้องของข้อมูลก่อนแสดง Pop-up ---
+            for (const row of selectedLotRows) {
+                const productionDate = row.dataset.date;
+                const packagingType = row.dataset.packaging;
+                const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
+
+                const lotInfo = calculatedStock
+                    .find(p => String(p.productId).trim() === String(productId).trim())
+                    ?.lots.find(l => l.productionDate === productionDate && l.packagingType === packagingType);
+
+                const availableQty = lotInfo ? lotInfo.quantity : 0;
+
+                if (isNaN(quantityToExport) || quantityToExport <= 0) {
+                    showError(T.form_incomplete, T.export_data_incomplete);
+                    return;
+                }
+                if (quantityToExport > availableQty) {
+                    showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
+                    return;
+                }
+            }
+            
+            // --- [แก้ไข] ขั้นตอนที่ 0: ตรวจสอบและ "เตือน" Invoice ซ้ำ ---
             if (invoiceNumber) {
                 const isInvoiceDuplicate = db.history.some(item => {
-                    // เพิ่มการตรวจสอบให้รอบคอบขึ้น ป้องกัน error ถ้าข้อมูลไม่ใช่ข้อความ
                     if (item && item.type === 'export' && item.invoiceNumber) {
                         const existingInvoice = String(item.invoiceNumber).trim().toLowerCase();
                         const newInvoice = invoiceNumber.toLowerCase();
@@ -2100,35 +2126,17 @@ async function handleExport(e) {
                 });
 
                 if (isInvoiceDuplicate) {
-                    showError('Invoice ซ้ำ!', `เลขที่ Invoice "${invoiceNumber}" นี้ถูกใช้ไปแล้ว กรุณาตรวจสอบอีกครั้ง`);
-                    return; // หยุดการทำงานทันที
-                }
-            }
-            
-            if (!productId || selectedLotRows.length === 0) {
-                showError(T.form_incomplete, T.export_data_incomplete);
-                return;
-            }
-            
-            // --- ตรวจสอบความถูกต้องของข้อมูลก่อนแสดง Pop-up ---
-            for(const row of selectedLotRows) {
-                const productionDate = row.dataset.date;
-                const packagingType = row.dataset.packaging; 
-                const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
-
-                const lotInfo = calculatedStock
-                    .find(p => String(p.productId).trim() === String(productId).trim())
-                    ?.lots.find(l => l.productionDate === productionDate && l.packagingType === packagingType); 
-
-                const availableQty = lotInfo ? lotInfo.quantity : 0;
-                
-                if (isNaN(quantityToExport) || quantityToExport <= 0) {
-                    showError(T.form_incomplete, T.export_data_incomplete);
-                    return;
-                }
-                if (quantityToExport > availableQty) {
-                    showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
-                    return;
+                    const result = await Swal.fire({
+                        title: 'Invoice ซ้ำ!',
+                        text: `เลขที่ Invoice "${invoiceNumber}" นี้ถูกใช้ไปแล้ว คุณต้องการบันทึกซ้ำใช่ไหม?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'ใช่, บันทึกซ้ำ',
+                        cancelButtonText: 'ยกเลิก'
+                    });
+                    if (!result.isConfirmed) {
+                        return; // ถ้าผู้ใช้กดยกเลิก ให้จบการทำงานทันที
+                    }
                 }
             }
 
@@ -2144,7 +2152,7 @@ async function handleExport(e) {
                     cancelButtonText: T.cancel_button
                 });
                 if (!result.isConfirmed) {
-                    return; 
+                    return;
                 }
             }
 
@@ -2172,7 +2180,7 @@ async function handleExport(e) {
                     cancelButtonText: T.cancel_button
                 });
                 if (!result.isConfirmed) {
-                    return; 
+                    return;
                 }
             }
 
@@ -2181,7 +2189,7 @@ async function handleExport(e) {
             let product = db.products.find(p => String(p.id).trim() === String(productId).trim()) || { id: productId, name: 'N/A' };
             const newHistoryEntries = [];
 
-            for(const row of selectedLotRows) {
+            for (const row of selectedLotRows) {
                 const productionDate = row.dataset.date;
                 const packagingType = row.dataset.packaging;
                 const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
