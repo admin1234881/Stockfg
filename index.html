@@ -2081,127 +2081,144 @@
         }
 
 async function handleExport(e) {
-            e.preventDefault();
-            const T = translations[currentLanguage];
-            const productId = document.getElementById('export-product-id').value;
-            const selectedLotRows = document.querySelectorAll('#export-lots-container .export-lot-row:has(input[type="checkbox"]:checked)');
+            e.preventDefault();
+            const T = translations[currentLanguage];
+            const productId = document.getElementById('export-product-id').value;
+            const selectedLotRows = document.querySelectorAll('#export-lots-container .export-lot-row:has(input[type="checkbox"]:checked)');
+            const invoiceNumber = document.getElementById('export-invoice-number').value.trim();
 
-            if (!productId || selectedLotRows.length === 0) {
-                showError(T.form_incomplete, T.export_data_incomplete);
-                return;
-            }
-            
-            // --- ตรวจสอบความถูกต้องของข้อมูลก่อนแสดง Pop-up ---
-            for(const row of selectedLotRows) {
-                const productionDate = row.dataset.date;
-                const packagingType = row.dataset.packaging; // <-- [เพิ่ม] ดึงประเภทบรรจุภัณฑ์มาด้วย
-                const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
+            // --- [เพิ่ม] ขั้นตอนที่ 0: ตรวจสอบ Invoice ซ้ำ (เวอร์ชันแก้ไขแล้ว) ---
+            if (invoiceNumber) {
+                const isInvoiceDuplicate = db.history.some(item => {
+                    // เพิ่มการตรวจสอบให้รอบคอบขึ้น ป้องกัน error ถ้าข้อมูลไม่ใช่ข้อความ
+                    if (item && item.type === 'export' && item.invoiceNumber) {
+                        const existingInvoice = String(item.invoiceNumber).trim().toLowerCase();
+                        const newInvoice = invoiceNumber.toLowerCase();
+                        return existingInvoice === newInvoice;
+                    }
+                    return false;
+                });
 
-                // [แก้ไข] เพิ่มเงื่อนไขเช็ค packagingType ในการค้นหาล็อต
-                const lotInfo = calculatedStock
-                    .find(p => String(p.productId).trim() === String(productId).trim())
-                    ?.lots.find(l => l.productionDate === productionDate && l.packagingType === packagingType); 
+                if (isInvoiceDuplicate) {
+                    showError('Invoice ซ้ำ!', `เลขที่ Invoice "${invoiceNumber}" นี้ถูกใช้ไปแล้ว กรุณาตรวจสอบอีกครั้ง`);
+                    return; // หยุดการทำงานทันที
+                }
+            }
+            
+            if (!productId || selectedLotRows.length === 0) {
+                showError(T.form_incomplete, T.export_data_incomplete);
+                return;
+            }
+            
+            // --- ตรวจสอบความถูกต้องของข้อมูลก่อนแสดง Pop-up ---
+            for(const row of selectedLotRows) {
+                const productionDate = row.dataset.date;
+                const packagingType = row.dataset.packaging; 
+                const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
 
-                const availableQty = lotInfo ? lotInfo.quantity : 0;
-                
-                if (isNaN(quantityToExport) || quantityToExport <= 0) {
-                    showError(T.form_incomplete, T.export_data_incomplete);
-                    return;
-                }
-                if (quantityToExport > availableQty) {
-                    showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
-                    return;
-                }
-            }
+                const lotInfo = calculatedStock
+                    .find(p => String(p.productId).trim() === String(productId).trim())
+                    ?.lots.find(l => l.productionDate === productionDate && l.packagingType === packagingType); 
 
-            // --- ขั้นตอนที่ 1: ตรวจสอบแพ็คกิ้งชั่วคราว ---
-            const isExportingTemp = Array.from(selectedLotRows).some(row => row.dataset.packaging === 'temporary');
-            if (isExportingTemp) {
-                const result = await Swal.fire({
-                    title: T.export_temp_confirm_title,
-                    text: T.export_temp_confirm_text,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: T.ok_button,
-                    cancelButtonText: T.cancel_button
-                });
-                if (!result.isConfirmed) {
-                    return; // ถ้าผู้ใช้กดยกเลิก ให้จบการทำงานทันที
-                }
-            }
+                const availableQty = lotInfo ? lotInfo.quantity : 0;
+                
+                if (isNaN(quantityToExport) || quantityToExport <= 0) {
+                    showError(T.form_incomplete, T.export_data_incomplete);
+                    return;
+                }
+                if (quantityToExport > availableQty) {
+                    showError('Not Enough Stock', T.export_not_enough.replace('{qty}', availableQty));
+                    return;
+                }
+            }
 
-            // --- ขั้นตอนที่ 2: ตรวจสอบ FIFO ---
-            const productStock = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim());
-            const availableLots = productStock ? productStock.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate)) : [];
-            const selectedLotDates = Array.from(selectedLotRows).map(row => row.dataset.date);
-            let isFifoViolated = false;
-            if (availableLots.length > 0 && selectedLotDates.length > 0) {
-                const oldestAvailableDateStr = availableLots[0].productionDate;
-                const isOldestSelected = selectedLotDates.includes(oldestAvailableDateStr);
-                if (!isOldestSelected) {
-                    isFifoViolated = true;
-                }
-            }
+            // --- ขั้นตอนที่ 1: ตรวจสอบแพ็คกิ้งชั่วคราว ---
+            const isExportingTemp = Array.from(selectedLotRows).some(row => row.dataset.packaging === 'temporary');
+            if (isExportingTemp) {
+                const result = await Swal.fire({
+                    title: T.export_temp_confirm_title,
+                    text: T.export_temp_confirm_text,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: T.ok_button,
+                    cancelButtonText: T.cancel_button
+                });
+                if (!result.isConfirmed) {
+                    return; 
+                }
+            }
 
-            if (isFifoViolated) {
-                const oldestDate = availableLots[0].productionDate;
-                const result = await Swal.fire({
-                    title: T.fifo_warning_title,
-                    text: T.fifo_warning_text.replace('{date}', oldestDate),
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: T.ok_button,
-                    cancelButtonText: T.cancel_button
-                });
-                if (!result.isConfirmed) {
-                    return; // ถ้าผู้ใช้กดยกเลิก ให้จบการทำงานทันที
-                }
-            }
+            // --- ขั้นตอนที่ 2: ตรวจสอบ FIFO ---
+            const productStock = calculatedStock.find(p => String(p.productId).trim() === String(productId).trim());
+            const availableLots = productStock ? productStock.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate)) : [];
+            const selectedLotDates = Array.from(selectedLotRows).map(row => row.dataset.date);
+            let isFifoViolated = false;
+            if (availableLots.length > 0 && selectedLotDates.length > 0) {
+                const oldestAvailableDateStr = availableLots[0].productionDate;
+                const isOldestSelected = selectedLotDates.includes(oldestAvailableDateStr);
+                if (!isOldestSelected) {
+                    isFifoViolated = true;
+                }
+            }
 
-            // --- ขั้นตอนที่ 3: ถ้าผ่านทุกการยืนยัน ให้ทำการส่งออก ---
-            const invoiceNumber = document.getElementById('export-invoice-number').value;
-            const remarks = document.getElementById('export-remarks').value;
-            let product = db.products.find(p => String(p.id).trim() === String(productId).trim()) || { id: productId, name: 'N/A' };
-            const newHistoryEntries = [];
+            if (isFifoViolated) {
+                const oldestDate = availableLots[0].productionDate;
+                const result = await Swal.fire({
+                    title: T.fifo_warning_title,
+                    text: T.fifo_warning_text.replace('{date}', oldestDate),
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: T.ok_button,
+                    cancelButtonText: T.cancel_button
+                });
+                if (!result.isConfirmed) {
+                    return; 
+                }
+            }
 
-            for(const row of selectedLotRows) {
-                const productionDate = row.dataset.date;
-                const packagingType = row.dataset.packaging;
-                const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
+            // --- ขั้นตอนที่ 3: ถ้าผ่านทุกการยืนยัน ให้ทำการส่งออก ---
+            const remarks = document.getElementById('export-remarks').value;
+            let product = db.products.find(p => String(p.id).trim() === String(productId).trim()) || { id: productId, name: 'N/A' };
+            const newHistoryEntries = [];
 
-                newHistoryEntries.push({
-                    id: 'exp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-                    date: new Date().toISOString(),
-                    type: 'export',
-                    productId: product.id,
-                    productName: product.name,
-                    customer: product.customer,
-                    erpCode: product.erpCode,
-                    quantity: quantityToExport,
-                    productionDate: productionDate,
-                    user: currentUser.username,
-                    invoiceNumber: invoiceNumber,
-                    remarks: remarks,
-                    packagingType: packagingType
-                });
-            }
+            for(const row of selectedLotRows) {
+                const productionDate = row.dataset.date;
+                const packagingType = row.dataset.packaging;
+                const quantityToExport = parseInt(row.querySelector('.export-quantity').value);
 
-            // --- Optimistic Update ---
-            newHistoryEntries.forEach(entry => db.history.unshift(entry));
-            calculateStockFromHistory();
-            populateAll();
-            showSuccess(T.export_success.replace('{name}', product.name));
-            renderExportForm();
+                newHistoryEntries.push({
+                    id: 'exp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                    date: new Date().toISOString(),
+                    type: 'export',
+                    productId: product.id,
+                    productName: product.name,
+                    customer: product.customer,
+                    erpCode: product.erpCode,
+                    quantity: quantityToExport,
+                    productionDate: productionDate,
+                    user: currentUser.username,
+                    invoiceNumber: invoiceNumber,
+                    remarks: remarks,
+                    packagingType: packagingType
+                });
+            }
 
-            // --- Background Save ---
-            try {
-                await callAppsScript('appendBatchHistory', newHistoryEntries);
-                console.log(`Background export successful for ${product.name}`);
-            } catch (error) {
-                showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
-            }
-        }
-                async function handleAnnouncementFormSubmit(e) {
+            // --- Optimistic Update ---
+            newHistoryEntries.forEach(entry => db.history.unshift(entry));
+            calculateStockFromHistory();
+            populateAll();
+            showSuccess(T.export_success.replace('{name}', product.name));
+            renderExportForm();
+
+            // --- Background Save ---
+            try {
+                await callAppsScript('appendBatchHistory', newHistoryEntries);
+                console.log(`Background export successful for ${product.name}`);
+            } catch (error) {
+                showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
+            }
+        }
+	async function handleAnnouncementFormSubmit(e) {
             e.preventDefault();
             let successMessage = '';
             
@@ -3609,7 +3626,7 @@ async function handleExport(e) {
 
         // --- Customer Categorization ---
         const autopartCustomers = ["FAURECIA", "Brose Thailand", "TSPT", "TSPT-SA","HANON","VANDAPAC","BOSCH","TGT","MOLTEN","SANKO","YENFENG"]; 
-        const electronicCustomers = ["APLA", "SHINSHIN", "SHINSUNG", "LG WM","MIDEA","LG AIR","WINIX"];
+        const electronicCustomers = ["APLA", "SHINSHIN", "SHINSUNG", "LG WM","MIDEA","LG AIR"];
         
         const autopartCustomersLower = autopartCustomers.map(c => c.trim().toLowerCase());
         const electronicCustomersLower = electronicCustomers.map(c => c.trim().toLowerCase());
