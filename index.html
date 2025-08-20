@@ -3414,6 +3414,7 @@ function renderExportForm() {
                 const productId = String(item.productId).trim();
                 
 // Find this part of the code inside calculateStockFromHistory():
+// Find this part of the code inside calculateStockFromHistory():
 if (item.type === 'adjustment') {
     // This logic handles adjustments by effectively resetting the stock for a product
     // and then applying subsequent transactions.
@@ -3456,7 +3457,7 @@ if (item.type === 'adjustment') {
     });
     
     continue; // Move to the next history item
-}                
+}
                 // Regular logic for import, export, reversal
                 const prodDate = item.productionDate || item.ProductionDate || item.production_date;
                 const lotDate = formatDate(prodDate);
@@ -3722,143 +3723,142 @@ if (item.type === 'adjustment') {
             dashboardTotalStockValue.textContent = `฿ ${totalStockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         }
 
+// ค้นหาฟังก์ชัน populateSalesDashboard
 function populateSalesDashboard(startDate, endDate) {
-        const T = translations[currentLanguage];
-        let totalSalesQuantity = 0;
-        let totalSalesValue = 0;
-        const customerSales = new Map();
+    const T = translations[currentLanguage];
+    let totalSalesQuantity = 0;
+    let totalSalesValue = 0;
+    const customerSales = new Map();
 
-        const autopartCustomers = ["FAURECIA", "Brose Thailand", "TSPT-SA","HANON","VANDAPAC","BOSCH","TGT","MOLTEN","SANKO","YENFENG","TSPT"]; 
-        const electronicCustomers = ["APLA", "SHINSHIN", "SHINSUNG", "LG WM","MIDEA","LG AIR","WINIX"];
+    const autopartCustomers = ["FAURECIA", "Brose Thailand", "TSPT-SA","HANON","VANDAPAC","BOSCH","TGT","MOLTEN","SANKO","YENFENG","TSPT"];
+    const electronicCustomers = ["APLA", "SHINSHIN", "SHINSUNG", "LG WM","MIDEA","LG AIR","WINIX"];
+    
+    const autopartCustomersLower = autopartCustomers.map(c => c.trim().toLowerCase());
+    const electronicCustomersLower = electronicCustomers.map(c => c.trim().toLowerCase());
+
+    let totalAutopartQuantity = 0;
+    let totalAutopartValue = 0;
+    let totalElectronicQuantity = 0;
+    let totalElectronicValue = 0;
+
+    const startFilterDate = new Date(startDate);
+    startFilterDate.setHours(8, 0, 0, 0);
+
+    const endFilterDate = new Date(endDate);
+    endFilterDate.setDate(endFilterDate.getDate() + 1);
+    endFilterDate.setHours(8, 0, 0, 0);
+
+    const filteredHistoryForSales = db.history.filter(item => {
+        const itemDate = new Date(item.date);
+        return itemDate >= startFilterDate && itemDate < endFilterDate;
+    });
+
+    filteredHistoryForSales.forEach(item => {
+        let quantityAffectingSales = 0;
+
+        // *** การแก้ไข: ตรวจสอบ ExportType โดยตรงสำหรับรายการขาย ***
+        // รายการส่งออกจะถูกนับเป็น "ยอดขาย" ก็ต่อเมื่อ type เป็น 'export' และ exportType เป็น 'Sale'
+        const isSaleTransaction = item.type === 'export' && item.exportType === 'Sale';
         
-        const autopartCustomersLower = autopartCustomers.map(c => c.trim().toLowerCase());
-        const electronicCustomersLower = electronicCustomers.map(c => c.trim().toLowerCase());
-
-        let totalAutopartQuantity = 0;
-        let totalAutopartValue = 0;
-        let totalElectronicQuantity = 0;
-        let totalElectronicValue = 0;
-
-        const startFilterDate = new Date(startDate);
-        startFilterDate.setHours(8, 0, 0, 0); 
-
-        const endFilterDate = new Date(endDate);
-        endFilterDate.setDate(endFilterDate.getDate() + 1);
-        endFilterDate.setHours(8, 0, 0, 0);
-
-        const filteredHistoryForSales = db.history.filter(item => {
-            const itemDate = new Date(item.date);
-            return itemDate >= startFilterDate && itemDate < endFilterDate;
-        });
-
-        filteredHistoryForSales.forEach(item => {
-            let quantityAffectingSales = 0;
-
-            // [แก้ไข] ตรรกะการระบุรายการที่เป็น "ยอดขาย"
-            // 1. ต้องเป็นรายการส่งออก (export) และประเภทเป็น 'Sale' (หรือไม่มีการระบุประเภท สำหรับข้อมูลเก่า)
-            const isSaleTransaction = item.type === 'export' && (!item.exportType || item.exportType === 'Sale');
-            
-            // 2. ต้องเป็นการยกเลิก (reversal) ของรายการขายเท่านั้น
-            let isReversalOfSale = false;
-            if (item.type === 'reversal') {
-                const originalIdMatch = (item.remarks || '').match(/Reversal of transaction ID: (exp-[\w-]+)/);
-                if (originalIdMatch) {
-                    const originalId = originalIdMatch[1];
-                    const originalTransaction = db.history.find(h => h.id === originalId);
-                    // ตรวจสอบว่ารายการดั้งเดิมที่ถูกยกเลิก เป็นรายการขายหรือไม่
-                    if (originalTransaction && (!originalTransaction.exportType || originalTransaction.exportType === 'Sale')) {
-                        isReversalOfSale = true;
-                    }
+        let isReversalOfSale = false;
+        if (item.type === 'reversal') {
+            const originalIdMatch = (item.remarks || '').match(/Reversal of transaction ID: (exp-[\w-]+)/);
+            if (originalIdMatch) {
+                const originalId = originalIdMatch[1];
+                const originalTransaction = db.history.find(h => h.id === originalId);
+                // *** การแก้ไข: ตรวจสอบ ExportType ของรายการต้นฉบับที่ถูกยกเลิก ***
+                // การยกเลิกจะถูกนับเป็นการหักลบจากยอดขาย ก็ต่อเมื่อรายการต้นฉบับเป็น 'Sale'
+                if (originalTransaction && originalTransaction.exportType === 'Sale') {
+                    isReversalOfSale = true;
                 }
             }
-
-            if (isSaleTransaction) {
-                quantityAffectingSales = parseFloat(item.quantity) || 0;
-            } else if (isReversalOfSale) {
-                // นำยอดออกจากยอดขาย (Reversal ของ export จะมี quantity เป็นบวก)
-                quantityAffectingSales = - (parseFloat(item.quantity) || 0);
-            }
-
-            // ถ้า quantityAffectingSales ไม่ใช่ 0 (คือเป็นรายการที่เกี่ยวกับยอดขาย) ให้คำนวณต่อ
-            if (quantityAffectingSales !== 0) {
-                const productInfo = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
-                const unitPrice = productInfo ? parseFloat(productInfo.unitPrice) || 0 : 0;
-                const customer = item.customer || T.dashboard_customer_unspecified;
-                const customerLower = customer.trim().toLowerCase();
-                const valueAffectingSales = quantityAffectingSales * unitPrice;
-
-                totalSalesQuantity += quantityAffectingSales;
-                totalSalesValue += valueAffectingSales;
-
-                if (autopartCustomersLower.includes(customerLower)) {
-                    totalAutopartQuantity += quantityAffectingSales;
-                    totalAutopartValue += valueAffectingSales;
-                } else if (electronicCustomersLower.includes(customerLower)) {
-                    totalElectronicQuantity += quantityAffectingSales;
-                    totalElectronicValue += valueAffectingSales;
-                }
-
-                if (!customerSales.has(customer)) {
-                    customerSales.set(customer, { quantity: 0, value: 0 });
-                }
-                const currentSales = customerSales.get(customer);
-                currentSales.quantity += quantityAffectingSales;
-                currentSales.value += valueAffectingSales;
-            }
-        });
-        
-        // --- ส่วนที่เหลือของการอัปเดตหน้า Dashboard (เหมือนเดิม) ---
-        dashboardTotalSalesQuantity.textContent = `${T.dashboard_qty_label}${totalSalesQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
-        dashboardTotalSalesValue.textContent = `฿ ${totalSalesValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-        dashboardAutopartSalesQuantity.textContent = `${T.dashboard_qty_label}${totalAutopartQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
-        dashboardAutopartSalesValue.textContent = `฿ ${totalAutopartValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        
-        dashboardElectronicSalesQuantity.textContent = `${T.dashboard_qty_label}${totalElectronicQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
-        dashboardElectronicSalesValue.textContent = `฿ ${totalElectronicValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-        dashboardSalesTable.innerHTML = '';
-        if (customerSales.size === 0) {
-            dashboardSalesTable.innerHTML = `<tr><td colspan="5" class="text-center text-muted p-4">${T.dashboard_no_sales_data}</td></tr>`;
-        } else {
-            const sortedCustomerSales = Array.from(customerSales.entries()).sort((a, b) => b[1].value - a[1].value);
-            
-            let rank = 1;
-            sortedCustomerSales.forEach(([customer, data]) => {
-                if (data.quantity === 0 && data.value === 0) return; // ไม่แสดงลูกค้าที่ยอดเป็น 0
-
-                const row = document.createElement('tr');
-                
-                let typeBadge = '';
-                const customerLower = customer.trim().toLowerCase();
-                if (autopartCustomersLower.includes(customerLower)) {
-                    typeBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">${T.dashboard_type_autopart}</span>`;
-                } else if (electronicCustomersLower.includes(customerLower)) {
-                    typeBadge = `<span class="badge bg-info-subtle text-info-emphasis rounded-pill">${T.dashboard_type_electronic}</span>`;
-                } else {
-                     typeBadge = `<span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${T.dashboard_type_other}</span>`;
-                }
-
-                const percentage = totalSalesValue > 0 ? (data.value / totalSalesValue) * 100 : 0;
-
-                row.innerHTML = `
-                    <td class="fw-bold">${rank++}</td>
-                    <td>${customer}</td>
-                    <td>${typeBadge}</td>
-                    <td class="text-end">${data.quantity.toLocaleString()}</td>
-                    <td class="text-end">
-                        <div class="d-flex justify-content-end align-items-center">
-                            <span class="me-3">฿ ${data.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            <div class="progress" style="width: 50%; height: 10px;" title="${percentage.toFixed(2)}%">
-                                <div class="progress-bar" role="progressbar" style="width: ${percentage}%;" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
-                            </div>
-                        </div>
-                    </td>
-                `;
-                dashboardSalesTable.appendChild(row);
-            });
         }
+
+        if (isSaleTransaction) {
+            quantityAffectingSales = parseFloat(item.quantity) || 0;
+        } else if (isReversalOfSale) {
+            quantityAffectingSales = - (parseFloat(item.quantity) || 0);
+        }
+
+        if (quantityAffectingSales !== 0) {
+            const productInfo = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
+            const unitPrice = productInfo ? parseFloat(productInfo.unitPrice) || 0 : 0;
+            const customer = item.customer || T.dashboard_customer_unspecified;
+            const customerLower = customer.trim().toLowerCase();
+            const valueAffectingSales = quantityAffectingSales * unitPrice;
+
+            totalSalesQuantity += quantityAffectingSales;
+            totalSalesValue += valueAffectingSales;
+
+            if (autopartCustomersLower.includes(customerLower)) {
+                totalAutopartQuantity += quantityAffectingSales;
+                totalAutopartValue += valueAffectingSales;
+            } else if (electronicCustomersLower.includes(customerLower)) {
+                totalElectronicQuantity += quantityAffectingSales;
+                totalElectronicValue += valueAffectingSales;
+            }
+
+            if (!customerSales.has(customer)) {
+                customerSales.set(customer, { quantity: 0, value: 0 });
+            }
+            const currentSales = customerSales.get(customer);
+            currentSales.quantity += quantityAffectingSales;
+            currentSales.value += valueAffectingSales;
+        }
+    });
+    
+    // ส่วนที่เหลือของการอัปเดตหน้า Dashboard (เหมือนเดิม)
+    dashboardTotalSalesQuantity.textContent = `${T.dashboard_qty_label}${totalSalesQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
+    dashboardTotalSalesValue.textContent = `฿ ${totalSalesValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    dashboardAutopartSalesQuantity.textContent = `${T.dashboard_qty_label}${totalAutopartQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
+    dashboardAutopartSalesValue.textContent = `฿ ${totalAutopartValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    
+    dashboardElectronicSalesQuantity.textContent = `${T.dashboard_qty_label}${totalElectronicQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
+    dashboardElectronicSalesValue.textContent = `฿ ${totalElectronicValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    dashboardSalesTable.innerHTML = '';
+    if (customerSales.size === 0) {
+        dashboardSalesTable.innerHTML = `<tr><td colspan="5" class="text-center text-muted p-4">${T.dashboard_no_sales_data}</td></tr>`;
+    } else {
+        const sortedCustomerSales = Array.from(customerSales.entries()).sort((a, b) => b[1].value - a[1].value);
+        
+        let rank = 1;
+        sortedCustomerSales.forEach(([customer, data]) => {
+            if (data.quantity === 0 && data.value === 0) return;
+
+            const row = document.createElement('tr');
+            
+            let typeBadge = '';
+            const customerLower = customer.trim().toLowerCase();
+            if (autopartCustomersLower.includes(customerLower)) {
+                typeBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">${T.dashboard_type_autopart}</span>`;
+            } else if (electronicCustomersLower.includes(customerLower)) {
+                typeBadge = `<span class="badge bg-info-subtle text-info-emphasis rounded-pill">${T.dashboard_type_electronic}</span>`;
+            } else {
+                typeBadge = `<span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${T.dashboard_type_other}</span>`;
+            }
+
+            const percentage = totalSalesValue > 0 ? (data.value / totalSalesValue) * 100 : 0;
+
+            row.innerHTML = `
+                <td class="fw-bold">${rank++}</td>
+                <td>${customer}</td>
+                <td>${typeBadge}</td>
+                <td class="text-end">${data.quantity.toLocaleString()}</td>
+                <td class="text-end">
+                    <div class="d-flex justify-content-end align-items-center">
+                        <span class="me-3">฿ ${data.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <div class="progress" style="width: 50%; height: 10px;" title="${percentage.toFixed(2)}%">
+                            <div class="progress-bar" role="progressbar" style="width: ${percentage}%;" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </td>
+            `;
+            dashboardSalesTable.appendChild(row);
+        });
     }
+}
         // --- START THE APP ---
         init();
     });
