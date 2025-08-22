@@ -2656,7 +2656,7 @@ function addEventListeners() {
                 timeZone: 'Asia/Bangkok'
             });
             const prodDate = item.productionDate || item.ProductionDate || item.production_date;
-            newItem.productionDate = formatDate(prodDate);
+            newItem.productionDate = formatDate(prodDate);delete newItem.priceAtTimeOfSale;
             return newItem;
         });
         
