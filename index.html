@@ -235,14 +235,14 @@
                     <div class="col-lg-3" id="backup-card-container">
                         <div class="card mb-4">
                             <div class="card-header fw-bold"><i class="bi bi-cloud-arrow-down-fill me-2"></i><span data-lang-key="backup_title">สำรองข้อมูล</span></div>
-                            <div class="card-body">
-                                <p class="text-center mb-2" data-lang-key="backup_desc">ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV</p>
-                                <div class="d-grid gap-2">
-                                    <button id="backup-stock-btn" class="btn btn-info btn-sm"><i class="bi bi-archive-fill me-2"></i><span data-lang-key="backup_stock">ข้อมูลสต็อก</span></button>
-                                    <button id="backup-products-btn" class="btn btn-info btn-sm"><i class="bi bi-box-seam-fill me-2"></i><span data-lang-key="backup_products">ข้อมูลสินค้า</span></button>
-                                    <button id="backup-users-btn" class="btn btn-info btn-sm"><i class="bi bi-person-lines-fill me-2"></i><span data-lang-key="backup_users">ข้อมูลผู้ใช้</span></button>
-                                </div>
-                            </div>
+                           <div class="card-body">
+   			    <p class="text-center mb-2" data-lang-key="backup_desc">ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV</p>
+    			<div class="d-flex flex-wrap justify-content-center gap-2">
+      			  <button id="backup-stock-btn" class="btn btn-info btn-sm flex-grow-1"><i class="bi bi-archive-fill me-2"></i><span data-lang-key="backup_stock">ข้อมูลสต็อก</span></button>
+        		<button id="backup-products-btn" class="btn btn-info btn-sm flex-grow-1"><i class="bi bi-box-seam-fill me-2"></i><span data-lang-key="backup_products">ข้อมูลสินค้า</span></button>
+       			 <button id="backup-users-btn" class="btn btn-info btn-sm flex-grow-1"><i class="bi bi-person-lines-fill me-2"></i><span data-lang-key="backup_users">ข้อมูลผู้ใช้</span></button>
+    		</div>
+		</div>
                         </div>
                     </div>
                     <div class="col-lg-9" id="stock-content-column">
@@ -2363,40 +2363,46 @@ async function handleExport(e) {
             errorMessage.classList.add('d-none'); 
         }
 
-        function showDashboard() { 
-            loginPage.style.display = 'none'; 
-            dashboardPage.style.display = 'block'; 
-            const roleText = translations[currentLanguage].user_role_display.replace('{role}', currentUser.role);
-            userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`; 
-            userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`; 
-            
-            // NEW: Granular permission checks for UI elements
-            const isAdmin = currentUser.role === 'admin';
-            document.getElementById('nav-import-item').style.display = isAdmin || currentUser.canImport ? '' : 'none';
-            document.getElementById('nav-export-item').style.display = isAdmin || currentUser.canExport ? '' : 'none';
-            document.getElementById('nav-history-item').style.display = isAdmin || currentUser.canViewHistory ? '' : 'none';
-            document.getElementById('nav-stock-count-item').style.display = isAdmin || currentUser.canCountStock ? '' : 'none';
-            document.getElementById('nav-products-item').style.display = isAdmin || currentUser.canManageProducts ? '' : 'none';
-            document.getElementById('nav-users-item').style.display = isAdmin || currentUser.canManageUsers ? '' : 'none';
-            document.getElementById('nav-announcements-item').style.display = isAdmin || currentUser.canManageAnnouncements ? '' : 'none';
-            document.getElementById('backup-card-container').style.display = isAdmin ? '' : 'none';
+function showDashboard() { 
+    loginPage.style.display = 'none'; 
+    dashboardPage.style.display = 'block'; 
+    const roleText = translations[currentLanguage].user_role_display.replace('{role}', currentUser.role);
+    userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`; 
+    userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`; 
+    
+    // NEW: Granular permission checks for UI elements
+    const isAdmin = currentUser.role === 'admin';
+    document.getElementById('nav-import-item').style.display = isAdmin || currentUser.canImport ? '' : 'none';
+    document.getElementById('nav-export-item').style.display = isAdmin || currentUser.canExport ? '' : 'none';
+    document.getElementById('nav-history-item').style.display = isAdmin || currentUser.canViewHistory ? '' : 'none';
+    document.getElementById('nav-stock-count-item').style.display = isAdmin || currentUser.canCountStock ? '' : 'none';
+    document.getElementById('nav-products-item').style.display = isAdmin || currentUser.canManageProducts ? '' : 'none';
+    document.getElementById('nav-users-item').style.display = isAdmin || currentUser.canManageUsers ? '' : 'none';
+    document.getElementById('nav-announcements-item').style.display = isAdmin || currentUser.canManageAnnouncements ? '' : 'none';
+    
+    // แก้ไข: แสดง container ของปุ่มดาวน์โหลดสำหรับทุกคน
+    document.getElementById('backup-card-container').style.display = 'block';
+    
+    // เพิ่ม: ควบคุมการแสดงผลปุ่มดาวน์โหลดแต่ละปุ่มตามสิทธิ์
+    document.getElementById('backup-stock-btn').style.display = ''; // แสดงสำหรับทุกคน
+    document.getElementById('backup-products-btn').style.display = isAdmin ? '' : 'none'; // เฉพาะ Admin
+    document.getElementById('backup-users-btn').style.display = isAdmin ? '' : 'none'; // เฉพาะ Admin
 
-            const stockContentColumn = document.getElementById('stock-content-column');
-            if (isAdmin) {
-                stockContentColumn.classList.remove('col-lg-12');
-                stockContentColumn.classList.add('col-lg-9');
-            } else {
-                stockContentColumn.classList.remove('col-lg-9');
-                stockContentColumn.classList.add('col-lg-12');
-            }
-            
-            calculateStockFromHistory();
-            populateAll(); 
-            startDataSync(); 
-            setupActivityListeners();
-            resetInactivityTimer();
-        }
-
+    const stockContentColumn = document.getElementById('stock-content-column');
+    if (isAdmin) {
+        stockContentColumn.classList.remove('col-lg-12');
+        stockContentColumn.classList.add('col-lg-9');
+    } else {
+        stockContentColumn.classList.remove('col-lg-9');
+        stockContentColumn.classList.add('col-lg-12');
+    }
+    
+    calculateStockFromHistory();
+    populateAll(); 
+    startDataSync(); 
+    setupActivityListeners();
+    resetInactivityTimer();
+}
         function populateAll() { 
             populateStockSummary(); 
             populateUserManagementTable(); 
@@ -2903,7 +2909,7 @@ function backupToCSV(data, filename) {
     // --- สร้างหัวกระดาษ (Header) ---
     const headerRows = [];
     const headerCols = new Array(headers.length).fill('');
-    headerCols[0] = '"ประวัติ"';
+    headerCols[0] = '"ข้อมูลสต็อค"';
     headerRows.push(headerCols.join(','));
     headerRows.push(new Array(headers.length).fill('').join(',')); // เว้นบรรทัด
     
@@ -2924,7 +2930,7 @@ function backupToCSV(data, filename) {
     const footerText = `Downloaded by: ${currentUser.username} on ${new Date().toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB')}`;
     csvRows.push(''); // เว้นบรรทัดก่อน footer
     const footerCols = new Array(headers.length).fill('');
-    footerCols[0] = '"FS-112"';
+    footerCols[0] = '"FS-113"';
     footerCols[headers.length - 1] = `"${footerText}"`;
     csvRows.push(footerCols.join(','));
 
