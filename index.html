@@ -3719,6 +3719,73 @@ if (item.type === 'adjustment') {
             `;
         }
 
+		/**
+ * Handles the form submission for adding or updating product information.
+ * This function is robust and handles errors returned from the backend script gracefully.
+ */
+async function handleProductFormSubmit(e) {
+    e.preventDefault();
+    const T = translations[currentLanguage];
+
+    const productId = document.getElementById('product-id').value.trim();
+    const productName = document.getElementById('product-name').value.trim();
+    const customer = document.getElementById('product-customer').value.trim();
+    const fullBoxQuantity = parseInt(document.getElementById('product-fullBoxQuantity').value);
+    const erpCode = document.getElementById('product-erpCode').value.trim();
+    const unitPrice = parseFloat(document.getElementById('product-unitPrice').value);
+
+    // ตรวจสอบความถูกต้องของข้อมูลพื้นฐานก่อนส่ง
+    if (!productId || !productName || isNaN(fullBoxQuantity) || isNaN(unitPrice)) {
+        showError(T.form_incomplete, T.product_name_required);
+        return;
+    }
+
+    const productData = {
+        id: productId,
+        name: productName,
+        customer: customer,
+        fullBoxQuantity: fullBoxQuantity,
+        erpCode: erpCode,
+        unitPrice: unitPrice,
+    };
+
+    try {
+        let action = editingProductId ? 'updateProduct' : 'addProduct';
+        let response = await callAppsScript(action, productData);
+
+        // ตรวจสอบสถานะจาก Server Response ที่ถูกส่งกลับมา
+        if (response.status === 'error') {
+            // ถ้ามีข้อผิดพลาดจาก Apps Script จะแสดงข้อความที่กำหนดไว้
+            if (response.message === 'Product ID already exists') {
+                showError('ข้อผิดพลาด', T.product_id_exists);
+            } else {
+                showError(T.save_error_title, response.message);
+            }
+            return;
+        }
+
+        // อัปเดตข้อมูลใน UI หลังจากบันทึกสำเร็จ (Optimistic Update)
+        if (editingProductId) {
+            const index = db.products.findIndex(p => String(p.id).trim() === String(editingProductId).trim());
+            if (index !== -1) {
+                db.products[index] = productData;
+            }
+            showSuccess(T.success_title, T.product_update_success);
+        } else {
+            db.products.push(productData);
+            showSuccess(T.success_title, T.product_add_success);
+        }
+        
+        clearProductForm();
+        populateAll();
+
+    } catch (error) {
+        // ดักจับข้อผิดพลาดที่เกิดขึ้นระหว่างการส่งข้อมูล (เช่น ปัญหาเครือข่าย)
+        console.error('Error in handleProductFormSubmit:', error);
+        showError(T.save_error_title, T.save_error_text.replace('{error}', error.message));
+    }
+}
+
         // --- NEW: DASHBOARD FUNCTIONS ---
 
                // --- DOM ELEMENTS (เพิ่มตัวแปรเหล่านี้เข้าไปในกลุ่มเดิม) ---
