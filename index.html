@@ -748,19 +748,18 @@
             product_table_title: "รายการสินค้าทั้งหมด",
             product_table_price: "ราคา/หน่วย",
             // User Management
-        user_form_title: "ฟอร์มข้อมูลผู้ใช้",
-        user_role: "สิทธิ์",
-        user_permissions: "สิทธิ์การใช้งาน",
-        permission_canImport: "รับเข้าสินค้า",
-        permission_canExport: "ส่งออกสินค้า",
-        permission_canViewHistory: "ดูประวัติ",
-        permission_canCountStock: "นับสต็อก",
-        permission_canManageProducts: "จัดการสินค้า",
-        permission_canManageUsers: "จัดการผู้ใช้",
-        permission_canManageAnnouncements: "จัดการประกาศ",
-        permission_canReverseHistory: "ยกเลิกประวัติ", // NEW
-        user_save_button: "บันทึกข้อมูลผู้ใช้",
-        user_table_title: "รายการผู้ใช้ทั้งหมด",
+            user_form_title: "ฟอร์มข้อมูลผู้ใช้",
+            user_role: "สิทธิ์",
+            user_permissions: "สิทธิ์การใช้งาน",
+            permission_canImport: "รับเข้าสินค้า",
+            permission_canExport: "ส่งออกสินค้า",
+            permission_canViewHistory: "ดูประวัติ",
+            permission_canCountStock: "นับสต็อก",
+            permission_canManageProducts: "จัดการสินค้า",
+            permission_canManageUsers: "จัดการผู้ใช้",
+            permission_canManageAnnouncements: "จัดการประกาศ",
+            user_save_button: "บันทึกข้อมูลผู้ใช้",
+            user_table_title: "รายการผู้ใช้ทั้งหมด",
             // Announcement Management
             announcement_form_title: "สร้าง/แก้ไขประกาศ",
             announcement_title: "หัวข้อประกาศ",
@@ -1280,19 +1279,19 @@
             product_table_title: "All Products List",
             product_table_price: "Price/Unit",
             // User Management
-        user_form_title: "User Information Form",
-        user_role: "Role",
-        user_permissions: "Permissions",
-        permission_canImport: "Import Goods",
-        permission_canExport: "Export Goods",
-        permission_canViewHistory: "View History",
-        permission_canCountStock: "Perform Stock Count",
-        permission_canManageProducts: "Manage Products",
-        permission_canManageUsers: "Manage Users",
-        permission_canManageAnnouncements: "Manage Announcements",
-        permission_canReverseHistory: "Reverse History", // NEW
-        user_save_button: "Save User Data",
-        user_table_title: "All Users List",            // Announcement Management
+            user_form_title: "User Information Form",
+            user_role: "Role",
+            user_permissions: "Permissions",
+            permission_canImport: "Import Goods",
+            permission_canExport: "Export Goods",
+            permission_canViewHistory: "View History",
+            permission_canCountStock: "Perform Stock Count",
+            permission_canManageProducts: "Manage Products",
+            permission_canManageUsers: "Manage Users",
+            permission_canManageAnnouncements: "Manage Announcements",
+            user_save_button: "Save User Data",
+            user_table_title: "All Users List",
+            // Announcement Management
             announcement_form_title: "Create/Edit Announcement",
             announcement_title: "Title",
             announcement_message: "Message",
@@ -1405,47 +1404,48 @@
 
     };
 
-let currentLanguage = sessionStorage.getItem('currentLanguage') || 'th';
+    let currentLanguage = sessionStorage.getItem('currentLanguage') || 'th';
 
-document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        let hasHistoryBeenSearched = false;
 
-    let hasHistoryBeenSearched = false;
+        // --- GLOBAL FUNCTION FOR LANGUAGE SWITCHING ---
+        window.setLanguage = (lang) => {
+            currentLanguage = lang;
+            sessionStorage.setItem('currentLanguage', lang);
+            document.body.className = `lang-${lang}`;
 
-    // --- GLOBAL FUNCTION FOR LANGUAGE SWITCHING ---
-    window.setLanguage = (lang) => {
-        currentLanguage = lang;
-        sessionStorage.setItem('currentLanguage', lang);
-        document.body.className = `lang-${lang}`;
+            // Update all static text
+            document.querySelectorAll('[data-lang-key]').forEach(el => {
+                const key = el.getAttribute('data-lang-key');
+                if (translations[lang][key]) {
+                    el.innerHTML = translations[lang][key];
+                }
+            });
+            
+            // Update placeholders
+            document.querySelectorAll('[data-lang-key-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-lang-key-placeholder');
+                if (translations[lang][key]) {
+                    el.placeholder = translations[lang][key];
+                }
+            });
 
-        // Update all static text
-        document.querySelectorAll('[data-lang-key]').forEach(el => {
-            const key = el.getAttribute('data-lang-key');
-            if (translations[lang][key]) {
-                el.innerHTML = translations[lang][key];
+            // Update language switcher label
+            document.getElementById('language-switcher-label').innerText = lang === 'th' ? 'ไทย' : 'English';
+
+            // Re-render all dynamic content
+            renderAllForms();
+            if (currentUser) {
+                const userRoleSpan = document.getElementById('user-role');
+                const roleText = translations[currentLanguage].user_role_display.replace('{role}', currentUser.role);
+                userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`;
+
+                populateAll();
             }
-        });
+        };
 
-        // Update placeholders
-        document.querySelectorAll('[data-lang-key-placeholder]').forEach(el => {
-            const key = el.getAttribute('data-lang-key-placeholder');
-            if (translations[lang][key]) {
-                el.placeholder = translations[lang][key];
-            }
-        });
-
-        // Update language switcher label
-        document.getElementById('language-switcher-label').innerText = lang === 'th' ? 'ไทย' : 'English';
-
-        // Re-render all dynamic content
-        renderAllForms();
-        if (currentUser) {
-            const userRoleSpan = document.getElementById('user-role');
-            const roleText = translations[currentLanguage].user_role_display.replace('{role}', currentUser.role);
-            userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`;
-
-            populateAll();
-        }
-    };
         // --- GOOGLE APPS SCRIPT CONFIGURATION ---
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDGLLwqnY1hOyDqM-Q6UlKRktrSneEAEtHkcsEuBQDaQMsgiBYGZPb30RMEQD2S17_OQ/exec';
 
@@ -2363,47 +2363,46 @@ async function handleExport(e) {
             errorMessage.classList.add('d-none'); 
         }
 
-    function showDashboard() {
-        loginPage.style.display = 'none';
-        dashboardPage.style.display = 'block';
-        const roleText = translations[currentLanguage].user_role_display.replace('{role}', currentUser.role);
-        userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`;
-        userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`;
+function showDashboard() { 
+    loginPage.style.display = 'none'; 
+    dashboardPage.style.display = 'block'; 
+    const roleText = translations[currentLanguage].user_role_display.replace('{role}', currentUser.role);
+    userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`; 
+    userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`; 
+    
+    // NEW: Granular permission checks for UI elements
+    const isAdmin = currentUser.role === 'admin';
+    document.getElementById('nav-import-item').style.display = isAdmin || currentUser.canImport ? '' : 'none';
+    document.getElementById('nav-export-item').style.display = isAdmin || currentUser.canExport ? '' : 'none';
+    document.getElementById('nav-history-item').style.display = isAdmin || currentUser.canViewHistory ? '' : 'none';
+    document.getElementById('nav-stock-count-item').style.display = isAdmin || currentUser.canCountStock ? '' : 'none';
+    document.getElementById('nav-products-item').style.display = isAdmin || currentUser.canManageProducts ? '' : 'none';
+    document.getElementById('nav-users-item').style.display = isAdmin || currentUser.canManageUsers ? '' : 'none';
+    document.getElementById('nav-announcements-item').style.display = isAdmin || currentUser.canManageAnnouncements ? '' : 'none';
+    
+    // แก้ไข: แสดง container ของปุ่มดาวน์โหลดสำหรับทุกคน
+    document.getElementById('backup-card-container').style.display = 'block';
+    
+    // เพิ่ม: ควบคุมการแสดงผลปุ่มดาวน์โหลดแต่ละปุ่มตามสิทธิ์
+    document.getElementById('backup-stock-btn').style.display = ''; // แสดงสำหรับทุกคน
+    document.getElementById('backup-products-btn').style.display = isAdmin ? '' : 'none'; // เฉพาะ Admin
+    document.getElementById('backup-users-btn').style.display = isAdmin ? '' : 'none'; // เฉพาะ Admin
 
-        // NEW: Granular permission checks for UI elements
-        const isAdmin = currentUser.role === 'admin';
-        document.getElementById('nav-import-item').style.display = isAdmin || currentUser.canImport ? '' : 'none';
-        document.getElementById('nav-export-item').style.display = isAdmin || currentUser.canExport ? '' : 'none';
-        document.getElementById('nav-history-item').style.display = isAdmin || currentUser.canViewHistory ? '' : 'none';
-        document.getElementById('nav-stock-count-item').style.display = isAdmin || currentUser.canCountStock ? '' : 'none';
-        document.getElementById('nav-products-item').style.display = isAdmin || currentUser.canManageProducts ? '' : 'none';
-        document.getElementById('nav-users-item').style.display = isAdmin || currentUser.canManageUsers ? '' : 'none';
-        document.getElementById('nav-announcements-item').style.display = isAdmin || currentUser.canManageAnnouncements ? '' : 'none';
-
-        // แก้ไข: แสดง container ของปุ่มดาวน์โหลดสำหรับทุกคน
-        document.getElementById('backup-card-container').style.display = 'block';
-
-        // เพิ่ม: ควบคุมการแสดงผลปุ่มดาวน์โหลดแต่ละปุ่มตามสิทธิ์
-        document.getElementById('backup-stock-btn').style.display = ''; // แสดงสำหรับทุกคน
-        document.getElementById('backup-products-btn').style.display = isAdmin ? '' : 'none'; // เฉพาะ Admin
-        document.getElementById('backup-users-btn').style.display = isAdmin ? '' : 'none'; // เฉพาะ Admin
-
-        const stockContentColumn = document.getElementById('stock-content-column');
-        if (isAdmin) {
-            stockContentColumn.classList.remove('col-lg-12');
-            stockContentColumn.classList.add('col-lg-9');
-        } else {
-            stockContentColumn.classList.remove('col-lg-9');
-            stockContentColumn.classList.add('col-lg-12');
-        }
-
-        calculateStockFromHistory();
-        populateAll();
-        startDataSync();
-        setupActivityListeners();
-        resetInactivityTimer();
+    const stockContentColumn = document.getElementById('stock-content-column');
+    if (isAdmin) {
+        stockContentColumn.classList.remove('col-lg-12');
+        stockContentColumn.classList.add('col-lg-9');
+    } else {
+        stockContentColumn.classList.remove('col-lg-9');
+        stockContentColumn.classList.add('col-lg-12');
     }
-
+    
+    calculateStockFromHistory();
+    populateAll(); 
+    startDataSync(); 
+    setupActivityListeners();
+    resetInactivityTimer();
+}
         function populateAll() { 
             populateStockSummary(); 
             populateUserManagementTable(); 
@@ -2490,125 +2489,124 @@ async function handleExport(e) {
             });
         }
 
-    function populateHistoryTable() {
-        const T = translations[currentLanguage];
-        const header = document.getElementById('history-table-header');
-        // แก้ไข: ตรวจสอบสิทธิ์ canReverseHistory ก่อนแสดงปุ่ม
-        const canReverseHistory = currentUser.role === 'admin' || currentUser.canReverseHistory;
-        header.innerHTML = `<tr>
-            <th>${T.history_table_type}</th>
-            <th>${T.product_name}</th>
-            <th>${T.quantity}</th>
-            <th>${T.production_date}</th>
-            <th>${T.history_table_packaging}</th>
-            <th>${T.erp_code}</th>
-            <th>${T.history_table_invoice_remarks}</th>
-            <th>${T.history_table_timestamp}</th>
-            <th>${T.history_table_user}</th>
-            ${canReverseHistory ? `<th>${T.actions}</th>` : ''}
-        </tr>`;
+        function populateHistoryTable() {
+            const T = translations[currentLanguage];
+            const header = document.getElementById('history-table-header');
+            const isAdmin = currentUser.role === 'admin';
+            header.innerHTML = `<tr>
+                <th>${T.history_table_type}</th>
+                <th>${T.product_name}</th>
+                <th>${T.quantity}</th>
+                <th>${T.production_date}</th>
+                <th>${T.history_table_packaging}</th>
+                <th>${T.erp_code}</th>
+                <th>${T.history_table_invoice_remarks}</th>
+                <th>${T.history_table_timestamp}</th>
+                <th>${T.history_table_user}</th>
+                ${isAdmin ? `<th>${T.actions}</th>` : ''}
+            </tr>`;
 
-        historyTable.innerHTML = '';
-        const colspan = canReverseHistory ? 10 : 9;
+            historyTable.innerHTML = '';
+            const colspan = isAdmin ? 10 : 9;
 
-        if (db.history.length === 0) {
-            document.getElementById('history-total-quantity').textContent = '';
-            historyTable.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-4">${T.history_no_transactions_yet}</td></tr>`;
-            return;
-        }
-
-        if (!hasHistoryBeenSearched) {
-            document.getElementById('history-total-quantity').textContent = '';
-            historyTable.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-4">${T.no_history_found_message}</td></tr>`;
-            return;
-        }
-
-        const filteredHistory = getFilteredHistory();
-
-        filteredHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        const totalQuantity = filteredHistory.reduce((sum, item) => {
-            const qty = parseFloat(item.quantity);
-            return sum + (isNaN(qty) ? 0 : qty); // Simplified total calculation
-        }, 0);
-
-        const formattedTotal = totalQuantity % 1 === 0 ? totalQuantity.toLocaleString() : totalQuantity.toFixed(2);
-        document.getElementById('history-total-quantity').textContent = T.history_total_quantity_display.replace('{total}', formattedTotal);
-
-        if (filteredHistory.length === 0) {
-            historyTable.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-4">${T.no_history_for_filter_message}</td></tr>`;
-            return;
-        }
-
-        filteredHistory.forEach(item => {
-            const row = document.createElement('tr');
-            let typeHtml, rowClass;
-            switch (item.type) {
-                case 'import':
-                    typeHtml = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill"><i class="bi bi-arrow-down me-1"></i>${T.history_type_import}</span>`;
-                    rowClass = 'history-import';
-                    break;
-                case 'export':
-                    typeHtml = `<span class="badge bg-info-subtle text-info-emphasis rounded-pill"><i class="bi bi-arrow-up me-1"></i>${T.history_type_export}</span>`;
-                    rowClass = 'history-export';
-                    break;
-                case 'adjustment':
-                    typeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill"><i class="bi bi-pencil-fill me-1"></i>${T.history_type_adjustment}</span>`;
-                    rowClass = 'history-adjustment';
-                    break;
-                case 'reversal':
-                    typeHtml = `<span class="badge bg-danger-subtle text-danger-emphasis rounded-pill"><i class="bi bi-arrow-repeat me-1"></i>${T.history_type_reversal}</span>`;
-                    rowClass = 'history-reversal';
-                    break;
-            }
-            row.classList.add(rowClass);
-            const formattedDate = new Date(item.date).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB', {
-                year: 'numeric', month: 'short', day: 'numeric',
-                hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
-            });
-            
-            const itemString = JSON.stringify(item).replace(/'/g, '&apos;');
-            // แก้ไข: แสดงปุ่ม "ยกเลิก" เมื่อผู้ใช้มีสิทธิ์และรายการนั้นไม่ใช่รายการที่ถูกยกเลิกแล้ว
-            const actionsContent = (canReverseHistory && item.type !== 'reversal') ? `<button class="btn btn-danger btn-sm reverse-history-btn" data-history-item='${itemString}'><i class="bi bi-x-circle-fill"></i></button>` : '';
-            
-            const prodDate = item.productionDate || item.ProductionDate || item.production_date;
-            
-            let quantityDisplay = item.quantity.toLocaleString();
-            if (item.type === 'adjustment' || item.type === 'reversal') {
-                quantityDisplay = (item.quantity > 0 ? '+' : '') + item.quantity.toLocaleString();
+            if (db.history.length === 0) {
+                document.getElementById('history-total-quantity').textContent = '';
+                historyTable.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-4">${T.history_no_transactions_yet}</td></tr>`;
+                return;
             }
 
-            let displayRemark = item.remarks || '';
-            if(item.type === 'adjustment') {
-                displayRemark = (displayRemark.split('|')[1] || displayRemark).trim();
+            if (!hasHistoryBeenSearched) {
+                document.getElementById('history-total-quantity').textContent = '';
+                historyTable.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-4">${T.no_history_found_message}</td></tr>`;
+                return;
             }
 
-            let packagingBadge = '';
-            if (item.type === 'import' || item.type === 'export' || item.type === 'reversal') {
-                if (item.packagingType === 'temporary') {
-                    packagingBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">${T.packaging_temp}</span>`;
-                } else {
-                    packagingBadge = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">${T.packaging_std}</span>`;
+            const filteredHistory = getFilteredHistory();
+            
+            filteredHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const totalQuantity = filteredHistory.reduce((sum, item) => {
+                const qty = parseFloat(item.quantity);
+                return sum + (isNaN(qty) ? 0 : qty); // Simplified total calculation
+            }, 0);
+
+            const formattedTotal = totalQuantity % 1 === 0 ? totalQuantity.toLocaleString() : totalQuantity.toFixed(2);
+            document.getElementById('history-total-quantity').textContent = T.history_total_quantity_display.replace('{total}', formattedTotal);
+
+            if (filteredHistory.length === 0) {
+                historyTable.innerHTML = `<tr><td colspan="${colspan}" class="text-center p-4">${T.no_history_for_filter_message}</td></tr>`;
+                return;
+            }
+            
+            filteredHistory.forEach(item => {
+                const row = document.createElement('tr');
+                let typeHtml, rowClass;
+                switch (item.type) {
+                    case 'import':
+                        typeHtml = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill"><i class="bi bi-arrow-down me-1"></i>${T.history_type_import}</span>`;
+                        rowClass = 'history-import';
+                        break;
+                    case 'export':
+                        typeHtml = `<span class="badge bg-info-subtle text-info-emphasis rounded-pill"><i class="bi bi-arrow-up me-1"></i>${T.history_type_export}</span>`;
+                        rowClass = 'history-export';
+                        break;
+                    case 'adjustment':
+                        typeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill"><i class="bi bi-pencil-fill me-1"></i>${T.history_type_adjustment}</span>`;
+                        rowClass = 'history-adjustment';
+                        break;
+                    case 'reversal':
+                        typeHtml = `<span class="badge bg-danger-subtle text-danger-emphasis rounded-pill"><i class="bi bi-arrow-repeat me-1"></i>${T.history_type_reversal}</span>`;
+                        rowClass = 'history-reversal'; // No more strikethrough
+                        break;
                 }
-            } else {
-                packagingBadge = '-';
-            }
+                row.classList.add(rowClass);
+                const formattedDate = new Date(item.date).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB', {
+                    year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
+                });
+                
+                const itemString = JSON.stringify(item).replace(/'/g, '&apos;'); 
+                const actionsContent = (isAdmin && (item.type === 'import' || item.type === 'export')) ? `<button class="btn btn-danger btn-sm reverse-history-btn" data-history-item='${itemString}'><i class="bi bi-x-circle-fill"></i></button>` : '';
+                
+                const prodDate = item.productionDate || item.ProductionDate || item.production_date;
+                
+                // Display quantity with sign for adjustment and reversal
+                let quantityDisplay = item.quantity.toLocaleString();
+                if (item.type === 'adjustment' || item.type === 'reversal') {
+                    quantityDisplay = (item.quantity > 0 ? '+' : '') + item.quantity.toLocaleString();
+                }
 
-            row.innerHTML = `
-                <td>${typeHtml}</td>
-                <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td>
-                <td>${quantityDisplay}</td>
-                <td>${formatDate(prodDate) || 'N/A'}</td>
-                <td>${packagingBadge}</td>
-                <td class="small-text">${item.erpCode || '-'}</td>
-                <td><div>${item.invoiceNumber || '-'}</div><small class="text-muted">${displayRemark}</small></td>
-                <td>${formattedDate}</td>
-                <td>${item.user}</td>
-                ${canReverseHistory ? `<td>${actionsContent}</td>` : ''}
-            `;
-            historyTable.appendChild(row);
-        });
-    }
+                let displayRemark = item.remarks || '';
+                if(item.type === 'adjustment') {
+                    displayRemark = (displayRemark.split('|')[1] || displayRemark).trim();
+                }
+
+                let packagingBadge = '';
+                if (item.type === 'import' || item.type === 'export' || item.type === 'reversal') {
+                    if (item.packagingType === 'temporary') {
+                        packagingBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">${T.packaging_temp}</span>`;
+                    } else {
+                        packagingBadge = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">${T.packaging_std}</span>`;
+                    }
+                } else {
+                    packagingBadge = '-';
+                }
+
+                row.innerHTML = `
+                    <td>${typeHtml}</td>
+                    <td><div>${item.productName}</div><small class="text-muted">${item.productId}</small></td>
+                    <td>${quantityDisplay}</td>
+                    <td>${formatDate(prodDate) || 'N/A'}</td>
+                    <td>${packagingBadge}</td>
+                    <td class="small-text">${item.erpCode || '-'}</td>
+                    <td><div>${item.invoiceNumber || '-'}</div><small class="text-muted">${displayRemark}</small></td>
+                    <td>${formattedDate}</td>
+                    <td>${item.user}</td>
+                    ${isAdmin ? `<td>${actionsContent}</td>` : ''}
+                `;
+                historyTable.appendChild(row);
+            });
+        }
         
         // --- ADD EVENT LISTENERS ---
 function addEventListeners() {
@@ -3364,34 +3362,34 @@ function renderExportForm() {
                 <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.product_save_button}</button> <button type="button" id="clear-product-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
         }
 
-    function renderUserForm(user = {}) {
-        const T = translations[currentLanguage];
-        const userFormEl = document.getElementById('user-form');
-        const permissions = [
-            { key: 'canImport', label: T.permission_canImport },
-            { key: 'canExport', label: T.permission_canExport },
-            { key: 'canViewHistory', label: T.permission_canViewHistory },
-            { key: 'canCountStock', label: T.permission_canCountStock },
-            { key: 'canManageProducts', label: T.permission_canManageProducts },
-            { key: 'canManageUsers', label: T.permission_canManageUsers },
-            { key: 'canManageAnnouncements', label: T.permission_canManageAnnouncements },
-            { key: 'canReverseHistory', label: T.permission_canReverseHistory } // NEW
-        ];
+        function renderUserForm(user = {}) {
+            const T = translations[currentLanguage];
+            const userFormEl = document.getElementById('user-form');
+            const permissions = [
+                { key: 'canImport', label: T.permission_canImport },
+                { key: 'canExport', label: T.permission_canExport },
+                { key: 'canViewHistory', label: T.permission_canViewHistory },
+                { key: 'canCountStock', label: T.permission_canCountStock },
+                { key: 'canManageProducts', label: T.permission_canManageProducts },
+                { key: 'canManageUsers', label: T.permission_canManageUsers },
+                { key: 'canManageAnnouncements', label: T.permission_canManageAnnouncements }
+            ];
 
-        let permissionsHtml = permissions.map(p => `
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" id="permission-${p.key}" ${user[p.key] ? 'checked' : ''}>
-                <label class="form-check-label" for="permission-${p.key}">${p.label}</label>
-            </div>
-        `).join('');
+            let permissionsHtml = permissions.map(p => `
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="permission-${p.key}" ${user[p.key] ? 'checked' : ''}>
+                    <label class="form-check-label" for="permission-${p.key}">${p.label}</label>
+                </div>
+            `).join('');
 
-        userFormEl.innerHTML = `
-            <div class="col-12"> <label for="user-username" class="form-label">${T.username_label}</label> <input type="text" id="user-username" class="form-control" required value="${user.username || ''}"> </div>
-            <div class="col-12"> <label for="user-password" class="form-label">${T.password_label}</label> <input type="password" id="user-password" class="form-control" required value="${user.password || ''}"> </div>
-            <div class="col-12"> <label for="user-role-select" class="form-label">${T.user_role}</label> <select id="user-role-select" class="form-select" required><option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option><option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option></select> </div>
-            <div class="col-12 mt-3"> <label class="form-label fw-bold">${T.user_permissions}</label> <div class="border rounded p-2 bg-light">${permissionsHtml}</div> </div>
-            <div class="col-12 mt-4"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.user_save_button}</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
-    }        
+            userFormEl.innerHTML = `
+                <div class="col-12"> <label for="user-username" class="form-label">${T.username_label}</label> <input type="text" id="user-username" class="form-control" required value="${user.username || ''}"> </div>
+                <div class="col-12"> <label for="user-password" class="form-label">${T.password_label}</label> <input type="password" id="user-password" class="form-control" required value="${user.password || ''}"> </div>
+                <div class="col-12"> <label for="user-role-select" class="form-label">${T.user_role}</label> <select id="user-role-select" class="form-select" required><option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option><option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option></select> </div>
+                <div class="col-12 mt-3"> <label class="form-label fw-bold">${T.user_permissions}</label> <div class="border rounded p-2 bg-light">${permissionsHtml}</div> </div>
+                <div class="col-12 mt-4"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.user_save_button}</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
+        }
+        
         function renderAnnouncementForm(announcement = {}) {
             const T = translations[currentLanguage];
             const announcementFormEl = document.getElementById('announcement-form');
@@ -3605,341 +3603,126 @@ if (item.type === 'adjustment') {
             `;
         }
 
-// Function to render the main body of the stock count modal
-// Function to render the main body of the stock count modal
-// Function to render the main body of the stock count modal
-// Function to render the main body of the stock count modal
-function renderStockCountModalBody() {
-    const T = translations[currentLanguage];
-    const body = document.getElementById('stockCountModalBody');
-    body.innerHTML = `
-        <form id="stock-count-form" class="container-fluid">
-            <div class="row g-3 mb-3">
-                <div class="col-md-3">
-                    <label for="stock-count-product-id" class="form-label fw-bold">${T.product_id}</label>
-                    <div class="position-relative">
-                        <input type="text" id="stock-count-product-id" class="form-control" autocomplete="off" placeholder="${T.search_placeholder}">
-                        <div id="stock-count-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-bold">${T.production_date}</label>
-                    <div class="position-relative">
-                        <input type="date" id="stock-count-new-prod-date" class="form-control" max="${new Date().toISOString().split('T')[0]}">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <label for="stock-count-packaging-type" class="form-label fw-bold">${T.packaging_type}</label>
-                    <select id="stock-count-packaging-type" class="form-select">
-                        <option value="standard">${T.packaging_std}</option>
-                        <option value="temporary">${T.packaging_temp}</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label for="stock-count-quantity" class="form-label fw-bold">${T.quantity}</label>
-                    <input type="number" id="stock-count-quantity" class="form-control" min="0" placeholder="0">
-                </div>
-                <div class="col-md-1 d-flex align-items-end">
-                    <button type="button" id="add-stock-count-item-btn" class="btn btn-primary w-100" disabled><i class="bi bi-plus-lg"></i></button>
-                </div>
-            </div>
+        function renderStockCountModalBody() {
+            const T = translations[currentLanguage];
+            const body = document.getElementById('stockCountModalBody');
             
-            <hr>
+            const productsWithStock = calculatedStock.filter(s => s.totalQuantity > 0);
+            const productsWithoutStock = db.products.filter(p => !calculatedStock.some(s => String(s.productId).trim() === String(p.id).trim() && s.totalQuantity > 0));
 
-            <div class="card mb-3">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">${T.stock_count_modal_title}</h6>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="clear-stock-count-form-btn"><i class="bi bi-eraser-fill me-1"></i>${T.clear_form_button}</button>
+            const allProductsToCount = [
+                ...productsWithStock.map(s => {
+                    const productInfo = db.products.find(p => String(p.id).trim() === String(s.productId).trim()) || { name: s.productId };
+                    return { ...s, name: productInfo.name };
+                }),
+                ...productsWithoutStock.map(p => ({
+                    productId: p.id,
+                    name: p.name,
+                    totalQuantity: 0
+                }))
+            ].sort((a,b) => String(a.productId).localeCompare(String(b.productId)));
+
+
+            const productListHtml = allProductsToCount.map(p => {
+                return `
+                    <div class="row g-3 align-items-center mb-2 p-2 border rounded stock-count-row" data-product-id="${p.productId}" data-product-name="${p.name}" data-system-qty="${p.totalQuantity}">
+                        <div class="col-md-5">
+                            <label class="form-label mb-0">${p.productId} - ${p.name}</label>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">${T.stock_count_system_qty}</span>
+                                <input type="text" class="form-control" value="${p.totalQuantity.toLocaleString()}" readonly style="background-color: #e9ecef;">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">${T.stock_count_counted_qty}</span>
+                                <input type="number" class="form-control counted-qty-input" min="0" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            body.innerHTML = `
+                <div class="container-fluid">
+                    <div id="stock-count-product-list">
+                        ${productListHtml}
+                    </div>
                 </div>
-                <div class="card-body">
+            `;
+        }
+
+        function renderStockCountReportModalBody(count) {
+            const T = translations[currentLanguage];
+            const body = document.getElementById('stockCountReportModalBody');
+            const footer = document.getElementById('stockCountReportModalFooter');
+            const isAdmin = currentUser.role === 'admin';
+            const canApprove = isAdmin && count.status === 'pending';
+
+            const formattedDate = new Date(count.date).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB', { dateStyle: 'long', timeStyle: 'short' });
+            document.getElementById('stockCountReportModalLabel').innerHTML = `<i class="bi bi-file-earmark-spreadsheet-fill me-2"></i>${T.stock_count_report_title} - ${count.id}`;
+
+            const itemsHtml = count.items.map(item => {
+                const variance = item.countedQty - item.systemQty;
+                let varianceClass = '';
+                let varianceText = variance;
+                if (variance > 0) {
+                    varianceClass = 'variance-positive';
+                    varianceText = `+${variance}`;
+                } else if (variance < 0) {
+                    varianceClass = 'variance-negative';
+                }
+                const rowClass = variance !== 0 ? 'table-danger' : '';
+
+                return `
+                    <tr class="${rowClass}">
+                        <td>${item.productId}</td>
+                        <td>${item.productName}</td>
+                        <td class="text-end">${item.systemQty.toLocaleString()}</td>
+                        <td class="text-end fw-bold">${item.countedQty.toLocaleString()}</td>
+                        <td class="text-end ${varianceClass}">${varianceText.toLocaleString()}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            body.innerHTML = `
+                <div class="container-fluid">
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>${T.stock_count_table_id}:</strong> ${count.id}</div>
+                        <div class="col-md-4"><strong>${T.stock_count_table_date}:</strong> ${formattedDate}</div>
+                        <div class="col-md-4"><strong>${T.stock_count_table_user}:</strong> ${count.user}</div>
+                    </div>
                     <div class="table-responsive">
-                        <table class="table table-sm table-bordered mb-0">
-                            <thead>
+                        <table class="table table-bordered align-middle">
+                            <thead class="table-light">
                                 <tr>
                                     <th>${T.product_id}</th>
-                                    <th>${T.production_date}</th>
-                                    <th>${T.packaging_type}</th>
+                                    <th>${T.product_name}</th>
                                     <th class="text-end">${T.stock_count_system_qty}</th>
                                     <th class="text-end">${T.stock_count_counted_qty}</th>
                                     <th class="text-end">${T.stock_count_variance}</th>
-                                    <th>${T.actions}</th>
                                 </tr>
                             </thead>
-                            <tbody id="stock-count-items-list">
-                                <tr><td colspan="7" class="text-center text-muted p-4">กรุณาเพิ่มรายการที่ต้องการนับ</td></tr>
+                            <tbody>
+                                ${itemsHtml}
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
-        </form>
-    `;
-    
-    // Add event listeners for the new dynamic form
-    const form = document.getElementById('stock-count-form');
-    form.addEventListener('input', (e) => {
-        if (e.target.id === 'stock-count-product-id') {
-            const searchTerm = e.target.value;
-            const suggestionsContainer = document.getElementById('stock-count-product-suggestions');
-            const productSource = db.products;
-            showSuggestions(e.target, suggestionsContainer, productSource, searchTerm, (product) => {
-                document.getElementById('stock-count-product-id').value = product.id;
-                suggestionsContainer.innerHTML = '';
-                checkStockCountFormValidity();
-            });
-        }
-        checkStockCountFormValidity();
-    });
+            `;
 
-    form.addEventListener('change', checkStockCountFormValidity);
-    form.addEventListener('click', handleStockCountFormClick);
-}
-
-// Function to handle click events for the new stock count form
-function handleStockCountFormClick(e) {
-    const T = translations[currentLanguage];
-    const target = e.target.closest('button');
-
-    if (target && target.id === 'add-stock-count-item-btn') {
-        const productId = document.getElementById('stock-count-product-id').value;
-        const prodDate = document.getElementById('stock-count-new-prod-date').value;
-        const packagingType = document.getElementById('stock-count-packaging-type').value;
-        const countedQty = parseInt(document.getElementById('stock-count-quantity').value);
-
-        if (!productId || !prodDate || isNaN(countedQty) || countedQty < 0) {
-            showError(T.form_incomplete, "กรุณากรอกข้อมูลสินค้า, วันที่ผลิต, ประเภทบรรจุภัณฑ์ และจำนวนที่นับได้ให้ครบถ้วน");
-            return;
+            footer.innerHTML = `
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${T.close_button}</button>
+                ${canApprove ? `<button type="button" class="btn btn-success approve-stock-count-btn" data-count-id="${count.id}"><i class="bi bi-check-circle-fill me-2"></i>${T.stock_count_approve_button}</button>` : ''}
+            `;
         }
 
-        const existingRow = document.querySelector(`#stock-count-items-list tr[data-product-id="${productId}"][data-prod-date="${prodDate}"][data-packaging-type="${packagingType}"]`);
-        if(existingRow) {
-            showError('รายการซ้ำ', 'มีรายการสินค้านี้สำหรับล็อตนี้อยู่แล้ว กรุณาแก้ไขรายการเดิม');
-            return;
-        }
-
-        addStockCountItemRow(productId, prodDate, packagingType, countedQty);
-        clearStockCountForm(); // Reset form for next item
-        toggleSaveCountButton(); // Check and enable save button
-    }
-
-    if (target && target.classList.contains('remove-stock-count-item-btn')) {
-        e.target.closest('tr').remove();
-        if (document.getElementById('stock-count-items-list').querySelectorAll('tr').length === 0) {
-            document.getElementById('stock-count-items-list').innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4">กรุณาเพิ่มรายการที่ต้องการนับ</td></tr>`;
-        }
-        toggleSaveCountButton(); // Check and disable save button
-    }
-    
-    if (target && target.id === 'clear-stock-count-form-btn') {
-        // อัปเดต: ล้างรายการในฟอร์มและล้างตารางไปพร้อมกัน
-        document.getElementById('stock-count-items-list').innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4">กรุณาเพิ่มรายการที่ต้องการนับ</td></tr>`;
-        clearStockCountForm(); // เรียกใช้ฟังก์ชัน clearStockCountForm() ที่แก้ไขแล้ว
-        toggleSaveCountButton();
-    }
-}
-
-// A dedicated function to check the validity of the form fields
-// and enable/disable the "add" button accordingly.
-// A dedicated function to check the validity of the form fields
-// and enable/disable the "add" button accordingly.
-function checkStockCountFormValidity() {
-    const productId = document.getElementById('stock-count-product-id').value;
-    const prodDate = document.getElementById('stock-count-new-prod-date').value;
-    const packagingType = document.getElementById('stock-count-packaging-type').value;
-    const quantity = document.getElementById('stock-count-quantity').value;
-    const addButton = document.getElementById('add-stock-count-item-btn');
-
-    if (productId && prodDate && packagingType && quantity && parseInt(quantity) >= 0) {
-        addButton.disabled = false;
-    } else {
-        addButton.disabled = true;
-    }
-}
-
-// Function to handle click events for the new stock count form
-function handleStockCountFormClick(e) {
-    const T = translations[currentLanguage];
-    const target = e.target.closest('button');
-
-    if (target && target.id === 'add-stock-count-item-btn') {
-        const productId = document.getElementById('stock-count-product-id').value;
-        const prodDate = document.getElementById('stock-count-new-prod-date').value;
-        const packagingType = document.getElementById('stock-count-packaging-type').value;
-        const countedQty = parseInt(document.getElementById('stock-count-quantity').value);
-
-        if (!productId || !prodDate || isNaN(countedQty) || countedQty < 0) {
-            showError(T.form_incomplete, "กรุณากรอกข้อมูลสินค้า, วันที่ผลิต, ประเภทบรรจุภัณฑ์ และจำนวนที่นับได้ให้ครบถ้วน");
-            return;
-        }
-
-        const existingRow = document.querySelector(`#stock-count-items-list tr[data-product-id="${productId}"][data-prod-date="${prodDate}"][data-packaging-type="${packagingType}"]`);
-        if(existingRow) {
-            showError('รายการซ้ำ', 'มีรายการสินค้านี้สำหรับล็อตนี้อยู่แล้ว กรุณาแก้ไขรายการเดิม');
-            return;
-        }
-
-        addStockCountItemRow(productId, prodDate, packagingType, countedQty);
-        clearStockCountForm(); // Reset form for next item
-        toggleSaveCountButton(); // Check and enable save button
-    }
-
-    if (target && target.classList.contains('remove-stock-count-item-btn')) {
-        e.target.closest('tr').remove();
-        if (document.getElementById('stock-count-items-list').querySelectorAll('tr').length === 0) {
-            document.getElementById('stock-count-items-list').innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4">กรุณาเพิ่มรายการที่ต้องการนับ</td></tr>`;
-        }
-        toggleSaveCountButton(); // Check and disable save button
-    }
-    
-    if (target && target.id === 'clear-stock-count-form-btn') {
-        // อัปเดต: ล้างรายการในฟอร์มและล้างตารางไปพร้อมกัน
-        document.getElementById('stock-count-items-list').innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4">กรุณาเพิ่มรายการที่ต้องการนับ</td></tr>`;
-        clearStockCountForm(); // เรียกใช้ฟังก์ชัน clearStockCountForm() ที่แก้ไขแล้ว
-        toggleSaveCountButton();
-    }
-}
-
-// A dedicated function to enable/disable the main save button.
-function toggleSaveCountButton() {
-    const saveButton = document.getElementById('save-stock-count-btn');
-    const hasItems = document.querySelectorAll('#stock-count-items-list .stock-count-item-row').length > 0;
-    if (saveButton) {
-        saveButton.disabled = !hasItems;
-    }
-}
-
-// A dedicated function to clear the form for new stock count entries.
-function clearStockCountForm() {
-    const form = document.getElementById('stock-count-form');
-    if (form) {
-        document.getElementById('stock-count-product-id').value = ''; 
-        document.getElementById('stock-count-product-suggestions').innerHTML = '';
-        
-        const newDateInput = document.getElementById('stock-count-new-prod-date');
-        newDateInput.value = '';
-        
-        const packagingSelect = document.getElementById('stock-count-packaging-type');
-        packagingSelect.value = 'standard';
-
-        document.getElementById('stock-count-quantity').value = '';
-
-        const addButton = document.getElementById('add-stock-count-item-btn');
-        addButton.disabled = true;
-    }
-}
-
-// This function needs to be rewritten to handle the new UI structure
-// Adds a new row to the list of items to be counted in the stock count modal.
-function addStockCountItemRow(productId, prodDate, packagingType, countedQty) {
-    const T = translations[currentLanguage];
-    const itemList = document.getElementById('stock-count-items-list');
-    
-    // Get system quantity for this lot
-    const stockItem = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim());
-    const lot = stockItem ? stockItem.lots.find(l => l.productionDate === prodDate && l.packagingType === packagingType) : null;
-    
-    const systemQty = lot ? lot.quantity : 0;
-    const variance = countedQty - systemQty;
-    const varianceClass = variance > 0 ? 'variance-positive' : (variance < 0 ? 'variance-negative' : '');
-    const varianceText = variance > 0 ? `+${variance}` : variance;
-    const rowClass = variance !== 0 ? 'table-danger' : '';
-
-    const newRow = document.createElement('tr');
-    newRow.classList.add('stock-count-item-row', rowClass);
-    newRow.dataset.productId = productId;
-    newRow.dataset.prodDate = prodDate;
-    newRow.dataset.packagingType = packagingType;
-    newRow.dataset.systemQty = systemQty;
-    newRow.dataset.countedQty = countedQty;
-
-    const productInfo = db.products.find(p => String(p.id).trim() === String(productId).trim()) || { name: productId };
-    
-    const packagingText = packagingType === 'standard' ? T.packaging_std : T.packaging_temp;
-
-    newRow.innerHTML = `
-        <td>${productId} - <small class="text-muted">${productInfo.name}</small></td>
-        <td>${prodDate}</td>
-        <td>${packagingText}</td>
-        <td class="text-end">${systemQty.toLocaleString()}</td>
-        <td class="text-end">${countedQty.toLocaleString()}</td>
-        <td class="text-end fw-bold ${varianceClass}">${varianceText.toLocaleString()}</td>
-        <td>
-            <button type="button" class="btn btn-danger btn-sm remove-stock-count-item-btn"><i class="bi bi-x-lg"></i></button>
-        </td>
-    `;
-    if (itemList.querySelector('td.text-muted')) {
-        itemList.innerHTML = '';
-    }
-    itemList.appendChild(newRow);
-}
-
-// Function to save the stock count data to the backend
-window.app.saveStockCount = async () => {
-    const T = translations[currentLanguage];
-    const itemRows = document.querySelectorAll('#stock-count-items-list .stock-count-item-row');
-    const countItems = [];
-
-    if (itemRows.length === 0) {
-        showError(T.form_incomplete, "กรุณาเพิ่มรายการที่ต้องการนับอย่างน้อย 1 รายการ");
-        return;
-    }
-
-    itemRows.forEach(row => {
-        const productInfo = db.products.find(p => String(p.id).trim() === String(row.dataset.productId).trim()) || {};
-        countItems.push({
-            productId: row.dataset.productId,
-            productName: productInfo.name || row.dataset.productId,
-            erpCode: productInfo.erpCode || '-',
-            productionDate: row.dataset.prodDate,
-            packagingType: row.dataset.packagingType,
-            systemQty: parseInt(row.dataset.systemQty, 10),
-            countedQty: parseInt(row.dataset.countedQty, 10),
-            variance: parseInt(row.dataset.countedQty, 10) - parseInt(row.dataset.systemQty, 10),
-        });
-    });
-
-    const newCount = {
-        id: 'sc-' + Date.now(),
-        date: new Date().toISOString(),
-        user: currentUser.username,
-        status: 'pending',
-        items: countItems
-    };
-
-    // Optimistic Update
-    db.stockCounts.unshift(newCount);
-    populateStockCountMainView();
-    stockCountModal.hide();
-    showSuccess(T.success_title, "บันทึกการนับสต็อกเรียบร้อยแล้วค่ะ");
-
-    // Background Save
-    try {
-        await callAppsScript('addStockCount', newCount);
-        console.log(`Background save successful for stock count ${newCount.id}`);
-    } catch (error) {
-        showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
-    }
-};
-// A dedicated function to clear the form for new stock count entries.
-function clearStockCountForm() {
-    const form = document.getElementById('stock-count-form');
-    if (form) {
-        document.getElementById('stock-count-product-id').value = ''; 
-        document.getElementById('stock-count-product-suggestions').innerHTML = '';
-        
-        const newDateInput = document.getElementById('stock-count-new-prod-date');
-        newDateInput.value = '';
-        
-        const packagingSelect = document.getElementById('stock-count-packaging-type');
-        packagingSelect.value = 'standard';
-
-        document.getElementById('stock-count-quantity').value = '';
-
-        const addButton = document.getElementById('add-stock-count-item-btn');
-        addButton.disabled = true;
-    }
-}
-
+		/**
+ * Handles the form submission for adding or updating product information.
+ * This function is robust and handles errors returned from the backend script gracefully.
+ */
 async function handleProductFormSubmit(e) {
     e.preventDefault();
     const T = translations[currentLanguage];
@@ -4011,102 +3794,7 @@ async function handleProductFormSubmit(e) {
         const dashboardElectronicSalesQuantity = document.getElementById('dashboard-electronic-sales-quantity');
         const dashboardElectronicSalesValue = document.getElementById('dashboard-electronic-sales-value');
 
-	// Function to approve a single item in a stock count report
-// Function to approve a single item in a stock count report
-async function approveStockCountItem(countId, productId, prodDate) {
-    const T = translations[currentLanguage];
-    const count = db.stockCounts.find(sc => sc.id === countId);
-    if (!count) return showError('Error', 'Report not found.');
 
-    const item = count.items.find(i => String(i.productId).trim() === String(productId).trim() && i.productionDate === prodDate);
-    if (!item) return showError('Error', 'Item not found in report.');
-    if (item.status === 'approved') return showError('Error', 'This item has already been approved.');
-    
-    // Calculate the adjustment needed
-    const variance = item.countedQty - item.systemQty;
-    const productInfo = db.products.find(p => String(p.id).trim() === String(productId).trim()) || {};
-    let adjustmentEntry = null;
-
-    // We only create an adjustment transaction if there is a variance
-    if (variance !== 0) {
-        adjustmentEntry = {
-            id: 'adj-' + Date.now(),
-            date: new Date().toISOString(),
-            type: 'adjustment',
-            productId: productId,
-            productName: productInfo.name || productId,
-            customer: productInfo.customer || '',
-            erpCode: productInfo.erpCode || '',
-            quantity: variance,
-            productionDate: item.productionDate,
-            user: currentUser.username,
-            remarks: `Adjustment from Stock Count ${count.id} (Item: ${productId} - ${item.productionDate})`,
-            packagingType: 'standard'
-        };
-    }
-    
-    // Optimistically update local state first
-    item.status = 'approved';
-    if (adjustmentEntry) {
-        db.history.unshift(adjustmentEntry);
-    }
-    
-    // Re-render the UI
-    renderStockCountReportModalBody(count);
-    populateStockCountMainView();
-
-    try {
-        // Step 1: Append the adjustment to the history if it exists
-        if (adjustmentEntry) {
-            await callAppsScript('appendHistory', adjustmentEntry);
-        }
-
-        // Step 2: Update the original stock count record to save the new item status
-        // This is the crucial step that was missing.
-        await callAppsScript('updateStockCount', count);
-
-        // Show success message only after successful backend calls
-        showSuccess(T.stock_count_approve_success);
-
-    } catch (error) {
-        // Rollback optimistic update on failure
-        item.status = 'pending';
-        if (adjustmentEntry) {
-            db.history.shift(); // Remove the prepended history entry
-        }
-        renderStockCountReportModalBody(count);
-        populateStockCountMainView();
-        showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
-    }
-}
-async function rejectStockCountItem(countId, productId, prodDate) {
-    const T = translations[currentLanguage];
-    const count = db.stockCounts.find(sc => sc.id === countId);
-    if (!count) return showError('Error', 'Report not found.');
-
-    const item = count.items.find(i => String(i.productId).trim() === String(productId).trim() && i.productionDate === prodDate);
-    if (!item) return showError('Error', 'Item not found in report.');
-    if (item.status === 'rejected') return showError('Error', 'This item has already been rejected.');
-    
-    // Optimistic update
-    item.status = 'rejected';
-    renderStockCountReportModalBody(count);
-
-    // Note: Rejection does not require a backend transaction, only an update to the count status.
-    // However, the current backend might not support this granular update. This is a manual change for now.
-    // We'll update the whole object for simplicity.
-    try {
-        await callAppsScript('updateStockCount', count);
-        console.log(`Background save successful for rejecting item ${productId}`);
-        showSuccess('เรียบร้อย', 'รายการถูกปฏิเสธแล้ว');
-    } catch (error) {
-        // Rollback optimistic update
-        item.status = 'pending';
-        renderStockCountReportModalBody(count);
-        showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
-    }
-}
-	
         function populateStockDashboard() {
             const T = translations[currentLanguage];
             let totalStockQuantity = 0;
