@@ -681,6 +681,8 @@
             import_quantity: "จำนวนที่รับเข้า",
             import_warning: "เช็ควันที่รับเข้าจากชิ้นงานให้ดีก่อนรับเข้า",
             import_save_button: "บันทึกการรับเข้า",
+	        import_remainder_title: "ยอดรับเข้าไม่ลงตัว!",
+	        import_remainder_text: "ยอดรวมที่รับเข้า ({totalQty}) หารจำนวนเต็มกล่อง ({fullBoxQty}) แล้วมีเศษเหลือ ต้องการยืนยันการรับเข้าใช่หรือไม่?",
             // Export Tab
             export_form_title: "ฟอร์มส่งออกสินค้า",
             export_total_quantity: "ยอดรวมที่จะส่งออก",
@@ -2022,83 +2024,102 @@
             }
         }
         
-        async function handleImport(e) {
-            e.preventDefault();
-            const T = translations[currentLanguage];
-            const productId = document.getElementById('import-product-id').value;
-            const productName = document.getElementById('import-product-name').value;
-            if (!productName) {
-                showError(T.form_incomplete, T.product_name_required);
-                return;
-            }
-            
-            const productForHistory = {
-                id: productId,
-                name: productName,
-                customer: document.getElementById('import-customer').value,
-                erpCode: document.getElementById('import-erp-code').value
-            };
-            const remarks = document.getElementById('import-remarks').value;
-            const lotRows = document.querySelectorAll('#import-lots-container .import-lot-row');
-            const newHistoryEntries = [];
+async function handleImport(e) {
+    e.preventDefault();
+    const T = translations[currentLanguage];
+    const productId = document.getElementById('import-product-id').value;
+    const productName = document.getElementById('import-product-name').value;
+    if (!productName) {
+        showError(T.form_incomplete, T.product_name_required);
+        return;
+    }
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+    const productForHistory = {
+        id: productId,
+        name: productName,
+        customer: document.getElementById('import-customer').value,
+        erpCode: document.getElementById('import-erp-code').value
+    };
+    const remarks = document.getElementById('import-remarks').value;
+    const lotRows = document.querySelectorAll('#import-lots-container .import-lot-row');
+    const newHistoryEntries = [];
 
-            for(const row of lotRows) {
-                const quantity = parseInt(row.querySelector('.import-quantity').value);
-                const productionDateStr = row.querySelector('.import-prod-date').value;
-                const packagingType = row.querySelector('.import-packaging-type').value;
-                if (!productionDateStr) continue;
-                
-                // FIX: Corrected variable name from productionDateDateStr to productionDateStr
-                const parts = productionDateStr.split('-');
-                const productionDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // NEW: Get fullBoxQuantity to check for remainder
+    const fullBoxQuantity = parseInt(document.getElementById('import-fullbox').value);
+    let totalImportQuantity = 0;
 
-                if (productionDate > today) {
-                    showError(T.form_incomplete, T.future_date_error);
-                    return;
-                }
+    for (const row of lotRows) {
+        const quantity = parseInt(row.querySelector('.import-quantity').value);
+        const productionDateStr = row.querySelector('.import-prod-date').value;
+        const packagingType = row.querySelector('.import-packaging-type').value;
+        if (!productionDateStr || isNaN(quantity) || quantity <= 0) continue;
+        
+        totalImportQuantity += quantity; // Accumulate total quantity for the check
 
-                if (quantity > 0) {
-                    newHistoryEntries.push({
-                        id: 'imp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-                        date: new Date().toISOString(),
-                        type: 'import',
-                        productId: productForHistory.id,
-                        productName: productForHistory.name,
-                        customer: productForHistory.customer,
-                        erpCode: productForHistory.erpCode,
-                        quantity: quantity,
-                        productionDate: productionDateStr,
-                        user: currentUser.username,
-                        invoiceNumber: null,
-                        remarks: remarks,
-                        packagingType: packagingType
-                    });
-                }
-            }
+        const parts = productionDateStr.split('-');
+        const productionDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
-            if (newHistoryEntries.length === 0) {
-                showError(T.form_incomplete, "Please add at least one valid lot.");
-                return;
-            }
-
-            // --- Optimistic Update ---
-            newHistoryEntries.forEach(entry => db.history.unshift(entry));
-            calculateStockFromHistory();
-            populateAll();
-            showSuccess(T.import_success.replace('{name}', productName));
-            renderImportForm();
-
-            // --- Background Save ---
-            try {
-                await callAppsScript('appendBatchHistory', newHistoryEntries);
-                console.log(`Background save successful for ${productName}`);
-            } catch (error) {
-                showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
-            }
+        if (productionDate > today) {
+            showError(T.form_incomplete, T.future_date_error);
+            return;
         }
+
+        newHistoryEntries.push({
+            id: 'imp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+            date: new Date().toISOString(),
+            type: 'import',
+            productId: productForHistory.id,
+            productName: productForHistory.name,
+            customer: productForHistory.customer,
+            erpCode: productForHistory.erpCode,
+            quantity: quantity,
+            productionDate: productionDateStr,
+            user: currentUser.username,
+            invoiceNumber: null,
+            remarks: remarks,
+            packagingType: packagingType
+        });
+    }
+
+    if (newHistoryEntries.length === 0) {
+        showError(T.form_incomplete, "Please add at least one valid lot.");
+        return;
+    }
+    
+    // NEW LOGIC: Check for remainder only for 'standard' packing type
+    const isStandardPacking = newHistoryEntries.every(entry => entry.packagingType === 'standard');
+    if (isStandardPacking && fullBoxQuantity && totalImportQuantity % fullBoxQuantity !== 0) {
+        const result = await Swal.fire({
+            title: 'ยอดรับเข้าไม่ลงตัว!',
+            text: `ยอดรวมที่รับเข้า (${totalImportQuantity.toLocaleString()}) หารจำนวนเต็มกล่อง (${fullBoxQuantity.toLocaleString()}) แล้วมีเศษเหลือ ต้องการยืนยันการรับเข้าใช่หรือไม่?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'ใช่, ยืนยัน',
+            cancelButtonText: 'ยกเลิก'
+        });
+        if (!result.isConfirmed) {
+            return;
+        }
+    }
+
+    // --- Optimistic Update ---
+    newHistoryEntries.forEach(entry => db.history.unshift(entry));
+    calculateStockFromHistory();
+    populateAll();
+    showSuccess(T.import_success.replace('{name}', productName));
+    renderImportForm();
+
+    // --- Background Save ---
+    try {
+        await callAppsScript('appendBatchHistory', newHistoryEntries);
+        console.log(`Background save successful for ${productName}`);
+    } catch (error) {
+        showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
+    }
+}
 		// Function for handling stock adjustments
 async function handleEditStockSubmit(e) {
     e.preventDefault();
