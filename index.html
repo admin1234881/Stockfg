@@ -23,32 +23,15 @@
             --header-bg: #e7f1ff; /* Light blue header background */
         }
         body { 
-            /* NEW: พื้นหลังรูปคลังสินค้าแบบจางๆ */
-            background-image: linear-gradient(rgba(240, 242, 245, 0.7), rgba(240, 242, 245, 0.7)), url('https://raw.githubusercontent.com/admin1234881/Stockfg/main/20240123_110948.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed; /* ทำให้พื้นหลังอยู่นิ่งเมื่อเลื่อนหน้าจอ */
+            background-color: var(--bg-color); 
             color: var(--text-color); 
         }
         body.lang-th { font-family: 'Mitr', sans-serif; }
         body.lang-en { font-family: 'Inter', sans-serif; }
-        
+
         .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .card { 
-            border-radius: var(--border-radius); 
-            border: none; 
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); 
-            overflow: hidden; 
-            background-color: rgba(255, 255, 255, 0.8); /* ทำให้การ์ดโปร่งแสงเล็กน้อย */
-            backdrop-filter: blur(10px);
-            background-clip: padding-box;
-        }
-        .card-header-custom { 
-            background: linear-gradient(135deg, var(--primary-color), #0dcaf0); 
-            color: white; 
-            border-bottom: none; 
-            padding: 2rem;
-        }
+        .card { border-radius: var(--border-radius); border: none; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); overflow: hidden; }
+        .card-header-custom { background: linear-gradient(135deg, var(--primary-color), #0dcaf0); color: white; border-bottom: none; }
         .card-header { background-color: var(--header-bg); border-bottom: 1px solid #dee2e6; }
         .btn { border-radius: var(--border-radius); padding: 10px 20px; font-weight: 500; transition: transform 0.2s ease, box-shadow 0.2s ease; border: none; }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1); }
@@ -119,73 +102,36 @@
         }
         .variance-positive { color: var(--success-color); font-weight: bold; }
         .variance-negative { color: var(--danger-color); font-weight: bold; }
-
-        /* NEW CSS for modern login and clock */
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 10;
-        }
-        .header-content .clock {
-            color: #212529;
-            font-size: 1.2rem;
-            font-weight: 500;
-            background-color: rgba(255, 255, 255, 0.7);
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-            backdrop-filter: blur(5px);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .dropdown-menu {
-            border-radius: var(--border-radius);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                align-items: flex-start;
-                padding-bottom: 0;
-            }
-            .header-content .clock {
-                margin-bottom: 1rem;
-            }
-        }
     </style>
 </head>
 <body>
 
-    <!-- Header with clock and manuals -->
-    <div class="header-content">
-        <div id="clock-container" class="clock"></div>
-        <div class="dropdown">
-            <button class="btn btn-light btn-sm dropdown-toggle" type="button" id="manualsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-question-circle-fill me-1"></i> คู่มือการใช้งาน
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="manualsDropdown">
-                <li>
-                    <a class="dropdown-item" href="https://drive.google.com/uc?export=download&id=1watGaulH8aoLLW18lWcEJp7dJHv1tOn4" download="คู่มือการใช้งานระบบสต็อกสินค้า FG.pdf">
-                        <i class="bi bi-file-earmark-pdf-fill me-2"></i>คู่มือระบบ STOCK FG
-                    </a>
-                </li>
-                <li>
-                    <a class="dropdown-item" href="https://drive.google.com/uc?id=1EX3Bcd7KTKkXdEaGVOb7g8Xo-PTzPCPf" download="คู่มือการรับเข้าสินค้า.pdf">
-                        <i class="bi bi-file-earmark-pdf-fill me-2"></i>คู่มือระบบ ERP
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </div>
-    <!-- END NEW HEADER -->
-
+    <!-- Login Page -->
     <!-- Login Page -->
     <div id="login-page" class="container">
         <div class="login-container position-relative">
+            <!-- Manual Download Buttons Container -->
+            <div class="position-absolute top-0 end-0 p-3" style="z-index: 100;">
+                <div class="dropdown">
+                    <button class="btn btn-light btn-sm dropdown-toggle" type="button" id="manualsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-question-circle-fill me-1"></i> คู่มือการใช้งาน
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="manualsDropdown">
+                        <li>
+                            <a class="dropdown-item" href="https://drive.google.com/uc?export=download&id=1watGaulH8aoLLW18lWcEJp7dJHv1tOn4" download="คู่มือการใช้งานระบบสต็อกสินค้า FG.pdf">
+                                <i class="bi bi-file-earmark-pdf-fill me-2"></i>คู่มือระบบ STOCK FG
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="https://drive.google.com/uc?id=1EX3Bcd7KTKkXdEaGVOb7g8Xo-PTzPCPf" download="คู่มือการรับเข้าสินค้า.pdf">
+                                <i class="bi bi-file-earmark-pdf-fill me-2"></i>คู่มือระบบ ERP
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- END NEW -->
+
             <!-- NEW LAYOUT: Logo on Left, Form on Right -->
             <div class="row w-100 align-items-center justify-content-center">
                 <!-- Left Column: Logo & Welcome Text (Hidden on small screens) -->
