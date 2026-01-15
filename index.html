@@ -2411,7 +2411,7 @@ function addEventListeners() {
         const stockBackupData = generateStockBackupData();
         // สร้าง footer object
         const footer = {
-            left: 'FS-112',
+            left: 'FS-113',
             right: `${T.download_by.replace('{user}', currentUser.username).replace('{date}', new Date().toLocaleString())}`
         };
         // เรียกใช้ฟังก์ชัน backupToCSV พร้อมส่ง footer เข้าไปด้วย
@@ -2421,7 +2421,7 @@ function addEventListeners() {
     document.getElementById('backup-products-btn').addEventListener('click', () => {
         const T = translations[currentLanguage];
         const footer = {
-            left: 'FS-112',
+            left: 'FS-113',
             right: `${T.download_by.replace('{user}', currentUser.username).replace('{date}', new Date().toLocaleString())}`
         };
         backupToCSV(db.products, 'products_backup.csv', footer);
@@ -2430,7 +2430,7 @@ function addEventListeners() {
     document.getElementById('backup-users-btn').addEventListener('click', () => {
         const T = translations[currentLanguage];
         const footer = {
-            left: 'FS-112',
+            left: 'FS-113',
             right: `${T.download_by.replace('{user}', currentUser.username).replace('{date}', new Date().toLocaleString())}`
         };
         backupToCSV(db.users, 'users_backup.csv', footer);
@@ -2458,7 +2458,7 @@ function addEventListeners() {
         });
         
         const footer = {
-            left: 'FS-112',
+            left: 'FS-113',
             right: `${T.download_by.replace('{user}', currentUser.username).replace('{date}', new Date().toLocaleString())}`
         };
 
@@ -2721,7 +2721,7 @@ function backupToCSV(data, filename) {
     const footerText = `Downloaded by: ${currentUser.username} on ${new Date().toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB')}`;
     csvRows.push(''); // เว้นบรรทัดก่อน footer
     const footerCols = new Array(headers.length).fill('');
-    footerCols[0] = '"FS-113"';
+    footerCols[0] = '"FS-112."';
     footerCols[headers.length - 1] = `"${footerText}"`;
     csvRows.push(footerCols.join(','));
 
