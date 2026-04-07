@@ -2700,7 +2700,7 @@ function backupToCSV(data, filename) {
     // --- สร้างหัวกระดาษ (Header) ---
     const headerRows = [];
     const headerCols = new Array(headers.length).fill('');
-    headerCols[0] = '"ข้อมูลสต็อค"';
+    headerCols[0] = '"ข้อมูลสต็อค รับเข้า"';
     headerRows.push(headerCols.join(','));
     headerRows.push(new Array(headers.length).fill('').join(',')); // เว้นบรรทัด
     
@@ -2721,7 +2721,7 @@ function backupToCSV(data, filename) {
     const footerText = `Downloaded by: ${currentUser.username} on ${new Date().toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB')}`;
     csvRows.push(''); // เว้นบรรทัดก่อน footer
     const footerCols = new Array(headers.length).fill('');
-    footerCols[0] = '"FS-112."';
+    footerCols[0] = '"FS-112"';
     footerCols[headers.length - 1] = `"${footerText}"`;
     csvRows.push(footerCols.join(','));
 
