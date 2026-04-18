@@ -11,6 +11,50 @@
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
+/* --- สไตล์ใหม่สำหรับหน้า Login --- */
+.login-visual-container {
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.digital-clock {
+    font-family: 'Inter', sans-serif;
+    font-size: 5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -2px;
+}
+
+.current-date {
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.btn-login-trigger {
+    padding: 15px 50px;
+    font-size: 1.25rem;
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid #fff;
+    color: #fff;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.btn-login-trigger:hover {
+    background: #fff;
+    color: var(--primary-color);
+    transform: translateY(-5px);
+}
+
+/* ปรับปรุง Modal Login ให้ดูสะอาดตา */
+#loginModal .modal-content {
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
         :root {
             --primary-color: #0d6efd; /* Main blue */
             --secondary-color: #6c757d; /* Gray */
@@ -132,69 +176,72 @@
     </style>
 <body>
 
-    <!-- Login Page -->
-    <!-- Login Page -->
-    <div id="login-page" class="container">
-        <div class="login-container position-relative">
-            <!-- Manual Download Buttons Container -->
-            <div class="position-absolute top-0 end-0 p-3" style="z-index: 100;">
-                <div class="dropdown">
-                    <button class="btn btn-light btn-sm dropdown-toggle" type="button" id="manualsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-question-circle-fill me-1"></i> คู่มือการใช้งาน
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="manualsDropdown">
-                        <li>
-                            <a class="dropdown-item" href="https://drive.google.com/uc?export=download&id=1watGaulH8aoLLW18lWcEJp7dJHv1tOn4" download="คู่มือการใช้งานระบบสต็อกสินค้า FG.pdf">
-                                <i class="bi bi-file-earmark-pdf-fill me-2"></i>คู่มือระบบ STOCK FG
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="https://drive.google.com/uc?id=1EX3Bcd7KTKkXdEaGVOb7g8Xo-PTzPCPf" download="คู่มือการรับเข้าสินค้า.pdf">
-                                <i class="bi bi-file-earmark-pdf-fill me-2"></i>คู่มือระบบ ERP
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+ <div id="login-page" class="container">
+    <div class="login-container">
+        <div class="position-absolute top-0 end-0 p-3" style="z-index: 100;">
+            <div class="dropdown">
+                <button class="btn btn-light btn-sm dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-question-circle-fill me-1"></i> คู่มือการใช้งาน
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="https://drive.google.com/uc?export=download&id=1watGaulH8aoLLW18lWcEJp7dJHv1tOn4"><i class="bi bi-file-earmark-pdf-fill me-2 text-danger"></i>คู่มือระบบ STOCK FG</a></li>
+                    <li><a class="dropdown-item" href="https://drive.google.com/uc?id=1EX3Bcd7KTKkXdEaGVOb7g8Xo-PTzPCPf"><i class="bi bi-file-earmark-pdf-fill me-2 text-danger"></i>คู่มือระบบ ERP</a></li>
+                </ul>
             </div>
-            <!-- END NEW -->
+        </div>
 
-            <!-- NEW LAYOUT: Logo on Left, Form on Right -->
-            <div class="row w-100 align-items-center justify-content-center">
-                <!-- Left Column: Logo & Welcome Text (Hidden on small screens) -->
-                <div class="col-md-6 col-lg-6 text-center d-none d-md-block px-5">
-                    <img src="https://raw.githubusercontent.com/admin1234881/Stockfg/main/291315_logo_20230216140112%20(1).jpeg" alt="Company Logo" class="mb-4" style="max-width: 180px; height: auto; border-radius: 8px;">
-                    <h1 class="display-5 fw-bold" style="color: var(--primary-color);">ATECH FG STOCK</h1>
-                    <p class="lead text-muted">ระบบบริหารจัดการสต็อกสินค้าสำเร็จรูป</p>
+        <div class="login-visual-container">
+            <div id="clock" class="digital-clock">00:00:00</div>
+            <div id="date" class="current-date">วันจันทร์ที่ 1 มกราคม 2567</div>
+            
+            <img src="https://raw.githubusercontent.com/admin1234881/Stockfg/main/291315_logo_20230216140112%20(1).jpeg" alt="Logo" class="mb-4 shadow" style="max-width: 120px; border-radius: 15px;">
+            <h1 class="fw-bold mb-1">ATECH FG STOCK</h1>
+            <p class="mb-5 opacity-75">Finished Goods Inventory Management System</p>
+            
+            <button class="btn btn-login-trigger shadow" data-bs-toggle="modal" data-bs-target="#loginModal">
+                <i class="bi bi-person-lock me-2"></i> เข้าสู่ระบบ / LOGIN
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 pt-0">
+                <div class="text-center mb-4">
+                    <h3 class="fw-bold text-primary">ลงชื่อเข้าใช้งาน</h3>
+                    <p class="text-muted">กรุณาระบุชื่อผู้ใช้และรหัสผ่านเพื่อดำเนินการต่อ</p>
                 </div>
-
-                <!-- Right Column: Login Form -->
-                <div class="col-md-6 col-lg-5">
-                    <div class="card shadow-lg">
-                        <div class="card-header card-header-custom p-3 text-center">
-                            <h3><i class="bi bi-box-seam-fill me-2"></i><span data-lang-key="login_header">ระบบสต็อกสินค้า</span></h3>
-                            <h4 class="fw-normal">ATECH FG</h4>
-                        </div>
-                        <div class="card-body p-4">
-                            <form id="login-form">
-                                <div class="mb-3">
-                                    <label for="username" class="form-label" data-lang-key="username_label">ชื่อผู้ใช้</label>
-                                    <input type="text" class="form-control" id="username" required autocomplete="off">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="password" class="form-label" data-lang-key="password_label">รหัสผ่าน</label>
-                                    <input type="password" class="form-control" id="password" required autocomplete="off">
-                                </div>
-                                <div id="error-message" class="text-danger mb-3 d-none" data-lang-key="login_error">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
-                                <div class="d-grid">
-                                    <button type="submit" class="btn btn-primary"><span data-lang-key="login_button">เข้าสู่ระบบ</span> <i class="bi bi-arrow-right-circle-fill"></i></button>
-                                </div>
-                            </form>
+                <form id="login-form">
+                    <div class="mb-3">
+                        <label class="form-label">ชื่อผู้ใช้ (Username)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control bg-light border-0" id="username" required autocomplete="off">
                         </div>
                     </div>
-                </div>
+                    <div class="mb-3">
+                        <label class="form-label">รหัสผ่าน (Password)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-0"><i class="bi bi-shield-lock"></i></span>
+                            <input type="password" class="form-control bg-light border-0" id="password" required autocomplete="off">
+                        </div>
+                    </div>
+                    <div id="error-message" class="text-danger mb-3 d-none text-center">
+                        <i class="bi bi-exclamation-circle me-1"></i> ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2 fs-5 shadow-sm">
+                        เข้าสู่ระบบ <i class="bi bi-box-arrow-in-right ms-2"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
+</div>
     <!-- Main Dashboard -->
 <div id="main-dashboard" class="pb-4 pt-0">
         <!-- NEW: Wrapper for sticky elements -->
@@ -1179,6 +1226,47 @@
     let currentLanguage = sessionStorage.getItem('currentLanguage') || 'th';
 
     document.addEventListener('DOMContentLoaded', () => {
+	// --- ฟังก์ชันสำหรับนาฬิกาหน้า Login ---
+function updateClock() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    
+    const clockEl = document.getElementById('clock');
+    if(clockEl) clockEl.textContent = `${hours}:${minutes}:${seconds}`;
+
+    const dateEl = document.getElementById('date');
+    if(dateEl) {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateEl.textContent = now.toLocaleDateString('th-TH', options);
+    }
+}
+
+// รันนาฬิกาทุกวินาที
+setInterval(updateClock, 1000);
+updateClock();
+
+// --- แก้ไขฟังก์ชัน handleLogin เพิ่มเติม ---
+// ค้นหาฟังก์ชัน handleLogin เดิม แล้วเพิ่มคำสั่งปิด Modal ลงไปครับ
+function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const foundUser = db.users.find(u => u.username === username && u.password === password);
+    
+    if (foundUser) {
+        // ปิด Modal เมื่อ Login สำเร็จ
+        const loginModalEl = document.getElementById('loginModal');
+        const modal = bootstrap.Modal.getInstance(loginModalEl);
+        if(modal) modal.hide();
+        
+        sessionStorage.setItem('currentUser', JSON.stringify(foundUser));
+        checkLoginState();
+    } else {
+        errorMessage.classList.remove('d-none');
+    }
+}
         
         let hasHistoryBeenSearched = false;
 
@@ -2610,18 +2698,49 @@ function addEventListeners() {
          * should be sent to the server (Google Apps Script), and the server should validate them
          * without ever sending the password list to the client.
          */
-        function handleLogin(e) {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const foundUser = db.users.find(u => u.username === username && u.password === password);
-            if (foundUser) {
-                sessionStorage.setItem('currentUser', JSON.stringify(foundUser));
-                checkLoginState();
-            } else {
-                errorMessage.classList.remove('d-none');
-            }
+        // --- แก้ไขฟังก์ชัน handleLogin เพื่อให้ปิด Modal และล้างค่าเมื่อสำเร็จ ---
+function handleLogin(e) {
+    e.preventDefault();
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const errorMsg = document.getElementById('error-message');
+    
+    const username = usernameInput.value;
+    const password = passwordInput.value;
+    
+    const foundUser = db.users.find(u => u.username === username && u.password === password);
+    
+    if (foundUser) {
+        // 1. ซ่อนข้อความแจ้งเตือน (ถ้ามี)
+        if (errorMsg) errorMsg.classList.add('d-none');
+        
+        // 2. ปิด Modal
+        const loginModalEl = document.getElementById('loginModal');
+        const modalInstance = bootstrap.Modal.getInstance(loginModalEl);
+        if (modalInstance) {
+            modalInstance.hide();
         }
+
+        // 3. ล้างค่าในช่อง Input
+        usernameInput.value = '';
+        passwordInput.value = '';
+        
+        // 4. บันทึก Session และเปลี่ยนสถานะหน้าจอ
+        sessionStorage.setItem('currentUser', JSON.stringify(foundUser));
+        checkLoginState();
+        
+        // 5. แจ้งเตือนความสำเร็จ (Optional)
+        Swal.fire({
+            icon: 'success',
+            title: 'เข้าสู่ระบบสำเร็จ',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    } else {
+        // แสดงข้อความเมื่อรหัสผิด
+        if (errorMsg) errorMsg.classList.remove('d-none');
+    }
+}
         
         // --- HELPER FUNCTIONS ---
         function formatDate(dateInput) {
