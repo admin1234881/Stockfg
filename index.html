@@ -11,6 +11,31 @@
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
+.support-footer {
+    position: fixed;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1000px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 20px;
+    padding: 12px 30px;
+    /* แก้ไขบรรทัดนี้ */
+    display: flex; 
+    justify-content: space-between;
+    align-items: center;
+    z-index: 3000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+/* ปรับ Body ให้มีพื้นที่ด้านล่าง ไม่ให้แถบทับเนื้อหาตาราง */
+body {
+    padding-bottom: 60px !important;
+}
 /* --- สไตล์ใหม่สำหรับหน้า Login --- */
 .login-visual-container {
     text-align: center;
@@ -266,35 +291,44 @@
             </header>
 
             <!-- Navigation Tabs -->
-            <ul class="nav nav-pills nav-fill mb-4 px-4" id="pills-tab" role="tablist">
-    <li class="nav-item m-1">
-        <button class="nav-link active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button"><i class="bi bi-house-heart-fill me-2"></i>สต็อกคงเหลือ</button>
+           <ul class="nav nav-pills nav-fill mb-4 px-4" id="pills-tab" role="tablist">
+    
+    <li class="nav-item m-1" role="presentation">
+        <button class="nav-link active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab">
+            <i class="bi bi-house-heart-fill me-2"></i>
+            <span data-lang-key="nav_stock">สต็อกคงเหลือ</span>
+        </button>
     </li>
-    <li class="nav-item m-1">
-        <button class="nav-link" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard" type="button"><i class="bi bi-speedometer2 me-2"></i>แดชบอร์ด</button>
+    <li class="nav-item m-1" role="presentation">
+        <button class="nav-link" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard" type="button" role="tab">
+            <i class="bi bi-speedometer2 me-2"></i>
+            <span data-lang-key="nav_dashboard">แดชบอร์ด</span>
+        </button>
     </li>
 
     <li class="nav-item dropdown m-1">
-        <a class="nav-link dropdown-toggle bg-light" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
-            <i class="bi bi-box-seam-fill me-2 text-primary"></i> งานจัดการสินค้า
+        <a class="nav-link dropdown-toggle bg-light text-dark" data-bs-toggle="dropdown" href="#" role="button">
+            <i class="bi bi-box-seam-fill me-2 text-primary"></i> 
+            <span data-lang-key="nav_group_operations">งานจัดการสินค้า</span>
         </a>
         <ul class="dropdown-menu shadow w-100">
-            <li id="nav-import-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-import"><i class="bi bi-arrow-down-square-fill me-2 text-success"></i>รับเข้าสินค้า</button></li>
-            <li id="nav-export-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-export"><i class="bi bi-arrow-up-square-fill me-2 text-info"></i>ส่งออกสินค้า</button></li>
+            <li id="nav-import-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-import"><i class="bi bi-arrow-down-square-fill me-2 text-success"></i><span data-lang-key="nav_import">รับเข้าสินค้า</span></button></li>
+            <li id="nav-export-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-export"><i class="bi bi-arrow-up-square-fill me-2 text-info"></i><span data-lang-key="nav_export">ส่งออกสินค้า</span></button></li>
             <li><hr class="dropdown-divider"></li>
-            <li id="nav-stock-count-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-stock-count"><i class="bi bi-clipboard2-check-fill me-2 text-warning"></i>นับสต็อก (Stock Count)</button></li>
-            <li id="nav-history-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-history"><i class="bi bi-clock-history me-2 text-secondary"></i>ประวัติรายการ</button></li>
+            <li id="nav-stock-count-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-stock-count"><i class="bi bi-clipboard2-check-fill me-2 text-warning"></i><span data-lang-key="nav_stock_count">นับสต็อก</span></button></li>
+            <li id="nav-history-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-history"><i class="bi bi-clock-history me-2 text-secondary"></i><span data-lang-key="nav_history">ประวัติ</span></button></li>
         </ul>
     </li>
 
     <li class="nav-item dropdown m-1" id="nav-admin-group">
-        <a class="nav-link dropdown-toggle bg-light" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
-            <i class="bi bi-gear-fill me-2 text-danger"></i> ตั้งค่าระบบ
+        <a class="nav-link dropdown-toggle bg-light text-dark" data-bs-toggle="dropdown" href="#" role="button">
+            <i class="bi bi-gear-fill me-2 text-danger"></i> 
+            <span data-lang-key="nav_group_settings">ตั้งค่าระบบ</span>
         </a>
         <ul class="dropdown-menu shadow w-100">
-            <li id="nav-products-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-products"><i class="bi bi-box-seam me-2"></i>จัดการสินค้า</button></li>
-            <li id="nav-users-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-users"><i class="bi bi-people-fill me-2"></i>จัดการผู้ใช้</button></li>
-            <li id="nav-announcements-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-announcements"><i class="bi bi-megaphone-fill me-2"></i>จัดการประกาศ</button></li>
+            <li id="nav-products-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-products"><i class="bi bi-box-seam me-2"></i><span data-lang-key="nav_products">จัดการสินค้า</span></button></li>
+            <li id="nav-users-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-users"><i class="bi bi-people-fill me-2"></i><span data-lang-key="nav_users">จัดการผู้ใช้</span></button></li>
+            <li id="nav-announcements-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-announcements"><i class="bi bi-megaphone-fill me-2"></i><span data-lang-key="nav_announcements">จัดการประกาศ</span></button></li>
         </ul>
     </li>
 </ul>
@@ -713,6 +747,8 @@
             nav_stock_count: "นับสต็อก",
             nav_products: "จัดการสินค้า",
             nav_users: "จัดการผู้ใช้",
+	        nav_group_operations: "งานจัดการสินค้า",
+	        nav_group_settings: "ตั้งค่าระบบ",	
             nav_announcements: "จัดการประกาศ",
             // NEW: Dashboard
             nav_dashboard: "แดชบอร์ด",
@@ -988,6 +1024,8 @@
             nav_products: "Manage Products",
             nav_users: "Manage Users",
             nav_announcements: "Manage Announcements",
+	        nav_group_operations: "Operations",
+	        nav_group_settings: "Settings",
             // NEW: Dashboard
             nav_dashboard: "Dashboard",
             dashboard_total_stock_value_title: "Total Stock Value",
@@ -2253,30 +2291,27 @@ function showDashboard() {
     userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`; 
     userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`; 
     
-    // --- ส่วนที่แก้ไขใหม่สำหรับเมนูแบบหมวดหมู่ ---
     const isAdmin = currentUser.role === 'admin';
 
-    // 1. ซ่อน/แสดง กลุ่มเมนูตั้งค่า (Settings) สำหรับ Admin
+    // จัดการเมนูแบบหมวดหมู่
     const adminGroup = document.getElementById('nav-admin-group');
     if(adminGroup) adminGroup.style.display = isAdmin ? '' : 'none';
 
-    // 2. ควบคุมสิทธิ์ปุ่มกดย่อยใน Dropdown (Operations)
     document.getElementById('nav-import-item').style.display = isAdmin || currentUser.canImport ? '' : 'none';
     document.getElementById('nav-export-item').style.display = isAdmin || currentUser.canExport ? '' : 'none';
     document.getElementById('nav-history-item').style.display = isAdmin || currentUser.canViewHistory ? '' : 'none';
     document.getElementById('nav-stock-count-item').style.display = isAdmin || currentUser.canCountStock ? '' : 'none';
-
-    // 3. ควบคุมสิทธิ์ปุ่มกดย่อยใน Dropdown (Settings)
     document.getElementById('nav-products-item').style.display = isAdmin || currentUser.canManageProducts ? '' : 'none';
     document.getElementById('nav-users-item').style.display = isAdmin || currentUser.canManageUsers ? '' : 'none';
     document.getElementById('nav-announcements-item').style.display = isAdmin || currentUser.canManageAnnouncements ? '' : 'none';
     
-    // 4. ส่วนอื่นๆ ยังคงเดิม
+    // จัดการส่วนสำรองข้อมูล
     document.getElementById('backup-card-container').style.display = 'block';
     document.getElementById('backup-stock-btn').style.display = ''; 
     document.getElementById('backup-products-btn').style.display = isAdmin ? '' : 'none'; 
     document.getElementById('backup-users-btn').style.display = isAdmin ? '' : 'none'; 
 
+    // ปรับขนาดตารางตามสิทธิ์
     const stockContentColumn = document.getElementById('stock-content-column');
     if (isAdmin) {
         stockContentColumn.classList.remove('col-lg-12');
@@ -2285,6 +2320,13 @@ function showDashboard() {
         stockContentColumn.classList.remove('col-lg-9');
         stockContentColumn.classList.add('col-lg-12');
     }
+
+    // --- คำสั่งสำคัญ: แสดงแถบ Support ---
+    const bar = document.getElementById('support-bar');
+    if (bar) {
+        bar.style.setProperty('display', 'flex', 'important');
+    }
+
     
     calculateStockFromHistory();
     populateAll(); 
@@ -3912,4 +3954,19 @@ function populateSalesDashboard(startDate, endDate) {
     });
     </script>
 </body>
+<div id="support-bar" class="support-footer">
+    <div class="support-info text-dark">
+        <i class="bi bi-person-circle me-1 text-primary"></i>
+        System Admin: <b>Kraiwich Chueanon (Joe)</b> 
+        <span class="mx-2 text-muted">|</span>
+        <i class="bi bi-telephone-fill me-1 text-success"></i> Tel: 063-313-8036 
+        <span class="mx-2 text-muted">|</span>
+        <i class="bi bi-line me-1 text-success"></i> Line: Konbannok
+    </div>
+    <div class="system-status">
+        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
+            <i class="bi bi-check-circle-fill me-1"></i> System Online
+        </span>
+    </div>
+</div>
 </html>
