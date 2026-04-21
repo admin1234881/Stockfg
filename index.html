@@ -3503,111 +3503,98 @@ function renderExportForm() {
         /**
          * Recalculates the entire stock from history using a "wipe and replace" logic for adjustments.
          */
-        function calculateStockFromHistory() {
-            const stockLedger = new Map();
-            const sortedHistory = [...db.history].sort((a, b) => new Date(a.date) - new Date(b.date));
+function calculateStockFromHistory() {
+    const stockLedger = new Map();
+    // เรียงประวัติการทำรายการตามวันเวลาให้เป๊ะที่สุด
+    const sortedHistory = [...db.history].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            for (const item of sortedHistory) {
-                if (!item || !item.productId) continue;
+    for (const item of sortedHistory) {
+        if (!item || !item.productId) continue;
 
-                const productId = String(item.productId).trim();
-                
-// Find this part of the code inside calculateStockFromHistory():
-// Find this part of the code inside calculateStockFromHistory():
-if (item.type === 'adjustment') {
-    // This logic handles adjustments by effectively resetting the stock for a product
-    // and then applying subsequent transactions.
+        const productId = String(item.productId).trim();
+        
+        // --- ส่วนที่ 1: จัดการรายการปรับปรุงยอด (Adjustment) ---
+        if (item.type === 'adjustment') {
+            // ล้างล็อตเดิมของพาร์ทนี้ทิ้งทั้งหมด เพื่อเริ่มนับใหม่ตามที่ปรับ
+            const keysToDelete = Array.from(stockLedger.keys()).filter(key => key.startsWith(`${productId}::`));
+            keysToDelete.forEach(key => stockLedger.delete(key));
 
-    // Find all existing lots for this product in the ledger and delete them
-    const keysToDelete = Array.from(stockLedger.keys()).filter(key => key.startsWith(`${productId}::`));
-    keysToDelete.forEach(key => stockLedger.delete(key));
+            let newTotalQuantity = 0;
+            const remarks = item.remarks || '';
+            
+            // ตรวจสอบว่าเป็น Manual Adjustment หรือ Stock Count
+            if (remarks.startsWith('MANUAL_ADJ_NEW_TOTAL:')) {
+                newTotalQuantity = parseFloat(remarks.split(':')[1].split('|')[0]) || 0;
+            } else {
+                // สำหรับ Stock Count ให้บวกจากยอดเดิม (เพราะในประวัติบันทึกเป็นค่าผลต่าง Variance)
+                // แต่เนื่องจากเราล้าง keysToDelete ไปแล้ว เราต้องระวังจุดนี้
+                newTotalQuantity = parseFloat(item.quantity) || 0;
+            }
 
-    // Parse the new total from the machine-readable part of the remark
-    let newTotalQuantity = 0;
-    const remarks = item.remarks || '';
-    let match = remarks.match(/^MANUAL_ADJ_NEW_TOTAL:(\d+(\.\d+)?)/);
-    if (!match) {
-        match = remarks.match(/^STOCK_COUNT_ADJ:/);
-    }
-
-    if (match) {
-        // For manual adjustments, the new total is in the remark.
-        // For stock count adjustments, the quantity is the variance.
-        if (remarks.startsWith('MANUAL_ADJ')) {
-            newTotalQuantity = parseFloat(remarks.split(':')[1].split('|')[0]);
-        } else { // Stock Count
-            newTotalQuantity = parseFloat(item.quantity);
+            const adjustmentDate = formatDate(item.date);
+            const key = `${productId}::${adjustmentDate}::standard`;
+            
+            stockLedger.set(key, {
+                productId: productId,
+                productionDate: adjustmentDate,
+                quantity: Math.max(0, newTotalQuantity), // ป้องกันยอดติดลบตั้งแต่ต้นทาง
+                isAdjustment: true,
+                packagingType: 'standard'
+            });
+            continue;
         }
-    } else { // Fallback for old format
-        const oldMatch = remarks.match(/to (\d+)/);
-        if (oldMatch) newTotalQuantity = parseInt(oldMatch[1], 10);
-        else newTotalQuantity = parseFloat(item.quantity); // For stock count adjustments
+
+        // --- ส่วนที่ 2: จัดการรายการรับเข้า/ส่งออก ปกติ ---
+        const prodDate = item.productionDate || item.ProductionDate || item.production_date;
+        const lotDate = formatDate(prodDate);
+        if (!lotDate) continue;
+
+        const packagingType = item.packagingType || 'standard';
+        const key = `${productId}::${lotDate}::${packagingType}`;
+
+        if (!stockLedger.has(key)) {
+            stockLedger.set(key, {
+                productId: productId,
+                productionDate: lotDate,
+                quantity: 0,
+                isAdjustment: false,
+                packagingType: packagingType
+            });
+        }
+
+        const itemQuantity = parseFloat(item.quantity) || 0;
+        const currentLot = stockLedger.get(key);
+        
+        if (item.type === 'import' || item.type === 'reversal') {
+            currentLot.quantity += itemQuantity;
+        } else if (item.type === 'export') {
+            currentLot.quantity -= itemQuantity;
+        }
+        
+        // --- ส่วนที่ 3: ตัวล็อกห้ามติดลบ ---
+        // หากตัวเลขในล็อตใดๆ ติดลบ ให้ปัดเป็น 0 ทันที เพื่อไม่ให้ Dashboard เพี้ยน
+        if (currentLot.quantity < 0) {
+            currentLot.quantity = 0;
+        }
     }
-    
-    // Create a new single pseudo-lot representing the adjusted total
-    const adjustmentDate = formatDate(item.date);
-    const newKey = `${productId}::${adjustmentDate}::standard`;
-    stockLedger.set(newKey, {
-        productId: productId,
-        productionDate: adjustmentDate,
-        quantity: newTotalQuantity,
-        isAdjustment: true,
-        packagingType: 'standard' // Adjustments are considered standard
-    });
-    
-    continue; // Move to the next history item
+
+    // รวมยอดล็อตต่างๆ เข้าเป็นก้อนสินค้า
+    const productStockMap = new Map();
+    for (const lot of stockLedger.values()) {
+        if (!productStockMap.has(lot.productId)) {
+            productStockMap.set(lot.productId, {
+                productId: lot.productId,
+                totalQuantity: 0,
+                lots: []
+            });
+        }
+        const product = productStockMap.get(lot.productId);
+        product.totalQuantity += lot.quantity;
+        product.lots.push(lot);
+    }
+
+    calculatedStock = Array.from(productStockMap.values());
 }
-                // Regular logic for import, export, reversal
-                const prodDate = item.productionDate || item.ProductionDate || item.production_date;
-                const lotDate = formatDate(prodDate);
-                if (!lotDate) continue; // Skip items without a valid lot date
-                
-                // =================================================================
-                // === BUG FIX: Include packagingType in the key for uniqueness ===
-                // =================================================================
-                const packagingType = item.packagingType || 'standard';
-                const key = `${productId}::${lotDate}::${packagingType}`;
-                // =================================================================
-
-                if (!stockLedger.has(key)) {
-                    stockLedger.set(key, {
-                        productId: productId,
-                        productionDate: lotDate,
-                        quantity: 0,
-                        isAdjustment: false,
-                        packagingType: packagingType // Use the variable created above
-                    });
-                }
-
-                const itemQuantity = parseFloat(item.quantity) || 0;
-                const currentLot = stockLedger.get(key);
-                
-                if (item.type === 'import') {
-                    currentLot.quantity += itemQuantity;
-                } else if (item.type === 'export') {
-                    currentLot.quantity -= itemQuantity;
-                } else if (item.type === 'reversal') {
-                    currentLot.quantity += itemQuantity;
-                }
-            }
-
-            // Final aggregation step
-            const productStockMap = new Map();
-            for (const lot of stockLedger.values()) {
-                if (!productStockMap.has(lot.productId)) {
-                    productStockMap.set(lot.productId, {
-                        productId: lot.productId,
-                        totalQuantity: 0,
-                        lots: []
-                    });
-                }
-                const product = productStockMap.get(lot.productId);
-                product.totalQuantity += lot.quantity;
-                product.lots.push(lot);
-            }
-
-            calculatedStock = Array.from(productStockMap.values());
-        }
 
         // --- NEW: STOCK COUNT UI FUNCTIONS ---
 
