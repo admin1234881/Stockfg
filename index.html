@@ -13,6 +13,65 @@
 <style>
 .support-footer {
     position: fixed;
+    bottom: 20px; /* ขยับขึ้นมาอีกนิดให้ดูเหมือนลอย */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 95%;
+    max-width: 1100px;
+    /* ปรับสีให้เข้มขึ้นจาก 0.7 เป็น 0.85 และขอบให้ชัดขึ้น */
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(255, 255, 255, 0.5); /* ขอบหนาขึ้นเล็กน้อย */
+    border-radius: 50px; /* ปรับให้โค้งมนแบบทรงแคปซูลเพื่อให้ไม่ดูเหลี่ยม */
+    padding: 12px 35px;
+    display: flex; 
+    justify-content: space-between;
+    align-items: center;
+    z-index: 3000;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15); /* เพิ่มเงาให้ดูมีมิติ */
+    transition: all 0.3s ease;
+    white-space: nowrap; 
+}
+.support-info {
+    display: flex;
+    align-items: center;
+    overflow: hidden; /* ป้องกันเนื้อหาปลิ้น */
+}
+
+/* จัดการให้ตัวหนังสือเล็กลงเล็กน้อยถ้าหน้าจอแคบ */
+.support-info .small {
+    font-size: 0.82rem; 
+    white-space: nowrap; /* บังคับให้ข้อมูลติดต่อ (ชื่อ/เบอร์) อยู่แถวเดียว */
+}
+.login-contact-card {
+    /* ปรับพื้นหลังให้เข้มขึ้นจาก 0.15 เป็น 0.3 */
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(12px);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 30px; /* เพิ่มความโค้งมนให้มากขึ้น */
+    padding: 20px;
+    margin-top: 30px;
+    color: #fff;
+    max-width: 450px;
+    margin-left: auto;
+    margin-right: auto;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+/* ปรับให้ Icon Box โค้งมนตามไปด้วย */
+.contact-icon-box {
+    width: 45px;
+    height: 45px;
+    background: var(--primary-color);
+    border-radius: 15px; /* เพิ่มความโค้ง */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+.support-footer {
+    position: fixed;
     bottom: 15px;
     left: 50%;
     transform: translateX(-50%);
@@ -223,9 +282,26 @@ body {
             <h1 class="fw-bold mb-1">ATECH FG STOCK</h1>
             <p class="mb-5 opacity-75">Finished Goods Inventory Management System</p>
             
-            <button class="btn btn-login-trigger shadow" data-bs-toggle="modal" data-bs-target="#loginModal">
-                <i class="bi bi-person-lock me-2"></i> เข้าสู่ระบบ / LOGIN
-            </button>
+            <div class="login-contact-card shadow-sm mb-4">
+    <div class="d-flex align-items-center justify-content-center">
+        <div class="contact-icon-box me-3">
+            <i class="bi bi-chat-dots-fill"></i>
+        </div>
+        <div class="text-start">
+            <div class="small opacity-75 text-uppercase fw-bold" style="letter-spacing: 1px;">System Admin</div>
+            <div class="fw-bold">Kraiwich Chueanon (Joe)</div>
+            <div class="small">
+                <i class="bi bi-line me-1"></i> Line: Konbannok 
+                <span class="mx-1">|</span>
+                <i class="bi bi-telephone-outbound-fill me-1"></i> Call: 063-313-8036
+            </div>
+        </div>
+    </div>
+</div>
+
+<button class="btn btn-login-trigger shadow" data-bs-toggle="modal" data-bs-target="#loginModal">
+    <i class="bi bi-person-lock me-2"></i> เข้าสู่ระบบ / LOGIN
+</button>
         </div>
     </div>
 </div>
