@@ -4301,6 +4301,42 @@
                     }
                 }
                 // --- START THE APP ---
+let calcExpression = '';
+
+window.toggleCalculator = function() {
+    const calc = document.getElementById('calculator-widget');
+    calc.classList.toggle('d-none');
+};
+
+window.calcInput = function(val) {
+    const display = document.getElementById('calc-display');
+    if (calcExpression === '0' && val !== '.') calcExpression = '';
+    calcExpression += val;
+    display.value = calcExpression;
+};
+
+window.calcClear = function() {
+    calcExpression = '';
+    document.getElementById('calc-display').value = '0';
+};
+
+window.calcDelete = function() {
+    calcExpression = calcExpression.slice(0, -1);
+    document.getElementById('calc-display').value = calcExpression || '0';
+};
+
+window.calcResult = function() {
+    const display = document.getElementById('calc-display');
+    try {
+        // ใช้ eval อย่างระมัดระวังสำหรับการคำนวณตัวเลข
+        const result = eval(calcExpression);
+        display.value = Number.isInteger(result) ? result : result.toFixed(2);
+        calcExpression = display.value;
+    } catch (e) {
+        display.value = 'Error';
+        calcExpression = '';
+    }
+};
                 init();
                 // --- วางโค้ดนี้ไว้ท้ายสุดของฟังก์ชัน DOMContentLoaded (เหนือบรรทัด }); ) ---
                 window.handleUserFormSubmit = async function (e) {
@@ -4358,10 +4394,120 @@
                     } catch (error) {
                         console.error('User Save Error:', error);
                         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
+			// --- CALCULATOR FUNCTIONS (Keyboard Support) ---
+                let calcExpression = '';
+                
+                window.toggleCalculator = function() {
+                    const calc = document.getElementById('calculator-widget');
+                    if (calc) {
+                        calc.classList.toggle('d-none');
+                        // เมื่อเปิดเครื่องคิดเลข ให้เริ่มดักจับเหตุการณ์คีย์บอร์ด
+                        if (!calc.classList.contains('d-none')) {
+                            document.addEventListener('keydown', handleCalcKeyboard);
+                        } else {
+                            document.removeEventListener('keydown', handleCalcKeyboard);
+                        }
                     }
+                };
+
+                // ฟังก์ชันจัดการการกดคีย์บอร์ด
+                function handleCalcKeyboard(e) {
+                    const calc = document.getElementById('calculator-widget');
+                    if (calc.classList.contains('d-none')) return; 
+
+                    const key = e.key;
+                    // ป้องกันปุ่มบางตัวทำให้หน้าจอเลื่อน
+                    if (['+', '-', '*', '/', 'Enter', 'Backspace', 'Escape'].includes(key)) {
+                        e.preventDefault();
+                    }
+
+                    if (!isNaN(key) || ['+', '-', '*', '/', '.'].includes(key)) {
+                        window.calcInput(key);
+                    } else if (key === 'Enter') {
+                        window.calcResult();
+                    } else if (key === 'Backspace') {
+                        window.calcDelete();
+                    } else if (key === 'Escape' || key === 'c' || key === 'C') {
+                        window.calcClear();
+                    }
+                }
+
+                window.calcInput = function(val) {
+                    const display = document.getElementById('calc-display');
+                    if (calcExpression === '0' && val !== '.') calcExpression = '';
+                    calcExpression += val;
+                    display.value = calcExpression;
+                };
+
+                window.calcClear = function() {
+                    calcExpression = '';
+                    document.getElementById('calc-display').value = '0';
+                };
+
+                window.calcDelete = function() {
+                    calcExpression = calcExpression.slice(0, -1);
+                    document.getElementById('calc-display').value = calcExpression || '0';
+                };
+
+                window.calcResult = function() {
+                    const display = document.getElementById('calc-display');
+                    try {
+                        const result = eval(calcExpression);
+                        // ถ้าเป็นจำนวนเต็มโชว์ปกติ ถ้ามีทศนิยมให้เอา 2 ตำแหน่ง
+                        const finalResult = Number.isInteger(result) ? result : result.toFixed(2);
+                        display.value = finalResult.toLocaleString();
+                        calcExpression = String(finalResult);
+                    } catch (e) {
+                        display.value = 'Error';
+                        calcExpression = '';
+                    }
+                };
+                   
+		 }
                 };
             });
         </script>
+<button class="btn shadow-lg d-flex align-items-center justify-content-center" id="calc-toggle-btn" 
+        style="position: fixed; bottom: 95px; right: 25px; width: 55px; height: 55px; z-index: 4000; 
+               background: #212529; border: 2px solid #0d6efd; border-radius: 16px; 
+               color: #0d6efd; transition: all 0.3s ease; padding: 0;"
+        onclick="window.toggleCalculator()">
+    <i class="bi bi-calculator fs-3"></i>
+</button>
+
+<div id="calculator-widget" class="card shadow-lg d-none" 
+     style="position: fixed; bottom: 160px; right: 25px; width: 300px; z-index: 4000; 
+            border-radius: 20px; overflow: hidden; border: 1px solid #343a40; background: #1a1d20;">
+    <div class="card-header border-0 d-flex justify-content-between align-items-center" style="background: #212529; color: #fff;">
+        <span class="small fw-bold"><i class="bi bi-calculator me-2 text-primary"></i>ATECH CALCULATOR</span>
+        <button type="button" class="btn-close btn-close-white" onclick="window.toggleCalculator()"></button>
+    </div>
+    <div class="card-body p-3">
+        <input type="text" id="calc-display" class="form-control mb-3 text-end fw-bold fs-3" 
+               style="background: #000; color: #0dfd0d; border: 2px solid #343a40; border-radius: 10px; font-family: 'Inter', sans-serif;" 
+               readonly value="0">
+        <div class="row g-2">
+            <div class="col-3"><button class="btn btn-outline-danger w-100 fw-bold" onclick="window.calcClear()">C</button></div>
+            <div class="col-3"><button class="btn btn-dark w-100 text-info" onclick="window.calcInput('/')">÷</button></div>
+            <div class="col-3"><button class="btn btn-dark w-100 text-info" onclick="window.calcInput('*')">×</button></div>
+            <div class="col-3"><button class="btn btn-dark w-100 text-warning" onclick="window.calcDelete()"><i class="bi bi-backspace"></i></button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100" style="background: #343a40;" onclick="window.calcInput('7')">7</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100" style="background: #343a40;" onclick="window.calcInput('8')">8</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100" style="background: #343a40;" onclick="window.calcInput('9')">9</button></div>
+            <div class="col-3"><button class="btn btn-dark w-100 text-info" onclick="window.calcInput('-')">-</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100" style="background: #343a40;" onclick="window.calcInput('4')">4</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100" style="background: #343a40;" onclick="window.calcInput('5')">5</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100" style="background: #343a40;" onclick="window.calcInput('6')">6</button></div>
+            <div class="col-3"><button class="btn btn-dark w-100 text-info" onclick="window.calcInput('+')">+</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100" style="background: #343a40;" onclick="window.calcInput('1')">1</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100" style="background: #343a40;" onclick="window.calcInput('2')">2</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100" style="background: #343a40;" onclick="window.calcInput('3')">3</button></div>
+            <div class="col-3" style="grid-row: span 2;"><button class="btn btn-primary h-100 w-100 d-flex align-items-center justify-content-center fs-4" onclick="window.calcResult()">=</button></div>
+            <div class="col-6"><button class="btn btn-secondary w-100" style="background: #343a40;" onclick="window.calcInput('0')">0</button></div>
+            <div class="col-3"><button class="btn btn-secondary w-100" style="background: #343a40;" onclick="window.calcInput('.')">.</button></div>
+        </div>
+    </div>
+</div>
 </body>
 <div id="support-bar" class="support-footer">
     <div class="support-info text-dark">
