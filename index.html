@@ -618,6 +618,12 @@
                                 data-bs-target="#pills-history"><i
                                     class="bi bi-clock-history me-2 text-secondary"></i><span
                                     data-lang-key="nav_history">ประวัติ</span></button></li>
+			<li id="nav-delivery-plan-item">
+    <button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-delivery-plan">
+        <i class="bi bi-calendar-check-fill me-2 text-primary"></i>
+        <span>แผนการจัดส่ง (Delivery Plan)</span>
+    </button>
+</li>
                     </ul>
                 </li>
 
@@ -641,9 +647,7 @@
                 </li>
             </ul>
 
-            <div id="announcements-display-area" class="mb-4"></div>
-
-
+            <div id="announcements-display-area" class="mb-4"></div>	
             <!-- Tab Content -->
             <div class="tab-content" id="pills-tabContent">
                 <!-- Stock Tab -->
@@ -702,7 +706,83 @@
                         </div>
                     </div>
                 </div>
+<div class="tab-pane fade" id="pills-delivery-plan" role="tabpanel">
+    <div class="card mb-4">
+        <div class="card-header fw-bold">
+            <i class="bi bi-calendar-plus-fill me-2 text-primary"></i>ฟอร์มสร้างแผนการจัดส่งสินค้าประจำวัน
+        </div>
+        <div class="card-body">
+            <form id="delivery-plan-form" class="row g-3">
+                <div class="col-md-3">
+                    <label for="plan-date" class="form-label">วันที่ต้องการจัดส่ง</label>
+                    <input type="date" id="plan-date" class="form-control" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="plan-customer" class="form-label">ลูกค้า</label>
+                    <input type="text" id="plan-customer" class="form-control" placeholder="ระบุชื่อลูกค้า เช่น LG, Hanon" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="plan-product-id" class="form-label">รหัสสินค้า</label>
+                    <div class="position-relative">
+                        <input type="text" id="plan-product-id" class="form-control" placeholder="ค้นหารหัสสินค้า..." required autocomplete="off">
+                        <div id="plan-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="plan-product-name" class="form-label">ชื่อสินค้า</label>
+                    <input type="text" id="plan-product-name" class="form-control" readonly style="background-color: #e9ecef;">
+                </div>
+                <div class="col-md-3">
+                    <label for="plan-quantity" class="form-label">จำนวนที่ต้องส่ง</label>
+                    <input type="number" id="plan-quantity" class="form-control" min="1" placeholder="จำนวนชิ้น" required>
+                </div>
+                <div class="col-md-3">
+                    <label for="plan-time" class="form-label">เวลาจัดส่ง (รอบ/Time)</label>
+                    <input type="time" id="plan-time" class="form-control" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="plan-remarks" class="form-label">หมายเหตุ</label>
+                    <input type="text" id="plan-remarks" class="form-control" placeholder="เช่น ทะเบียนรถ หรือ รอบเร่งด่วน">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle-fill me-2"></i>เพิ่มเข้าแผนงาน</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
+    <div class="card">
+        <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-light">
+            <span><i class="bi bi-table me-2 text-success"></i>ตารางสรุปแผนการจัดส่งรวมประจำวัน</span>
+            <div class="d-flex align-items-center gap-2">
+                <label for="view-plan-date" class="form-label mb-0 small-text" style="white-space: nowrap;">ดูแผนงานวันที่:</label>
+                <input type="date" id="view-plan-date" class="form-control form-control-sm">
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-primary text-center">
+                        <tr>
+                            <th>เวลา</th>
+                            <th>ลูกค้า</th>
+                            <th>รหัสสินค้า</th>
+                            <th>ชื่อสินค้า</th>
+                            <th class="text-end">จำนวน (ชิ้น)</th>
+                            <th>หมายเหตุ</th>
+                            <th>การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="delivery-plan-table-body">
+                        <tr>
+                            <td colspan="7" class="text-center text-muted p-4">กรุณาเลือกวันที่ต้องการดูแผนการจัดส่งค่ะ</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
                 <!-- Dashboard Tab (NEW) -->
                 <div class="tab-pane fade" id="pills-dashboard" role="tabpanel">
                     <div class="row g-4">
@@ -1713,7 +1793,7 @@
                 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDGLLwqnY1hOyDqM-Q6UlKRktrSneEAEtHkcsEuBQDaQMsgiBYGZPb30RMEQD2S17_OQ/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
-                let db = { users: [], products: [], history: [], announcements: [], stockCounts: [] };
+                let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [] };
                 let calculatedStock = []; // This will hold the stock calculated from history
                 let dataSyncInterval = null;
                 let inactivityTimer = null;
@@ -2668,6 +2748,7 @@
                     document.getElementById('nav-products-item').style.display = isAdmin || currentUser.canManageProducts ? '' : 'none';
                     document.getElementById('nav-users-item').style.display = isAdmin || currentUser.canManageUsers ? '' : 'none';
                     document.getElementById('nav-announcements-item').style.display = isAdmin || currentUser.canManageAnnouncements ? '' : 'none';
+		    document.getElementById('nav-delivery-plan-item').style.display = isAdmin || currentUser.canImport || currentUser.canExport ? '' : 'none';
 
                     // จัดการส่วนสำรองข้อมูล
                     document.getElementById('backup-card-container').style.display = 'block';
@@ -3001,7 +3082,110 @@
                             populateStockSummary();
                         }
                     });
+			// ซิงค์ระบบแนะนำรหัสสินค้าในฟอร์มแผนจัดส่ง (Auto-complete)
+document.body.addEventListener('input', (e) => {
+    if (e.target.id === 'plan-product-id') {
+        const searchTerm = e.target.value;
+        const suggestionsContainer = document.getElementById('plan-product-suggestions');
+        showSuggestions(e.target, suggestionsContainer, db.products, searchTerm);
+    }
+});
 
+document.body.addEventListener('change', (e) => {
+    if (e.target.id === 'plan-product-id') {
+        const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
+        document.getElementById('plan-product-name').value = product ? product.name : '';
+    }
+    if (e.target.id === 'view-plan-date') {
+        renderDeliveryPlanTable(e.target.value);
+    }
+});
+
+// จัดการการบันทึกฟอร์มแผนจัดส่งสินค้า
+document.body.addEventListener('submit', function (e) {
+    if (e.target.id === 'delivery-plan-form') {
+        e.preventDefault();
+        
+        const planDate = document.getElementById('plan-date').value;
+        const newPlan = {
+            id: 'del-' + Date.now(),
+            date: planDate,
+            customer: document.getElementById('plan-customer').value.trim(),
+            productId: document.getElementById('plan-product-id').value.trim(),
+            productName: document.getElementById('plan-product-name').value,
+            quantity: parseInt(document.getElementById('plan-quantity').value, 10),
+            time: document.getElementById('plan-time').value,
+            remarks: document.getElementById('plan-remarks').value.trim(),
+            user: currentUser.username
+        };
+
+        db.deliveryPlans = db.deliveryPlans || [];
+        db.deliveryPlans.push(newPlan);
+        
+        // กำหนดให้ตารางแสดงผลตามวันที่เราพึ่งบันทึกเข้าไป
+        document.getElementById('view-plan-date').value = planDate;
+        renderDeliveryPlanTable(planDate);
+        
+        // ล้างฟอร์มยกเว้นวันที่ เพื่อให้คีย์รายการต่อไปของวันนั้นได้ต่อเนื่อง
+        document.getElementById('plan-customer').value = '';
+        document.getElementById('plan-product-id').value = '';
+        document.getElementById('plan-product-name').value = '';
+        document.getElementById('plan-quantity').value = '';
+        document.getElementById('plan-time').value = '';
+        document.getElementById('plan-remarks').value = '';
+        
+        Swal.fire({ icon: 'success', title: 'เพิ่มรายการลงแผนจัดส่งแล้วค่ะ', timer: 1500, showConfirmButton: false });
+        
+        // หมายเหตุ: อนาคตสามารถเชื่อมโยงเขียนฟังก์ชันส่งไปบันทึกที่ Apps Script (Spreadsheet) เพิ่มเติมได้ครับ
+    }
+});
+
+// ฟังก์ชันคำนวณและแสดงตารางแผนงานประจำวันรวมทุกเจ้า
+function renderDeliveryPlanTable(targetDate) {
+    const tableBody = document.getElementById('delivery-plan-table-body');
+    if (!tableBody) return;
+    
+    db.deliveryPlans = db.deliveryPlans || [];
+    // กรองเอาเฉพาะข้อมูลแผนจัดส่งในวันที่เลือก และเรียงตามเวลา (FIFO/Timeline)
+    const dailyPlans = db.deliveryPlans.filter(p => p.date === targetDate)
+                                       .sort((a, b) => a.time.localeCompare(b.time));
+    
+    if (dailyPlans.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4">ไม่มีแผนการจัดส่งสินค้าสำหรับวันที่ ${targetDate} ค่ะ</td></tr>`;
+        return;
+    }
+    
+    tableBody.innerHTML = dailyPlans.map(p => `
+        <tr>
+            <td class="text-center fw-bold text-primary"><i class="bi bi-clock me-1"></i>${p.time} น.</td>
+            <td><b>${p.customer}</b></td>
+            <td><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${p.productId}</span></td>
+            <td><small>${p.productName}</small></td>
+            <td class="text-end fw-bold text-success">${p.quantity.toLocaleString()}</td>
+            <td><span class="small-text">${p.remarks || '-'}</span></td>
+            <td class="text-center">
+                <button class="btn btn-danger btn-sm p-1" onclick="deletePlanItem('${p.id}', '${p.date}')" title="ลบรายการ"><i class="bi bi-trash-fill"></i></button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// ฟังก์ชันสำหรับลบรายการแผนจัดส่งออกจากตารางชั่วคราว
+window.deletePlanItem = function(id, date) {
+    Swal.fire({
+        title: 'ยืนยันการลบรายการนี้?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ลบรายการ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#dc3545'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            db.deliveryPlans = db.deliveryPlans.filter(p => p.id !== id);
+            renderDeliveryPlanTable(date);
+        }
+    });
+};
                     document.body.addEventListener('change', (e) => {
                         if (e.target.id === 'import-product-id') {
                             const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
