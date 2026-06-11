@@ -2843,6 +2843,8 @@
 			if(document.getElementById('floating-mascot-container')) {
     document.getElementById('floating-mascot-container').classList.add('d-none');
 }
+			// ใส่เพิ่มในฟังก์ชัน showLoginPage()
+clearInterval(window.mascotLoopTimer);
                 }
 
                 function showDashboard() {
@@ -2899,13 +2901,14 @@
                     setupActivityListeners();
                     resetInactivityTimer();
                 }
-// สั่งแสดงตัวละครพอล็อกอินสำเร็จ
+// ซ่อมแซมและวางไว้ท้ายสุดของฟังก์ชัน showDashboard() ก่อนปิดเครื่องหมาย }
+
+// 1. สั่งแสดงตัวละครพอล็อกอินสำเร็จ
 if (document.getElementById('floating-mascot-container')) {
     document.getElementById('floating-mascot-container').classList.remove('d-none');
 }
 
-// ระบบสุ่มคำพูดเวลาน้องๆ เอาเมาส์มาชี้
-const mascotImg = document.getElementById('mascot-img');
+// 2. ระบบสุ่มคำพูดวนลูปอัตโนมัติทุกๆ 5 วินาที (ไม่ต้องคลิกแล้วจ้า)
 const mascotBubble = document.getElementById('mascot-bubble');
 const cheerTexts = [
     "สู้ๆ นะเธอ! ✌️",
@@ -2913,22 +2916,37 @@ const cheerTexts = [
     "เช็กยอดดีๆ จ้า 📦",
     "วันนี้งานราบรื่น! 🔥",
     "FG ลุยยย 🚀",
-    "เหนื่อยไหมพักจิบน้ำท่อมก่อน 🥤"
+    "พักสายตาบ้างน้า ☕",
+    "คีย์แพลนปังๆ จ้า 📅",
+    "เหนื่อยไหมสู้ๆ นะ 💕"
 ];
 
-if (mascotImg && mascotBubble) {
-    const showSpeech = () => {
-        const randomText = cheerTexts[Math.floor(Math.random() * cheerTexts.length)];
-        mascotBubble.textContent = randomText;
-        mascotBubble.style.setProperty('display', 'block', 'important');
+if (mascotBubble) {
+    // ฟังก์ชันสำหรับเปลี่ยนคำพูด
+    const rotateSpeech = () => {
+        // สุ่มคำพูดใหม่ที่ไม่ให้ซ้ำกับคำปัจจุบัน (เพื่อความหลากหลาย)
+        let newText = mascotBubble.textContent.trim();
+        while (newText === mascotBubble.textContent.trim()) {
+            newText = cheerTexts[Math.floor(Math.random() * cheerTexts.length)];
+        }
         
-        clearTimeout(window.mascotTimer);
-        window.mascotTimer = setTimeout(() => {
-            mascotBubble.style.display = 'none';
-        }, 3000);
+        // เพิ่มลูกเล่นให้ข้อความค่อยๆ เฟดเปลี่ยนคำ
+        mascotBubble.style.opacity = 0;
+        mascotBubble.style.transition = "opacity 0.3s ease";
+        
+        setTimeout(() => {
+            mascotBubble.textContent = newText;
+            mascotBubble.style.opacity = 1;
+        }, 300);
     };
-    mascotImg.addEventListener('mouseenter', showSpeech);
-    mascotImg.addEventListener('click', showSpeech);
+
+    // สั่งให้เริ่มทำงานทันทีที่ล็อกอินเข้าแดชบอร์ด
+    rotateSpeech();
+
+    // เคลียร์ลูปเก่าก่อนสร้างใหม่ ป้องกันการทำงานซ้อนกันจนเอ๋อ
+    clearInterval(window.mascotLoopTimer);
+    // สั่งให้รันฟังก์ชันเปลี่ยนคำพูดอัตโนมัติทุกๆ 5000 มิลลิวินาที (5 วินาที)
+    window.mascotLoopTimer = setInterval(rotateSpeech, 5000);
 }
                 function populateAll() {
                     populateStockSummary();
@@ -4832,14 +4850,14 @@ window.calcResult = function() {
     <i class="bi bi-calculator fs-3"></i>
 </button>
 <div id="floating-mascot-container" class="d-none" style="position: fixed; bottom: 20px; left: 15px; z-index: 4000; pointer-events: none;">
-    <div id="mascot-bubble" class="card p-2 shadow-sm text-center" 
-         style="position: absolute; bottom: 95px; left: 0; width: 140px; border-radius: 16px; 
+    <div id="mascot-bubble" class="card p-2 shadow-sm text-center align-items-center justify-content-center" 
+         style="position: absolute; bottom: 95px; left: 0; width: 145px; min-height: 45px; border-radius: 16px; 
                 border: 2px solid #0d6efd; font-size: 0.85rem; background: #fff; font-weight: bold; 
-                display: none; box-shadow: 0 8px 50px rgba(13, 110, 253, 0.15) !important;">
+                box-shadow: 0 8px 20px rgba(13, 110, 253, 0.15) !important;">
         สู้ๆ นะเธอ! ✌️
     </div>
     
-    <div id="mascot-img" class="cute-robot-css dug-dik-always" title="คลิกคุยกับฉันได้นะเธอ!">
+    <div id="mascot-img" class="cute-robot-css dug-dik-always" title="ฉันคอยเชียร์เธออยู่ตรงนี้น้า!">
         <div class="robot-ears"></div>
         <div class="robot-head">
             <div class="robot-eyes-container">
@@ -4852,10 +4870,8 @@ window.calcResult = function() {
         </div>
         <div class="robot-body">
             <div class="robot-badge">FG</div>
-        	</div>
-    	      </div>
-	</div>
-           </div>
+        </div>
+    </div>
 </div>
 
 </div>
