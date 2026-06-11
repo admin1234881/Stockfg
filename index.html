@@ -4849,15 +4849,9 @@ window.calcResult = function() {
         onclick="window.toggleCalculator()">
     <i class="bi bi-calculator fs-3"></i>
 </button>
-<div id="floating-mascot-container" class="d-none" style="position: fixed; bottom: 20px; left: 15px; z-index: 4000; pointer-events: none;">
-    <div id="mascot-bubble" class="card p-2 shadow-sm text-center align-items-center justify-content-center" 
-         style="position: absolute; bottom: 95px; left: 0; width: 145px; min-height: 45px; border-radius: 16px; 
-                border: 2px solid #0d6efd; font-size: 0.85rem; background: #fff; font-weight: bold; 
-                box-shadow: 0 8px 20px rgba(13, 110, 253, 0.15) !important;">
-        สู้ๆ นะเธอ! ✌️
-    </div>
+<div id="floating-mascot-container" class="d-none" style="position: fixed; bottom: 15px; left: 20px; z-index: 4000; pointer-events: none; display: flex; align-items: center; gap: 12px;">
     
-    <div id="mascot-img" class="cute-robot-css dug-dik-always" title="ฉันคอยเชียร์เธออยู่ตรงนี้น้า!">
+    <div id="mascot-img" class="cute-robot-css dug-dik-always" title="ฉันคอยเชียร์เธออยู่ตรงนี้น้า!" style="flex-shrink: 0;">
         <div class="robot-ears"></div>
         <div class="robot-head">
             <div class="robot-eyes-container">
@@ -4872,8 +4866,14 @@ window.calcResult = function() {
             <div class="robot-badge">FG</div>
         </div>
     </div>
-</div>
 
+    <div id="mascot-bubble" class="card p-2 shadow-sm text-center d-flex align-items-center justify-content-center" 
+         style="width: 145px; min-height: 45px; border-radius: 16px; border: 2px solid #0d6efd; 
+                font-size: 0.85rem; background: #fff; font-weight: bold; margin: 0;
+                box-shadow: 0 8px 20px rgba(13, 110, 253, 0.15) !important; position: relative;">
+        สู้ๆ นะเธอ! ✌️
+    </div>
+</div>
 </div>
 <div id="calculator-widget" class="card shadow-lg d-none" 
      style="position: fixed; bottom: 160px; right: 25px; width: 300px; z-index: 4000; 
