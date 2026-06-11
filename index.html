@@ -445,6 +445,120 @@
             color: var(--danger-color);
             font-weight: bold;
         }
+/* --- โครงสร้างน้องหุ่นยนต์น่ารักด้วย Pure CSS --- */
+.cute-robot-css {
+    width: 70px;
+    height: 85px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    pointer-events: auto;
+    cursor: pointer;
+    filter: drop-shadow(2px 5px 10px rgba(0,0,0,0.15));
+}
+/* หัวหุ่นยนต์ */
+.cute-robot-css .robot-head {
+    width: 66px;
+    height: 50px;
+    background: linear-gradient(135deg, #e7f1ff, #b8daff);
+    border: 3px solid #0d6efd;
+    border-radius: 20px 20px 15px 15px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+}
+/* หู/เสาอากาศข้างหัว */
+.cute-robot-css .robot-ears {
+    position: absolute;
+    width: 76px;
+    height: 12px;
+    background: #0d6efd;
+    top: 20px;
+    border-radius: 6px;
+    z-index: 1;
+}
+/* ตาโตเป็นประกาย */
+.cute-robot-css .robot-eyes-container {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 2px;
+}
+.cute-robot-css .robot-eye {
+    width: 14px;
+    height: 14px;
+    background: #212529;
+    border-radius: 50%;
+    position: relative;
+}
+/* ประกายตาบิ๊กอายมุ้งมิ้ง */
+.cute-robot-css .robot-eye::after {
+    content: '';
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background: #fff;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+}
+/* แก้มชมพูระเรื่อ */
+.cute-robot-css .robot-blush {
+    position: absolute;
+    width: 8px;
+    height: 5px;
+    background: #ff8fa3;
+    border-radius: 50%;
+    bottom: 12px;
+}
+.cute-robot-css .robot-blush.left { left: 8px; }
+.cute-robot-css .robot-blush.right { right: 8px; }
+/* ปากยิ้มหวาน */
+.cute-robot-css .robot-mouth {
+    width: 10px;
+    height: 6px;
+    border-bottom: 3px solid #212529;
+    border-radius: 0 0 5px 5px;
+    margin-top: 2px;
+}
+/* ตัวหุ่นยนต์ */
+.cute-robot-css .robot-body {
+    width: 46px;
+    height: 32px;
+    background: #0d6efd;
+    border-radius: 0 0 12px 12px;
+    margin-top: -4px;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+/* ป้ายข้อความบนตัวน้อง */
+.cute-robot-css .robot-badge {
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 1px 6px;
+    border-radius: 8px;
+}
+
+/* --- เอฟเฟกต์ดุ๊กดิ๊กเด้งนุ่มสไตล์อนิเมะ --- */
+.dug-dik-always {
+    animation: cuteMascotBounce 1.4s infinite alternate ease-in-out;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.dug-dik-always:hover {
+    transform: scale(1.18) translateY(-5px);
+}
+@keyframes cuteMascotBounce {
+    0% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(-3px) scaleX(1.03); }
+    100% { transform: translateY(-12px) rotate(4deg) scaleY(1.03); }
+}
     </style>
 
 <body>
@@ -758,6 +872,10 @@
                 <label for="view-plan-date" class="form-label mb-0 small-text" style="white-space: nowrap;">ดูแผนงานวันที่:</label>
                 <input type="date" id="view-plan-date" class="form-control form-control-sm">
             </div>
+		<div class="d-flex align-items-center gap-2">
+    <label for="view-plan-date" class="form-label mb-0 small-text" style="white-space: nowrap;">ดูแผนงานวันที่:</label>
+    <input type="date" id="view-plan-date" class="form-control form-control-sm">
+</div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -782,8 +900,7 @@
             </div>
         </div>
     </div>
-</div>
-                <!-- Dashboard Tab (NEW) -->
+</div>                <!-- Dashboard Tab (NEW) -->
                 <div class="tab-pane fade" id="pills-dashboard" role="tabpanel">
                     <div class="row g-4">
                         <!-- Date Filter Card -->
@@ -2723,6 +2840,9 @@
                     document.getElementById('username').value = '';
                     document.getElementById('password').value = '';
                     errorMessage.classList.add('d-none');
+			if(document.getElementById('floating-mascot-container')) {
+    document.getElementById('floating-mascot-container').classList.add('d-none');
+}
                 }
 
                 function showDashboard() {
@@ -2779,6 +2899,37 @@
                     setupActivityListeners();
                     resetInactivityTimer();
                 }
+// สั่งแสดงตัวละครพอล็อกอินสำเร็จ
+if (document.getElementById('floating-mascot-container')) {
+    document.getElementById('floating-mascot-container').classList.remove('d-none');
+}
+
+// ระบบสุ่มคำพูดเวลาน้องๆ เอาเมาส์มาชี้
+const mascotImg = document.getElementById('mascot-img');
+const mascotBubble = document.getElementById('mascot-bubble');
+const cheerTexts = [
+    "สู้ๆ นะเธอ! ✌️",
+    "ตั้งใจทำงานน้า 🥰",
+    "เช็กยอดดีๆ จ้า 📦",
+    "วันนี้งานราบรื่น! 🔥",
+    "OFFICE FG ลุยยย 🚀",
+    "เหนื่อยไหมพักจิบน้ำก่อน 🥤"
+];
+
+if (mascotImg && mascotBubble) {
+    const showSpeech = () => {
+        const randomText = cheerTexts[Math.floor(Math.random() * cheerTexts.length)];
+        mascotBubble.textContent = randomText;
+        mascotBubble.style.setProperty('display', 'block', 'important');
+        
+        clearTimeout(window.mascotTimer);
+        window.mascotTimer = setTimeout(() => {
+            mascotBubble.style.display = 'none';
+        }, 3000);
+    };
+    mascotImg.addEventListener('mouseenter', showSpeech);
+    mascotImg.addEventListener('click', showSpeech);
+}
                 function populateAll() {
                     populateStockSummary();
                     populateUserManagementTable();
@@ -3089,15 +3240,37 @@ document.body.addEventListener('input', (e) => {
         const suggestionsContainer = document.getElementById('plan-product-suggestions');
         showSuggestions(e.target, suggestionsContainer, db.products, searchTerm);
     }
-});
+    
+    // === [เพิ่มใหม่] ซิงค์ระบบดึงรายชื่อลูกค้าจาก db.products มากรองทำ Auto-complete ===
+    if (e.target.id === 'plan-customer') {
+        const searchTerm = e.target.value.toLowerCase();
+        const suggestionsContainer = document.getElementById('plan-customer-suggestions');
+        
+        if (!searchTerm) {
+            suggestionsContainer.innerHTML = '';
+            return;
+        }
 
-document.body.addEventListener('change', (e) => {
-    if (e.target.id === 'plan-product-id') {
-        const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
-        document.getElementById('plan-product-name').value = product ? product.name : '';
-    }
-    if (e.target.id === 'view-plan-date') {
-        renderDeliveryPlanTable(e.target.value);
+        // ดึงรายชื่อลูกค้าทั้งหมดจากข้อมูลสินค้าขึ้นมาแบบไม่ให้ชื่อซ้ำกัน (Unique Names)
+        const uniqueCustomers = Array.from(new Set(db.products.map(p => p.customer).filter(Boolean)))
+                                     .map(custName => ({ id: custName, name: custName })); // แปลงโครงสร้างวัตถุเพื่อใช้ร่วมกับฟังก์ชันดึงคำแนะนำเดิม
+        
+        // คัดกรองรายชื่อที่ตรงกับคำค้นหา
+        const filteredCustomers = uniqueCustomers.filter(c => c.name.toLowerCase().includes(searchTerm));
+        
+        suggestionsContainer.innerHTML = '';
+        filteredCustomers.slice(0, 5).forEach(item => {
+            const suggestionEl = document.createElement('a');
+            suggestionEl.href = '#';
+            suggestionEl.classList.add('list-group-item', 'list-group-item-action');
+            suggestionEl.textContent = item.name;
+            suggestionEl.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                document.getElementById('plan-customer').value = item.name;
+                suggestionsContainer.innerHTML = '';
+            });
+            suggestionsContainer.appendChild(suggestionEl);
+        });
     }
 });
 
@@ -4658,7 +4831,30 @@ window.calcResult = function() {
         onclick="window.toggleCalculator()">
     <i class="bi bi-calculator fs-3"></i>
 </button>
-
+<div id="floating-mascot-container" class="d-none" style="position: fixed; bottom: 85px; left: 30px; z-index: 4000; pointer-events: none;">
+    <div id="mascot-bubble" class="card p-2 shadow-sm text-center" 
+         style="position: absolute; bottom: 105px; left: 0; width: 150px; border-radius: 16px; 
+                border: 2px solid #0d6efd; font-size: 0.85rem; background: #fff; font-weight: bold; 
+                display: none; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.15) !important;">
+        สู้ๆ นะเธอ! ✌️
+    </div>
+    
+    <div id="mascot-img" class="cute-robot-css dug-dik-always" title="คลิกคุยกับฉันได้นะเธอ!">
+        <div class="robot-ears"></div>
+        <div class="robot-head">
+            <div class="robot-eyes-container">
+                <div class="robot-eye left"></div>
+                <div class="robot-eye right"></div>
+            </div>
+            <div class="robot-blush left"></div>
+            <div class="robot-blush right"></div>
+            <div class="robot-mouth"></div>
+        </div>
+        <div class="robot-body">
+            <div class="robot-badge">FG</div>
+        </div>
+    </div>
+</div>
 <div id="calculator-widget" class="card shadow-lg d-none" 
      style="position: fixed; bottom: 160px; right: 25px; width: 300px; z-index: 4000; 
             border-radius: 20px; overflow: hidden; border: 1px solid #343a40; background: #1a1d20;">
