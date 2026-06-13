@@ -1268,7 +1268,7 @@
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
         <script>
             // --- TRANSLATION OBJECT ---
             const translations = {
@@ -2482,167 +2482,144 @@
                     }
                 }
 
-                async function handleImport(e) {
-                    e.preventDefault();
-                    const T = translations[currentLanguage];
-                    const productId = document.getElementById('import-product-id').value;
-                    const productName = document.getElementById('import-product-name').value;
-                    if (!productName) {
-                        showError(T.form_incomplete, T.product_name_required);
-                        return;
-                    }
+async function handleImport(e) {
+    e.preventDefault();
+    const T = translations[currentLanguage];
+    const productId = document.getElementById('import-product-id').value;
+    const productName = document.getElementById('import-product-name').value;
+    if (!productName) {
+        showError(T.form_incomplete, T.product_name_required);
+        return;
+    }
 
-                    const productForHistory = {
-                        id: productId,
-                        name: productName,
-                        customer: document.getElementById('import-customer').value,
-                        erpCode: document.getElementById('import-erp-code').value
-                    };
-                    const remarks = document.getElementById('import-remarks').value;
-                    const lotRows = document.querySelectorAll('#import-lots-container .import-lot-row');
-                    const newHistoryEntries = [];
+    const productForHistory = {
+        id: productId,
+        name: productName,
+        customer: document.getElementById('import-customer').value,
+        erpCode: document.getElementById('import-erp-code').value
+    };
+    const remarks = document.getElementById('import-remarks').value;
+    const lotRows = document.querySelectorAll('#import-lots-container .import-lot-row');
+    const newHistoryEntries = [];
 
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-                    // NEW: Get fullBoxQuantity to check for remainder
-                    const fullBoxQuantity = parseInt(document.getElementById('import-fullbox').value);
-                    let totalImportQuantity = 0;
+    const fullBoxQuantity = parseInt(document.getElementById('import-fullbox').value);
+    let totalImportQuantity = 0;
 
-                    for (const row of lotRows) {
-                        const quantity = parseInt(row.querySelector('.import-quantity').value);
-                        const productionDateStr = row.querySelector('.import-prod-date').value;
-                        const packagingType = row.querySelector('.import-packaging-type').value;
-                        if (!productionDateStr || isNaN(quantity) || quantity <= 0) continue;
+    for (const row of lotRows) {
+        const quantity = parseInt(row.querySelector('.import-quantity').value);
+        const productionDateStr = row.querySelector('.import-prod-date').value;
+        const packagingType = row.querySelector('.import-packaging-type').value;
+        if (!productionDateStr || isNaN(quantity) || quantity <= 0) continue;
 
-                        totalImportQuantity += quantity; // Accumulate total quantity for the check
+        totalImportQuantity += quantity; 
 
-                        const parts = productionDateStr.split('-');
-                        const productionDate = new Date(parts[0], parts[1] - 1, parts[2]);
+        const parts = productionDateStr.split('-');
+        const productionDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
-                        if (productionDate > today) {
-                            showError(T.form_incomplete, T.future_date_error);
-                            return;
-                        }
+        if (productionDate > today) {
+            showError(T.form_incomplete, T.future_date_error);
+            return;
+        }
 
-                        newHistoryEntries.push({
-                            id: 'imp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-                            date: new Date().toISOString(),
-                            type: 'import',
-                            productId: productForHistory.id,
-                            productName: productForHistory.name,
-                            customer: productForHistory.customer,
-                            erpCode: productForHistory.erpCode,
-                            quantity: quantity,
-                            productionDate: productionDateStr,
-                            user: currentUser.username,
-                            invoiceNumber: null,
-                            remarks: remarks,
-                            packagingType: packagingType
-                        });
-                    }
+        newHistoryEntries.push({
+            id: 'imp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+            date: new Date().toISOString(),
+            type: 'import',
+            productId: productForHistory.id,
+            productName: productForHistory.name,
+            customer: productForHistory.customer,
+            erpCode: productForHistory.erpCode,
+            quantity: quantity,
+            productionDate: productionDateStr,
+            user: currentUser.username,
+            invoiceNumber: null,
+            remarks: remarks,
+            packagingType: packagingType
+        });
+    }
 
-                    if (newHistoryEntries.length === 0) {
-                        showError(T.form_incomplete, "Please add at least one valid lot.");
-                        return;
-                    }
+    if (newHistoryEntries.length === 0) {
+        showError(T.form_incomplete, "Please add at least one valid lot.");
+        return;
+    }
 
-                    // NEW LOGIC: Check for remainder only for 'standard' packing type
-                    const isStandardPacking = newHistoryEntries.every(entry => entry.packagingType === 'standard');
-                    if (isStandardPacking && fullBoxQuantity && totalImportQuantity % fullBoxQuantity !== 0) {
-                        const result = await Swal.fire({
-                            title: 'ยอดรับเข้าไม่ลงตัว!',
-                            text: `ยอดรวมที่รับเข้า (${totalImportQuantity.toLocaleString()}) หารจำนวนเต็มกล่อง (${fullBoxQuantity.toLocaleString()}) แล้วมีเศษเหลือ ต้องการยืนยันการรับเข้าใช่หรือไม่?`,
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonText: 'ใช่, ยืนยัน',
-                            cancelButtonText: 'ยกเลิก'
-                        });
-                        if (!result.isConfirmed) {
-                            return;
-                        }
-                    }
+    const isStandardPacking = newHistoryEntries.every(entry => entry.packagingType === 'standard');
+    if (isStandardPacking && fullBoxQuantity && totalImportQuantity % fullBoxQuantity !== 0) {
+        const result = await Swal.fire({
+            title: 'ยอดรับเข้าไม่ลงตัว!',
+            text: `ยอดรวมที่รับเข้า (${totalImportQuantity.toLocaleString()}) หารจำนวนเต็มกล่อง (${fullBoxQuantity.toLocaleString()}) แล้วมีเศษเหลือ ต้องการยืนยันการรับเข้าใช่หรือไม่?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'ใช่, ยืนยัน',
+            cancelButtonText: 'ยกเลิก'
+        });
+        if (!result.isConfirmed) {
+            return;
+        }
+    }
 
-                    // --- Optimistic Update ---
-                    newHistoryEntries.forEach(entry => db.history.unshift(entry));
-                    calculateStockFromHistory();
-                    populateAll();
-                    showSuccess(T.import_success.replace('{name}', productName));
-                    renderImportForm();
+    // --- 1. บันทึกข้อมูลและอัปเดตสต็อกตามปกติ ---
+    newHistoryEntries.forEach(entry => db.history.unshift(entry));
+    calculateStockFromHistory();
+    populateAll();
+    showSuccess(T.import_success.replace('{name}', productName));
 
-                    // --- Background Save ---
-                    try {
-                        await callAppsScript('appendBatchHistory', newHistoryEntries);
-                        console.log(`Background save successful for ${productName}`);
-                    } catch (error) {
-                        showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
-                    }
-                }
-                // Function for handling stock adjustments
-                async function handleEditStockSubmit(e) {
-                    e.preventDefault();
-                    const T = translations[currentLanguage];
-                    const productId = document.getElementById('edit-stock-product-id').value;
-                    const newQuantity = parseInt(document.getElementById('edit-stock-quantity').value);
+    // --- 2. เจน QR CODE ข้อมูลพาร์ทล่าสุดลงในกล่องใต้ฟอร์ม ---
+    try {
+        const qrOutputContainer = document.getElementById('import-qrcode-output');
+        const qrArea = document.getElementById('import-qrcode-area');
+        const qrTextContainer = document.getElementById('import-qrcode-text');
 
-                    // Get current stock
-                    const currentStock = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim()) || { totalQuantity: 0 };
-                    const variance = newQuantity - currentStock.totalQuantity;
+        if (qrOutputContainer && qrArea && qrTextContainer) {
+            qrOutputContainer.innerHTML = ''; // ล้างรูปภาพเก่าออกก่อน
+            
+            // ดึงวันที่ที่บันทึกรายการฟอร์แมต YYYYMMDD
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const formattedRegDate = `${yyyy}${mm}${dd}`;
 
-                    if (variance === 0) {
-                        showSuccess('ไม่มีการเปลี่ยนแปลง', 'ยอดสต็อกเท่าเดิม ไม่มีการบันทึก');
-                        editStockModal.hide();
-                        return;
-                    }
+            const cleanQty = String(totalImportQuantity);
+            const erpCode = productForHistory.erpCode || '-';
+            
+            // รวม String ข้อมูลตามโครงสร้างคั่นด้วยเครื่องหมาย /
+            const qrContent = `${erpCode}/${cleanQty}/TX1/${formattedRegDate}/A/1/${erpCode}`;
 
-                    const confirmText = T.edit_stock_confirm_text.replace('{productId}', productId).replace('{quantity}', newQuantity.toLocaleString());
+            // สั่งวาด QR Code
+            new QRCode(qrOutputContainer, {
+                text: qrContent,
+                width: 160,
+                height: 160,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
 
-                    // Use confirmAction to ask for confirmation before submitting
-                    confirmAction(T.edit_stock_confirm_title, confirmText, async () => {
-                        try {
-                            // Find product information for history record
-                            const product = db.products.find(p => String(p.id).trim() === String(productId).trim());
-                            const productName = product ? product.name : T.product_not_found.replace('{id}', productId);
-                            const erpCode = product ? product.erpCode : '';
+            // แสดงข้อความดิบใต้รูปภาพ
+            qrTextContainer.textContent = qrContent;
+            
+            // ปลดล็อกคลาสซ่อน เพื่อแสดงกล่อง QR Code ทันที
+            qrArea.classList.remove('d-none');
+        }
+    } catch (qrErr) {
+        console.error("QR Code Generation Error:", qrErr);
+    }
 
-                            // Create a new history entry for the adjustment
-                            const adjustmentEntry = {
-                                id: 'adj-' + Date.now(),
-                                date: new Date().toISOString(),
-                                type: 'adjustment',
-                                productId: productId,
-                                productName: productName,
-                                customer: product ? product.customer : '',
-                                erpCode: erpCode,
-                                quantity: variance, // Record the difference, not the new total
-                                productionDate: 'Manual Adjustment', // Custom production date for adjustments
-                                user: currentUser.username,
-                                invoiceNumber: null,
-                                remarks: `MANUAL_ADJ_NEW_TOTAL:${newQuantity}|Adjusted by ${currentUser.username}`, // Use a machine-readable remark
-                                packagingType: 'standard'
-                            };
-
-                            // Optimistic update
-                            db.history.unshift(adjustmentEntry);
-                            calculateStockFromHistory();
-                            populateAll();
-                            editStockModal.hide();
-                            showSuccess(T.stock_update_success);
-
-                            // Background Save
-                            await callAppsScript('appendHistory', adjustmentEntry);
-                            console.log(`Background save successful for manual stock adjustment of product ${productId}`);
-
-                        } catch (error) {
-                            // If save fails, rollback the optimistic update
-                            db.history = db.history.filter(h => h.id !== adjustmentEntry.id);
-                            calculateStockFromHistory();
-                            populateAll();
-                            showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
-                        }
-                    });
-                }
-
+    // --- 3. ล้างช่องฟอร์มกรอกด้านบนเพื่อให้พร้อมสำหรับพาร์ทต่อไป ---
+    renderImportForm();
+    
+    // --- Background Save ---
+    try {
+        await callAppsScript('appendBatchHistory', newHistoryEntries);
+        console.log(`Background save successful for ${productName}`);
+    } catch (error) {
+        showError(T.save_error_title, `${T.save_error_text.replace('{error}', error.message)}\n\n${T.background_save_error}`);
+    }
+}
                 async function handleExport(e) {
                     e.preventDefault();
                     const T = translations[currentLanguage];
@@ -3490,49 +3467,84 @@ window.deletePlanItem = function(id, date) {
                  * without ever sending the password list to the client.
                  */
                 // --- แก้ไขฟังก์ชัน handleLogin เพื่อให้ปิด Modal และล้างค่าเมื่อสำเร็จ ---
-                function handleLogin(e) {
-                    e.preventDefault();
-                    const usernameInput = document.getElementById('username');
-                    const passwordInput = document.getElementById('password');
-                    const errorMsg = document.getElementById('error-message');
+function handleLogin(e) {
+    e.preventDefault();
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const errorMsg = document.getElementById('error-message');
 
-                    const username = usernameInput.value;
-                    const password = passwordInput.value;
+    const username = usernameInput.value;
+    const password = passwordInput.value;
 
-                    const foundUser = db.users.find(u => u.username === username && u.password === password);
+    const foundUser = db.users.find(u => u.username === username && u.password === password);
 
-                    if (foundUser) {
-                        // 1. ซ่อนข้อความแจ้งเตือน (ถ้ามี)
-                        if (errorMsg) errorMsg.classList.add('d-none');
+    if (foundUser) {
+        if (errorMsg) errorMsg.classList.add('d-none');
 
-                        // 2. ปิด Modal
-                        const loginModalEl = document.getElementById('loginModal');
-                        const modalInstance = bootstrap.Modal.getInstance(loginModalEl);
-                        if (modalInstance) {
-                            modalInstance.hide();
-                        }
+        // 1. ปิด Modal กรอกรหัส
+        const loginModalEl = document.getElementById('loginModal');
+        const modalInstance = bootstrap.Modal.getInstance(loginModalEl);
+        if (modalInstance) modalInstance.hide();
 
-                        // 3. ล้างค่าในช่อง Input
-                        usernameInput.value = '';
-                        passwordInput.value = '';
+        // 2. ล้างค่าในช่อง Input
+        usernameInput.value = '';
+        passwordInput.value = '';
 
-                        // 4. บันทึก Session และเปลี่ยนสถานะหน้าจอ
-                        sessionStorage.setItem('currentUser', JSON.stringify(foundUser));
-                        checkLoginState();
+        // 3. บันทึก Session ลงระบบเบราว์เซอร์
+        sessionStorage.setItem('currentUser', JSON.stringify(foundUser));
+        
+        // 4. สั่งเปลี่ยนสถานะหน้าจอเข้าสู่หน้าแดชบอร์ดหลักทันที (เพื่อดึงโครงสร้างสิทธิ์ผู้ใช้ขึ้นมาก่อน)
+        checkLoginState();
 
-                        // 5. แจ้งเตือนความสำเร็จ (Optional)
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'เข้าสู่ระบบสำเร็จ',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    } else {
-                        // แสดงข้อความเมื่อรหัสผิด
-                        if (errorMsg) errorMsg.classList.remove('d-none');
+        // 5. สั่งเปิดตัวน้องมาสคอตและลูปคำพูดวนลูปทันที (ไม่ต้องรอรีเฟรชหน้าเว็บแล้วเธอ)
+        if (document.getElementById('floating-mascot-container')) {
+            document.getElementById('floating-mascot-container').classList.remove('d-none');
+        }
+
+        // ดึงระบบสุ่มคำพูดมาทำงานทันทีหลังล็อกอินสำเร็จ
+        if (typeof rotateSpeech === 'function') {
+            rotateSpeech();
+            clearInterval(window.mascotLoopTimer);
+            window.mascotLoopTimer = setInterval(rotateSpeech, 5000);
+        } else {
+            // กรณีฟังก์ชัน rotateSpeech อยู่ใน scope ที่เรียกไม่ได้โดยตรง ให้สั่งทำซ้ำตรงนี้เพื่อความชัวร์
+            const mascotBubble = document.getElementById('mascot-bubble');
+            if (mascotBubble) {
+                const cheerTexts = [
+                    "สู้ๆ นะเธอ! ✌️", "ตั้งใจทำงานน้า 🥰", "เช็กยอดดีๆ จ้า 📦", 
+                    "วันนี้งานราบรื่น! 🔥", "OFFICE FG ลุยยย 🚀", "พักสายตาบ้างน้า ☕"
+                ];
+                const runLocalRotate = () => {
+                    let newText = mascotBubble.textContent.trim();
+                    while (newText === mascotBubble.textContent.trim()) {
+                        newText = cheerTexts[Math.floor(Math.random() * cheerTexts.length)];
                     }
-                }
+                    mascotBubble.style.opacity = 0;
+                    mascotBubble.style.transition = "opacity 0.3s ease";
+                    setTimeout(() => {
+                        mascotBubble.textContent = newText;
+                        mascotBubble.style.opacity = 1;
+                    }, 300);
+                };
+                runLocalRotate();
+                clearInterval(window.mascotLoopTimer);
+                window.mascotLoopTimer = setInterval(runLocalRotate, 5000);
+            }
+        }
 
+        // 6. แจ้งเตือนความสำเร็จแบบซอฟต์ๆ 
+        Swal.fire({
+            icon: 'success',
+            title: 'เข้าสู่ระบบสำเร็จ',
+            text: 'ยินดีต้อนรับเข้าสู่งานจัดการสินค้าค่ะคุณ ' + foundUser.username,
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+    } else {
+        if (errorMsg) errorMsg.classList.remove('d-none');
+    }
+}
                 // --- HELPER FUNCTIONS ---
                 function formatDate(dateInput) {
                     if (!dateInput || dateInput === 'Manual Adjustment' || dateInput === 'Stock Count Adjustment') return dateInput;
@@ -4001,11 +4013,17 @@ window.deletePlanItem = function(id, date) {
                     document.getElementById('export-total-quantity').value = total.toLocaleString();
                 }
 
-                function renderImportForm() {
-                    const T = translations[currentLanguage];
-                    const importFormEl = document.getElementById('import-form');
-                    importFormEl.innerHTML = `
-        <div class="col-md-4"> <label for="import-product-id" class="form-label">${T.product_id}</label> <div class="position-relative"> <input type="text" id="import-product-id" class="form-control" required autocomplete="off" placeholder="${T.search_placeholder}"> <div id="import-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> </div> </div>
+function renderImportForm() {
+    const T = translations[currentLanguage];
+    const importFormEl = document.getElementById('import-form');
+    importFormEl.innerHTML = `
+        <div class="col-md-4"> 
+            <label for="import-product-id" class="form-label">${T.product_id}</label> 
+            <div class="position-relative"> 
+                <input type="text" id="import-product-id" class="form-control" required autocomplete="off" placeholder="${T.search_placeholder}"> 
+                <div id="import-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div> 
+            </div> 
+        </div>
         <div class="col-md-5"> <label for="import-product-name" class="form-label">${T.product_name}</label> <input type="text" id="import-product-name" class="form-control" readonly style="background-color: #e9ecef;"> </div>
         <div class="col-md-3"> <label for="import-fullbox" class="form-label">${T.import_fullbox}</label> <input type="text" id="import-fullbox" class="form-control" readonly style="background-color: #e9ecef;"> </div>
         <div class="col-md-6"> <label for="import-customer" class="form-label">${T.customer}</label> <input type="text" id="import-customer" class="form-control" readonly style="background-color: #e9ecef;"> </div>
@@ -4025,10 +4043,25 @@ window.deletePlanItem = function(id, date) {
         <div class="col-md-4"> <label for="import-total-quantity" class="form-label">${T.import_total_quantity}</label> <input type="text" id="import-total-quantity" class="form-control fw-bold" readonly style="background-color: #e9ecef; font-size: 1.2rem;"> </div>
         <div class="col-md-8"> <label for="import-remarks" class="form-label">${T.remarks}</label> <textarea id="import-remarks" class="form-control" rows="2"></textarea> </div>
         <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${T.import_warning}</p> </div>
-        <div class="col-12"> <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-2"></i>${T.import_save_button}</button> <button type="button" id="clear-import-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>${T.clear_form_button}</button> </div>`;
-                    addImportLotRow();
-                }
-
+        <div class="col-12 mb-3"> 
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save-fill me-2"></i>${T.import_save_button}</button> 
+            <button type="button" id="clear-import-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>${T.clear_form_button}</button> 
+        </div>
+        
+        <div id="import-qrcode-area" class="col-12 mt-3 d-none">
+            <div class="card border-primary" style="max-width: 340px; margin: 0 auto; border-radius: 16px; box-shadow: 0 4px 12px rgba(13,110,253,0.1);">
+                <div class="card-header bg-primary text-white text-center small fw-bold py-2">
+                    <i class="bi bi-qr-code-scan me-2"></i>QR CODE สำหรับล็อตล่าสุด
+                </div>
+                <div class="card-body d-flex flex-column align-items-center bg-white p-3">
+                    <div id="import-qrcode-output" class="p-2 border rounded bg-white"></div>
+                    <div id="import-qrcode-text" class="mt-2 text-center text-muted fw-bold" style="font-size: 0.75rem; word-break: break-all;"></div>
+                </div>
+            </div>
+        </div>`;
+        
+    addImportLotRow();
+}
                 function addImportLotRow() {
                     const T = translations[currentLanguage];
                     const container = document.getElementById('import-lots-container');
