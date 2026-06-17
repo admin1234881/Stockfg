@@ -2561,64 +2561,16 @@ async function handleImport(e) {
         }
     }
 
-    // --- 1. บันทึกข้อมูลและอัปเดตสต็อกตามปกติ ---
+    // --- 1. บันทึกข้อมูลและอัปเดตสต็อก ---
     newHistoryEntries.forEach(entry => db.history.unshift(entry));
     calculateStockFromHistory();
     populateAll();
     showSuccess(T.import_success.replace('{name}', productName));
 
-    // --- 2. ล้างช่องฟอร์มกรอกด้านบนเพื่อให้พร้อมสำหรับพาร์ทต่อไป ---
+    // --- 2. ล้างช่องฟอร์มกรอกด้านบน (กล่อง QR Code จะถูกซ่อนกลับไปโดยอัตโนมัติ) ---
     renderImportForm();
 
-    // --- 3. เจน QR CODE (หน่วงเวลาให้ DOM เรนเดอร์ฟอร์มเสร็จก่อน) ---
-    setTimeout(() => {
-        try {
-            const qrOutputContainer = document.getElementById('import-qrcode-output');
-            const qrArea = document.getElementById('import-qrcode-area');
-            const qrTextContainer = document.getElementById('import-qrcode-text');
-
-            if (qrOutputContainer && qrArea && qrTextContainer) {
-                qrOutputContainer.innerHTML = ''; // ล้างรูปภาพเก่าออกก่อน
-                
-                // ดึงวันที่ที่บันทึกรายการฟอร์แมต YYYYMMDD
-                const now = new Date();
-                const yyyy = now.getFullYear();
-                const mm = String(now.getMonth() + 1).padStart(2, '0');
-                const dd = String(now.getDate()).padStart(2, '0');
-                const formattedRegDate = `${yyyy}${mm}${dd}`;
-
-                // --- [แก้ไขตรงนี้] แปลงค่าให้เป็นทศนิยม 2 ตำแหน่ง ---
-                const cleanQty = Number(totalImportQuantity).toFixed(2); 
-                const erpCode = productForHistory.erpCode || '-';
-                
-                // รวม String ข้อมูลตามโครงสร้างคั่นด้วยเครื่องหมาย /
-                const qrContent = `${erpCode}/${cleanQty}/TX1/${formattedRegDate}/A/1/${erpCode}`;
-
-                // สั่งวาด QR Code
-                new QRCode(qrOutputContainer, {
-                    text: qrContent,
-                    width: 160,
-                    height: 160,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-
-                // แสดงข้อความดิบใต้รูปภาพ
-                qrTextContainer.textContent = qrContent;
-                
-                // ปลดล็อกคลาสซ่อน เพื่อแสดงกล่อง QR Code ทันที
-                qrArea.classList.remove('d-none');
-
-                // เลื่อนหน้าจอลงมาให้เห็น QR Code ชัดเจนอัตโนมัติ
-                qrArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        } catch (qrErr) {
-            console.error("QR Code Generation Error:", qrErr);
-        }
-    }, 300); // หน่วงเวลา 0.3 วินาที
-
-    // --- 4. Background Save ---
+    // --- 3. Background Save ---
     try {
         await callAppsScript('appendBatchHistory', newHistoryEntries);
         console.log(`Background save successful for ${productName}`);
@@ -3361,13 +3313,16 @@ window.deletePlanItem = function(id, date) {
     });
 };
                     document.body.addEventListener('change', (e) => {
-                        if (e.target.id === 'import-product-id') {
-                            const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
-                            document.getElementById('import-product-name').value = product ? product.name : '';
-                            document.getElementById('import-customer').value = product ? product.customer || '' : '';
-                            document.getElementById('import-erp-code').value = product ? product.erpCode : '';
-                            document.getElementById('import-fullbox').value = product ? product.fullBoxQuantity : '';
-                        }
+                       if (e.target.id === 'import-product-id') {
+    const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
+    document.getElementById('import-product-name').value = product ? product.name : '';
+    document.getElementById('import-customer').value = product ? product.customer || '' : '';
+    document.getElementById('import-erp-code').value = product ? product.erpCode : '';
+    document.getElementById('import-fullbox').value = product ? product.fullBoxQuantity : '';
+    
+    // --- เพิ่มบรรทัดนี้ เพื่อให้ QR รีเฟรชโค้ด ERP ทันทีที่เลือกพาร์ท ---
+    updateImportTotal(); 
+}
                         if (e.target.id === 'export-product-id') {
                             const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
                             document.getElementById('export-product-name').value = product ? product.name : '';
@@ -4000,24 +3955,62 @@ function handleLogin(e) {
                     container.appendChild(newRow);
                 }
 
-                function updateImportTotal() {
-                    const lotQuantities = document.querySelectorAll('#import-lots-container .import-quantity');
-                    let total = 0;
-                    lotQuantities.forEach(input => {
-                        total += parseInt(input.value) || 0;
-                    });
-                    document.getElementById('import-total-quantity').value = total.toLocaleString();
-                }
+// --- ฟังก์ชันอัปเดตยอดรวม และสั่งสร้าง QR Code ทันที ---
+function updateImportTotal() {
+    const lotQuantities = document.querySelectorAll('#import-lots-container .import-quantity');
+    let total = 0;
+    lotQuantities.forEach(input => {
+        total += parseInt(input.value) || 0;
+    });
+    document.getElementById('import-total-quantity').value = total.toLocaleString();
 
-                function updateExportTotal() {
-                    const lotRows = document.querySelectorAll('#export-lots-container .export-lot-row:has(input[type="checkbox"]:checked)');
-                    let total = 0;
-                    lotRows.forEach(row => {
-                        const quantityInput = row.querySelector('.export-quantity');
-                        total += parseInt(quantityInput.value) || 0;
-                    });
-                    document.getElementById('export-total-quantity').value = total.toLocaleString();
-                }
+    // เรียกฟังก์ชันสร้าง QR โชว์ทันที
+    generateLiveQR(total);
+}
+
+// --- ฟังก์ชันย่อยสำหรับวาด QR Code ล่วงหน้า ---
+function generateLiveQR(totalQty) {
+    const qrOutputContainer = document.getElementById('import-qrcode-output');
+    const qrArea = document.getElementById('import-qrcode-area');
+    const qrTextContainer = document.getElementById('import-qrcode-text');
+    const erpCodeInput = document.getElementById('import-erp-code');
+
+    if (!qrOutputContainer || !qrArea || !qrTextContainer) return;
+
+    const erpCode = erpCodeInput ? erpCodeInput.value : '-';
+
+    // ถ้ายอดยังเป็น 0 หรือยังไม่ได้เลือกสินค้า ให้ซ่อน QR ไว้ก่อน
+    if (totalQty <= 0 || !erpCode || erpCode === '') {
+        qrArea.classList.add('d-none');
+        return;
+    }
+
+    try {
+        qrOutputContainer.innerHTML = ''; // ล้างรูปภาพเก่า
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const formattedRegDate = `${yyyy}${mm}${dd}`;
+
+        const cleanQty = Number(totalQty).toFixed(2);
+        const qrContent = `${erpCode}/${cleanQty}/TX1/${formattedRegDate}/A/1/${erpCode}`;
+
+        new QRCode(qrOutputContainer, {
+            text: qrContent,
+            width: 160,
+            height: 160,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        qrTextContainer.textContent = qrContent;
+        qrArea.classList.remove('d-none'); // โชว์ QR Code ทันที
+    } catch (err) {
+        console.error("Live QR Code Generation Error:", err);
+    }
+}
 
 function renderImportForm() {
     const T = translations[currentLanguage];
@@ -4070,7 +4063,7 @@ function renderImportForm() {
             <div id="import-qrcode-area" class="w-100 d-none h-100">
                 <div class="card border-primary h-100" style="border-radius: 16px; box-shadow: 0 4px 12px rgba(13,110,253,0.1);">
                     <div class="card-header bg-primary text-white text-center small fw-bold py-2">
-                        <i class="bi bi-qr-code-scan me-2"></i>QR CODE ERP ล็อตล่าสุด
+                        <i class="bi bi-qr-code-scan me-2"></i>QR CODE ERP 
                     </div>
                     <div class="card-body d-flex flex-column align-items-center justify-content-center bg-white p-2">
                         <div id="import-qrcode-output" class="p-1 border rounded bg-white"></div>
