@@ -1849,24 +1849,66 @@
 
                 // --- แก้ไขฟังก์ชัน handleLogin เพิ่มเติม ---
                 // ค้นหาฟังก์ชัน handleLogin เดิม แล้วเพิ่มคำสั่งปิด Modal ลงไปครับ
-                function handleLogin(e) {
-                    e.preventDefault();
-                    const username = document.getElementById('username').value;
-                    const password = document.getElementById('password').value;
-                    const foundUser = db.users.find(u => u.username === username && u.password === password);
+function handleLogin(e) {
+    e.preventDefault();
+    
+    // --- เพิ่มการเช็คว่าข้อมูลโหลดมาหรือยัง ---
+    if (!isDataLoaded) {
+        Swal.fire({
+            icon: 'info',
+            title: 'รอสักครู่...',
+            text: 'ระบบกำลังดึงรายชื่อผู้ใช้จากฐานข้อมูล กรุณาลองกดเข้าสู่ระบบอีกครั้งในไม่กี่วินาที',
+            timer: 2500,
+            showConfirmButton: false
+        });
+        return;
+    }
+    // ------------------------------------
 
-                    if (foundUser) {
-                        // ปิด Modal เมื่อ Login สำเร็จ
-                        const loginModalEl = document.getElementById('loginModal');
-                        const modal = bootstrap.Modal.getInstance(loginModalEl);
-                        if (modal) modal.hide();
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const errorMsg = document.getElementById('error-message');
 
-                        sessionStorage.setItem('currentUser', JSON.stringify(foundUser));
-                        checkLoginState();
-                    } else {
-                        errorMessage.classList.remove('d-none');
-                    }
-                }
+    const username = usernameInput.value;
+    const password = passwordInput.value;
+
+    const foundUser = db.users.find(u => u.username === username && u.password === password);
+
+    if (foundUser) {
+        if (errorMsg) errorMsg.classList.add('d-none');
+
+        const loginModalEl = document.getElementById('loginModal');
+        const modalInstance = bootstrap.Modal.getInstance(loginModalEl);
+        if (modalInstance) modalInstance.hide();
+
+        usernameInput.value = '';
+        passwordInput.value = '';
+
+        sessionStorage.setItem('currentUser', JSON.stringify(foundUser));
+        checkLoginState();
+
+        if (document.getElementById('floating-mascot-container')) {
+            document.getElementById('floating-mascot-container').classList.remove('d-none');
+        }
+
+        if (typeof rotateSpeech === 'function') {
+            rotateSpeech();
+            clearInterval(window.mascotLoopTimer);
+            window.mascotLoopTimer = setInterval(rotateSpeech, 5000);
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'เข้าสู่ระบบสำเร็จ',
+            text: 'ยินดีต้อนรับเข้าสู่งานจัดการสินค้าค่ะคุณ ' + foundUser.username,
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+    } else {
+        if (errorMsg) errorMsg.classList.remove('d-none');
+    }
+}
 
                 let hasHistoryBeenSearched = false;
 
@@ -2012,71 +2054,83 @@
                 }
 
 
-                async function loadDataFromSheet(isInitialLoad = false) {
-                    if (isInitialLoad) {
-                        Swal.fire({
-                            title: translations[currentLanguage].loading,
-                            text: translations[currentLanguage].please_wait,
-                            allowOutsideClick: false,
-                            didOpen: () => { Swal.showLoading() }
-                        });
-                    }
+let isDataLoaded = false; // ตัวแปรสำหรับเช็คว่าโหลดข้อมูลเสร็จหรือยัง
 
-                    try {
-                        // The GET request now only fetches data, it doesn't contain stock.
-                        const response = await fetch(SCRIPT_URL, {
-                            method: 'GET',
-                            redirect: 'follow'
-                        });
+async function loadDataFromSheet(isInitialLoad = false) {
+if (isInitialLoad) {
+        const Toast = Swal.mixin({
+            toast: true, 
+            position: 'bottom-end', // 
+            showConfirmButton: false
+        });
+        Toast.fire({ icon: 'info', title: 'กำลังซิงค์ข้อมูลจากฐานข้อมูล...' });
+    }    
+	try {
+        const response = await fetch(SCRIPT_URL, {
+            method: 'GET',
+            redirect: 'follow'
+        });
 
-                        if (!response.ok) {
-                            if (isInitialLoad) throw new Error(`Network response was not ok. Status: ${response.status}`);
-                            else { console.error('Background refresh failed.'); return; }
-                        }
-                        const newData = await response.json();
+        if (!response.ok) {
+            if (isInitialLoad) throw new Error(`Network response was not ok. Status: ${response.status}`);
+            else { console.error('Background refresh failed.'); return; }
+        }
+        const newData = await response.json();
 
-                        const isProductDataWiped = db.products && db.products.length > 0 && newData.products && newData.products.length === 0;
-                        const isUserDataWiped = db.users && db.users.length > 0 && newData.users && newData.users.length === 0;
+        const isProductDataWiped = db.products && db.products.length > 0 && newData.products && newData.products.length === 0;
+        const isUserDataWiped = db.users && db.users.length > 0 && newData.users && newData.users.length === 0;
 
-                        if (isProductDataWiped || isUserDataWiped) {
-                            console.error("Critical Error Prevented: Server returned an empty critical data array. Halting data sync.");
-                            if (isInitialLoad) {
-                                showError(translations[currentLanguage].critical_load_error_title, translations[currentLanguage].critical_load_error_text);
-                            }
-                            stopDataSync();
-                            return;
-                        }
+        if (isProductDataWiped || isUserDataWiped) {
+            console.error("Critical Error Prevented: Server returned an empty critical data array. Halting data sync.");
+            if (isInitialLoad) {
+                showError(translations[currentLanguage].critical_load_error_title, translations[currentLanguage].critical_load_error_text);
+            }
+            stopDataSync();
+            return;
+        }
 
-                        // Ensure all data arrays exist to prevent errors
-                        newData.products = newData.products || [];
-                        newData.users = newData.users || [];
-                        newData.history = newData.history || [];
-                        newData.announcements = newData.announcements || [];
-                        newData.stockCounts = newData.stockCounts || [];
+        newData.products = newData.products || [];
+        newData.users = newData.users || [];
+        newData.history = newData.history || [];
+        newData.announcements = newData.announcements || [];
+        newData.stockCounts = newData.stockCounts || [];
+        newData.deliveryPlans = newData.deliveryPlans || [];
 
-                        if (JSON.stringify(db) !== JSON.stringify(newData)) {
-                            db = newData;
-                            console.log('Data updated from Google Sheet at:', new Date().toLocaleTimeString());
-                            if (currentUser) {
-                                calculateStockFromHistory(); // Recalculate stock after getting new history
-                                populateAll();
-                            }
+        if (JSON.stringify(db) !== JSON.stringify(newData)) {
+            db = newData;
+            console.log('Data updated from Google Sheet at:', new Date().toLocaleTimeString());
+            if (currentUser) {
+                calculateStockFromHistory(); 
+                populateAll();
+            }
 
-                            if (!isInitialLoad) {
-                                const Toast = Swal.mixin({
-                                    toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
-                                });
-                                Toast.fire({ icon: 'success', title: translations[currentLanguage].data_updated });
-                            }
-                        }
+            if (!isInitialLoad) {
+                const Toast = Swal.mixin({
+                    toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
+                });
+                Toast.fire({ icon: 'success', title: translations[currentLanguage].data_updated });
+            }
+        }
 
-                        if (isInitialLoad) Swal.close();
-                    } catch (error) {
-                        console.error('Error loading data from Google Sheet:', error);
-                        if (isInitialLoad) showError(translations[currentLanguage].load_error_title, translations[currentLanguage].load_error_text.replace('{error}', error.message));
-                    }
-                }
+        isDataLoaded = true; // โหลดเสร็จแล้ว เปลี่ยนสถานะ
 
+        if (isInitialLoad) {
+            const Toast = Swal.mixin({
+                toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000
+            });
+            Toast.fire({ icon: 'success', title: 'โหลดข้อมูลสมบูรณ์ พร้อมใช้งาน 100%' });
+            
+            // เช็คว่าถ้าตอนโหลดเสร็จ มีคนรออยู่ในหน้าแดชบอร์ด ให้คำนวณและแสดงผลเลย
+            if(currentUser) {
+                calculateStockFromHistory();
+                populateAll();
+            }
+        }
+    } catch (error) {
+        console.error('Error loading data from Google Sheet:', error);
+        if (isInitialLoad) showError(translations[currentLanguage].load_error_title, translations[currentLanguage].load_error_text.replace('{error}', error.message));
+    }
+}
                 // --- DOM ELEMENTS ---
                 const loginPage = document.getElementById('login-page');
                 const dashboardPage = document.getElementById('main-dashboard');
@@ -2460,13 +2514,24 @@
                     }
                 };
 
-                async function init() {
-                    setLanguage(currentLanguage);
-                    await loadDataFromSheet(true);
-                    checkLoginState();
-                    addEventListeners();
-                }
-
+async function init() {
+    setLanguage(currentLanguage);
+    
+    // 1. ให้เปิดโชว์หน้า Login ทันทีแบบไม่ต้องรอ
+    showLoginPage(); 
+    
+    // 2. ถ้าคนเคยล็อกอินค้างไว้ ให้เข้าแดชบอร์ดไปก่อนเลย
+    const user = JSON.parse(sessionStorage.getItem('currentUser'));
+    if (user) {
+        currentUser = user; // ตั้งค่าผู้ใช้ชั่วคราวให้หน้าเว็บจัดเลย์เอาต์รอ
+        showDashboard();
+    }
+    
+    // 3. แอบสั่งโหลดข้อมูลเงียบๆ อยู่หลังบ้าน (ไม่เอา await บล็อกไว้แล้ว)
+    loadDataFromSheet(true); 
+    
+    addEventListeners();
+}
                 function checkLoginState() {
                     const user = JSON.parse(sessionStorage.getItem('currentUser'));
                     if (user) {
