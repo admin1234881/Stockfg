@@ -3430,11 +3430,11 @@ window.deletePlanItem = function(id, date) {
                             e.target.closest('.import-lot-row').remove();
                             updateImportTotal();
                         }
-                        if (e.target.id === 'clear-import-form-btn') renderImportForm();
-                        if (e.target.id === 'clear-export-form-btn') renderExportForm();
-                        if (e.target.id === 'clear-product-form-btn') clearProductForm();
-                        if (e.target.id === 'clear-user-form-btn') clearUserForm();
-                        if (e.target.id === 'clear-announcement-form-btn') clearAnnouncementForm();
+        if (e.target.closest('#clear-import-form-btn')) renderImportForm();
+        if (e.target.closest('#clear-export-form-btn')) renderExportForm();
+        if (e.target.closest('#clear-product-form-btn')) clearProductForm();
+        if (e.target.closest('#clear-user-form-btn')) clearUserForm();
+        if (e.target.closest('#clear-announcement-form-btn')) clearAnnouncementForm();
                         if (e.target.id === 'history-filter-reset-btn') {
                             document.getElementById('filter-product-id').value = '';
                             hasHistoryBeenSearched = false;
