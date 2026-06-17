@@ -3967,6 +3967,25 @@ function updateImportTotal() {
     // เรียกฟังก์ชันสร้าง QR โชว์ทันที
     generateLiveQR(total);
 }
+// --- วางโค้ดนี้ต่อท้ายบล็อกของ updateImportTotal ได้เลยครับ ---
+function updateExportTotal() {
+    const allLotRows = document.querySelectorAll('#export-lots-container .export-lot-row');
+    let total = 0;
+    
+    // วนลูปเช็คทีละแถวแทน เพื่อรองรับการทำงานในทุกเบราว์เซอร์
+    allLotRows.forEach(row => {
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        if (checkbox && checkbox.checked) {
+            const quantityInput = row.querySelector('.export-quantity');
+            total += parseInt(quantityInput.value) || 0;
+        }
+    });
+    
+    const totalInput = document.getElementById('export-total-quantity');
+    if(totalInput) {
+        totalInput.value = total.toLocaleString();
+    }
+}
 
 // --- ฟังก์ชันย่อยสำหรับวาด QR Code ล่วงหน้า ---
 function generateLiveQR(totalQty) {
