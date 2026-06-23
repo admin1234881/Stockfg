@@ -724,20 +724,13 @@
                         <li>
                             <hr class="dropdown-divider">
                         </li>
-                        <li id="nav-stock-count-item"><button class="dropdown-item" data-bs-toggle="pill"
-                                data-bs-target="#pills-stock-count"><i
-                                    class="bi bi-clipboard2-check-fill me-2 text-warning"></i><span
-                                    data-lang-key="nav_stock_count">นับสต็อก</span></button></li>
-                        <li id="nav-history-item"><button class="dropdown-item" data-bs-toggle="pill"
-                                data-bs-target="#pills-history"><i
-                                    class="bi bi-clock-history me-2 text-secondary"></i><span
-                                    data-lang-key="nav_history">ประวัติ</span></button></li>
-			<li id="nav-delivery-plan-item">
-    <button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-delivery-plan">
-        <i class="bi bi-calendar-check-fill me-2 text-primary"></i>
-        <span>แผนการจัดส่ง (Delivery Plan)</span>
-    </button>
-</li>
+                        <li id="nav-stock-count-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-stock-count"><i class="bi bi-clipboard2-check-fill me-2 text-warning"></i><span data-lang-key="nav_stock_count">นับสต็อก</span></button></li>
+                        
+                        <li id="nav-convert-item"><button class="dropdown-item" onclick="openConvertModal()"><i class="bi bi-arrow-left-right me-2 text-primary"></i><span>เปลี่ยนรหัสสินค้า (Convert)</span></button></li>
+                        
+                        <li id="nav-history-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-history"><i class="bi bi-clock-history me-2 text-secondary"></i><span data-lang-key="nav_history">ประวัติ</span></button></li>
+                        
+                        <li id="nav-delivery-plan-item"><button class="dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-delivery-plan"><i class="bi bi-calendar-check-fill me-2 text-primary"></i><span>แผนการจัดส่ง (Delivery Plan)</span></button></li>
                     </ul>
                 </li>
 
@@ -1222,6 +1215,52 @@
         </div>
 
         <!-- Stock Count Modal (for counting) -->
+         <div class="modal fade" id="convertPartModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content" style="border-radius: var(--border-radius);">
+                    <div class="modal-header bg-primary text-white" style="border-top-left-radius: var(--border-radius); border-top-right-radius: var(--border-radius);">
+                        <h5 class="modal-title"><i class="bi bi-arrow-left-right me-2"></i>แปลงรหัสสินค้า (Convert Part)</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="convert-part-form">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-danger"><i class="bi bi-box-arrow-up me-1"></i>1. สินค้าต้นทาง (หักออก)</label>
+                                    <div class="position-relative">
+                                        <input type="text" id="convert-source-id" class="form-control" placeholder="ค้นหารหัสสินค้า..." autocomplete="off" required>
+                                        <div id="convert-source-suggestions" class="list-group position-absolute w-100 suggestions-container" style="z-index: 1000;"></div>
+                                    </div>
+                                    <input type="text" id="convert-source-name" class="form-control mt-2 bg-light" readonly placeholder="ชื่อสินค้าต้นทาง">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-success"><i class="bi bi-box-arrow-down me-1"></i>2. สินค้าปลายทาง (รับเข้า)</label>
+                                    <div class="position-relative">
+                                        <input type="text" id="convert-dest-id" class="form-control" placeholder="ค้นหารหัสสินค้า..." autocomplete="off" required>
+                                        <div id="convert-dest-suggestions" class="list-group position-absolute w-100 suggestions-container" style="z-index: 1000;"></div>
+                                    </div>
+                                    <input type="text" id="convert-dest-name" class="form-control mt-2 bg-light" readonly placeholder="ชื่อสินค้าปลายทาง">
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">เลือกล็อตของสินค้าต้นทาง (ที่ต้องการนำมาแปลง)</label>
+                                    <div id="convert-source-lots" class="border rounded p-2 bg-light">
+                                        <p class="text-muted text-center mb-0" style="font-size: 0.9rem;">-- กรุณาเลือกสินค้าต้นทางก่อน --</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">จำนวนที่ต้องการแปลง</label>
+                                    <input type="number" id="convert-quantity" class="form-control border-primary text-center fw-bold" min="1" required placeholder="ระบุจำนวนชิ้น">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="button" class="btn btn-primary px-4" onclick="submitConvertPart()"><i class="bi bi-check-circle-fill me-2"></i>ยืนยันการแปลงรหัส</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="modal fade" id="stockCountModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-fullscreen">
                 <div class="modal-content">
@@ -3042,7 +3081,8 @@ clearInterval(window.mascotLoopTimer);
                     document.getElementById('nav-products-item').style.display = isAdmin || currentUser.canManageProducts ? '' : 'none';
                     document.getElementById('nav-users-item').style.display = isAdmin || currentUser.canManageUsers ? '' : 'none';
                     document.getElementById('nav-announcements-item').style.display = isAdmin || currentUser.canManageAnnouncements ? '' : 'none';
-		    document.getElementById('nav-delivery-plan-item').style.display = isAdmin || currentUser.canManageDeliveryPlan ? '' : 'none';
+		            document.getElementById('nav-delivery-plan-item').style.display = isAdmin || currentUser.canManageDeliveryPlan ? '' : 'none';
+                    document.getElementById('nav-convert-item').style.display = isAdmin ? '' : 'none';
 
                     // จัดการส่วนสำรองข้อมูล
                     document.getElementById('backup-card-container').style.display = 'block';
@@ -5264,7 +5304,173 @@ function populateStockCountMainView() {
                         Swal.fire('เกิดข้อผิดพลาด', 'ไลบรารีมีปัญหา หรือเบราว์เซอร์ไม่อนุญาต', 'error');
                     }
                 };
+// ========================================================
+                // ฟังก์ชันแปลงรหัสสินค้า (Convert Part)
+                // ========================================================
+                window.openConvertModal = function() {
+                    if (!currentUser || currentUser.role !== 'admin') {
+                        Swal.fire('ปฏิเสธการเข้าถึง', 'เฉพาะผู้ดูแลระบบ (Admin) เท่านั้น', 'error');
+                        return;
+                    }
+                    document.getElementById('convert-part-form').reset();
+                    document.getElementById('convert-source-lots').innerHTML = '<p class="text-muted text-center mb-0" style="font-size: 0.9rem;">-- กรุณาเลือกสินค้าต้นทางก่อน --</p>';
+                    const convertModal = new bootstrap.Modal(document.getElementById('convertPartModal'));
+                    convertModal.show();
+                };
 
+                // จัดการ Auto-complete ค้นหารหัสสินค้าในหน้าต่างแปลงรหัส
+                document.addEventListener('input', (e) => {
+                    if (e.target.id === 'convert-source-id') {
+                        const searchTerm = e.target.value;
+                        const productsInStockIds = calculatedStock.filter(s => s.totalQuantity > 0).map(s => String(s.productId).trim());
+                        const productSource = db.products.filter(p => productsInStockIds.includes(String(p.id).trim()));
+                        showSuggestions(e.target, document.getElementById('convert-source-suggestions'), productSource, searchTerm);
+                    }
+                    if (e.target.id === 'convert-dest-id') {
+                        const searchTerm = e.target.value;
+                        showSuggestions(e.target, document.getElementById('convert-dest-suggestions'), db.products, searchTerm);
+                    }
+                });
+
+                document.addEventListener('change', (e) => {
+                    if (e.target.id === 'convert-source-id') {
+                        const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
+                        document.getElementById('convert-source-name').value = product ? product.name : '';
+                        
+                        // สร้าง Dropdown เลือกล็อตของสินค้าต้นทาง
+                        const container = document.getElementById('convert-source-lots');
+                        const productStock = calculatedStock.find(p => String(p.productId).trim() === String(e.target.value).trim());
+                        const lots = productStock ? productStock.lots.filter(l => l.quantity > 0) : [];
+
+                        if (lots.length === 0) {
+                            container.innerHTML = '<p class="text-danger text-center mb-0 fw-bold">ไม่มีสต็อกสำหรับสินค้านี้</p>';
+                            return;
+                        }
+
+                        let selectHtml = '<select id="convert-selected-lot" class="form-select border-primary" required><option value="" disabled selected>-- เลือกล็อตที่ต้องการนำมาแปลง --</option>';
+                        lots.sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate)).forEach(lot => {
+                            let packText = lot.packagingType === 'temporary' ? ' (ชั่วคราว)' : '';
+                            selectHtml += `<option value="${lot.productionDate}|${lot.packagingType}|${lot.quantity}">วันที่ผลิต ${lot.productionDate}${packText} - คงเหลือ: ${lot.quantity}</option>`;
+                        });
+                        selectHtml += '</select>';
+                        container.innerHTML = selectHtml;
+                    }
+                    
+                    if (e.target.id === 'convert-dest-id') {
+                        const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
+                        document.getElementById('convert-dest-name').value = product ? product.name : '';
+                    }
+                });
+
+                // บันทึกการแปลงรหัส
+                window.submitConvertPart = async function() {
+                    const sourceId = document.getElementById('convert-source-id').value.trim();
+                    const destId = document.getElementById('convert-dest-id').value.trim();
+                    const lotSelect = document.getElementById('convert-selected-lot');
+                    const quantity = parseInt(document.getElementById('convert-quantity').value, 10);
+
+                    if (!sourceId || !destId || !lotSelect || !lotSelect.value || isNaN(quantity) || quantity <= 0) {
+                        Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลและเลือกล็อตให้ครบถ้วน', 'warning');
+                        return;
+                    }
+
+                    if (sourceId === destId) {
+                        Swal.fire('ข้อผิดพลาด', 'รหัสสินค้าต้นทางและปลายทางต้องไม่ซ้ำกัน', 'warning');
+                        return;
+                    }
+
+                    const [prodDate, packType, maxQty] = lotSelect.value.split('|');
+                    if (quantity > parseInt(maxQty, 10)) {
+                        Swal.fire('ข้อผิดพลาด', 'จำนวนที่ต้องการแปลง (' + quantity + ') มากกว่าสต็อกที่มีในล็อตนี้ (' + maxQty + ')', 'error');
+                        return;
+                    }
+
+                    const sourceProduct = db.products.find(p => String(p.id).trim() === sourceId);
+                    const destProduct = db.products.find(p => String(p.id).trim() === destId);
+
+                    if (!sourceProduct || !destProduct) {
+                        Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลสินค้าต้นทางหรือปลายทาง', 'error');
+                        return;
+                    }
+
+                    const confirm = await Swal.fire({
+                        title: 'ยืนยันการแปลงรหัสสินค้า?',
+                        html: '<div class="text-start">' +
+                              '<b>ระบบจะดำเนินการ:</b><br>' +
+                              '<span class="text-danger"><i class="bi bi-dash-circle me-1"></i>หัก <b>' + sourceProduct.id + '</b> ออก ' + quantity + ' ชิ้น</span><br>' +
+                              '<span class="text-success"><i class="bi bi-plus-circle me-1"></i>เพิ่มเข้า <b>' + destProduct.id + '</b> ' + quantity + ' ชิ้น</span><br>' +
+                              '<hr><small class="text-muted">* ใช้วันที่ผลิตและแพ็คกิ้งเดิมของต้นทาง</small></div>',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="bi bi-check-circle me-1"></i> ยืนยัน',
+                        cancelButtonText: 'ยกเลิก',
+                        confirmButtonColor: '#198754'
+                    });
+
+                    if (!confirm.isConfirmed) return;
+
+                    Swal.fire({title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+
+                    const newHistoryEntries = [];
+                    const timestamp = new Date().toISOString();
+                    const baseId = Date.now();
+
+                    // 1. หักออกจากต้นทาง (Export)
+                    newHistoryEntries.push({
+                        id: 'exp-conv-' + baseId,
+                        date: timestamp,
+                        type: 'export',
+                        exportType: 'Other', 
+                        productId: sourceProduct.id,
+                        productName: sourceProduct.name,
+                        customer: sourceProduct.customer,
+                        erpCode: sourceProduct.erpCode,
+                        quantity: quantity,
+                        productionDate: prodDate,
+                        user: currentUser.username,
+                        invoiceNumber: '-',
+                        remarks: 'CONVERSION: แปลงรหัสไปเป็น ' + destProduct.id,
+                        packagingType: packType,
+                        priceAtTimeOfSale: 0
+                    });
+
+                    // 2. รับเข้าปลายทาง (Import)
+                    newHistoryEntries.push({
+                        id: 'imp-conv-' + (baseId + 1),
+                        date: timestamp,
+                        type: 'import',
+                        productId: destProduct.id,
+                        productName: destProduct.name,
+                        customer: destProduct.customer,
+                        erpCode: destProduct.erpCode,
+                        quantity: quantity,
+                        productionDate: prodDate, 
+                        user: currentUser.username,
+                        invoiceNumber: '-',
+                        remarks: 'CONVERSION: รับเข้าจากการแปลงรหัส ' + sourceProduct.id,
+                        packagingType: packType
+                    });
+
+                    try {
+                        newHistoryEntries.forEach(entry => db.history.unshift(entry));
+                        calculateStockFromHistory();
+                        populateAll();
+                        
+                        await callAppsScript('appendBatchHistory', newHistoryEntries);
+
+                        const convertModalEl = document.getElementById('convertPartModal');
+                        const modalInstance = bootstrap.Modal.getInstance(convertModalEl);
+                        if (modalInstance) modalInstance.hide();
+
+                        Swal.fire('สำเร็จ!', 'แปลงรหัสสินค้าและปรับยอดเรียบร้อยแล้ว', 'success');
+
+                    } catch (error) {
+                        db.history.splice(0, 2); // คืนค่าหากเกิด Error
+                        calculateStockFromHistory();
+                        populateAll();
+                        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+                    }
+                };
             }); // ปิด DOMContentLoaded ที่ถูกต้องตรงนี้
         </script>
 
