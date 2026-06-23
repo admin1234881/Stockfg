@@ -4500,7 +4500,9 @@ const permissions = [
                             } 
                             // 2. ถ้าเป็นการปรับยอดแบบเก่า หรือการพิมพ์ยอด Manual
                             else {
-                                const keysToDelete = Array.from(stockLedger.keys()).filter(key => key.startsWith(`${productId}::`));
+                                const packType = item.packagingType || 'standard';
+                                
+                                const keysToDelete = Array.from(stockLedger.keys()).filter(key => key.startsWith(`${productId}::`) && key.endsWith(`::${packType}`));
                                 keysToDelete.forEach(key => stockLedger.delete(key));
 
                                 let newTotalQuantity = remarks.startsWith('MANUAL_ADJ_NEW_TOTAL:') 
@@ -4508,11 +4510,11 @@ const permissions = [
                                     : parseFloat(item.quantity) || 0;
 
                                 const adjustmentDate = formatDate(item.date);
-                                const key = `${productId}::${adjustmentDate}::standard`;
+                                const key = `${productId}::${adjustmentDate}::${packType}`;
 
                                 stockLedger.set(key, {
                                     productId: productId, productionDate: adjustmentDate,
-                                    quantity: Math.max(0, newTotalQuantity), isAdjustment: true, packagingType: 'standard'
+                                    quantity: Math.max(0, newTotalQuantity), isAdjustment: true, packagingType: packType
                                 });
                             }
                             continue;
@@ -4998,51 +5000,16 @@ function populateStockCountMainView() {
                         });
                     }
                 }
-                // --- START THE APP ---
-let calcExpression = '';
-
-window.toggleCalculator = function() {
-    const calc = document.getElementById('calculator-widget');
-    calc.classList.toggle('d-none');
-};
-
-window.calcInput = function(val) {
-    const display = document.getElementById('calc-display');
-    if (calcExpression === '0' && val !== '.') calcExpression = '';
-    calcExpression += val;
-    display.value = calcExpression;
-};
-
-window.calcClear = function() {
-    calcExpression = '';
-    document.getElementById('calc-display').value = '0';
-};
-
-window.calcDelete = function() {
-    calcExpression = calcExpression.slice(0, -1);
-    document.getElementById('calc-display').value = calcExpression || '0';
-};
-
-window.calcResult = function() {
-    const display = document.getElementById('calc-display');
-    try {
-        // ใช้ eval อย่างระมัดระวังสำหรับการคำนวณตัวเลข
-        const result = eval(calcExpression);
-        display.value = Number.isInteger(result) ? result : result.toFixed(2);
-        calcExpression = display.value;
-    } catch (e) {
-        display.value = 'Error';
-        calcExpression = '';
-    }
-};
+               // --- START THE APP ---
                 init();
-                // --- วางโค้ดนี้ไว้ท้ายสุดของฟังก์ชัน DOMContentLoaded (เหนือบรรทัด }); ) ---
+
+                // ========================================================
+                // User Form Submit
+                // ========================================================
                 window.handleUserFormSubmit = async function (e) {
                     if (e) e.preventDefault();
                     const T = translations[currentLanguage];
-
                     try {
-                        // 1. ดึงข้อมูลจากฟอร์ม
                         const userData = {
                             username: document.getElementById('user-username').value.trim(),
                             password: document.getElementById('user-password').value.trim(),
@@ -5057,18 +5024,15 @@ window.calcResult = function() {
                             canManageDeliveryPlan: document.getElementById('permission-canManageDeliveryPlan').checked
                         };
 
-                        // 2. แสดงสถานะกำลังบันทึก
                         Swal.fire({
                             title: T.saving || 'กำลังบันทึก...',
                             allowOutsideClick: false,
                             didOpen: () => { Swal.showLoading(); }
                         });
 
-                        // 3. ตรวจสอบโหมด (เพิ่มใหม่/แก้ไข)
                         let isEdit = (typeof originalUsernameForEdit !== 'undefined' && originalUsernameForEdit);
                         let action = isEdit ? 'updateUser' : 'addUser';
 
-                        // 4. ส่งข้อมูล (ตอนนี้เรียก callAppsScript เจอแน่นอนเพราะอยู่ใน Scope เดียวกัน)
                         const response = await callAppsScript(action, userData);
 
                         if (response.status === 'error') {
@@ -5093,14 +5057,18 @@ window.calcResult = function() {
                     } catch (error) {
                         console.error('User Save Error:', error);
                         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
-			// --- CALCULATOR FUNCTIONS (Keyboard Support) ---
+                    }
+                };
+
+                // ========================================================
+                // CALCULATOR FUNCTIONS (Keyboard Support)
+                // ========================================================
                 let calcExpression = '';
                 
                 window.toggleCalculator = function() {
                     const calc = document.getElementById('calculator-widget');
                     if (calc) {
                         calc.classList.toggle('d-none');
-                        // เมื่อเปิดเครื่องคิดเลข ให้เริ่มดักจับเหตุการณ์คีย์บอร์ด
                         if (!calc.classList.contains('d-none')) {
                             document.addEventListener('keydown', handleCalcKeyboard);
                         } else {
@@ -5109,13 +5077,11 @@ window.calcResult = function() {
                     }
                 };
 
-                // ฟังก์ชันจัดการการกดคีย์บอร์ด
                 function handleCalcKeyboard(e) {
                     const calc = document.getElementById('calculator-widget');
                     if (calc.classList.contains('d-none')) return; 
 
                     const key = e.key;
-                    // ป้องกันปุ่มบางตัวทำให้หน้าจอเลื่อน
                     if (['+', '-', '*', '/', 'Enter', 'Backspace', 'Escape'].includes(key)) {
                         e.preventDefault();
                     }
@@ -5152,7 +5118,6 @@ window.calcResult = function() {
                     const display = document.getElementById('calc-display');
                     try {
                         const result = eval(calcExpression);
-                        // ถ้าเป็นจำนวนเต็มโชว์ปกติ ถ้ามีทศนิยมให้เอา 2 ตำแหน่ง
                         const finalResult = Number.isInteger(result) ? result : result.toFixed(2);
                         display.value = finalResult.toLocaleString();
                         calcExpression = String(finalResult);
@@ -5161,158 +5126,148 @@ window.calcResult = function() {
                         calcExpression = '';
                     }
                 };
-                   
-		 }
-                };
-            });
-            // --- ฟังก์ชันอัปโหลดไฟล์ Excel ปรับสต็อกก่อน 08:00 น. ---
-function triggerExcelUpload() {
-    // 1. เช็คสิทธิ์ (ป้องกันคนอื่นกดเล่น)
-    if (!currentUser || currentUser.role !== 'admin') {
-        Swal.fire('ปฏิเสธการเข้าถึง', 'เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถอัปโหลดไฟล์สต็อกได้', 'error');
-        return;
-    }
 
-    // 2. สร้างกล่องอัปโหลดไฟล์แบบซ่อนไว้ แล้วสั่งคลิกอัตโนมัติ
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.xlsx, .xls, .csv';
-    
-    fileInput.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+                // ========================================================
+                // ฟังก์ชัน Excel (รองรับ 2 ประเภทแพ็คกิ้ง และทำงาน 100%)
+                // ========================================================
+                window.startExcelUpload = function() {
+                    if (!currentUser || currentUser.role !== 'admin') {
+                        Swal.fire('ปฏิเสธการเข้าถึง', 'เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                        return;
+                    }
 
-        Swal.fire({
-            title: 'กำลังอ่านไฟล์ Excel...',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
-
-        const reader = new FileReader();
-        reader.onload = async function(event) {
-            try {
-                // ใช้ไลบรารี XLSX แปลงไฟล์เป็น Array
-                const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
-
-                const adjustmentEntries = [];
-                const today = new Date();
-                
-                // ล็อกเป้าหมายเวลาเป็น 07:59:59 น. ของวันนี้เป๊ะๆ!
-                today.setHours(7, 59, 59, 0); 
-                const adjustmentTimestamp = today.toISOString();
-                
-                // ดึงวันที่วันนี้มาเป็นวันที่ผลิตจำลอง (รูปแบบ YYYY-MM-DD)
-                const dateStrForLot = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-
-                let countUpdated = 0;
-
-                // ลูปอ่านข้อมูล (เริ่มจาก i = 1 เพื่อข้ามบรรทัดหัวข้อ Header)
-                for (let i = 1; i < jsonData.length; i++) {
-                    const row = jsonData[i];
-                    if (!row || row.length < 2) continue; // ข้ามบรรทัดว่าง
+                    const fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.accept = '.xlsx, .xls, .csv';
+                    fileInput.style.display = 'none';
+                    document.body.appendChild(fileInput); 
                     
-                    const productId = String(row[0]).trim(); // คอลัมน์ A: รหัสสินค้า
-                    const quantity = parseFloat(row[1]);     // คอลัมน์ B: จำนวนใหม่
-
-                    if (productId && !isNaN(quantity)) {
-                        const product = db.products.find(p => String(p.id).trim() === productId);
-                        if (product) {
-                            adjustmentEntries.push({
-                                id: 'adj-xls-' + Date.now() + '-' + productId + '-' + Math.random().toString(36).substr(2, 5),
-                                date: adjustmentTimestamp,
-                                type: 'adjustment',
-                                productId: product.id,
-                                productName: product.name,
-                                customer: product.customer,
-                                erpCode: product.erpCode,
-                                quantity: quantity,
-                                productionDate: dateStrForLot,
-                                user: currentUser.username,
-                                // ใช้คีย์เวิร์ดล้างสต็อกเก่าทั้งหมด แล้วทับด้วยยอดใหม่
-                                remarks: `MANUAL_ADJ_NEW_TOTAL:${quantity}|อัปเดตสต็อกจากไฟล์ Excel ก่อน 08:00 น.`,
-                                packagingType: 'standard'
-                            });
-                            countUpdated++;
+                    fileInput.addEventListener('change', async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) {
+                            document.body.removeChild(fileInput);
+                            return;
                         }
-                    }
-                }
 
-                Swal.close();
+                        Swal.fire({ title: 'กำลังอ่านไฟล์ Excel...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-                if (adjustmentEntries.length > 0) {
-                    const confirm = await Swal.fire({
-                        title: 'ตรวจสอบข้อมูล',
-                        html: `พบรหัสสินค้าถูกต้อง <b>${countUpdated}</b> รายการ<br><br>
-                               <div class="alert alert-warning text-start" style="font-size: 0.9rem;">
-                                 <b>ระบบจะดำเนินการดังนี้:</b><br>
-                                 1. ล้างยอดสต็อกเดิมของสินค้านั้นๆ ทิ้งทั้งหมด<br>
-                                 2. ตั้งยอดใหม่ตามไฟล์ Excel โดยระบุเวลาเป็น <span class="text-danger">07:59:59 น. ของวันนี้</span><br>
-                                 3. รายการรับ/ส่ง ที่เกิดขึ้นหลัง 8 โมงเช้า จะถูกนำมาคำนวณบวก/ลบต่ออัตโนมัติ
-                               </div>`,
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonText: '<i class="bi bi-check-circle me-1"></i> ยืนยันอัปเดต',
-                        cancelButtonText: 'ยกเลิก',
-                        confirmButtonColor: '#198754'
+                        const reader = new FileReader();
+                        reader.onload = async function(event) {
+                            try {
+                                const data = new Uint8Array(event.target.result);
+                                const workbook = XLSX.read(data, {type: 'array'});
+                                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                                const adjustmentEntries = [];
+                                const today = new Date();
+                                today.setHours(7, 59, 59, 0); 
+                                const adjustmentTimestamp = today.toISOString();
+                                const dateStrForLot = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+                                let countUpdated = 0;
+
+                                // อ่านข้อมูล: A=PartNo, B=Standard Qty, C=Temporary Qty
+                                for (let i = 1; i < jsonData.length; i++) {
+                                    const row = jsonData[i];
+                                    if (!row || row.length < 2) continue; 
+                                    
+                                    const productId = String(row[0] || '').trim(); 
+                                    const stdQty = parseFloat(row[1]); // คอลัมน์ B
+                                    const tempQty = parseFloat(row[2]); // คอลัมน์ C
+
+                                    if (productId) {
+                                        const product = db.products.find(p => String(p.id).trim() === productId);
+                                        if (product) {
+                                            let added = false;
+                                            
+                                            // 1. ถ้าระบุยอด Standard มา (จัดการเฉพาะ Standard)
+                                            if (!isNaN(stdQty)) {
+                                                adjustmentEntries.push({
+                                                    id: 'adj-xls-std-' + Date.now() + '-' + productId + '-' + Math.random().toString(36).substr(2, 5),
+                                                    date: adjustmentTimestamp, type: 'adjustment',
+                                                    productId: product.id, productName: product.name, customer: product.customer, erpCode: product.erpCode,
+                                                    quantity: stdQty, productionDate: dateStrForLot, user: currentUser.username,
+                                                    remarks: `MANUAL_ADJ_NEW_TOTAL:${stdQty}|อัปเดตสต็อก Standard จาก Excel (ก่อน 08:00)`,
+                                                    packagingType: 'standard'
+                                                });
+                                                added = true;
+                                            }
+
+                                            // 2. ถ้าระบุยอด Temporary มา (จัดการเฉพาะ Temporary)
+                                            if (!isNaN(tempQty)) {
+                                                adjustmentEntries.push({
+                                                    id: 'adj-xls-tmp-' + Date.now() + '-' + productId + '-' + Math.random().toString(36).substr(2, 5),
+                                                    date: adjustmentTimestamp, type: 'adjustment',
+                                                    productId: product.id, productName: product.name, customer: product.customer, erpCode: product.erpCode,
+                                                    quantity: tempQty, productionDate: dateStrForLot, user: currentUser.username,
+                                                    remarks: `MANUAL_ADJ_NEW_TOTAL:${tempQty}|อัปเดตสต็อก Temporary จาก Excel (ก่อน 08:00)`,
+                                                    packagingType: 'temporary'
+                                                });
+                                                added = true;
+                                            }
+                                            
+                                            if(added) countUpdated++;
+                                        }
+                                    }
+                                }
+
+                                Swal.close();
+
+                                if (adjustmentEntries.length > 0) {
+                                    const confirm = await Swal.fire({
+                                        title: 'ตรวจสอบข้อมูล',
+                                        html: `พบรหัสสินค้าถูกต้อง <b>${countUpdated}</b> รายการ<br><br>
+                                               <div class="alert alert-warning text-start" style="font-size: 0.9rem;">
+                                                 ระบบจะแยกปรับยอด <b>Standard</b> และ <b>Temporary</b> ตามคอลัมน์ในไฟล์ Excel
+                                               </div>`,
+                                        icon: 'question', showCancelButton: true, confirmButtonText: '<i class="bi bi-check-circle me-1"></i> ยืนยันอัปเดต',
+                                        cancelButtonText: 'ยกเลิก', confirmButtonColor: '#198754'
+                                    });
+
+                                    if (confirm.isConfirmed) {
+                                        Swal.fire({title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                                        adjustmentEntries.forEach(entry => db.history.unshift(entry));
+                                        calculateStockFromHistory();
+                                        populateAll(); 
+                                        await callAppsScript('appendBatchHistory', adjustmentEntries);
+                                        Swal.fire('สำเร็จ!', 'อัปเดตยอดสต็อกจากไฟล์เรียบร้อย', 'success');
+                                    }
+                                } else {
+                                    Swal.fire('ไม่พบข้อมูล!', 'กรุณาระบุตัวเลขลงในช่องยอด Standard หรือ Temporary อย่างน้อย 1 ช่อง', 'error');
+                                }
+                            } catch (err) {
+                                console.error(err);
+                                Swal.fire('เกิดข้อผิดพลาด', 'รูปแบบไฟล์ไม่ถูกต้อง', 'error');
+                            } finally { document.body.removeChild(fileInput); }
+                        };
+                        reader.readAsArrayBuffer(file);
                     });
+                    
+                    fileInput.click();
+                };
 
-                    if (confirm.isConfirmed) {
-                        Swal.fire({title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-                        
-                        // บันทึกเข้าประวัติและคำนวณใหม่
-                        adjustmentEntries.forEach(entry => db.history.unshift(entry));
-                        calculateStockFromHistory();
-                        populateAll(); 
-                        
-                        // เซฟขึ้น Google Sheets
-                        await callAppsScript('appendBatchHistory', adjustmentEntries);
-                        
-                        Swal.fire('สำเร็จ!', 'อัปเดตยอดสต็อกจากไฟล์เรียบร้อยแล้ว', 'success');
+                window.startExcelDownload = function() {
+                    try {
+                        const ws_data = [
+                            ["Part No.", "Standard Qty (มาตรฐาน)", "Temporary Qty (ชั่วคราว)", "Remarks"],
+                            ["EXAMPLE-PART-01", 100, 50, "ใส่ยอดกล่องมาตรฐานที่คอลัมน์ B และกล่องชั่วคราวที่คอลัมน์ C"],
+                            ["EXAMPLE-PART-02", 200, 0, "ถ้าไม่มีชั่วคราว ให้ใส่ 0 หรือปล่อยว่างได้เลย"]
+                        ];
+                        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                        const wscols = [ {wch: 25}, {wch: 25}, {wch: 25}, {wch: 60} ];
+                        ws['!cols'] = wscols;
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, "StockAdjustment");
+                        XLSX.writeFile(wb, "Stock_Adjustment_Template.xlsx");
+                    } catch (error) {
+                        Swal.fire('เกิดข้อผิดพลาด', 'ไลบรารีมีปัญหา หรือเบราว์เซอร์ไม่อนุญาต', 'error');
                     }
-                } else {
-                    Swal.fire('ไม่พบข้อมูล!', 'ตรวจสอบไฟล์ Excel อีกครั้ง (คอลัมน์ A = รหัสสินค้า, คอลัมน์ B = ยอดสต็อกจำนวนเต็ม)', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถอ่านไฟล์ได้ กรุณาตรวจสอบว่าไฟล์ไม่ได้ถูกเปิดค้างไว้', 'error');
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    };
-    
-    // สั่งเปิดหน้าต่างเลือกไฟล์
-    fileInput.click();
-}
-// --- ฟังก์ชันสร้างและดาวน์โหลดเทมเพลต Excel อัตโนมัติ ---
-function downloadExcelTemplate() {
-    // 1. สร้างหัวตารางและข้อมูลตัวอย่างให้ผู้ใช้ดูเป็นแนวทาง
-    const ws_data = [
-        ["Part No.", "Quantity", "Remarks (Optional)"],
-        ["EXAMPLE-PART-01", 150, "ใส่รหัสสินค้าในคอลัมน์ A และจำนวนเต็มในคอลัมน์ B ส่วนคอลัมน์ C ใส่หมายเหตุได้เลย"],
-        ["EXAMPLE-PART-02", 200, ""]
-    ];
+                };
 
-    // 2. ใช้ไลบรารี XLSX สร้างเป็นชีตและไฟล์
-    const ws = XLSX.utils.aoa_to_sheet(ws_data);
-
-    // ปรับความกว้างของคอลัมน์ให้อ่านง่ายๆ
-    const wscols = [
-        {wch: 25}, // Part No.
-        {wch: 15}, // Quantity
-        {wch: 60}  // Remarks
-    ];
-    ws['!cols'] = wscols;
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "StockAdjustment");
-
-    // 3. สั่งดาวน์โหลดลงเครื่องทันที
-    XLSX.writeFile(wb, "Stock_Adjustment_Template.xlsx");
-}
+            }); // ปิด DOMContentLoaded ที่ถูกต้องตรงนี้
         </script>
+
 <button class="btn shadow-lg d-flex align-items-center justify-content-center" id="calc-toggle-btn" 
         style="position: fixed; bottom: 95px; right: 25px; width: 55px; height: 55px; z-index: 4000; 
                background: #212529; border: 2px solid #0d6efd; border-radius: 16px; 
