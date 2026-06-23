@@ -2549,6 +2549,142 @@ startNewStockCount: () => {
                         populateSalesDashboard(new Date(startDate), new Date(endDate));
                     }
                 };
+// ========================================================
+                // ฟังก์ชัน Excel (เขียนใหม่ บังคับให้หน้าต่างเด้งชัวร์ 100%)
+                // ========================================================
+                window.startExcelUpload = function() {
+                    if (!currentUser || currentUser.role !== 'admin') {
+                        Swal.fire('ปฏิเสธการเข้าถึง', 'เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                        return;
+                    }
+
+                    // สร้าง input file และแปะลงในหน้าเว็บแบบซ่อนไว้ เพื่อแก้ปัญหาเบราว์เซอร์บล็อก
+                    const fileInput = document.createElement('input');
+                    fileInput.type = 'file';
+                    fileInput.accept = '.xlsx, .xls, .csv';
+                    fileInput.style.display = 'none';
+                    document.body.appendChild(fileInput); 
+                    
+                    fileInput.addEventListener('change', async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) {
+                            document.body.removeChild(fileInput);
+                            return;
+                        }
+
+                        Swal.fire({
+                            title: 'กำลังอ่านไฟล์ Excel...',
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+
+                        const reader = new FileReader();
+                        reader.onload = async function(event) {
+                            try {
+                                const data = new Uint8Array(event.target.result);
+                                const workbook = XLSX.read(data, {type: 'array'});
+                                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                                const adjustmentEntries = [];
+                                const today = new Date();
+                                today.setHours(7, 59, 59, 0); 
+                                const adjustmentTimestamp = today.toISOString();
+                                const dateStrForLot = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+                                let countUpdated = 0;
+
+                                for (let i = 1; i < jsonData.length; i++) {
+                                    const row = jsonData[i];
+                                    if (!row || row.length < 2) continue; 
+                                    
+                                    const productId = String(row[0]).trim(); 
+                                    const quantity = parseFloat(row[1]);     
+
+                                    if (productId && !isNaN(quantity)) {
+                                        const product = db.products.find(p => String(p.id).trim() === productId);
+                                        if (product) {
+                                            adjustmentEntries.push({
+                                                id: 'adj-xls-' + Date.now() + '-' + productId + '-' + Math.random().toString(36).substr(2, 5),
+                                                date: adjustmentTimestamp,
+                                                type: 'adjustment',
+                                                productId: product.id,
+                                                productName: product.name,
+                                                customer: product.customer,
+                                                erpCode: product.erpCode,
+                                                quantity: quantity,
+                                                productionDate: dateStrForLot,
+                                                user: currentUser.username,
+                                                remarks: `MANUAL_ADJ_NEW_TOTAL:${quantity}|อัปเดตสต็อกจากไฟล์ Excel ก่อน 08:00 น.`,
+                                                packagingType: 'standard'
+                                            });
+                                            countUpdated++;
+                                        }
+                                    }
+                                }
+
+                                Swal.close();
+
+                                if (adjustmentEntries.length > 0) {
+                                    const confirm = await Swal.fire({
+                                        title: 'ตรวจสอบข้อมูล',
+                                        html: `พบรหัสสินค้าถูกต้อง <b>${countUpdated}</b> รายการ<br><br>
+                                               <div class="alert alert-warning text-start" style="font-size: 0.9rem;">
+                                                 <b>ระบบจะดำเนินการดังนี้:</b><br>
+                                                 1. ล้างยอดสต็อกเดิมของสินค้านั้นๆ ทิ้งทั้งหมด<br>
+                                                 2. ตั้งยอดใหม่ตามไฟล์ Excel โดยระบุเวลาเป็น <span class="text-danger">07:59:59 น. ของวันนี้</span><br>
+                                                 3. รายการรับ/ส่ง ที่เกิดขึ้นหลัง 8 โมงเช้า จะถูกนำมาคำนวณบวก/ลบต่ออัตโนมัติ
+                                               </div>`,
+                                        icon: 'question',
+                                        showCancelButton: true,
+                                        confirmButtonText: '<i class="bi bi-check-circle me-1"></i> ยืนยันอัปเดต',
+                                        cancelButtonText: 'ยกเลิก',
+                                        confirmButtonColor: '#198754'
+                                    });
+
+                                    if (confirm.isConfirmed) {
+                                        Swal.fire({title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                                        adjustmentEntries.forEach(entry => db.history.unshift(entry));
+                                        calculateStockFromHistory();
+                                        populateAll(); 
+                                        await callAppsScript('appendBatchHistory', adjustmentEntries);
+                                        Swal.fire('สำเร็จ!', 'อัปเดตยอดสต็อกจากไฟล์เรียบร้อยแล้ว', 'success');
+                                    }
+                                } else {
+                                    Swal.fire('ไม่พบข้อมูล!', 'ตรวจสอบไฟล์ Excel อีกครั้ง (คอลัมน์ A = รหัสสินค้า, คอลัมน์ B = ยอดสต็อก)', 'error');
+                                }
+                            } catch (err) {
+                                console.error(err);
+                                Swal.fire('เกิดข้อผิดพลาด', 'ไลบรารี XLSX ไม่ทำงาน หรือไฟล์มีปัญหา', 'error');
+                            } finally {
+                                document.body.removeChild(fileInput); // เคลียร์ขยะออกจากหน้าจอ
+                            }
+                        };
+                        reader.readAsArrayBuffer(file);
+                    });
+                    
+                    fileInput.click();
+                };
+
+                window.startExcelDownload = function() {
+                    try {
+                        const ws_data = [
+                            ["Part No.", "Quantity", "Remarks (Optional)"],
+                            ["EXAMPLE-PART-01", 150, "ใส่รหัสสินค้าในคอลัมน์ A และจำนวนเต็มในคอลัมน์ B ส่วนคอลัมน์ C ใส่หมายเหตุได้เลย"],
+                            ["EXAMPLE-PART-02", 200, ""]
+                        ];
+                        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                        const wscols = [ {wch: 25}, {wch: 15}, {wch: 60} ];
+                        ws['!cols'] = wscols;
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, ws, "StockAdjustment");
+                        XLSX.writeFile(wb, "Stock_Adjustment_Template.xlsx");
+                    } catch (error) {
+                        console.error(error);
+                        Swal.fire('เกิดข้อผิดพลาด', 'ไม่พบไลบรารี XLSX กรุณารีเฟรชหน้าเว็บอีกครั้ง', 'error');
+                    }
+                };
+                // ========================================================
 
 async function init() {
     setLanguage(currentLanguage);
@@ -4470,14 +4606,14 @@ function populateStockCountMainView() {
                         }).join('');
                     }
 
-                    // --- วางปุ่ม โหลดเทมเพลต, อัปโหลด และ เริ่มนับ คู่กัน ---
+                    // --- ปุ่มถูกเปลี่ยนให้ใช้ชื่อฟังก์ชันใหม่ (startExcelDownload และ startExcelUpload) เพื่อข้ามโค้ดที่ Error ---
                     view.innerHTML = `
                 <div class="card">
                     <div class="card-header fw-bold d-flex justify-content-between align-items-center">
                         <span><i class="bi bi-clipboard-data-fill me-2"></i>${T.stock_count_title}</span>
                         <div class="d-flex gap-2">
-                            ${isAdmin ? `<button type="button" class="btn btn-outline-success btn-sm shadow-sm" onclick="downloadExcelTemplate()"><i class="bi bi-download me-1"></i> โหลดเทมเพลต</button>` : ''}
-                            ${isAdmin ? `<button type="button" class="btn btn-warning text-dark btn-sm shadow-sm" onclick="triggerExcelUpload()"><i class="bi bi-file-earmark-excel-fill me-1"></i> อัปโหลดปรับสต็อก</button>` : ''}
+                            ${isAdmin ? `<button type="button" class="btn btn-outline-success btn-sm shadow-sm" onclick="startExcelDownload()"><i class="bi bi-download me-1"></i> โหลดเทมเพลต</button>` : ''}
+                            ${isAdmin ? `<button type="button" class="btn btn-warning text-dark btn-sm shadow-sm" onclick="startExcelUpload()"><i class="bi bi-file-earmark-excel-fill me-1"></i> อัปโหลดปรับสต็อก</button>` : ''}
                             ${canCount ? `<button id="start-stock-count-btn" class="btn btn-primary btn-sm shadow-sm"><i class="bi bi-plus-circle-fill me-2"></i>${T.stock_count_start_button}</button>` : ''}
                         </div>
                     </div>
@@ -4503,7 +4639,8 @@ function populateStockCountMainView() {
                 </div>
             `;
                 }
-function renderStockCountModalBody() {
+
+	function renderStockCountModalBody() {
                     const T = translations[currentLanguage];
                     const body = document.getElementById('stockCountModalBody');
 
