@@ -736,7 +736,52 @@
             transform: translateX(8px); /* ตอนชี้เมนูย่อย ตัวหนังสือจะเลื่อนไปทางขวานิดนึง */
             font-weight: 600;
         }
+    /* ========================================= */
+        /* --- MODERN DASHBOARD UI --- */
         /* ========================================= */
+        .modern-stat-card {
+            border-radius: 20px;
+            border: none;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .modern-stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        
+        /* ชุดสีไล่ระดับ Gradient สำหรับการ์ดทั้ง 4 ใบ */
+        .bg-gradient-stock { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: #fff; }
+        .bg-gradient-sales { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #fff; }
+        .bg-gradient-auto { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: #fff; }
+        .bg-gradient-elec { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: #fff; }
+
+        /* ไอคอนลายน้ำซ้อนหลัง */
+        .modern-stat-card .card-icon {
+            position: absolute;
+            right: -10px;
+            bottom: -20px;
+            font-size: 7rem;
+            opacity: 0.15;
+            z-index: -1;
+            transform: rotate(-15deg);
+            transition: all 0.4s ease;
+        }
+        .modern-stat-card:hover .card-icon {
+            transform: rotate(0deg) scale(1.1);
+            opacity: 0.25;
+        }
+
+        /* แถบตัวกรองวันที่แบบกระจกฝ้า */
+        .dashboard-filter-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(13, 110, 253, 0.15);
+            border-radius: 20px;
+        }
     </style>
 <body>
 
@@ -1045,138 +1090,138 @@
         </div>
     </div>
 </div>                <!-- Dashboard Tab (NEW) -->
+<!-- Dashboard Tab (Modern Redesign + Chart) -->
                 <div class="tab-pane fade" id="pills-dashboard" role="tabpanel">
                     <div class="row g-4">
-                        <!-- Date Filter Card -->
-                        <div class="col-xl-4 col-lg-12">
-                            <div class="card h-100">
-                                <div class="card-header fw-bold" data-lang-key="dashboard_filter_date_range_title">
-                                    เลือกช่วงวันที่ดูยอดขาย</div>
-                                <div class="card-body d-flex flex-column justify-content-center">
-                                    <div class="row g-2">
-                                        <div class="col-md-6">
-                                            <label for="dashboard-start-date" class="form-label small-text"
-                                                data-lang-key="dashboard_filter_from">จากวันที่</label>
-                                            <input type="date" id="dashboard-start-date"
-                                                class="form-control form-control-sm">
+                        
+                        <!-- 1. แถบตัวกรองวันที่ (Filter Card) วางแนวนอนยาวเต็ม -->
+                        <div class="col-12">
+                            <div class="card dashboard-filter-card shadow-sm">
+                                <div class="card-body p-4">
+                                    <div class="row align-items-end g-3">
+                                        <div class="col-12 mb-1">
+                                            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-range-fill me-2"></i><span data-lang-key="dashboard_filter_date_range_title">เลือกช่วงวันที่ดูยอดขาย</span></h5>
                                         </div>
-                                        <div class="col-md-6">
-                                            <label for="dashboard-end-date" class="form-label small-text"
-                                                data-lang-key="dashboard_filter_to">ถึงวันที่</label>
-                                            <input type="date" id="dashboard-end-date"
-                                                class="form-control form-control-sm">
+                                        <div class="col-md-3">
+                                            <label for="dashboard-start-date" class="form-label text-muted fw-bold small-text mb-1" data-lang-key="dashboard_filter_from">จากวันที่</label>
+                                            <input type="date" id="dashboard-start-date" class="form-control form-control-lg bg-white" style="border-radius: 12px; font-size: 1rem;">
                                         </div>
-                                        <div class="col-12 mt-3">
-                                            <button class="btn btn-primary w-100" id="dashboard-filter-btn"
-                                                data-lang-key="dashboard_show_data">แสดงข้อมูล</button>
+                                        <div class="col-md-3">
+                                            <label for="dashboard-end-date" class="form-label text-muted fw-bold small-text mb-1" data-lang-key="dashboard_filter_to">ถึงวันที่</label>
+                                            <input type="date" id="dashboard-end-date" class="form-control form-control-lg bg-white" style="border-radius: 12px; font-size: 1rem;">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <button class="btn btn-primary btn-lg w-100 fw-bold shadow-sm" id="dashboard-filter-btn" style="border-radius: 12px; font-size: 1rem;">
+                                                <i class="bi bi-search me-2"></i><span data-lang-key="dashboard_show_data">แสดงข้อมูล</span>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- 2. กล่อง KPI 4 กล่องเรียงกัน -->
                         <!-- Total Stock Card -->
-                        <div class="col-xl-4 col-lg-6">
-                            <div class="card h-100 bg-primary-subtle text-primary-emphasis">
+                        <div class="col-xl-3 col-lg-6 col-md-6">
+                            <div class="card modern-stat-card bg-gradient-stock h-100 p-2">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h5 class="card-title mb-2"
-                                                data-lang-key="dashboard_total_stock_value_title">
-                                                มูลค่าสต็อกสินค้าทั้งหมด</h5>
-                                            <h2 class="card-text fw-bold" id="dashboard-total-stock-quantity">...</h2>
-                                            <small class="text-muted" id="dashboard-total-stock-value">...</small>
-                                        </div>
-                                        <i class="bi bi-currency-dollar" style="font-size: 3rem;"></i>
-                                    </div>
+                                    <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_total_stock_value_title">มูลค่าสต็อกสินค้าทั้งหมด</h6>
+                                    <h2 class="card-text fw-bolder mb-1" id="dashboard-total-stock-quantity">...</h2>
+                                    <h5 class="fw-bold" id="dashboard-total-stock-value" style="opacity: 0.95;">...</h5>
+                                    <i class="bi bi-boxes card-icon"></i>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Total Sales Card -->
-                        <div class="col-xl-4 col-lg-6">
-                            <div class="card h-100 bg-success-subtle text-success-emphasis">
+                        <div class="col-xl-3 col-lg-6 col-md-6">
+                            <div class="card modern-stat-card bg-gradient-sales h-100 p-2">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h5 class="card-title mb-2" data-lang-key="dashboard_total_sales_title">
-                                                ยอดขายทั้งหมด (ช่วงวันที่)</h5>
-                                            <h2 class="card-text fw-bold" id="dashboard-total-sales-quantity">...</h2>
-                                            <small class="text-muted" id="dashboard-total-sales-value">...</small>
-                                        </div>
-                                        <i class="bi bi-graph-up-arrow" style="font-size: 3rem;"></i>
-                                    </div>
+                                    <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_total_sales_title">ยอดขายทั้งหมด (ช่วงวันที่)</h6>
+                                    <h2 class="card-text fw-bolder mb-1" id="dashboard-total-sales-quantity">...</h2>
+                                    <h5 class="fw-bold" id="dashboard-total-sales-value" style="opacity: 0.95;">...</h5>
+                                    <i class="bi bi-graph-up-arrow card-icon"></i>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Autopart Sales Card -->
-                        <div class="col-xl-6 col-lg-6">
-                            <div class="card h-100" style="background-color: #fff3cd; color: #664d03;">
+                        <div class="col-xl-3 col-lg-6 col-md-6">
+                            <div class="card modern-stat-card bg-gradient-auto h-100 p-2">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h5 class="card-title mb-2" data-lang-key="dashboard_autopart_sales_title">
-                                                ยอดขาย Autopart (ช่วงวันที่)</h5>
-                                            <h2 class="card-text fw-bold" id="dashboard-autopart-sales-quantity">...
-                                            </h2>
-                                            <small id="dashboard-autopart-sales-value">...</small>
-                                        </div>
-                                        <i class="bi bi-car-front-fill" style="font-size: 3rem;"></i>
-                                    </div>
+                                    <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_autopart_sales_title">ยอดขาย Autopart</h6>
+                                    <h2 class="card-text fw-bolder mb-1 text-dark" id="dashboard-autopart-sales-quantity">...</h2>
+                                    <h5 class="fw-bold text-dark" id="dashboard-autopart-sales-value" style="opacity: 0.85;">...</h5>
+                                    <i class="bi bi-car-front-fill card-icon text-dark"></i>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Electronic Sales Card -->
-                        <div class="col-xl-6 col-lg-6">
-                            <div class="card h-100" style="background-color: #cfe2ff; color: #0a3675;">
+                        <div class="col-xl-3 col-lg-6 col-md-6">
+                            <div class="card modern-stat-card bg-gradient-elec h-100 p-2">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h5 class="card-title mb-2"
-                                                data-lang-key="dashboard_electronic_sales_title">ยอดขาย Electronic
-                                                (ช่วงวันที่)</h5>
-                                            <h2 class="card-text fw-bold" id="dashboard-electronic-sales-quantity">...
-                                            </h2>
-                                            <small id="dashboard-electronic-sales-value">...</small>
-                                        </div>
-                                        <i class="bi bi-cpu-fill" style="font-size: 3rem;"></i>
-                                    </div>
+                                    <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_electronic_sales_title">ยอดขาย Electronic</h6>
+                                    <h2 class="card-text fw-bolder mb-1" id="dashboard-electronic-sales-quantity">...</h2>
+                                    <h5 class="fw-bold" id="dashboard-electronic-sales-value" style="opacity: 0.95;">...</h5>
+                                    <i class="bi bi-cpu-fill card-icon"></i>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Sales Summary by Customer Table -->
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header fw-bold" data-lang-key="dashboard_sales_by_customer_title">
-                                    สรุปยอดขายแยกตามลูกค้า (ช่วงวันที่)</div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover align-middle">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 5%;" data-lang-key="dashboard_rank">อันดับ</th>
-                                                    <th data-lang-key="customer">ลูกค้า</th>
-                                                    <th style="width: 15%;" data-lang-key="dashboard_type">ประเภท</th>
-                                                    <th class="text-end" data-lang-key="dashboard_sales_qty">ยอดขาย
-                                                        (จำนวน)</th>
-                                                    <th class="text-center" style="width: 35%;"
-                                                        data-lang-key="dashboard_sales_value">ยอดขาย (มูลค่า)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="dashboard-sales-table">
-                                                <tr>
-                                                    <td colspan="5" class="text-center text-muted p-4">
-                                                        กรุณาเลือกช่วงวันที่แล้วกด "แสดงข้อมูล"</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                        <!-- 3. Sales Summary Table & Chart (ดีไซน์ใหม่) -->
+                        <div class="col-12 mt-2">
+                            <div class="row g-4">
+                                
+                                <!-- ฝั่งซ้าย: กราฟวงกลม -->
+                                <div class="col-xl-5 col-lg-12">
+                                    <div class="card modern-stat-card shadow-sm h-100" style="background: #ffffff; border-radius: 20px;">
+                                        <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+                                            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-pie-chart-fill me-2"></i>สัดส่วนยอดขาย (มูลค่า)</h5>
+                                        </div>
+                                        <div class="card-body d-flex align-items-center justify-content-center p-4">
+                                            <div style="position: relative; height: 320px; width: 100%;">
+                                                <canvas id="salesChart"></canvas>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+                                
+                                <!-- ฝั่งขวา: ตารางยอดขาย -->
+                                <div class="col-xl-7 col-lg-12">
+                                    <div class="card modern-stat-card shadow-sm h-100" style="background: #ffffff; border-radius: 20px;">
+                                        <div class="card-header bg-white border-0 pt-4 pb-3 px-4">
+                                            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-bar-chart-steps me-2"></i><span data-lang-key="dashboard_sales_by_customer_title">สรุปรายละเอียด (ช่วงวันที่)</span></h5>
+                                        </div>
+                                        <div class="card-body px-4 pb-4 pt-0">
+                                            <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                                                <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0 8px;">
+                                                    <thead style="background-color: #f8f9fa; position: sticky; top: 0; z-index: 1;">
+                                                        <tr>
+                                                            <th style="width: 5%; border-radius: 10px 0 0 10px; border:none;" data-lang-key="dashboard_rank" class="text-center">อันดับ</th>
+                                                            <th style="border:none;" data-lang-key="customer">ชื่อลูกค้า</th>
+                                                            <th style="width: 15%; border:none;" data-lang-key="dashboard_type">ประเภท</th>
+                                                            <th class="text-end" style="border:none;" data-lang-key="dashboard_sales_qty">จำนวน (ชิ้น)</th>
+                                                            <th class="text-end" style="width: 35%; border-radius: 0 10px 10px 0; border:none;" data-lang-key="dashboard_sales_value">มูลค่า (บาท)</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="dashboard-sales-table">
+                                                        <tr>
+                                                            <td colspan="5" class="text-center text-muted p-5">
+                                                                <i class="bi bi-calendar2-check text-secondary opacity-50 d-block mb-3" style="font-size: 3rem;"></i>
+                                                                กรุณาเลือกช่วงวันที่แล้วกด "แสดงข้อมูล"
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                             </div>
                         </div>
+                        
                     </div>
                 </div>
                 <!-- Import Tab -->
@@ -1465,6 +1510,7 @@
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
         <script>
@@ -5256,8 +5302,7 @@ function populateStockCountMainView() {
                     dashboardTotalStockValue.textContent = `฿ ${totalStockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 }
 
-                // ค้นหาฟังก์ชัน populateSalesDashboard
-                function populateSalesDashboard(startDate, endDate) {
+function populateSalesDashboard(startDate, endDate) {
                     const T = translations[currentLanguage];
                     let totalSalesQuantity = 0;
                     let totalSalesValue = 0;
@@ -5288,17 +5333,14 @@ function populateStockCountMainView() {
 
                     filteredHistoryForSales.forEach(item => {
                         let quantityAffectingSales = 0;
-
-                        // ตรวจสอบว่าเป็นรายการขาย
                         const isSaleTransaction = item.type === 'export' && item.exportType === 'Sale';
-
                         let isReversalOfSale = false;
+                        
                         if (item.type === 'reversal') {
                             const originalIdMatch = (item.remarks || '').match(/Reversal of transaction ID: (exp-[\w-]+)/);
                             if (originalIdMatch) {
                                 const originalId = originalIdMatch[1];
                                 const originalTransaction = db.history.find(h => h.id === originalId);
-                                // ตรวจสอบ ExportType ของรายการต้นฉบับที่ถูกยกเลิก
                                 if (originalTransaction && originalTransaction.exportType === 'Sale') {
                                     isReversalOfSale = true;
                                 }
@@ -5312,9 +5354,6 @@ function populateStockCountMainView() {
                         }
 
                         if (quantityAffectingSales !== 0) {
-                            // =================================================================
-                            // === โค้ดที่แก้ไข: ใช้ราคา ณ เวลาที่ขายจาก History โดยตรง ===
-                            // =================================================================
                             const unitPrice = parseFloat(item.priceAtTimeOfSale) || 0;
                             const customer = item.customer || T.dashboard_customer_unspecified;
                             const customerLower = customer.trim().toLowerCase();
@@ -5340,28 +5379,41 @@ function populateStockCountMainView() {
                         }
                     });
 
-                    // ส่วนที่เหลือของการอัปเดตหน้า Dashboard (เหมือนเดิม)
                     dashboardTotalSalesQuantity.textContent = `${T.dashboard_qty_label}${totalSalesQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
                     dashboardTotalSalesValue.textContent = `฿ ${totalSalesValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
                     dashboardAutopartSalesQuantity.textContent = `${T.dashboard_qty_label}${totalAutopartQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
                     dashboardAutopartSalesValue.textContent = `฿ ${totalAutopartValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
                     dashboardElectronicSalesQuantity.textContent = `${T.dashboard_qty_label}${totalElectronicQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
                     dashboardElectronicSalesValue.textContent = `฿ ${totalElectronicValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+                    // --- การจัดเรียงตารางและการสร้างกราฟวงกลม ---
                     dashboardSalesTable.innerHTML = '';
+                    
+                    // เตรียมข้อมูลสำหรับกราฟ
+                    const chartLabels = [];
+                    const chartData = [];
+                    // พาเลทสีสวยๆ สำหรับกราฟ
+                    const chartBgColors = [
+                        '#0d6efd', '#20c997', '#ffc107', '#d63384', '#fd7e14', 
+                        '#0dcaf0', '#6610f2', '#198754', '#dc3545', '#adb5bd',
+                        '#4facfe', '#43e97b', '#f6d365', '#a18cd1', '#ff0844'
+                    ];
+
                     if (customerSales.size === 0) {
-                        dashboardSalesTable.innerHTML = `<tr><td colspan="5" class="text-center text-muted p-4">${T.dashboard_no_sales_data}</td></tr>`;
+                        dashboardSalesTable.innerHTML = `<tr><td colspan="5" class="text-center text-muted p-5"><i class="bi bi-calendar-x opacity-25 d-block mb-3" style="font-size: 3rem;"></i>${T.dashboard_no_sales_data}</td></tr>`;
+                        if (window.salesChartInstance) window.salesChartInstance.destroy(); 
                     } else {
                         const sortedCustomerSales = Array.from(customerSales.entries()).sort((a, b) => b[1].value - a[1].value);
 
                         let rank = 1;
-                        sortedCustomerSales.forEach(([customer, data]) => {
+                        sortedCustomerSales.forEach(([customer, data], index) => {
                             if (data.quantity === 0 && data.value === 0) return;
 
-                            const row = document.createElement('tr');
+                            // เอาข้อมูลไปหยอดใส่กราฟ
+                            chartLabels.push(customer);
+                            chartData.push(data.value);
 
+                            const row = document.createElement('tr');
                             let typeBadge = '';
                             const customerLower = customer.trim().toLowerCase();
                             if (autopartCustomersLower.includes(customerLower)) {
@@ -5373,23 +5425,82 @@ function populateStockCountMainView() {
                             }
 
                             const percentage = totalSalesValue > 0 ? (data.value / totalSalesValue) * 100 : 0;
+                            
+                            // ดึงสีให้ตรงกับในกราฟ
+                            const rowColor = chartBgColors[index % chartBgColors.length];
 
                             row.innerHTML = `
-                <td class="fw-bold">${rank++}</td>
-                <td>${customer}</td>
-                <td>${typeBadge}</td>
-                <td class="text-end">${data.quantity.toLocaleString()}</td>
-                <td class="text-end">
-                    <div class="d-flex justify-content-end align-items-center">
-                        <span class="me-3">฿ ${data.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        <div class="progress" style="width: 50%; height: 10px;" title="${percentage.toFixed(2)}%">
-                            <div class="progress-bar" role="progressbar" style="width: ${percentage}%;" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                    </div>
-                </td>
-            `;
+                                <td class="fw-bold text-center">${rank++}</td>
+                                <td class="fw-bold"><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background-color:${rowColor}; margin-right:8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"></span>${customer}</td>
+                                <td>${typeBadge}</td>
+                                <td class="text-end fw-semibold text-primary">${data.quantity.toLocaleString()}</td>
+                                <td class="text-end">
+                                    <div class="d-flex justify-content-end align-items-center">
+                                        <span class="me-3 fw-bold text-success">฿ ${data.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </div>
+                                    <div class="progress mt-1 ms-auto" style="width: 100%; height: 6px; background-color: #f1f3f5;" title="${percentage.toFixed(2)}%">
+                                        <div class="progress-bar" role="progressbar" style="width: ${percentage}%; background-color: ${rowColor}; border-radius: 10px;" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                            `;
                             dashboardSalesTable.appendChild(row);
                         });
+
+                        // วาดกราฟ Doughnut ด้วย Chart.js
+                        const ctx = document.getElementById('salesChart');
+                        if (ctx) {
+                            if (window.salesChartInstance) {
+                                window.salesChartInstance.destroy(); // ล้างของเก่าทิ้งก่อนวาดใหม่เมื่อกดเปลี่ยนวันที่
+                            }
+                            
+                            window.salesChartInstance = new Chart(ctx, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: chartLabels,
+                                    datasets: [{
+                                        data: chartData,
+                                        backgroundColor: chartBgColors.slice(0, chartData.length),
+                                        borderWidth: 3,
+                                        borderColor: '#ffffff',
+                                        hoverOffset: 12 // เด้งออกเวลานำเมาส์ไปชี้
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    cutout: '65%', // เจาะรูตรงกลางให้เป็นโดนัท
+                                    plugins: {
+                                        legend: {
+                                            position: 'right',
+                                            labels: {
+                                                usePointStyle: true,
+                                                padding: 15,
+                                                font: { family: 'Mitr', size: 12 }
+                                            }
+                                        },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                            titleColor: '#000',
+                                            bodyColor: '#333',
+                                            borderColor: '#e9ecef',
+                                            borderWidth: 1,
+                                            padding: 12,
+                                            boxPadding: 6,
+                                            callbacks: {
+                                                label: function(context) {
+                                                    let label = context.label || '';
+                                                    if (label) { label += ': '; }
+                                                    if (context.parsed !== null) {
+                                                        label += '฿ ' + context.parsed.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+                                                    }
+                                                    return label;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
                     }
                 }
                // --- START THE APP ---
