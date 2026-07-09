@@ -870,10 +870,11 @@
         <div
             style="position: sticky; top: 0; z-index: 1020; background-color: var(--bg-color); box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
             <header class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2 px-4">
-                <h1 class="h4">
-                    <i class="bi bi-cpu-fill me-2"
-                        style="background: linear-gradient(135deg, #6610f2, #0d6efd); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));"></i>
-                    STOCK IN-OUT FG
+                <h1 class="h4 d-flex align-items-center mb-0" style="font-weight: 700;">
+                    <img src="https://i.ibb.co/KxttMHxc/291315-logo-20230216140112-5.jpg" alt="ATECH Logo" style="height: 38px; border-radius: 8px;" class="me-3 shadow-sm border border-light">
+                    <span style="background: linear-gradient(135deg, #0550da, #2493d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 4px rgba(238, 235, 235, 0));">
+                        STOCK IN-OUT FG
+                    </span>
                 </h1>
                 <div class="d-flex align-items-center">
                     <!-- Language Switcher -->
@@ -3346,38 +3347,64 @@ clearInterval(window.mascotLoopTimer);
                     userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`;
                     userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`;
 
-                    const isAdmin = currentUser.role === 'admin';
+// =========================================================
+        // --- เริ่มต้นระบบจัดการสิทธิ์ใหม่ (ยึดตามสวิตช์เป็นหลัก) ---
+        // =========================================================
+        
+        // ให้สิทธิ์สูงสุดทะลุทุกอย่าง เฉพาะไอดีที่ชื่อ "admin" (ไอดีหลัก) เท่านั้น ป้องกันการโดนล็อก
+        const isMasterAdmin = currentUser.username === 'admin';
 
-                    // จัดการเมนูแบบหมวดหมู่
-                    const adminGroup = document.getElementById('nav-admin-group');
-                    if (adminGroup) adminGroup.style.display = isAdmin ? '' : 'none';
+        // เช็คสิทธิ์จาก "สวิตช์เปิด-ปิด" เป็นหลัก (ดึงค่ามาตรงๆ ไม่สนว่าถูกตั้ง Role เป็นอะไร)
+        const canImport = isMasterAdmin || currentUser.canImport;
+        const canExport = isMasterAdmin || currentUser.canExport;
+        const canViewHistory = isMasterAdmin || currentUser.canViewHistory;
+        const canCountStock = isMasterAdmin || currentUser.canCountStock;
+        const canConvert = isMasterAdmin || currentUser.canConvertPart;
+        const canDeliveryPlan = isMasterAdmin || currentUser.canManageDeliveryPlan;
+        
+        const canManageProducts = isMasterAdmin || currentUser.canManageProducts;
+        const canManageUsers = isMasterAdmin || currentUser.canManageUsers;
+        const canManageAnn = isMasterAdmin || currentUser.canManageAnnouncements;
 
-                    document.getElementById('nav-import-item').style.display = isAdmin || currentUser.canImport ? '' : 'none';
-                    document.getElementById('nav-export-item').style.display = isAdmin || currentUser.canExport ? '' : 'none';
-                    document.getElementById('nav-history-item').style.display = isAdmin || currentUser.canViewHistory ? '' : 'none';
-                    document.getElementById('nav-stock-count-item').style.display = isAdmin || currentUser.canCountStock ? '' : 'none';
-                    document.getElementById('nav-products-item').style.display = isAdmin || currentUser.canManageProducts ? '' : 'none';
-                    document.getElementById('nav-users-item').style.display = isAdmin || currentUser.canManageUsers ? '' : 'none';
-                    document.getElementById('nav-announcements-item').style.display = isAdmin || currentUser.canManageAnnouncements ? '' : 'none';
-		            document.getElementById('nav-delivery-plan-item').style.display = isAdmin || currentUser.canManageDeliveryPlan ? '' : 'none';
-                    document.getElementById('nav-convert-item').style.display = isAdmin ? '' : 'none';
+        // 1. หมวดหมู่ "ตั้งค่าระบบ" 
+        // (แก้ไขใหม่: โชว์เมื่อมีสิทธิ์จัดการอย่างใดอย่างหนึ่ง ไม่จำเป็นต้องเป็น Admin ก็เห็นได้)
+        const adminGroup = document.getElementById('nav-admin-group');
+        if (adminGroup) {
+            adminGroup.style.display = (canManageProducts || canManageUsers || canManageAnn) ? '' : 'none';
+        }
 
-                    // จัดการส่วนสำรองข้อมูล
-                    document.getElementById('backup-card-container').style.display = 'block';
-                    document.getElementById('backup-stock-btn').style.display = '';
-                    document.getElementById('backup-products-btn').style.display = isAdmin ? '' : 'none';
-                    document.getElementById('backup-users-btn').style.display = isAdmin ? '' : 'none';
+        // 2. ปิด-เปิด เมนูย่อยตามสวิตช์อย่างเคร่งครัด
+        if (document.getElementById('nav-import-item')) document.getElementById('nav-import-item').style.display = canImport ? '' : 'none';
+        if (document.getElementById('nav-export-item')) document.getElementById('nav-export-item').style.display = canExport ? '' : 'none';
+        if (document.getElementById('nav-stock-count-item')) document.getElementById('nav-stock-count-item').style.display = canCountStock ? '' : 'none';
+        if (document.getElementById('nav-convert-item')) document.getElementById('nav-convert-item').style.display = canConvert ? '' : 'none';
+        if (document.getElementById('nav-history-item')) document.getElementById('nav-history-item').style.display = canViewHistory ? '' : 'none';
+        if (document.getElementById('nav-delivery-plan-item')) document.getElementById('nav-delivery-plan-item').style.display = canDeliveryPlan ? '' : 'none';
 
-                    // ปรับขนาดตารางตามสิทธิ์
-                    const stockContentColumn = document.getElementById('stock-content-column');
-                    if (isAdmin) {
-                        stockContentColumn.classList.remove('col-lg-12');
-                        stockContentColumn.classList.add('col-lg-9');
-                    } else {
-                        stockContentColumn.classList.remove('col-lg-9');
-                        stockContentColumn.classList.add('col-lg-12');
-                    }
+        if (document.getElementById('nav-products-item')) document.getElementById('nav-products-item').style.display = canManageProducts ? '' : 'none';
+        if (document.getElementById('nav-users-item')) document.getElementById('nav-users-item').style.display = canManageUsers ? '' : 'none';
+        if (document.getElementById('nav-announcements-item')) document.getElementById('nav-announcements-item').style.display = canManageAnn ? '' : 'none';
 
+        // 3. จัดการปุ่มดาวน์โหลดสำรองข้อมูล (Backup)
+        const backupCard = document.getElementById('backup-card-container');
+        if (backupCard) backupCard.style.display = (canManageProducts || canManageUsers) ? 'block' : 'none';
+        
+        if (document.getElementById('backup-stock-btn')) document.getElementById('backup-stock-btn').style.display = '';
+        if (document.getElementById('backup-products-btn')) document.getElementById('backup-products-btn').style.display = canManageProducts ? '' : 'none';
+        if (document.getElementById('backup-users-btn')) document.getElementById('backup-users-btn').style.display = canManageUsers ? '' : 'none';
+
+        // 4. ปรับขนาดหน้าจอและตารางสต็อกให้สวยงาม
+        const stockContentColumn = document.getElementById('stock-content-column');
+        if (stockContentColumn) {
+            if (canManageProducts || canManageUsers) {
+                stockContentColumn.classList.remove('col-lg-12');
+                stockContentColumn.classList.add('col-lg-9');
+            } else {
+                // ถ้าเป็น User ธรรมดาที่ไม่มีกล่อง Backup ให้ตารางสต็อกกางเต็มจอ 100% สวยๆ ไปเลย
+                stockContentColumn.classList.remove('col-lg-9');
+                stockContentColumn.classList.add('col-lg-12');
+            }
+        }
                     // --- คำสั่งสำคัญ: แสดงแถบ Support ---
                     const bar = document.getElementById('support-bar');
                     if (bar) {
@@ -4781,7 +4808,8 @@ const permissions = [
                         { key: 'canManageProducts', label: T.permission_canManageProducts },
                         { key: 'canManageUsers', label: T.permission_canManageUsers },
                         { key: 'canManageAnnouncements', label: T.permission_canManageAnnouncements },
-                        { key: 'canManageDeliveryPlan', label: 'จัดการแผนการจัดส่ง' } 
+                        { key: 'canManageDeliveryPlan', label: 'จัดการแผนการจัดส่ง' },
+                        { key: 'canConvertPart', label: 'เปลี่ยนรหัสสินค้า (Convert)' } 
                     ];
                     let permissionsHtml = permissions.map(p => `
                 <div class="form-check form-switch">
@@ -5614,7 +5642,8 @@ function populateSalesDashboard(startDate, endDate) {
                             canManageProducts: document.getElementById('permission-canManageProducts').checked,
                             canManageUsers: document.getElementById('permission-canManageUsers').checked,
                             canManageAnnouncements: document.getElementById('permission-canManageAnnouncements').checked,
-                            canManageDeliveryPlan: document.getElementById('permission-canManageDeliveryPlan').checked
+                            canManageDeliveryPlan: document.getElementById('permission-canManageDeliveryPlan').checked,
+                            canConvertPart: document.getElementById('permission-canConvertPart').checked
                         };
 
                         Swal.fire({
@@ -5860,9 +5889,10 @@ function populateSalesDashboard(startDate, endDate) {
 // ========================================================
                 // ฟังก์ชันแปลงรหัสสินค้า (Convert Part)
                 // ========================================================
-                window.openConvertModal = function() {
-                    if (!currentUser || currentUser.role !== 'admin') {
-                        Swal.fire('ปฏิเสธการเข้าถึง', 'เฉพาะผู้ดูแลระบบ (Admin) เท่านั้น', 'error');
+                    window.openConvertModal = function() {
+                    // แก้ไขจาก isAdmin อย่างเดียว เป็นเช็คสิทธิ์ canConvertPart ด้วย
+                    if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canConvertPart)) {
+                        Swal.fire('ปฏิเสธการเข้าถึง', 'คุณไม่มีสิทธิ์ใช้งานฟังก์ชันเปลี่ยนรหัสสินค้านี้', 'error');
                         return;
                     }
                     document.getElementById('convert-part-form').reset();
