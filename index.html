@@ -782,6 +782,19 @@
             border: 1px solid rgba(13, 110, 253, 0.15);
             border-radius: 20px;
         }
+        /* --- บังคับแถบ Header และ Dropdown ให้ลอยอยู่บนสุดเสมอ --- */
+        .navbar, .header-container, .dropdown-menu {
+            z-index: 9999 !important;
+            position: relative; /* สำคัญ: ต้องใส่เพื่อให้ z-index ทำงาน */
+        }
+
+        /* --- ป้องกันการตัดขอบเมนู (แก้ปัญหา Overflow Clipping) --- */
+        .main-wrapper, .tab-content, .container-fluid {
+            overflow: visible !important; /* ปลดล็อกให้เมนูย่อยยื่นออกมาได้ */
+        }
+
+        /* --- ถ้าจะเอาเมนูภาษาออก (ย้ำอีกครั้ง) --- */
+        /* ให้แน่ใจว่าได้ลบโค้ดส่วน Language Switcher ออกจาก HTML แล้วนะครับ */
     </style>
 <body>
 
