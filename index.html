@@ -2448,6 +2448,7 @@ if (isInitialLoad) {
                             document.getElementById('product-id').readOnly = true;
                             document.getElementById('product-name').value = product.name;
                             document.getElementById('product-customer').value = product.customer || '';
+                            document.getElementById('product-customer-group').value = product.customerGroup || 'Other';
                             document.getElementById('product-fullBoxQuantity').value = product.fullBoxQuantity || '';
                             document.getElementById('product-erpCode').value = product.erpCode || '';
                             document.getElementById('product-unitPrice').value = product.unitPrice || 0;
@@ -2830,6 +2831,9 @@ approveStockCount: (countId) => {
                         populateSalesDashboard(new Date(startDate), new Date(endDate));
                     }
                 };
+// ========================================================
+                // ฟังก์ชัน Excel (สร้างเป็นรายการรออนุมัติ & ตัดยอดเวลา 07:59:59)
+                // ========================================================
                 window.startExcelUpload = function() {
                     if (!currentUser || currentUser.role !== 'admin') {
                         Swal.fire('ปฏิเสธการเข้าถึง', 'เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
@@ -2862,12 +2866,13 @@ approveStockCount: (countId) => {
                                 const countItems = [];
                                 let countUpdated = 0;
                                 let countNotFound = 0;
+                                const notFoundList = []; // NEW: เก็บรายชื่อพาร์ทที่ไม่มีในระบบ
 
                                 // --- ลอจิก CUT-OFF (ตัดยอดก่อน 08.00 น.) ---
                                 const today = new Date();
-                                today.setHours(7, 59, 59, 0); // บังคับเวลาเป็น 07:59:59 น.
+                                today.setHours(7, 59, 59, 0); 
                                 const cutoffTime = today.getTime();
-                                const countDateStr = today.toISOString(); // ใช้วันที่และเวลานี้เป็นเวลาตั้งต้นของรายการ
+                                const countDateStr = today.toISOString(); 
                                 const dateStrForLot = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
                                 for (let i = 1; i < jsonData.length; i++) {
@@ -2887,6 +2892,8 @@ approveStockCount: (countId) => {
                                     const product = db.products.find(p => String(p.id).trim() === productId);
                                     if (!product) {
                                         countNotFound++;
+                                        // ถ้ายังไม่มีรหัสนี้ในลิสต์ให้ใส่เพิ่มเข้าไป (กันรหัสซ้ำ)
+                                        if (!notFoundList.includes(productId)) notFoundList.push(productId);
                                         continue; 
                                     }
 
@@ -2901,17 +2908,14 @@ approveStockCount: (countId) => {
                                     }
 
                                     // 2. "ย้อนเวลา" สต็อกกลับไปตอน 07:59:59 น.
-                                    // โดยเช็คประวัติที่เพิ่งคีย์เข้ามา "หลัง 8 โมง" แล้วคำนวณย้อนกลับ
                                     const recentHistory = db.history.filter(h => String(h.productId).trim() === productId && new Date(h.date).getTime() > cutoffTime);
                                     recentHistory.forEach(h => {
                                         let qty = parseFloat(h.quantity) || 0;
                                         const isTemp = h.packagingType === 'temporary';
                                         
                                         if (h.type === 'import') {
-                                            // ถ้ารับเข้าหลัง 8 โมง -> ให้หักออกไปก่อน (เพราะตอน 8 โมงยังไม่มีของนี้)
                                             if (isTemp) sysTemp -= qty; else sysStd -= qty;
                                         } else if (h.type === 'export' || h.type === 'reversal') {
-                                            // ถ้าส่งออกหลัง 8 โมง -> ให้บวกกลับคืนมา (เพราะตอน 8 โมงของยังอยู่)
                                             if (isTemp) sysTemp += qty; else sysStd += qty;
                                         }
                                     });
@@ -2943,7 +2947,7 @@ approveStockCount: (countId) => {
                                 if (countItems.length > 0) {
                                     const newCount = {
                                         id: 'sc-xls-' + Date.now(),
-                                        date: countDateStr, // ใช้เวลา 07:59:59 ในการบันทึก
+                                        date: countDateStr,
                                         user: currentUser.username,
                                         status: 'pending',
                                         items: countItems
@@ -2952,13 +2956,25 @@ approveStockCount: (countId) => {
                                     db.stockCounts.unshift(newCount);
                                     populateStockCountMainView(); 
                                     
+                                    // NEW: สร้าง UI แสดงรหัสที่หาไม่เจอ
+                                    let notFoundHtml = '';
+                                    if (countNotFound > 0) {
+                                        notFoundHtml = `
+                                        <div class="mt-3 text-start border border-danger p-2 rounded" style="background-color: #fff5f5;">
+                                            <span class="text-danger fw-bold"><i class="bi bi-x-circle-fill me-1"></i>ไม่มีในระบบ: <b>${countNotFound}</b> รายการ (ถูกข้าม)</span>
+                                            <div class="mt-1 small" style="max-height: 80px; overflow-y: auto; line-height: 2;">
+                                                ${notFoundList.map(id => `<span class="badge bg-danger me-1">${id}</span>`).join('')}
+                                            </div>
+                                        </div>`;
+                                    }
+
                                     Swal.fire({
                                         icon: 'success',
                                         title: 'สร้างฉบับร่างสำเร็จ!',
                                         html: `พักข้อมูล Excel ไว้ในรายการ <b>"รอตรวจสอบ"</b><br><br>
                                                <span class="text-primary"><i class="bi bi-clock-history"></i> ตัดยอดเปรียบเทียบ ณ เวลา <b>07:59 น.</b></span><br>
-                                               <span class="text-success"><i class="bi bi-check-circle"></i> สินค้าที่ดึงมา: <b>${countUpdated}</b> รายการ</span><br>
-                                               ${countNotFound > 0 ? `<span class="text-danger"><i class="bi bi-x-circle"></i> ไม่มีในระบบ: <b>${countNotFound}</b> รายการ</span><br>` : ''}`,
+                                               <span class="text-success"><i class="bi bi-check-circle"></i> ดึงมาได้: <b>${countUpdated}</b> รายการ</span><br>
+                                               ${notFoundHtml}`,
                                         confirmButtonColor: '#0d6efd'
                                     });
 
@@ -2966,7 +2982,18 @@ approveStockCount: (countId) => {
                                     catch (error) { console.error(error); }
 
                                 } else {
-                                    Swal.fire('ไม่พบข้อมูล!', 'ตรวจสอบไฟล์ Excel อีกครั้ง', 'error');
+                                    if (countNotFound > 0) {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'ไม่พบสินค้าใดๆ ในระบบเลย!',
+                                            html: `<div class="text-start">รหัสสินค้าที่อยู่ใน Excel ไม่มีในฐานข้อมูลทั้งหมดเลยครับ:<br><br>
+                                                   <div class="small" style="max-height: 120px; overflow-y: auto; line-height: 2;">
+                                                       ${notFoundList.map(id => `<span class="badge bg-danger me-1">${id}</span>`).join('')}
+                                                   </div></div>`
+                                        });
+                                    } else {
+                                        Swal.fire('ไม่พบข้อมูล!', 'ตรวจสอบไฟล์ Excel อีกครั้ง ว่าใส่ตัวเลขในช่อง Standard หรือ Temporary หรือยัง', 'error');
+                                    }
                                 }
                             } catch (err) {
                                 console.error(err);
@@ -2977,19 +3004,24 @@ approveStockCount: (countId) => {
                     });
                     fileInput.click();
                 };
+// ========================================================
+                // ฟังก์ชัน ดาวน์โหลดเทมเพลต Excel (แยกล็อต Standard / Temporary)
+                // ========================================================
                 window.startExcelDownload = function() {
                     try {
                         const ws_data = [
-                            ["Part No.", "Quantity", "Remarks (Optional)"],
-                            ["EXAMPLE-PART-01", 150, "ใส่รหัสสินค้าในคอลัมน์ A และจำนวนเต็มในคอลัมน์ B ส่วนคอลัมน์ C ใส่หมายเหตุได้เลย"],
-                            ["EXAMPLE-PART-02", 200, ""]
+                            ["Part No.", "Standard Qty", "Temporary Qty", "Remarks (Optional)"],
+                            ["EXAMPLE-PART-01", 150, 0, "ใส่รหัสสินค้าคอลัมน์ A / ยอด Standard คอลัมน์ B / ยอด Temp คอลัมน์ C"],
+                            ["EXAMPLE-PART-02", 0, 50, "ถ้าแพ็คกิ้งไหนไม่มีของ ให้ใส่ 0 หรือปล่อยช่องว่างไว้ได้เลยครับ"],
+                            ["EXAMPLE-PART-03", 100, 20, "สามารถใส่ยอดที่นับได้ทั้ง 2 แพ็คกิ้งพร้อมกันในบรรทัดเดียวได้เลย"]
                         ];
                         const ws = XLSX.utils.aoa_to_sheet(ws_data);
-                        const wscols = [ {wch: 25}, {wch: 15}, {wch: 60} ];
+                        // กำหนดความกว้างของคอลัมน์ให้สวยงาม
+                        const wscols = [ {wch: 25}, {wch: 15}, {wch: 15}, {wch: 65} ];
                         ws['!cols'] = wscols;
                         const wb = XLSX.utils.book_new();
-                        XLSX.utils.book_append_sheet(wb, ws, "StockAdjustment");
-                        XLSX.writeFile(wb, "Stock_Adjustment_Template.xlsx");
+                        XLSX.utils.book_append_sheet(wb, ws, "StockCount_Template");
+                        XLSX.writeFile(wb, "Stock_Count_Template.xlsx");
                     } catch (error) {
                         console.error(error);
                         Swal.fire('เกิดข้อผิดพลาด', 'ไม่พบไลบรารี XLSX กรุณารีเฟรชหน้าเว็บอีกครั้ง', 'error');
@@ -4787,17 +4819,27 @@ function renderImportForm() {
             <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${T.export_warning}</p> </div>
             <div class="col-12 mt-3"> <button type="submit" class="btn btn-success"><i class="bi bi-send-check-fill me-2"></i>${T.export_save_button}</button> <button type="button" id="clear-export-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>${T.clear_form_button}</button> </div>`;
                 }
-                function renderProductForm() {
+function renderProductForm() {
                     const T = translations[currentLanguage];
                     const productFormEl = document.getElementById('product-form');
                     productFormEl.innerHTML = `
                 <div class="col-12"> <label for="product-id" class="form-label">${T.product_id}</label> <input type="text" id="product-id" class="form-control" required> </div>
                 <div class="col-12"> <label for="product-name" class="form-label">${T.product_name}</label> <input type="text" id="product-name" class="form-control" required> </div>
-                <div class="col-12"> <label for="product-customer" class="form-label">${T.customer}</label> <input type="text" id="product-customer" class="form-control"> </div>
-                <div class="col-12"> <label for="product-fullBoxQuantity" class="form-label">${T.product_fullbox_rack}</label> <input type="number" id="product-fullBoxQuantity" class="form-control" required min="1"> </div>
+                
+                <div class="col-md-6"> <label for="product-customer" class="form-label">${T.customer}</label> <input type="text" id="product-customer" class="form-control"> </div>
+                <div class="col-md-6"> 
+                    <label for="product-customer-group" class="form-label text-primary fw-bold">กลุ่มลูกค้า (แดชบอร์ด)</label> 
+                    <select id="product-customer-group" class="form-select border-primary">
+                        <option value="Autopart">Autopart (ชิ้นส่วนรถยนต์)</option>
+                        <option value="Electronic">Electronic (เครื่องใช้ไฟฟ้า)</option>
+                        <option value="Other" selected>อื่นๆ (Other)</option>
+                    </select> 
+                </div>
+
+                <div class="col-12 mt-2"> <label for="product-fullBoxQuantity" class="form-label">${T.product_fullbox_rack}</label> <input type="number" id="product-fullBoxQuantity" class="form-control" required min="1"> </div>
                 <div class="col-12"> <label for="product-erpCode" class="form-label">${T.erp_code}</label> <input type="text" id="product-erpCode" class="form-control"> </div>
                 <div class="col-12"> <label for="product-unitPrice" class="form-label">${T.product_unit_price}</label> <input type="number" step="0.01" id="product-unitPrice" class="form-control" required min="0"> </div>
-                <div class="col-12"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.product_save_button}</button> <button type="button" id="clear-product-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
+                <div class="col-12 mt-4"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.product_save_button}</button> <button type="button" id="clear-product-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
                 }
 
                 function renderUserForm(user = {}) {
@@ -5301,11 +5343,12 @@ function renderStockCountReportModalBody(count) {
                     const productId = document.getElementById('product-id').value.trim();
                     const productName = document.getElementById('product-name').value.trim();
                     const customer = document.getElementById('product-customer').value.trim();
+                    const customerGroup = document.getElementById('product-customer-group').value; // ดึงค่ากลุ่มลูกค้า
+
                     const fullBoxQuantity = parseInt(document.getElementById('product-fullBoxQuantity').value);
                     const erpCode = document.getElementById('product-erpCode').value.trim();
                     const unitPrice = parseFloat(document.getElementById('product-unitPrice').value);
 
-                    // ตรวจสอบความถูกต้องของข้อมูลพื้นฐานก่อนส่ง
                     if (!productId || !productName || isNaN(fullBoxQuantity) || isNaN(unitPrice)) {
                         showError(T.form_incomplete, T.product_name_required);
                         return;
@@ -5315,6 +5358,7 @@ function renderStockCountReportModalBody(count) {
                         id: productId,
                         name: productName,
                         customer: customer,
+                        customerGroup: customerGroup, // ยัดใส่ก้อนข้อมูลเตรียมส่งให้ Google Sheet
                         fullBoxQuantity: fullBoxQuantity,
                         erpCode: erpCode,
                         unitPrice: unitPrice,
@@ -5395,12 +5439,6 @@ function populateSalesDashboard(startDate, endDate) {
                     let totalSalesValue = 0;
                     const customerSales = new Map();
 
-                    const autopartCustomers = ["FAURECIA", "Brose Thailand", "TSPT-SA", "HANON", "VANDAPAC", "BOSCH", "TGT", "MOLTEN", "SANKO", "YENFENG", "TSPT"];
-                    const electronicCustomers = ["APLA", "SHINSHIN", "SHINSUNG", "DONGWO", "MIDEA", "LGE", "WINIX", "LG WM", "THAI A-TECH"];
-
-                    const autopartCustomersLower = autopartCustomers.map(c => c.trim().toLowerCase());
-                    const electronicCustomersLower = electronicCustomers.map(c => c.trim().toLowerCase());
-
                     let totalAutopartQuantity = 0;
                     let totalAutopartValue = 0;
                     let totalElectronicQuantity = 0;
@@ -5408,7 +5446,6 @@ function populateSalesDashboard(startDate, endDate) {
 
                     const startFilterDate = new Date(startDate);
                     startFilterDate.setHours(8, 0, 0, 0);
-
                     const endFilterDate = new Date(endDate);
                     endFilterDate.setDate(endFilterDate.getDate() + 1);
                     endFilterDate.setHours(8, 0, 0, 0);
@@ -5443,22 +5480,25 @@ function populateSalesDashboard(startDate, endDate) {
                         if (quantityAffectingSales !== 0) {
                             const unitPrice = parseFloat(item.priceAtTimeOfSale) || 0;
                             const customer = item.customer || T.dashboard_customer_unspecified;
-                            const customerLower = customer.trim().toLowerCase();
                             const valueAffectingSales = quantityAffectingSales * unitPrice;
+
+                            // เช็คกลุ่มลูกค้า (Autopart, Electronic, Other) จากฐานข้อมูลสินค้า
+                            const productInfo = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
+                            const cGroup = productInfo ? (productInfo.customerGroup || 'Other') : 'Other';
 
                             totalSalesQuantity += quantityAffectingSales;
                             totalSalesValue += valueAffectingSales;
 
-                            if (autopartCustomersLower.includes(customerLower)) {
+                            if (cGroup === 'Autopart') {
                                 totalAutopartQuantity += quantityAffectingSales;
                                 totalAutopartValue += valueAffectingSales;
-                            } else if (electronicCustomersLower.includes(customerLower)) {
+                            } else if (cGroup === 'Electronic') {
                                 totalElectronicQuantity += quantityAffectingSales;
                                 totalElectronicValue += valueAffectingSales;
                             }
 
                             if (!customerSales.has(customer)) {
-                                customerSales.set(customer, { quantity: 0, value: 0 });
+                                customerSales.set(customer, { quantity: 0, value: 0, group: cGroup });
                             }
                             const currentSales = customerSales.get(customer);
                             currentSales.quantity += quantityAffectingSales;
@@ -5473,17 +5513,11 @@ function populateSalesDashboard(startDate, endDate) {
                     dashboardElectronicSalesQuantity.textContent = `${T.dashboard_qty_label}${totalElectronicQuantity.toLocaleString()}${T.dashboard_pieces_label}`;
                     dashboardElectronicSalesValue.textContent = `฿ ${totalElectronicValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-                    // --- การจัดเรียงตารางและการสร้างกราฟวงกลม ---
                     dashboardSalesTable.innerHTML = '';
-                    
-                    // เตรียมข้อมูลสำหรับกราฟ
                     const chartLabels = [];
                     const chartData = [];
-                    // พาเลทสีสวยๆ สำหรับกราฟ
                     const chartBgColors = [
-                        '#0d6efd', '#20c997', '#ffc107', '#d63384', '#fd7e14', 
-                        '#0dcaf0', '#6610f2', '#198754', '#dc3545', '#adb5bd',
-                        '#4facfe', '#43e97b', '#f6d365', '#a18cd1', '#ff0844'
+                        '#0d6efd', '#20c997', '#ffc107', '#d63384', '#fd7e14', '#0dcaf0', '#6610f2', '#198754', '#dc3545', '#adb5bd'
                     ];
 
                     if (customerSales.size === 0) {
@@ -5491,29 +5525,27 @@ function populateSalesDashboard(startDate, endDate) {
                         if (window.salesChartInstance) window.salesChartInstance.destroy(); 
                     } else {
                         const sortedCustomerSales = Array.from(customerSales.entries()).sort((a, b) => b[1].value - a[1].value);
-
                         let rank = 1;
+
                         sortedCustomerSales.forEach(([customer, data], index) => {
                             if (data.quantity === 0 && data.value === 0) return;
 
-                            // เอาข้อมูลไปหยอดใส่กราฟ
                             chartLabels.push(customer);
                             chartData.push(data.value);
 
                             const row = document.createElement('tr');
                             let typeBadge = '';
-                            const customerLower = customer.trim().toLowerCase();
-                            if (autopartCustomersLower.includes(customerLower)) {
+                            
+                            // แปะป้ายประเภทลูกค้าในตารางตามที่ตั้งค่าไว้
+                            if (data.group === 'Autopart') {
                                 typeBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">${T.dashboard_type_autopart}</span>`;
-                            } else if (electronicCustomersLower.includes(customerLower)) {
+                            } else if (data.group === 'Electronic') {
                                 typeBadge = `<span class="badge bg-info-subtle text-info-emphasis rounded-pill">${T.dashboard_type_electronic}</span>`;
                             } else {
                                 typeBadge = `<span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${T.dashboard_type_other}</span>`;
                             }
 
                             const percentage = totalSalesValue > 0 ? (data.value / totalSalesValue) * 100 : 0;
-                            
-                            // ดึงสีให้ตรงกับในกราฟ
                             const rowColor = chartBgColors[index % chartBgColors.length];
 
                             row.innerHTML = `
@@ -5526,20 +5558,16 @@ function populateSalesDashboard(startDate, endDate) {
                                         <span class="me-3 fw-bold text-success">฿ ${data.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
                                     <div class="progress mt-1 ms-auto" style="width: 100%; height: 6px; background-color: #f1f3f5;" title="${percentage.toFixed(2)}%">
-                                        <div class="progress-bar" role="progressbar" style="width: ${percentage}%; background-color: ${rowColor}; border-radius: 10px;" aria-valuenow="${percentage}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        <div class="progress-bar" role="progressbar" style="width: ${percentage}%; background-color: ${rowColor}; border-radius: 10px;"></div>
                                     </div>
                                 </td>
                             `;
                             dashboardSalesTable.appendChild(row);
                         });
 
-                        // วาดกราฟ Doughnut ด้วย Chart.js
                         const ctx = document.getElementById('salesChart');
                         if (ctx) {
-                            if (window.salesChartInstance) {
-                                window.salesChartInstance.destroy(); // ล้างของเก่าทิ้งก่อนวาดใหม่เมื่อกดเปลี่ยนวันที่
-                            }
-                            
+                            if (window.salesChartInstance) window.salesChartInstance.destroy(); 
                             window.salesChartInstance = new Chart(ctx, {
                                 type: 'doughnut',
                                 data: {
@@ -5547,39 +5575,19 @@ function populateSalesDashboard(startDate, endDate) {
                                     datasets: [{
                                         data: chartData,
                                         backgroundColor: chartBgColors.slice(0, chartData.length),
-                                        borderWidth: 3,
-                                        borderColor: '#ffffff',
-                                        hoverOffset: 12 // เด้งออกเวลานำเมาส์ไปชี้
+                                        borderWidth: 3, borderColor: '#ffffff', hoverOffset: 12
                                     }]
                                 },
                                 options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    cutout: '65%', // เจาะรูตรงกลางให้เป็นโดนัท
+                                    responsive: true, maintainAspectRatio: false, cutout: '65%',
                                     plugins: {
-                                        legend: {
-                                            position: 'right',
-                                            labels: {
-                                                usePointStyle: true,
-                                                padding: 15,
-                                                font: { family: 'Mitr', size: 12 }
-                                            }
-                                        },
+                                        legend: { position: 'right', labels: { usePointStyle: true, padding: 15, font: { family: 'Mitr', size: 12 } } },
                                         tooltip: {
-                                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                            titleColor: '#000',
-                                            bodyColor: '#333',
-                                            borderColor: '#e9ecef',
-                                            borderWidth: 1,
-                                            padding: 12,
-                                            boxPadding: 6,
                                             callbacks: {
                                                 label: function(context) {
                                                     let label = context.label || '';
                                                     if (label) { label += ': '; }
-                                                    if (context.parsed !== null) {
-                                                        label += '฿ ' + context.parsed.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
-                                                    }
+                                                    if (context.parsed !== null) { label += '฿ ' + context.parsed.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
                                                     return label;
                                                 }
                                             }
