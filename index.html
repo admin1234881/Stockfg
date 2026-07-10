@@ -15,70 +15,63 @@
 /* ========================================= */
         /* --- MODERN CONTACT WIDGET (พับเก็บได้) --- */
         /* ========================================= */
-        .modern-contact-widget {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            /* ตอนพับเก็บจะโปร่งแสงนิดๆ ให้ดูไม่เกะกะ */
-            background: rgba(255, 255, 255, 0.4); 
+/* ========================================= */
+        /* --- HEADER CONTACT WIDGET (พับเก็บได้) --- */
+        /* ========================================= */
+        .header-contact-widget {
+            background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(10px);
             border-radius: 50px;
             display: flex;
             align-items: center;
-            padding: 6px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            /* ขนาดเริ่มต้น (โชว์แค่ไอคอนวงกลม) */
-            width: 50px; 
-            height: 50px;
+            padding: 4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border: 1px solid rgba(13, 110, 253, 0.2);
+            /* ขนาดเริ่มต้น (โชว์แค่ไอคอน) */
+            width: 42px; 
+            height: 42px;
             overflow: hidden;
-            /* เอฟเฟกต์เด้งดึ๋งตอนกางออก */
-            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
-            z-index: 3000;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             cursor: pointer;
+            margin-right: 15px; /* เว้นระยะห่างจากปุ่มเปลี่ยนภาษา */
         }
 
-.modern-contact-widget:hover {
-            /* ขยายความกว้างจาก 320px เป็น 480px เพื่อรองรับเบอร์โทรและไลน์ */
-            width: 480px; 
+        .header-contact-widget:hover {
+            width: 460px; /* ขยายความกว้างจาก 380px เป็น 460px เพื่อไม่ให้ข้อความตกขอบ */
             background: rgba(255, 255, 255, 0.95);
-            padding: 6px 20px 6px 6px;
-            border-color: rgba(13, 110, 253, 0.3);
-            box-shadow: 0 12px 30px rgba(13, 110, 253, 0.15);
+            padding: 4px 15px 4px 4px;
+            border-color: rgba(13, 110, 253, 0.4);
+            box-shadow: 0 8px 20px rgba(13, 110, 253, 0.15);
         }
 
-        .modern-contact-widget .contact-icon {
-            min-width: 36px;
-            height: 36px;
+        .header-contact-widget .contact-icon {
+            min-width: 32px;
+            height: 32px;
             background: linear-gradient(135deg, #0d6efd, #0dcaf0);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             transition: transform 0.5s ease;
-            box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
         }
 
-        /* ให้ไอคอนหมุน 1 รอบตอนเอาเมาส์ชี้ */
-        .modern-contact-widget:hover .contact-icon {
-            transform: rotate(360deg); 
+        .header-contact-widget:hover .contact-icon {
+            transform: rotate(360deg);
         }
 
-        .modern-contact-widget .contact-details {
+        .header-contact-widget .contact-details {
             white-space: nowrap;
             opacity: 0;
-            margin-left: 15px;
-            font-size: 0.85rem;
+            margin-left: 10px;
+            font-size: 0.8rem;
             color: #333;
-            transform: translateX(20px); /* ซ่อนข้อความไปทางขวาก่อน */
-            transition: all 0.4s ease;
+            transform: translateX(10px);
+            transition: all 0.3s ease;
         }
 
-        /* สไลด์ข้อความโชว์ขึ้นมา */
-        .modern-contact-widget:hover .contact-details {
+        .header-contact-widget:hover .contact-details {
             opacity: 1;
             transform: translateX(0);
         }
@@ -767,7 +760,22 @@
 
     <div id="login-page" class="container">
         <div class="login-container">
-            <div class="position-absolute top-0 end-0 p-3" style="z-index: 100;">
+<div class="position-absolute top-0 end-0 p-3 d-flex align-items-center" style="z-index: 100;">
+                
+                <!-- Contact Widget (แคปซูลโชว์หน้า Login) -->
+                <div class="header-contact-widget me-3">
+                    <div class="contact-icon">
+                        <i class="bi bi-headset"></i>
+                    </div>
+                    <div class="contact-details">
+                        <span class="text-primary fw-bold">Support:</span> Kraiwich C.
+                        <span class="mx-2 text-muted">|</span>
+                        <i class="bi bi-telephone-fill text-success"></i> 063-313-8036
+                        <span class="mx-2 text-muted">|</span>
+                        <i class="bi bi-line text-success"></i> Konbannok
+                    </div>
+                </div>
+
                 <div class="dropdown">
                     <button class="btn btn-light btn-sm dropdown-toggle shadow-sm" type="button"
                         data-bs-toggle="dropdown">
@@ -857,6 +865,33 @@
                     </span>
                 </h1>
                 <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center">
+
+                    <!-- Contact Widget ย้ายมาไว้ใน Header -->
+                    <div class="header-contact-widget">
+                        <div class="contact-icon">
+                            <i class="bi bi-headset"></i>
+                        </div>
+                        <div class="contact-details">
+                            <span class="text-primary fw-bold">Support:</span> Kraiwich C.
+                            <span class="mx-2 text-muted">|</span>
+                            <i class="bi bi-telephone-fill text-success"></i> 063-313-8036
+                            <span class="mx-2 text-muted">|</span>
+                            <i class="bi bi-line text-success"></i> Konbannok
+                        </div>
+                    </div>
+
+                    <!-- Language Switcher -->
+                    <div class="dropdown me-3">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
+                            id="language-switcher" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-translate me-1"></i> <span id="language-switcher-label">ภาษา</span>
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="language-switcher">
+                            <li><a class="dropdown-item" href="#" onclick="setLanguage('th')">ไทย</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="setLanguage('en')">English</a></li>
+                        </ul>
+                    </div>
                     <!-- Language Switcher -->
                     <div class="dropdown me-3">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
@@ -5101,11 +5136,14 @@ function populateStockCountMainView() {
                             const formattedDate = new Date(count.date).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB', {
                                 year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
                             });
-                            let statusBadge;
-                            if (count.status === 'approved') {
-                                statusBadge = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">${T.stock_count_status_approved}</span>`;
+                            // --- อัปเดตโค้ดสำหรับแสดงป้ายสถานะ (เพิ่ม Rejected) ---
+                            let statusBadge = '';
+                            if (count.status === 'pending') {
+                                statusBadge = `<span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split me-1"></i>รอตรวจสอบ</span>`;
+                            } else if (count.status === 'rejected') {
+                                statusBadge = `<span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>ไม่อนุมัติ (ยกเลิก)</span>`;
                             } else {
-                                statusBadge = `<span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">${T.stock_count_status_pending}</span>`;
+                                statusBadge = `<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>อนุมัติแล้ว</span>`;
                             }
                             return `
                         <tr class="view-stock-count-report-btn" data-count-id="${count.id}" style="cursor: pointer;">
@@ -5278,10 +5316,51 @@ function renderStockCountReportModalBody(count) {
                     footer.innerHTML = `
                         <button type="button" class="btn btn-info text-white shadow-sm" onclick="downloadVarianceCSV('${count.id}')"><i class="bi bi-filetype-csv me-2"></i>ดาวน์โหลด (CSV)</button>
                         <button type="button" class="btn btn-secondary shadow-sm" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
-                        ${canApprove ? `<button type="button" class="btn btn-success approve-stock-count-btn shadow-sm px-4" data-count-id="${count.id}"><i class="bi bi-check-circle-fill me-2"></i>ยืนยันการปรับยอด</button>` : ''}
+                        ${canApprove ? `
+                        <button type="button" class="btn btn-danger shadow-sm px-3" onclick="rejectStockCount('${count.id}')"><i class="bi bi-x-circle-fill me-2"></i>ไม่อนุมัติ (ยกเลิก)</button>
+                        <button type="button" class="btn btn-success approve-stock-count-btn shadow-sm px-3" data-count-id="${count.id}"><i class="bi bi-check-circle-fill me-2"></i>ยืนยันการปรับยอด</button>
+                        ` : ''}
                     `;
                 }
+                    // ========================================================
+                // ฟังก์ชัน ไม่อนุมัติ / ยกเลิกรายการนับสต็อก
+                // ========================================================
+                window.rejectStockCount = function(countId) {
+                    const count = db.stockCounts.find(sc => sc.id === countId);
+                    if (!count || count.status !== 'pending') return;
 
+                    Swal.fire({
+                        title: 'ยืนยันการไม่อนุมัติ?',
+                        html: `คุณกำลังจะยกเลิกและปัดตกรายการนับสต็อก <b>${countId}</b><br>ข้อมูลฉบับร่างนี้จะไม่ถูกนำไปปรับสต็อกจริง`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> ยืนยันไม่อนุมัติ',
+                        cancelButtonText: 'ปิด'
+                    }).then(async (result) => {
+                        if (result.isConfirmed) {
+                            Swal.fire({title: 'กำลังยกเลิกรายการ...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                            
+                            const originalStatus = count.status;
+                            count.status = 'rejected'; // เปลี่ยนสถานะเป็นถูกปฏิเสธ
+                            
+                            populateStockCountMainView(); // รีเฟรชตารางให้สถานะเปลี่ยน
+                            if(typeof stockCountReportModal !== 'undefined') stockCountReportModal.hide(); // ปิดหน้าต่างรายงาน
+                            
+                            try {
+                                // ส่งคำสั่งไปเปลี่ยนสถานะใน Google Sheet
+                                await callAppsScript('updateStockCountStatus', { id: countId, status: 'rejected' });
+                                Swal.fire('ยกเลิกสำเร็จ!', 'รายการนี้ถูกปัดตกและไม่อนุมัติเรียบร้อยแล้ว', 'success');
+                            } catch (error) {
+                                // ถ้าระบบหลังบ้านมีปัญหา ให้คืนค่าเดิม
+                                count.status = originalStatus;
+                                populateStockCountMainView();
+                                Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+                            }
+                        }
+                    });
+                };
                 // ฟังก์ชันสำหรับกรองข้อมูลในตารางรายงาน
                 window.filterVarianceReport = function(filterValue) {
                     const rows = document.querySelectorAll('.report-item-row');
@@ -6100,21 +6179,5 @@ function populateSalesDashboard(startDate, endDate) {
         </div>
     </div>
 </div>
-<!-- Modern Contact Widget (แคปซูลซ่อนข้อมูล) -->
-    <div class="modern-contact-widget">
-        <!-- ไอคอนติดต่อ -->
-        <div class="contact-icon">
-            <i class="bi bi-headset"></i>
-        </div>
-        <!-- ข้อความที่จะโชว์ตอนเอาเมาส์ชี้ -->
-        <div class="contact-details">
-            <span class="text-primary fw-bold">Support:</span> Kraiwich C.
-            <span class="mx-2 text-muted">|</span>
-            <i class="bi bi-telephone-fill text-success"></i> 063-313-8036
-            <span class="mx-2 text-muted">|</span>
-            <i class="bi bi-line text-success"></i> Konbannok
-        </div>
-    </div>
-
 </body>
 </html>
