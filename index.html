@@ -12,108 +12,75 @@
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        .support-footer {
+/* ========================================= */
+        /* --- MODERN CONTACT WIDGET (พับเก็บได้) --- */
+        /* ========================================= */
+        .modern-contact-widget {
             position: fixed;
             bottom: 20px;
-            /* ขยับขึ้นมาอีกนิดให้ดูเหมือนลอย */
             left: 50%;
             transform: translateX(-50%);
-            width: 95%;
-            max-width: 1100px;
-            /* ปรับสีให้เข้มขึ้นจาก 0.7 เป็น 0.85 และขอบให้ชัดขึ้น */
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(15px);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            /* ขอบหนาขึ้นเล็กน้อย */
+            /* ตอนพับเก็บจะโปร่งแสงนิดๆ ให้ดูไม่เกะกะ */
+            background: rgba(255, 255, 255, 0.4); 
+            backdrop-filter: blur(10px);
             border-radius: 50px;
-            /* ปรับให้โค้งมนแบบทรงแคปซูลเพื่อให้ไม่ดูเหลี่ยม */
-            padding: 12px 35px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 3000;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-            /* เพิ่มเงาให้ดูมีมิติ */
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .support-info {
             display: flex;
             align-items: center;
+            padding: 6px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            /* ขนาดเริ่มต้น (โชว์แค่ไอคอนวงกลม) */
+            width: 50px; 
+            height: 50px;
             overflow: hidden;
-            /* ป้องกันเนื้อหาปลิ้น */
+            /* เอฟเฟกต์เด้งดึ๋งตอนกางออก */
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); 
+            z-index: 3000;
+            cursor: pointer;
         }
 
-        /* จัดการให้ตัวหนังสือเล็กลงเล็กน้อยถ้าหน้าจอแคบ */
-        .support-info .small {
-            font-size: 0.82rem;
-            white-space: nowrap;
-            /* บังคับให้ข้อมูลติดต่อ (ชื่อ/เบอร์) อยู่แถวเดียว */
+.modern-contact-widget:hover {
+            /* ขยายความกว้างจาก 320px เป็น 480px เพื่อรองรับเบอร์โทรและไลน์ */
+            width: 480px; 
+            background: rgba(255, 255, 255, 0.95);
+            padding: 6px 20px 6px 6px;
+            border-color: rgba(13, 110, 253, 0.3);
+            box-shadow: 0 12px 30px rgba(13, 110, 253, 0.15);
         }
 
-        .login-contact-card {
-            background: rgba(245, 244, 244, 0.95);
-            /* ปรับพื้นหลังให้ขาวเกือบสนิทเพื่อให้ตัวหนังสือชัด */
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(13, 110, 253, 0.2);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            /* เพิ่มเงาให้ดูมีมิติและแยกออกจากพื้นหลัง */
-            text-align: center;
-        }
-
-        .login-contact-card b {
-            color: #0d6efd;
-            /* เน้นชื่อคุณโจด้วยสีน้ำเงิน Primary */
-            font-size: 1.1rem;
-        }
-
-        .login-contact-card i {
-            font-size: 1.2rem;
-            vertical-align: middle;
-        }
-
-        .login-contact-card div {
-            color: #fffb07 !important;
-            /* บังคับให้ตัวหนังสือเป็นสีเข้ม */
-            font-weight: 500;
-        }
-
-        /* ปรับให้ Icon Box โค้งมนตามไปด้วย */
-        .contact-icon-box {
-            width: 45px;
-            height: 45px;
-            background: var(--primary-color);
-            border-radius: 15px;
-            /* เพิ่มความโค้ง */
+        .modern-contact-widget .contact-icon {
+            min-width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.3rem;
+            color: white;
+            font-size: 1.2rem;
+            transition: transform 0.5s ease;
+            box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
         }
 
-        .support-footer {
-            position: fixed;
-            bottom: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 1000px;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 20px;
-            padding: 12px 30px;
-            /* แก้ไขบรรทัดนี้ */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 3000;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+        /* ให้ไอคอนหมุน 1 รอบตอนเอาเมาส์ชี้ */
+        .modern-contact-widget:hover .contact-icon {
+            transform: rotate(360deg); 
+        }
+
+        .modern-contact-widget .contact-details {
+            white-space: nowrap;
+            opacity: 0;
+            margin-left: 15px;
+            font-size: 0.85rem;
+            color: #333;
+            transform: translateX(20px); /* ซ่อนข้อความไปทางขวาก่อน */
+            transition: all 0.4s ease;
+        }
+
+        /* สไลด์ข้อความโชว์ขึ้นมา */
+        .modern-contact-widget:hover .contact-details {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         /* ปรับ Body ให้มีพื้นที่ด้านล่าง ไม่ให้แถบทับเนื้อหาตาราง */
@@ -2768,7 +2735,7 @@ startNewStockCount: () => {
                         const count = db.stockCounts.find(sc => sc.id === countId);
                         if (count) { renderStockCountReportModalBody(count); stockCountReportModal.show(); }
                     },
-                    approveStockCount: (countId) => {
+approveStockCount: (countId) => {
                         const T = translations[currentLanguage];
                         const count = db.stockCounts.find(sc => sc.id === countId);
 
@@ -2776,11 +2743,26 @@ startNewStockCount: () => {
 
                         confirmAction(T.stock_count_confirm_approve_title, T.stock_count_confirm_approve_text, async () => {
                             const adjustmentEntries = [];
+                            
+                            // เช็คว่าเป็นไฟล์ที่มาจาก Excel ใช่หรือไม่ (รหัสขึ้นต้นด้วย sc-xls-)
+                            const isExcelUpload = String(count.id).includes('sc-xls-');
+
                             count.items.forEach(item => {
                                 const variance = item.countedQty - item.systemQty;
-                                if (variance !== 0) {
+                                
+                                // กรณีมาจาก Excel บังคับให้ล้างของเก่าเซตยอดใหม่ (แม้ผลต่างจะเท่ากับ 0 ก็ตามเพื่อล้างล็อต)
+                                if (variance !== 0 || isExcelUpload) {
                                     const product = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
-                                    const remark = `STOCK_COUNT_ADJ:${count.id}|ปรับยอดจากการนับสต็อก ${count.id} (นับโดย: ${count.user})`;
+                                    
+                                    // ปกติ: บันทึกเฉพาะผลต่าง (+ หรือ -)
+                                    let remark = `STOCK_COUNT_ADJ:${count.id}|ปรับยอดจากการนับสต็อก ${count.id} (นับโดย: ${count.user})`;
+                                    let qtyToSave = variance; 
+                                    
+                                    // หากมาจาก Excel: บังคับบันทึกแทนที่ยอดทั้งหมด (ล้างของเก่า)
+                                    if (isExcelUpload) {
+                                        remark = `MANUAL_ADJ_NEW_TOTAL:${item.countedQty}|อัปเดตสต็อกจากไฟล์ Excel ${count.id}`;
+                                        qtyToSave = item.countedQty; 
+                                    }
 
                                     adjustmentEntries.push({
                                         id: 'adj-' + Date.now() + '-' + item.productId + '-' + Math.random().toString(36).substr(2, 5),
@@ -2790,18 +2772,21 @@ startNewStockCount: () => {
                                         productName: product ? product.name : item.productName,
                                         customer: product ? product.customer : '',
                                         erpCode: product ? product.erpCode : '',
-                                        quantity: variance, // บันทึกยอดที่ต้อง ปรับเพิ่ม/ลด
-                                        productionDate: item.productionDate, // บันทึกให้ตรงกับล็อตเป๊ะๆ
+                                        quantity: qtyToSave, 
+                                        productionDate: item.productionDate,
                                         user: currentUser.username,
                                         remarks: remark,
-                                        packagingType: item.packagingType // บันทึกให้ตรงแพ็คกิ้ง
+                                        packagingType: item.packagingType 
                                     });
                                 }
                             });
 
                             const originalStatus = count.status;
                             count.status = 'approved';
-                            adjustmentEntries.forEach(entry => db.history.unshift(entry));
+                            
+                            if(adjustmentEntries.length > 0) {
+                                adjustmentEntries.forEach(entry => db.history.unshift(entry));
+                            }
 
                             calculateStockFromHistory();
                             populateAll();
@@ -2873,13 +2858,18 @@ startNewStockCount: () => {
 // ========================================================
                 // ฟังก์ชัน Excel (เขียนใหม่ บังคับให้หน้าต่างเด้งชัวร์ 100%)
                 // ========================================================
+// ========================================================
+// ฟังก์ชัน Excel (รองรับ 2 ประเภทแพ็คกิ้ง และมีรายงานสรุป)
+// ========================================================
+// ========================================================
+                // ฟังก์ชัน Excel (สร้างเป็นรายการรออนุมัติในหน้านับสต็อก)
+                // ========================================================
                 window.startExcelUpload = function() {
                     if (!currentUser || currentUser.role !== 'admin') {
                         Swal.fire('ปฏิเสธการเข้าถึง', 'เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
                         return;
                     }
 
-                    // สร้าง input file และแปะลงในหน้าเว็บแบบซ่อนไว้ เพื่อแก้ปัญหาเบราว์เซอร์บล็อก
                     const fileInput = document.createElement('input');
                     fileInput.type = 'file';
                     fileInput.accept = '.xlsx, .xls, .csv';
@@ -2893,11 +2883,7 @@ startNewStockCount: () => {
                             return;
                         }
 
-                        Swal.fire({
-                            title: 'กำลังอ่านไฟล์ Excel...',
-                            allowOutsideClick: false,
-                            didOpen: () => Swal.showLoading()
-                        });
+                        Swal.fire({ title: 'กำลังอ่านไฟล์ Excel...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
                         const reader = new FileReader();
                         reader.onload = async function(event) {
@@ -2907,83 +2893,104 @@ startNewStockCount: () => {
                                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                                 const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
 
-                                const adjustmentEntries = [];
+                                const countItems = [];
+                                let countUpdated = 0;
+                                let countNotFound = 0;
+
                                 const today = new Date();
-                                today.setHours(7, 59, 59, 0); 
-                                const adjustmentTimestamp = today.toISOString();
                                 const dateStrForLot = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
-                                let countUpdated = 0;
-
+                                // อ่านข้อมูล: A=PartNo, B=Standard Qty, C=Temporary Qty
                                 for (let i = 1; i < jsonData.length; i++) {
                                     const row = jsonData[i];
                                     if (!row || row.length < 2) continue; 
                                     
-                                    const productId = String(row[0]).trim(); 
-                                    const quantity = parseFloat(row[1]);     
+                                    const productId = String(row[0] || '').trim(); 
+                                    if (!productId) continue;
 
-                                    if (productId && !isNaN(quantity)) {
-                                        const product = db.products.find(p => String(p.id).trim() === productId);
-                                        if (product) {
-                                            adjustmentEntries.push({
-                                                id: 'adj-xls-' + Date.now() + '-' + productId + '-' + Math.random().toString(36).substr(2, 5),
-                                                date: adjustmentTimestamp,
-                                                type: 'adjustment',
-                                                productId: product.id,
-                                                productName: product.name,
-                                                customer: product.customer,
-                                                erpCode: product.erpCode,
-                                                quantity: quantity,
-                                                productionDate: dateStrForLot,
-                                                user: currentUser.username,
-                                                remarks: `MANUAL_ADJ_NEW_TOTAL:${quantity}|อัปเดตสต็อกจากไฟล์ Excel ก่อน 08:00 น.`,
-                                                packagingType: 'standard'
-                                            });
-                                            countUpdated++;
-                                        }
+                                    const stdQty = parseFloat(row[1]); // คอลัมน์ B
+                                    const tempQty = parseFloat(row[2]); // คอลัมน์ C
+                                    const hasStd = !isNaN(stdQty);
+                                    const hasTemp = !isNaN(tempQty);
+
+                                    if (!hasStd && !hasTemp) continue; 
+
+                                    const product = db.products.find(p => String(p.id).trim() === productId);
+                                    
+                                    if (!product) {
+                                        countNotFound++;
+                                        continue; 
+                                    }
+
+                                    // ดึงยอดปัจจุบันมาเพื่อทำรายงานผลต่าง
+                                    const stockInfo = calculatedStock.find(s => String(s.productId).trim() === productId);
+                                    let sysStd = 0, sysTemp = 0;
+                                    if (stockInfo) {
+                                        stockInfo.lots.forEach(l => {
+                                            if (l.packagingType === 'temporary') sysTemp += l.quantity;
+                                            else sysStd += l.quantity;
+                                        });
+                                    }
+
+                                    // สร้างชุดข้อมูลพักไว้สำหรับ Standard
+                                    if (hasStd) {
+                                        countItems.push({
+                                            productId: product.id, productName: product.name,
+                                            productionDate: dateStrForLot, packagingType: 'standard',
+                                            systemQty: sysStd, countedQty: stdQty
+                                        });
+                                        countUpdated++;
+                                    }
+
+                                    // สร้างชุดข้อมูลพักไว้สำหรับ Temporary
+                                    if (hasTemp) {
+                                        countItems.push({
+                                            productId: product.id, productName: product.name,
+                                            productionDate: dateStrForLot, packagingType: 'temporary',
+                                            systemQty: sysTemp, countedQty: tempQty
+                                        });
+                                        countUpdated++;
                                     }
                                 }
 
                                 Swal.close();
 
-                                if (adjustmentEntries.length > 0) {
-                                    const confirm = await Swal.fire({
-                                        title: 'ตรวจสอบข้อมูล',
-                                        html: `พบรหัสสินค้าถูกต้อง <b>${countUpdated}</b> รายการ<br><br>
-                                               <div class="alert alert-warning text-start" style="font-size: 0.9rem;">
-                                                 <b>ระบบจะดำเนินการดังนี้:</b><br>
-                                                 1. ล้างยอดสต็อกเดิมของสินค้านั้นๆ ทิ้งทั้งหมด<br>
-                                                 2. ตั้งยอดใหม่ตามไฟล์ Excel โดยระบุเวลาเป็น <span class="text-danger">07:59:59 น. ของวันนี้</span><br>
-                                                 3. รายการรับ/ส่ง ที่เกิดขึ้นหลัง 8 โมงเช้า จะถูกนำมาคำนวณบวก/ลบต่ออัตโนมัติ
-                                               </div>`,
-                                        icon: 'question',
-                                        showCancelButton: true,
-                                        confirmButtonText: '<i class="bi bi-check-circle me-1"></i> ยืนยันอัปเดต',
-                                        cancelButtonText: 'ยกเลิก',
-                                        confirmButtonColor: '#198754'
+                                if (countItems.length > 0) {
+                                    // สร้างรหัส sc-xls- เพื่อบ่งบอกว่ามาจาก Excel
+                                    const newCount = {
+                                        id: 'sc-xls-' + Date.now(),
+                                        date: new Date().toISOString(),
+                                        user: currentUser.username,
+                                        status: 'pending',
+                                        items: countItems
+                                    };
+
+                                    db.stockCounts.unshift(newCount);
+                                    populateStockCountMainView(); // รีเฟรชหน้าต่างเพื่อให้ขึ้นในตาราง "รอตรวจสอบ"
+                                    
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'สร้างฉบับร่างสำเร็จ!',
+                                        html: `พักข้อมูล Excel ไว้ในรายการ <b>"รอตรวจสอบ"</b> เรียบร้อยแล้ว<br><br>
+                                               <span class="text-success"><i class="bi bi-check-circle"></i> สินค้าที่ดึงมา: <b>${countUpdated}</b> รายการ</span><br>
+                                               ${countNotFound > 0 ? `<span class="text-danger"><i class="bi bi-x-circle"></i> ไม่มีในระบบ: <b>${countNotFound}</b> รายการ</span><br>` : ''}
+                                               <hr><small class="text-muted">กรุณากดที่ไอคอน <b>แว่นขยาย</b> ในตารางด้านล่าง<br>เพื่อตรวจสอบผลต่าง และกดอนุมัติการปรับยอดครับ</small>`,
+                                        confirmButtonColor: '#0d6efd'
                                     });
 
-                                    if (confirm.isConfirmed) {
-                                        Swal.fire({title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-                                        adjustmentEntries.forEach(entry => db.history.unshift(entry));
-                                        calculateStockFromHistory();
-                                        populateAll(); 
-                                        await callAppsScript('appendBatchHistory', adjustmentEntries);
-                                        Swal.fire('สำเร็จ!', 'อัปเดตยอดสต็อกจากไฟล์เรียบร้อยแล้ว', 'success');
-                                    }
+                                    try { await callAppsScript('addStockCount', newCount); } 
+                                    catch (error) { console.error(error); }
+
                                 } else {
-                                    Swal.fire('ไม่พบข้อมูล!', 'ตรวจสอบไฟล์ Excel อีกครั้ง (คอลัมน์ A = รหัสสินค้า, คอลัมน์ B = ยอดสต็อก)', 'error');
+                                    Swal.fire('ไม่พบข้อมูล!', 'ตรวจสอบไฟล์ Excel อีกครั้ง', 'error');
                                 }
                             } catch (err) {
                                 console.error(err);
-                                Swal.fire('เกิดข้อผิดพลาด', 'ไลบรารี XLSX ไม่ทำงาน หรือไฟล์มีปัญหา', 'error');
-                            } finally {
-                                document.body.removeChild(fileInput); // เคลียร์ขยะออกจากหน้าจอ
-                            }
+                                Swal.fire('เกิดข้อผิดพลาด', 'รูปแบบไฟล์ไม่ถูกต้อง', 'error');
+                            } finally { document.body.removeChild(fileInput); }
                         };
                         reader.readAsArrayBuffer(file);
                     });
-                    
                     fileInput.click();
                 };
 
@@ -5121,120 +5128,120 @@ function populateStockCountMainView() {
             `;
                 }
 
-	function renderStockCountModalBody() {
-                    const T = translations[currentLanguage];
-                    const body = document.getElementById('stockCountModalBody');
-
-                    // ดึงสินค้าทั้งหมดจากฐานข้อมูล (พาร์ทใหม่จะโชว์แน่นอน)
-                    const allProducts = [...db.products].sort((a, b) => String(a.id).localeCompare(String(b.id)));
-                    let html = '<div class="container-fluid"><div class="accordion" id="stock-count-accordion">';
-
-                    allProducts.forEach((product, index) => {
-                        const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(product.id).trim());
-                        const activeLots = stockInfo ? stockInfo.lots.filter(l => l.quantity > 0).sort((a,b) => new Date(a.productionDate) - new Date(b.productionDate)) : [];
-                        const totalSysQty = stockInfo ? stockInfo.totalQuantity : 0;
-
-                        let lotsHtml = activeLots.map(lot => {
-                            let packText = lot.packagingType === 'temporary' ? T.packaging_temp : T.packaging_std;
-                            return `
-                                <div class="row g-2 mb-2 align-items-center count-lot-row border p-2 rounded bg-white" data-system-qty="${lot.quantity}">
-                                    <div class="col-md-3">
-                                        <label class="form-label small-text mb-0 d-md-none">วันที่ผลิต</label>
-                                        <input type="date" class="form-control form-control-sm count-prod-date" value="${lot.productionDate}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small-text mb-0 d-md-none">แพ็คกิ้ง</label>
-                                        <input type="text" class="form-control form-control-sm" value="${packText}" readonly>
-                                        <input type="hidden" class="count-packaging-type" value="${lot.packagingType}">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small-text mb-0 d-md-none">ยอดในระบบ</label>
-                                        <input type="text" class="form-control form-control-sm text-center bg-light" value="${lot.quantity.toLocaleString()}" readonly>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label small-text mb-0 d-md-none text-primary fw-bold">ยอดที่นับได้จริง</label>
-                                        <input type="number" class="form-control form-control-sm count-qty-input border-primary text-center" min="0" placeholder="ระบุจำนวน">
-                                    </div>
-                                </div>
-                            `;
-                        }).join('');
-
-                        html += `
-                        <div class="accordion-item product-count-group" data-product-id="${product.id}" data-product-name="${product.name}">
-                            <h2 class="accordion-header" id="heading-${index}">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${index}">
-                                    <div class="d-flex justify-content-between w-100 pe-3">
-                                        <span class="fw-bold">${product.id} <span class="text-muted fw-normal ms-2">${product.name}</span></span>
-                                        <span class="badge bg-secondary">ยอดรวม: ${totalSysQty.toLocaleString()}</span>
-                                    </div>
-                                </button>
-                            </h2>
-                            <div id="collapse-${index}" class="accordion-collapse collapse" data-bs-parent="#stock-count-accordion">
-                                <div class="accordion-body bg-light">
-                                    <div class="row g-2 mb-1 fw-bold text-center small-text d-none d-md-flex">
-                                        <div class="col-md-3">วันที่ผลิต</div>
-                                        <div class="col-md-3">แพ็คกิ้ง</div>
-                                        <div class="col-md-3">ยอดในระบบ</div>
-                                        <div class="col-md-3 text-primary">ยอดที่นับได้จริง</div>
-                                    </div>
-                                    <div class="lots-container" id="lots-container-${product.id}">
-                                        ${lotsHtml || `<p class="text-muted small text-center my-2">ไม่มีล็อตในระบบ กรุณากดเพิ่มล็อตที่พบใหม่</p>`}
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-success mt-2" onclick="window.app.addCountLotRow('${product.id}')">
-                                        <i class="bi bi-plus-circle me-1"></i> เพิ่มล็อตที่พบใหม่
-                                    </button>
-                                </div>
-                            </div>
-                        </div>`;
-                    });
-
-                    html += '</div></div>';
-                    body.innerHTML = html;
-                }
-
-                function renderStockCountReportModalBody(count) {
+function renderStockCountReportModalBody(count) {
                     const T = translations[currentLanguage];
                     const body = document.getElementById('stockCountReportModalBody');
                     const footer = document.getElementById('stockCountReportModalFooter');
                     const isAdmin = currentUser.role === 'admin';
                     const canApprove = isAdmin && count.status === 'pending';
 
-                    const formattedDate = new Date(count.date).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB', { dateStyle: 'long', timeStyle: 'short' });
-                    document.getElementById('stockCountReportModalLabel').innerHTML = `<i class="bi bi-file-earmark-spreadsheet-fill me-2"></i>${T.stock_count_report_title} - ${count.id}`;
+                    const formattedDate = new Date(count.date).toLocaleString('th-TH', { dateStyle: 'long', timeStyle: 'short' });
+                    document.getElementById('stockCountReportModalLabel').innerHTML = `<i class="bi bi-file-earmark-spreadsheet-fill me-2"></i>รายงานผลการนับสต็อก - ${count.id}`;
+
+                    let totalSys = 0;
+                    let netDiff = 0;
+                    let absDiff = 0;
 
                     const itemsHtml = count.items.map(item => {
                         const variance = item.countedQty - item.systemQty;
-                        let varianceClass = '';
-                        let varianceText = variance;
-                        if (variance > 0) { varianceClass = 'variance-positive'; varianceText = `+${variance}`; } 
-                        else if (variance < 0) { varianceClass = 'variance-negative'; }
-                        const packText = item.packagingType === 'temporary' ? T.packaging_temp : T.packaging_std;
+                        
+                        // รวมยอดเพื่อไปคำนวณ % Diff
+                        totalSys += item.systemQty;
+                        netDiff += variance;
+                        absDiff += Math.abs(variance);
+                        
+                        // จัดการสีและคลาสสำหรับตัวกรอง
+                        let rowFilterClass = 'filter-zero';
+                        let varianceHtml = `<span class="text-muted fw-bold">0</span>`;
+
+                        if (variance > 0) { 
+                            rowFilterClass = 'filter-positive';
+                            varianceHtml = `<span class="text-success fw-bold">+${variance.toLocaleString()}</span>`; 
+                        } else if (variance < 0) { 
+                            rowFilterClass = 'filter-negative';
+                            varianceHtml = `<span class="text-danger fw-bold">${variance.toLocaleString()}</span>`; 
+                        }
+
+                        const packText = item.packagingType === 'temporary' ? 'แพ็คกิ้งชั่วคราว' : 'แพ็คกิ้งสแตนดาร์ด';
 
                         return `
-                            <tr class="${variance !== 0 ? 'table-danger' : ''}">
-                                <td>${item.productId}<br><small class="text-muted">${item.productName}</small></td>
-                                <td>${item.productionDate}</td>
-                                <td>${packText}</td>
-                                <td class="text-end">${item.systemQty.toLocaleString()}</td>
-                                <td class="text-end fw-bold">${item.countedQty.toLocaleString()}</td>
-                                <td class="text-end ${varianceClass}">${varianceText.toLocaleString()}</td>
+                            <tr class="report-item-row ${rowFilterClass} ${variance !== 0 ? 'table-warning' : ''}">
+                                <td><span class="fw-bold">${item.productId}</span><br><small class="text-muted">${item.productName}</small></td>
+                                <td class="text-center">${item.productionDate}</td>
+                                <td class="text-center"><span class="badge bg-light text-dark border">${packText}</span></td>
+                                <td class="text-end" style="font-size: 1.1rem;">${item.systemQty.toLocaleString()}</td>
+                                <td class="text-end fw-bold text-primary" style="font-size: 1.1rem;">${item.countedQty.toLocaleString()}</td>
+                                <td class="text-end" style="font-size: 1.1rem;">${varianceHtml}</td>
                             </tr>
                         `;
                     }).join('');
 
+                    // --- คำนวณเปอร์เซ็นต์ความแม่นยำและผลต่าง (ใหม่) ---
+                    let diffPercent = 0;
+                    let accuracy = 100;
+                    if (totalSys > 0) {
+                        diffPercent = (netDiff / totalSys) * 100;
+                        accuracy = Math.max(0, 100 - ((absDiff / totalSys) * 100)); // คำนวณความแม่นยำจากค่าสัมบูรณ์
+                    }
+
+                    // --- ออกแบบ UI เปอร์เซ็นต์ (Badges) ---
+                    let diffUi = '';
+                    if (absDiff === 0) {
+                        diffUi = `<span class="badge bg-success text-white shadow-sm rounded-pill ms-2 px-2 py-1" style="font-size: 0.75rem;"><i class="bi bi-check-circle-fill me-1"></i>สต็อกตรงเป๊ะ 100%</span>`;
+                    } else {
+                        let diffColor = netDiff > 0 ? 'success' : (netDiff < 0 ? 'danger' : 'warning');
+                        let sign = netDiff > 0 ? '+' : '';
+                        let arrowIcon = netDiff > 0 ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow';
+                        if (netDiff === 0) arrowIcon = 'bi-dash-lg';
+
+                        diffUi = `
+                            <span class="badge bg-${diffColor}-subtle text-${diffColor}-emphasis border border-${diffColor}-subtle shadow-sm rounded-pill ms-2 px-2 py-1 mt-1 mt-md-0" style="font-size: 0.75rem;" title="ผลต่างสุทธิ (รวมบวกและลบ)">
+                                <i class="bi ${arrowIcon} me-1"></i>Diff ${sign}${diffPercent.toFixed(2)}%
+                            </span>
+                            <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle shadow-sm rounded-pill ms-1 px-2 py-1 mt-1 mt-md-0" style="font-size: 0.75rem;" title="ความแม่นยำของการนับ (Accuracy)">
+                                <i class="bi bi-bullseye me-1"></i>Acc. ${accuracy.toFixed(2)}%
+                            </span>
+                        `;
+                    }
+
                     body.innerHTML = `
                         <div class="container-fluid">
-                            <div class="row mb-3">
-                                <div class="col-md-4"><strong>รหัสการนับ:</strong> ${count.id}</div>
-                                <div class="col-md-4"><strong>วันที่นับ:</strong> ${formattedDate}</div>
-                                <div class="col-md-4"><strong>ผู้นับ:</strong> ${count.user}</div>
+                            <div class="row mb-3 align-items-center" style="background-color: #ffffff; padding: 15px; border-radius: 12px; border: 1px solid #dee2e6; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                                <div class="col-lg-3 col-md-6 mb-2 mb-lg-0 border-end border-light-subtle">
+                                    <div class="text-muted small fw-bold mb-1">รหัสการนับ</div>
+                                    <div class="text-primary fw-bold fs-6"><i class="bi bi-upc-scan me-2"></i>${count.id}</div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 mb-2 mb-lg-0 border-end border-light-subtle">
+                                    <div class="text-muted small fw-bold mb-1">วันที่นับ</div>
+                                    <div class="fw-bold text-dark" style="font-size: 0.9rem;"><i class="bi bi-calendar-check me-2 text-secondary"></i>${formattedDate}</div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 mb-2 mb-lg-0 border-end border-light-subtle">
+                                    <div class="text-muted small fw-bold mb-1">ผู้นับ & สถิติ</div>
+                                    <div class="d-flex align-items-center flex-wrap mt-1">
+                                        <span class="fw-bold text-dark"><i class="bi bi-person-circle me-1 text-secondary"></i>${count.user}</span>
+                                        ${diffUi}
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6">
+                                    <label class="form-label small fw-bold mb-1"><i class="bi bi-funnel-fill me-1 text-primary"></i>ตัวกรองผลต่าง:</label>
+                                    <select class="form-select form-select-sm border-primary shadow-sm fw-bold" onchange="filterVarianceReport(this.value)">
+                                        <option value="all">แสดงทั้งหมด</option>
+                                        <option value="filter-positive" class="text-success">🟢 เฉพาะยอดเกิน (ติดบวก)</option>
+                                        <option value="filter-negative" class="text-danger">🔴 เฉพาะยอดขาด (ติดลบ)</option>
+                                        <option value="filter-zero" class="text-secondary">⚪ เฉพาะยอดตรง (พอดี)</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered align-middle">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>สินค้า</th><th>วันที่ผลิต</th><th>แพ็คกิ้ง</th>
-                                            <th class="text-end">ระบบ</th><th class="text-end">นับได้</th><th class="text-end">ผลต่าง</th>
+                            <div class="table-responsive shadow-sm" style="max-height: calc(100vh - 280px); overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6;">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-dark" style="position: sticky; top: 0; z-index: 1;">
+                                        <tr class="text-center">
+                                            <th class="text-start">รหัสสินค้า / ชื่อสินค้า</th>
+                                            <th>วันที่ผลิต</th>
+                                            <th>แพ็คกิ้ง</th>
+                                            <th class="text-end">ยอดในระบบ</th>
+                                            <th class="text-end">ยอดที่นับได้</th>
+                                            <th class="text-end">ผลต่าง</th>
                                         </tr>
                                     </thead>
                                     <tbody>${itemsHtml}</tbody>
@@ -5244,10 +5251,66 @@ function populateStockCountMainView() {
                     `;
 
                     footer.innerHTML = `
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${T.close_button}</button>
-                        ${canApprove ? `<button type="button" class="btn btn-success approve-stock-count-btn" data-count-id="${count.id}"><i class="bi bi-check-circle-fill me-2"></i>${T.stock_count_approve_button}</button>` : ''}
+                        <button type="button" class="btn btn-info text-white shadow-sm" onclick="downloadVarianceCSV('${count.id}')"><i class="bi bi-filetype-csv me-2"></i>ดาวน์โหลด (CSV)</button>
+                        <button type="button" class="btn btn-secondary shadow-sm" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
+                        ${canApprove ? `<button type="button" class="btn btn-success approve-stock-count-btn shadow-sm px-4" data-count-id="${count.id}"><i class="bi bi-check-circle-fill me-2"></i>ยืนยันการปรับยอด</button>` : ''}
                     `;
                 }
+
+                // ฟังก์ชันสำหรับกรองข้อมูลในตารางรายงาน
+                window.filterVarianceReport = function(filterValue) {
+                    const rows = document.querySelectorAll('.report-item-row');
+                    rows.forEach(row => {
+                        if (filterValue === 'all') {
+                            row.style.display = '';
+                        } else {
+                            if (row.classList.contains(filterValue)) {
+                                row.style.display = '';
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        }
+                    });
+                };
+
+                // ฟังก์ชันสำหรับดาวน์โหลดตารางออกเป็นไฟล์ CSV
+                window.downloadVarianceCSV = function(countId) {
+                    const count = db.stockCounts.find(sc => sc.id === countId);
+                    if (!count) return;
+
+                    const csvRows = [];
+                    // สร้างหัวกระดาษ (Header)
+                    csvRows.push(['รหัสสินค้า', 'ชื่อสินค้า', 'วันที่ผลิต', 'แพ็คกิ้ง', 'ยอดในระบบ', 'ยอดที่นับได้', 'ผลต่าง'].join(','));
+
+                    count.items.forEach(item => {
+                        const variance = item.countedQty - item.systemQty;
+                        const packText = item.packagingType === 'temporary' ? 'Temporary' : 'Standard';
+                        
+                        // ป้องกันปัญหาลูกน้ำ (,) ในชื่อสินค้าทำให้คอลัมน์เพี้ยน
+                        const id = `"${item.productId}"`;
+                        const name = `"${item.productName.replace(/"/g, '""')}"`;
+                        
+                        csvRows.push([
+                            id, 
+                            name, 
+                            item.productionDate, 
+                            packText, 
+                            item.systemQty, 
+                            item.countedQty, 
+                            variance
+                        ].join(','));
+                    });
+
+                    // สร้างไฟล์และสั่งดาวน์โหลด (รองรับภาษาไทยใน Excel)
+                    const csvString = '\uFEFF' + csvRows.join('\n'); 
+                    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.setAttribute('download', `StockCount_Report_${countId}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
                 async function handleProductFormSubmit(e) {
                     e.preventDefault();
                     const T = translations[currentLanguage];
@@ -5763,145 +5826,7 @@ function populateSalesDashboard(startDate, endDate) {
                 };
 
                 // ========================================================
-                // ฟังก์ชัน Excel (รองรับ 2 ประเภทแพ็คกิ้ง และทำงาน 100%)
-                // ========================================================
-                window.startExcelUpload = function() {
-                    if (!currentUser || currentUser.role !== 'admin') {
-                        Swal.fire('ปฏิเสธการเข้าถึง', 'เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
-                        return;
-                    }
 
-                    const fileInput = document.createElement('input');
-                    fileInput.type = 'file';
-                    fileInput.accept = '.xlsx, .xls, .csv';
-                    fileInput.style.display = 'none';
-                    document.body.appendChild(fileInput); 
-                    
-                    fileInput.addEventListener('change', async (e) => {
-                        const file = e.target.files[0];
-                        if (!file) {
-                            document.body.removeChild(fileInput);
-                            return;
-                        }
-
-                        Swal.fire({ title: 'กำลังอ่านไฟล์ Excel...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-                        const reader = new FileReader();
-                        reader.onload = async function(event) {
-                            try {
-                                const data = new Uint8Array(event.target.result);
-                                const workbook = XLSX.read(data, {type: 'array'});
-                                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
-
-                                const adjustmentEntries = [];
-                                const today = new Date();
-                                today.setHours(7, 59, 59, 0); 
-                                const adjustmentTimestamp = today.toISOString();
-                                const dateStrForLot = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-
-                                let countUpdated = 0;
-
-                                // อ่านข้อมูล: A=PartNo, B=Standard Qty, C=Temporary Qty
-                                for (let i = 1; i < jsonData.length; i++) {
-                                    const row = jsonData[i];
-                                    if (!row || row.length < 2) continue; 
-                                    
-                                    const productId = String(row[0] || '').trim(); 
-                                    const stdQty = parseFloat(row[1]); // คอลัมน์ B
-                                    const tempQty = parseFloat(row[2]); // คอลัมน์ C
-
-                                    if (productId) {
-                                        const product = db.products.find(p => String(p.id).trim() === productId);
-                                        if (product) {
-                                            let added = false;
-                                            
-                                            // 1. ถ้าระบุยอด Standard มา (จัดการเฉพาะ Standard)
-                                            if (!isNaN(stdQty)) {
-                                                adjustmentEntries.push({
-                                                    id: 'adj-xls-std-' + Date.now() + '-' + productId + '-' + Math.random().toString(36).substr(2, 5),
-                                                    date: adjustmentTimestamp, type: 'adjustment',
-                                                    productId: product.id, productName: product.name, customer: product.customer, erpCode: product.erpCode,
-                                                    quantity: stdQty, productionDate: dateStrForLot, user: currentUser.username,
-                                                    remarks: `MANUAL_ADJ_NEW_TOTAL:${stdQty}|อัปเดตสต็อก Standard จาก Excel (ก่อน 08:00)`,
-                                                    packagingType: 'standard'
-                                                });
-                                                added = true;
-                                            }
-
-                                            // 2. ถ้าระบุยอด Temporary มา (จัดการเฉพาะ Temporary)
-                                            if (!isNaN(tempQty)) {
-                                                adjustmentEntries.push({
-                                                    id: 'adj-xls-tmp-' + Date.now() + '-' + productId + '-' + Math.random().toString(36).substr(2, 5),
-                                                    date: adjustmentTimestamp, type: 'adjustment',
-                                                    productId: product.id, productName: product.name, customer: product.customer, erpCode: product.erpCode,
-                                                    quantity: tempQty, productionDate: dateStrForLot, user: currentUser.username,
-                                                    remarks: `MANUAL_ADJ_NEW_TOTAL:${tempQty}|อัปเดตสต็อก Temporary จาก Excel (ก่อน 08:00)`,
-                                                    packagingType: 'temporary'
-                                                });
-                                                added = true;
-                                            }
-                                            
-                                            if(added) countUpdated++;
-                                        }
-                                    }
-                                }
-
-                                Swal.close();
-
-                                if (adjustmentEntries.length > 0) {
-                                    const confirm = await Swal.fire({
-                                        title: 'ตรวจสอบข้อมูล',
-                                        html: `พบรหัสสินค้าถูกต้อง <b>${countUpdated}</b> รายการ<br><br>
-                                               <div class="alert alert-warning text-start" style="font-size: 0.9rem;">
-                                                 ระบบจะแยกปรับยอด <b>Standard</b> และ <b>Temporary</b> ตามคอลัมน์ในไฟล์ Excel
-                                               </div>`,
-                                        icon: 'question', showCancelButton: true, confirmButtonText: '<i class="bi bi-check-circle me-1"></i> ยืนยันอัปเดต',
-                                        cancelButtonText: 'ยกเลิก', confirmButtonColor: '#198754'
-                                    });
-
-                                    if (confirm.isConfirmed) {
-                                        Swal.fire({title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-                                        adjustmentEntries.forEach(entry => db.history.unshift(entry));
-                                        calculateStockFromHistory();
-                                        populateAll(); 
-                                        await callAppsScript('appendBatchHistory', adjustmentEntries);
-                                        Swal.fire('สำเร็จ!', 'อัปเดตยอดสต็อกจากไฟล์เรียบร้อย', 'success');
-                                    }
-                                } else {
-                                    Swal.fire('ไม่พบข้อมูล!', 'กรุณาระบุตัวเลขลงในช่องยอด Standard หรือ Temporary อย่างน้อย 1 ช่อง', 'error');
-                                }
-                            } catch (err) {
-                                console.error(err);
-                                Swal.fire('เกิดข้อผิดพลาด', 'รูปแบบไฟล์ไม่ถูกต้อง', 'error');
-                            } finally { document.body.removeChild(fileInput); }
-                        };
-                        reader.readAsArrayBuffer(file);
-                    });
-                    
-                    fileInput.click();
-                };
-
-                window.startExcelDownload = function() {
-                    try {
-                        const ws_data = [
-                            ["Part No.", "Standard Qty (มาตรฐาน)", "Temporary Qty (ชั่วคราว)", "Remarks"],
-                            ["EXAMPLE-PART-01", 100, 50, "ใส่ยอดกล่องมาตรฐานที่คอลัมน์ B และกล่องชั่วคราวที่คอลัมน์ C"],
-                            ["EXAMPLE-PART-02", 200, 0, "ถ้าไม่มีชั่วคราว ให้ใส่ 0 หรือปล่อยว่างได้เลย"]
-                        ];
-                        const ws = XLSX.utils.aoa_to_sheet(ws_data);
-                        const wscols = [ {wch: 25}, {wch: 25}, {wch: 25}, {wch: 60} ];
-                        ws['!cols'] = wscols;
-                        const wb = XLSX.utils.book_new();
-                        XLSX.utils.book_append_sheet(wb, ws, "StockAdjustment");
-                        XLSX.writeFile(wb, "Stock_Adjustment_Template.xlsx");
-                    } catch (error) {
-                        Swal.fire('เกิดข้อผิดพลาด', 'ไลบรารีมีปัญหา หรือเบราว์เซอร์ไม่อนุญาต', 'error');
-                    }
-                };
-// ========================================================
-                // ฟังก์ชันแปลงรหัสสินค้า (Convert Part)
-                // ========================================================
                     window.openConvertModal = function() {
                     // แก้ไขจาก isAdmin อย่างเดียว เป็นเช็คสิทธิ์ canConvertPart ด้วย
                     if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canConvertPart)) {
@@ -6185,19 +6110,20 @@ function populateSalesDashboard(startDate, endDate) {
     </div>
 </div>
 </body>
-<div id="support-bar" class="support-footer">
-    <div class="support-info text-dark">
-        <i class="bi bi-person-circle me-1 text-primary"></i>
-        System Admin : <b>Kraiwich Chueanon (Joe)</b>
-        <span class="mx-2 text-muted">|</span>
-        <i class="bi bi-telephone-fill me-1 text-success"></i> Tel: 063-313-8036
-        <span class="mx-2 text-muted">|</span>
-        <i class="bi bi-line me-1 text-success"></i> Line: Konbannok
-    </div>
-    <div class="system-status">
-        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">
-            <i class="bi bi-check-circle-fill me-1"></i> System Online
-        </span>
+<!-- Modern Contact Widget (แคปซูลซ่อนข้อมูล) -->
+    <div class="modern-contact-widget">
+        <!-- ไอคอนติดต่อ -->
+        <div class="contact-icon">
+            <i class="bi bi-headset"></i>
+        </div>
+        <!-- ข้อความที่จะโชว์ตอนเอาเมาส์ชี้ -->
+        <div class="contact-details">
+            <span class="text-primary fw-bold">Support:</span> Kraiwich C.
+            <span class="mx-2 text-muted">|</span>
+            <i class="bi bi-telephone-fill text-success"></i> 063-313-8036
+            <span class="mx-2 text-muted">|</span>
+            <i class="bi bi-line text-success"></i> Konbannok
+        </div>
     </div>
 </div>
 </html>
