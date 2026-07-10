@@ -2743,30 +2743,32 @@ approveStockCount: (countId) => {
 
                         confirmAction(T.stock_count_confirm_approve_title, T.stock_count_confirm_approve_text, async () => {
                             const adjustmentEntries = [];
-                            
-                            // เช็คว่าเป็นไฟล์ที่มาจาก Excel ใช่หรือไม่ (รหัสขึ้นต้นด้วย sc-xls-)
                             const isExcelUpload = String(count.id).includes('sc-xls-');
+
+                            // --- ลอจิก CUT-OFF เวลาปรับสต็อก ---
+                            // บังคับให้เวลาในการปรับยอด เป็น 07:59:59 เสมอ!
+                            // เพื่อให้รับเข้า/ส่งออก ที่ทำหลัง 08.00 น. ไม่โดนทับ และบวกเพิ่มตามปกติ
+                            const countDateObj = new Date(count.date);
+                            countDateObj.setHours(7, 59, 59, 0);
+                            const cutoffTimestamp = countDateObj.toISOString();
 
                             count.items.forEach(item => {
                                 const variance = item.countedQty - item.systemQty;
                                 
-                                // กรณีมาจาก Excel บังคับให้ล้างของเก่าเซตยอดใหม่ (แม้ผลต่างจะเท่ากับ 0 ก็ตามเพื่อล้างล็อต)
                                 if (variance !== 0 || isExcelUpload) {
                                     const product = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
                                     
-                                    // ปกติ: บันทึกเฉพาะผลต่าง (+ หรือ -)
                                     let remark = `STOCK_COUNT_ADJ:${count.id}|ปรับยอดจากการนับสต็อก ${count.id} (นับโดย: ${count.user})`;
                                     let qtyToSave = variance; 
                                     
-                                    // หากมาจาก Excel: บังคับบันทึกแทนที่ยอดทั้งหมด (ล้างของเก่า)
                                     if (isExcelUpload) {
-                                        remark = `MANUAL_ADJ_NEW_TOTAL:${item.countedQty}|อัปเดตสต็อกจากไฟล์ Excel ${count.id}`;
+                                        remark = `MANUAL_ADJ_NEW_TOTAL:${item.countedQty}|อัปเดตสต็อกจากไฟล์ Excel ${count.id} (Cut-off 07:59)`;
                                         qtyToSave = item.countedQty; 
                                     }
 
                                     adjustmentEntries.push({
                                         id: 'adj-' + Date.now() + '-' + item.productId + '-' + Math.random().toString(36).substr(2, 5),
-                                        date: new Date().toISOString(),
+                                        date: cutoffTimestamp, // <--- ใช้เวลา 07:59:59 ในการบันทึกลงประวัติ
                                         type: 'adjustment',
                                         productId: item.productId,
                                         productName: product ? product.name : item.productName,
@@ -2788,6 +2790,7 @@ approveStockCount: (countId) => {
                                 adjustmentEntries.forEach(entry => db.history.unshift(entry));
                             }
 
+                            // ระบบจะคำนวณประวัติใหม่เรียงตามเวลา (Adjustment ตอน 07:59 จะถูกคิดก่อน Import ตอนสายๆ)
                             calculateStockFromHistory();
                             populateAll();
                             stockCountReportModal.hide();
@@ -2801,34 +2804,6 @@ approveStockCount: (countId) => {
                                 db.history.splice(0, adjustmentEntries.length);
                                 calculateStockFromHistory(); populateAll();
                                 showError(T.save_error_title, error.message);
-                            }
-                        });
-                    },
-                        toggleErpStatus: async (historyId) => {
-                        if (!currentUser || currentUser.role !== 'admin') return;
-                        const historyItem = db.history.find(h => h.id === historyId);
-                        if (!historyItem) return;
-
-                        Swal.fire({
-                            title: 'ยืนยันการเคลียร์ยอด ERP?',
-                            text: `ยืนยันว่าทำการปรับแก้ยอด ${historyItem.failedErpQty} ชิ้น ของรายการรับเข้านี้ในระบบ ERP เรียบร้อยแล้ว?`,
-                            icon: 'question',
-                            showCancelButton: true,
-                            confirmButtonText: 'เคลียร์เรียบร้อย',
-                            cancelButtonText: 'ยกเลิก',
-                            confirmButtonColor: '#198754'
-                        }).then(async (result) => {
-                            if (result.isConfirmed) {
-                                historyItem.erpStatus = 'Cleared';
-                                populateAll(); // โหลดหน้าตารางใหม่ทันที
-                                
-                                try {
-                                    // หากเพิ่มฟังก์ชันอัปเดตประวัติใน Google Apps Script ให้ใช้โค้ดบรรทัดด้านล่าง
-                                    // await callAppsScript('updateHistoryItem', historyItem); 
-                                    Swal.fire('สำเร็จ!', 'สถานะเปลี่ยนเป็นเคลียร์แล้ว (แจ้งผู้ดูแลระบบเพื่อ Sync ลงชีต)', 'success');
-                                } catch (err) {
-                                    console.error(err);
-                                }
                             }
                         });
                     },
@@ -2855,15 +2830,6 @@ approveStockCount: (countId) => {
                         populateSalesDashboard(new Date(startDate), new Date(endDate));
                     }
                 };
-// ========================================================
-                // ฟังก์ชัน Excel (เขียนใหม่ บังคับให้หน้าต่างเด้งชัวร์ 100%)
-                // ========================================================
-// ========================================================
-// ฟังก์ชัน Excel (รองรับ 2 ประเภทแพ็คกิ้ง และมีรายงานสรุป)
-// ========================================================
-// ========================================================
-                // ฟังก์ชัน Excel (สร้างเป็นรายการรออนุมัติในหน้านับสต็อก)
-                // ========================================================
                 window.startExcelUpload = function() {
                     if (!currentUser || currentUser.role !== 'admin') {
                         Swal.fire('ปฏิเสธการเข้าถึง', 'เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
@@ -2897,10 +2863,13 @@ approveStockCount: (countId) => {
                                 let countUpdated = 0;
                                 let countNotFound = 0;
 
+                                // --- ลอจิก CUT-OFF (ตัดยอดก่อน 08.00 น.) ---
                                 const today = new Date();
+                                today.setHours(7, 59, 59, 0); // บังคับเวลาเป็น 07:59:59 น.
+                                const cutoffTime = today.getTime();
+                                const countDateStr = today.toISOString(); // ใช้วันที่และเวลานี้เป็นเวลาตั้งต้นของรายการ
                                 const dateStrForLot = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
-                                // อ่านข้อมูล: A=PartNo, B=Standard Qty, C=Temporary Qty
                                 for (let i = 1; i < jsonData.length; i++) {
                                     const row = jsonData[i];
                                     if (!row || row.length < 2) continue; 
@@ -2908,21 +2877,20 @@ approveStockCount: (countId) => {
                                     const productId = String(row[0] || '').trim(); 
                                     if (!productId) continue;
 
-                                    const stdQty = parseFloat(row[1]); // คอลัมน์ B
-                                    const tempQty = parseFloat(row[2]); // คอลัมน์ C
+                                    const stdQty = parseFloat(row[1]); 
+                                    const tempQty = parseFloat(row[2]); 
                                     const hasStd = !isNaN(stdQty);
                                     const hasTemp = !isNaN(tempQty);
 
                                     if (!hasStd && !hasTemp) continue; 
 
                                     const product = db.products.find(p => String(p.id).trim() === productId);
-                                    
                                     if (!product) {
                                         countNotFound++;
                                         continue; 
                                     }
 
-                                    // ดึงยอดปัจจุบันมาเพื่อทำรายงานผลต่าง
+                                    // 1. ดึงสต็อก ณ เวลา "ปัจจุบัน" ออกมาก่อน
                                     const stockInfo = calculatedStock.find(s => String(s.productId).trim() === productId);
                                     let sysStd = 0, sysTemp = 0;
                                     if (stockInfo) {
@@ -2932,7 +2900,25 @@ approveStockCount: (countId) => {
                                         });
                                     }
 
-                                    // สร้างชุดข้อมูลพักไว้สำหรับ Standard
+                                    // 2. "ย้อนเวลา" สต็อกกลับไปตอน 07:59:59 น.
+                                    // โดยเช็คประวัติที่เพิ่งคีย์เข้ามา "หลัง 8 โมง" แล้วคำนวณย้อนกลับ
+                                    const recentHistory = db.history.filter(h => String(h.productId).trim() === productId && new Date(h.date).getTime() > cutoffTime);
+                                    recentHistory.forEach(h => {
+                                        let qty = parseFloat(h.quantity) || 0;
+                                        const isTemp = h.packagingType === 'temporary';
+                                        
+                                        if (h.type === 'import') {
+                                            // ถ้ารับเข้าหลัง 8 โมง -> ให้หักออกไปก่อน (เพราะตอน 8 โมงยังไม่มีของนี้)
+                                            if (isTemp) sysTemp -= qty; else sysStd -= qty;
+                                        } else if (h.type === 'export' || h.type === 'reversal') {
+                                            // ถ้าส่งออกหลัง 8 โมง -> ให้บวกกลับคืนมา (เพราะตอน 8 โมงของยังอยู่)
+                                            if (isTemp) sysTemp += qty; else sysStd += qty;
+                                        }
+                                    });
+
+                                    sysStd = Math.max(0, sysStd);
+                                    sysTemp = Math.max(0, sysTemp);
+
                                     if (hasStd) {
                                         countItems.push({
                                             productId: product.id, productName: product.name,
@@ -2942,7 +2928,6 @@ approveStockCount: (countId) => {
                                         countUpdated++;
                                     }
 
-                                    // สร้างชุดข้อมูลพักไว้สำหรับ Temporary
                                     if (hasTemp) {
                                         countItems.push({
                                             productId: product.id, productName: product.name,
@@ -2956,25 +2941,24 @@ approveStockCount: (countId) => {
                                 Swal.close();
 
                                 if (countItems.length > 0) {
-                                    // สร้างรหัส sc-xls- เพื่อบ่งบอกว่ามาจาก Excel
                                     const newCount = {
                                         id: 'sc-xls-' + Date.now(),
-                                        date: new Date().toISOString(),
+                                        date: countDateStr, // ใช้เวลา 07:59:59 ในการบันทึก
                                         user: currentUser.username,
                                         status: 'pending',
                                         items: countItems
                                     };
 
                                     db.stockCounts.unshift(newCount);
-                                    populateStockCountMainView(); // รีเฟรชหน้าต่างเพื่อให้ขึ้นในตาราง "รอตรวจสอบ"
+                                    populateStockCountMainView(); 
                                     
                                     Swal.fire({
                                         icon: 'success',
                                         title: 'สร้างฉบับร่างสำเร็จ!',
-                                        html: `พักข้อมูล Excel ไว้ในรายการ <b>"รอตรวจสอบ"</b> เรียบร้อยแล้ว<br><br>
+                                        html: `พักข้อมูล Excel ไว้ในรายการ <b>"รอตรวจสอบ"</b><br><br>
+                                               <span class="text-primary"><i class="bi bi-clock-history"></i> ตัดยอดเปรียบเทียบ ณ เวลา <b>07:59 น.</b></span><br>
                                                <span class="text-success"><i class="bi bi-check-circle"></i> สินค้าที่ดึงมา: <b>${countUpdated}</b> รายการ</span><br>
-                                               ${countNotFound > 0 ? `<span class="text-danger"><i class="bi bi-x-circle"></i> ไม่มีในระบบ: <b>${countNotFound}</b> รายการ</span><br>` : ''}
-                                               <hr><small class="text-muted">กรุณากดที่ไอคอน <b>แว่นขยาย</b> ในตารางด้านล่าง<br>เพื่อตรวจสอบผลต่าง และกดอนุมัติการปรับยอดครับ</small>`,
+                                               ${countNotFound > 0 ? `<span class="text-danger"><i class="bi bi-x-circle"></i> ไม่มีในระบบ: <b>${countNotFound}</b> รายการ</span><br>` : ''}`,
                                         confirmButtonColor: '#0d6efd'
                                     });
 
@@ -2993,7 +2977,6 @@ approveStockCount: (countId) => {
                     });
                     fileInput.click();
                 };
-
                 window.startExcelDownload = function() {
                     try {
                         const ws_data = [
@@ -6109,7 +6092,6 @@ function populateSalesDashboard(startDate, endDate) {
         </div>
     </div>
 </div>
-</body>
 <!-- Modern Contact Widget (แคปซูลซ่อนข้อมูล) -->
     <div class="modern-contact-widget">
         <!-- ไอคอนติดต่อ -->
@@ -6125,5 +6107,6 @@ function populateSalesDashboard(startDate, endDate) {
             <i class="bi bi-line text-success"></i> Konbannok
         </div>
     </div>
-</div>
+
+</body>
 </html>
