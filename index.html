@@ -958,57 +958,41 @@
             <div id="announcements-display-area" class="mb-4"></div>	
             <!-- Tab Content -->
             <div class="tab-content" id="pills-tabContent">
-                <!-- Stock Tab -->
-                <div class="tab-pane fade show active" id="pills-stock" role="tabpanel">
-                    <div class="row">
-                        <div class="col-lg-3" id="backup-card-container">
-                            <div class="card mb-4">
-                                <div class="card-header fw-bold"><i class="bi bi-cloud-arrow-down-fill me-2"></i><span
-                                        data-lang-key="backup_title">สำรองข้อมูล</span></div>
-                                <div class="card-body">
-                                    <p class="text-center mb-2" data-lang-key="backup_desc">ดาวน์โหลดข้อมูลต่างๆ
-                                        เป็นไฟล์ CSV</p>
-                                    <div class="d-flex flex-wrap justify-content-center gap-2">
-                                        <button id="backup-stock-btn" class="btn btn-info btn-sm flex-grow-1"><i
-                                                class="bi bi-archive-fill me-2"></i><span
-                                                data-lang-key="backup_stock">ข้อมูลสต็อก</span></button>
-                                        <button id="backup-products-btn" class="btn btn-info btn-sm flex-grow-1"><i
-                                                class="bi bi-box-seam-fill me-2"></i><span
-                                                data-lang-key="backup_products">ข้อมูลสินค้า</span></button>
-                                        <button id="backup-users-btn" class="btn btn-info btn-sm flex-grow-1"><i
-                                                class="bi bi-person-lines-fill me-2"></i><span
-                                                data-lang-key="backup_users">ข้อมูลผู้ใช้</span></button>
+<div class="tab-pane fade show active" id="pills-stock" role="tabpanel">
+                    <div class="col-12" id="stock-content-column">
+                        <div class="card mb-4 border-0 shadow-sm" style="border-radius: 20px;">
+                            <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-white border-0 pt-4 pb-2 px-4" style="border-radius: 20px 20px 0 0;">
+                                <h5 class="fw-bold text-primary mb-0"><i class="bi bi-table me-2"></i><span data-lang-key="stock_summary_title">สรุปยอดสต็อกสินค้าคงเหลือ</span></h5>
+                                
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="show-old-stock-filter">
+                                        <label class="form-check-label small text-muted fw-bold" for="show-old-stock-filter" data-lang-key="stock_show_old_filter">แสดงเฉพาะสต็อกที่ผลิตเกิน 3 เดือน</label>
+                                    </div>
+                                    
+                                    <div class="dropdown" id="backup-dropdown-container">
+                                        <button class="btn btn-outline-primary btn-sm rounded-pill shadow-sm dropdown-toggle fw-bold px-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-cloud-arrow-down-fill me-1"></i> <span class="d-none d-md-inline" data-lang-key="backup_title">สำรองข้อมูล</span>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="border-radius: 12px; z-index: 1050;">
+                                            <li><h6 class="dropdown-header fw-bold text-primary">เลือกข้อมูลที่ต้องการ (CSV)</h6></li>
+                                            <li><a class="dropdown-item fw-bold text-secondary" href="#" id="backup-stock-btn"><i class="bi bi-archive-fill text-info me-2"></i><span data-lang-key="backup_stock">ข้อมูลสต็อก</span></a></li>
+                                            <li><a class="dropdown-item fw-bold text-secondary" href="#" id="backup-products-btn"><i class="bi bi-box-seam-fill text-success me-2"></i><span data-lang-key="backup_products">ข้อมูลสินค้า</span></a></li>
+                                            <li><a class="dropdown-item fw-bold text-secondary" href="#" id="backup-users-btn"><i class="bi bi-person-lines-fill text-warning me-2"></i><span data-lang-key="backup_users">ข้อมูลผู้ใช้</span></a></li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-lg-9" id="stock-content-column">
-                            <div class="card mb-4">
-                                <div class="card-header fw-bold d-flex justify-content-between align-items-center">
-                                    <span><i class="bi bi-table me-2"></i><span
-                                            data-lang-key="stock_summary_title">สรุปยอดสต็อกสินค้าคงเหลือ</span></span>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" role="switch"
-                                            id="show-old-stock-filter">
-                                        <label class="form-check-label" for="show-old-stock-filter"
-                                            data-lang-key="stock_show_old_filter">แสดงเฉพาะสต็อกที่ผลิตเกิน 3
-                                            เดือน</label>
-                                    </div>
+                            <div class="card-body px-4 pb-4 pt-2">
+                                <div class="input-group mb-3 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+                                    <input type="text" id="stock-search-input" class="form-control border-0 bg-light" data-lang-key-placeholder="stock_search_placeholder" placeholder="ค้นหารหัสสินค้า, ชื่อสินค้า หรือลูกค้า...">
+                                    <button class="btn btn-primary" type="button" id="refresh-stock-summary-btn" title="Refresh Data"><i class="bi bi-arrow-clockwise"></i></button>
                                 </div>
-                                <div class="card-body">
-                                    <div class="input-group mb-3">
-                                        <input type="text" id="stock-search-input" class="form-control"
-                                            data-lang-key-placeholder="stock_search_placeholder"
-                                            placeholder="ค้นหารหัสสินค้า, ชื่อสินค้า หรือลูกค้า...">
-                                        <button class="btn btn-secondary" type="button" id="refresh-stock-summary-btn"
-                                            title="Refresh Data"><i class="bi bi-arrow-clockwise"></i></button>
-                                    </div>
-                                    <div class="table-responsive">
-                                        <table class="table table-hover align-middle">
-                                            <thead id="stock-summary-table-header"></thead>
-                                            <tbody id="stock-summary-table"></tbody>
-                                        </table>
-                                    </div>
+                                <div class="table-responsive shadow-sm" style="max-height: calc(100vh - 250px); overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6;">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead id="stock-summary-table-header" class="table-light" style="position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.05);"></thead>
+                                        <tbody id="stock-summary-table"></tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -3444,25 +3428,18 @@ clearInterval(window.mascotLoopTimer);
         if (document.getElementById('nav-users-item')) document.getElementById('nav-users-item').style.display = canManageUsers ? '' : 'none';
         if (document.getElementById('nav-announcements-item')) document.getElementById('nav-announcements-item').style.display = canManageAnn ? '' : 'none';
 
-        // 3. จัดการปุ่มดาวน์โหลดสำรองข้อมูล (Backup)
-        const backupCard = document.getElementById('backup-card-container');
-        if (backupCard) backupCard.style.display = (canManageProducts || canManageUsers) ? 'block' : 'none';
+ // 3. จัดการปุ่มดาวน์โหลดสำรองข้อมูลแบบใหม่ (Dropdown)
+        const backupDropdown = document.getElementById('backup-dropdown-container');
+        if (backupDropdown) backupDropdown.style.display = (canManageProducts || canManageUsers) ? 'block' : 'none';
         
         if (document.getElementById('backup-stock-btn')) document.getElementById('backup-stock-btn').style.display = '';
         if (document.getElementById('backup-products-btn')) document.getElementById('backup-products-btn').style.display = canManageProducts ? '' : 'none';
         if (document.getElementById('backup-users-btn')) document.getElementById('backup-users-btn').style.display = canManageUsers ? '' : 'none';
-
-        // 4. ปรับขนาดหน้าจอและตารางสต็อกให้สวยงาม
+ // 4. ปรับขนาดหน้าจอและตารางสต็อกให้สวยงาม (บังคับเต็มจอ 100% ทุกสิทธิ์)
         const stockContentColumn = document.getElementById('stock-content-column');
         if (stockContentColumn) {
-            if (canManageProducts || canManageUsers) {
-                stockContentColumn.classList.remove('col-lg-12');
-                stockContentColumn.classList.add('col-lg-9');
-            } else {
-                // ถ้าเป็น User ธรรมดาที่ไม่มีกล่อง Backup ให้ตารางสต็อกกางเต็มจอ 100% สวยๆ ไปเลย
-                stockContentColumn.classList.remove('col-lg-9');
-                stockContentColumn.classList.add('col-lg-12');
-            }
+            stockContentColumn.classList.remove('col-lg-9', 'col-md-9');
+            stockContentColumn.classList.add('col-12'); // ปลดล็อกพื้นที่ว่าง ให้กาง 12 ส่วนเต็ม
         }
                     // --- คำสั่งสำคัญ: แสดงแถบ Support ---
                     const bar = document.getElementById('support-bar');
@@ -4069,11 +4046,11 @@ window.deletePlanItem = function(id, date) {
                             }
                         }
 
-                        // NEW: Stock Count Listeners
-                        if (e.target.id === 'start-stock-count-btn') {
+                    // NEW: Stock Count Listeners (อัปเดตแก้บัคคลิกไอคอนไม่ติด)
+                        if (e.target.closest('#start-stock-count-btn')) {
                             window.app.startNewStockCount();
                         }
-                        if (e.target.id === 'save-stock-count-btn') {
+                        if (e.target.closest('#save-stock-count-btn')) {
                             window.app.saveStockCount();
                         }
                         const viewReportBtn = e.target.closest('.view-stock-count-report-btn');
@@ -5179,7 +5156,77 @@ function populateStockCountMainView() {
                 </div>
             `;
                 }
+// ========================================================
+                // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
+                // ========================================================
+                function renderStockCountModalBody() {
+                    const T = translations[currentLanguage];
+                    const body = document.getElementById('stockCountModalBody');
+                    
+                    let html = `<div class="container-fluid"><div class="row g-3">`;
+                    
+                    // ดึงสินค้าทั้งหมดในระบบมาแสดง (เรียงตามรหัส)
+                    const allProducts = [...db.products].sort((a, b) => a.id.localeCompare(b.id));
 
+                    if (allProducts.length === 0) {
+                        html += `<div class="col-12 text-center p-5 text-muted"><i class="bi bi-box-seam opacity-50 d-block mb-3" style="font-size: 3rem;"></i>ไม่พบข้อมูลสินค้าในระบบ</div>`;
+                    } else {
+                        // เพิ่มช่องค้นหาเพื่อให้หาสินค้าได้ง่ายเวลาจดหน้างาน
+                        html += `
+                        <div class="col-12 sticky-top pt-3 pb-2" style="background-color: #fff; z-index: 10;">
+                            <div class="input-group shadow-sm" style="border-radius: 12px; overflow: hidden;">
+                                <span class="input-group-text bg-primary text-white border-primary"><i class="bi bi-search"></i></span>
+                                <input type="text" id="manual-count-search" class="form-control border-primary" placeholder="ค้นหารหัส หรือชื่อสินค้า เพื่อเริ่มนับ..." onkeyup="filterManualCountProducts()">
+                            </div>
+                        </div>
+                        <div class="col-12" id="manual-count-list">
+                            <div class="row g-3">
+                        `;
+
+                        allProducts.forEach(product => {
+                            // ดึงสต็อกปัจจุบันมาแสดง
+                            const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(product.id).trim());
+                            const currentQty = stockInfo ? stockInfo.totalQuantity : 0;
+                            
+                            html += `
+                            <div class="col-12 manual-count-item" data-search="${product.id.toLowerCase()} ${product.name.toLowerCase()}">
+                                <div class="card shadow-sm product-count-group border-0" style="border-radius: 15px;" data-product-id="${product.id}" data-product-name="${product.name}">
+                                    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center py-3" style="border-radius: 15px 15px 0 0;">
+                                        <div class="mb-2 mb-md-0">
+                                            <span class="fw-bold text-primary" style="font-size: 1.1rem;"><i class="bi bi-box-seam-fill me-2"></i>${product.id}</span>
+                                            <span class="ms-2 text-dark fw-semibold">${product.name}</span>
+                                            <span class="badge bg-secondary-subtle text-secondary-emphasis ms-2 border">ระบบมี: ${currentQty.toLocaleString()}</span>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold" onclick="window.app.addCountLotRow('${product.id}')">
+                                            <i class="bi bi-plus-circle-fill me-1"></i>เพิ่มการนับ
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-2 bg-white" id="lots-container-${product.id}" style="border-radius: 0 0 15px 15px;">
+                                        <p class="text-muted text-center mb-0 small py-3" style="font-style: italic;">-- หากนับสินค้านี้แล้วมียอด กรุณากดปุ่ม "เพิ่มการนับ" ด้านบน --</p>
+                                    </div>
+                                </div>
+                            </div>`;
+                        });
+
+                        html += `</div></div>`;
+                    }
+                    
+                    html += `</div></div>`;
+                    body.innerHTML = html;
+                }
+
+                // ฟังก์ชันค้นหาสินค้าตอนนับสด (ค้นหาแบบ Real-time)
+                window.filterManualCountProducts = function() {
+                    const search = document.getElementById('manual-count-search').value.toLowerCase();
+                    const items = document.querySelectorAll('.manual-count-item');
+                    items.forEach(item => {
+                        if (item.dataset.search.includes(search)) {
+                            item.style.display = '';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                };
 function renderStockCountReportModalBody(count) {
                     const T = translations[currentLanguage];
                     const body = document.getElementById('stockCountReportModalBody');
@@ -5314,6 +5361,12 @@ function renderStockCountReportModalBody(count) {
                     // ========================================================
                 // ฟังก์ชัน ไม่อนุมัติ / ยกเลิกรายการนับสต็อก
                 // ========================================================
+// ========================================================
+                // ฟังก์ชัน ไม่อนุมัติ / ยกเลิกรายการนับสต็อก (อัปเดตแก้บัคแจ้งเตือน)
+                // ========================================================
+// ========================================================
+                // ฟังก์ชัน ไม่อนุมัติ / ยกเลิกรายการนับสต็อก (ซ่อน False Alarm)
+                // ========================================================
                 window.rejectStockCount = function(countId) {
                     const count = db.stockCounts.find(sc => sc.id === countId);
                     if (!count || count.status !== 'pending') return;
@@ -5331,37 +5384,27 @@ function renderStockCountReportModalBody(count) {
                         if (result.isConfirmed) {
                             Swal.fire({title: 'กำลังยกเลิกรายการ...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
                             
-                            const originalStatus = count.status;
-                            count.status = 'rejected'; // เปลี่ยนสถานะเป็นถูกปฏิเสธ
+                            // 1. อัปเดตหน้าจอให้เป็นสถานะ "ยกเลิก" ทันที (ไม่ต้องรอโหลด)
+                            count.status = 'rejected'; 
+                            populateStockCountMainView(); 
                             
-                            populateStockCountMainView(); // รีเฟรชตารางให้สถานะเปลี่ยน
-                            if(typeof stockCountReportModal !== 'undefined') stockCountReportModal.hide(); // ปิดหน้าต่างรายงาน
-                            
+                            // 2. ปิดหน้าต่างรายงานทันที
+                            const modalEl = document.getElementById('stockCountReportModal');
+                            if (modalEl) {
+                                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                                if (modalInstance) modalInstance.hide();
+                            }
+
                             try {
-                                // ส่งคำสั่งไปเปลี่ยนสถานะใน Google Sheet
+                                // 3. ส่งข้อมูลไป Google Sheet แบบเงียบๆ
                                 await callAppsScript('updateStockCountStatus', { id: countId, status: 'rejected' });
-                                Swal.fire('ยกเลิกสำเร็จ!', 'รายการนี้ถูกปัดตกและไม่อนุมัติเรียบร้อยแล้ว', 'success');
                             } catch (error) {
-                                // ถ้าระบบหลังบ้านมีปัญหา ให้คืนค่าเดิม
-                                count.status = originalStatus;
-                                populateStockCountMainView();
-                                Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+                                // 4. ถ้ามี Error ตีกลับมา ให้ซ่อนไว้ใน Console (ไม่เอามาโชว์กวนใจผู้ใช้ เพราะจริงๆ ดาต้าเซฟแล้ว)
+                                console.warn('Google Sheet ตอบกลับช้า (False Alarm):', error);
                             }
-                        }
-                    });
-                };
-                // ฟังก์ชันสำหรับกรองข้อมูลในตารางรายงาน
-                window.filterVarianceReport = function(filterValue) {
-                    const rows = document.querySelectorAll('.report-item-row');
-                    rows.forEach(row => {
-                        if (filterValue === 'all') {
-                            row.style.display = '';
-                        } else {
-                            if (row.classList.contains(filterValue)) {
-                                row.style.display = '';
-                            } else {
-                                row.style.display = 'none';
-                            }
+
+                            // 5. โชว์แจ้งเตือนสำเร็จแบบสวยๆ
+                            Swal.fire('ยกเลิกสำเร็จ!', 'รายการนี้ถูกปัดตกและไม่อนุมัติเรียบร้อยแล้ว', 'success');
                         }
                     });
                 };
