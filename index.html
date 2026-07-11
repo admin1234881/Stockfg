@@ -892,13 +892,14 @@
                             <li><a class="dropdown-item" href="#" onclick="setLanguage('en')">English</a></li>
                         </ul>
                     </div>
-                    <span id="user-role" class="badge rounded-pill me-2 fs-6 align-middle"></span>
-                    <button id="logout-btn" class="btn btn-outline-danger btn-sm"><i
-                            class="bi bi-box-arrow-right me-1"></i><span
-                            data-lang-key="logout_button">ออกจากระบบ</span></button>
+                    <!-- Modern Profile Chip -->
+                    <div class="dropdown ms-2" id="user-profile-dropdown">
+                        <!-- Profile Chip จะถูกสร้างด้วย JS ที่นี่ -->
+                    </div>
+                    <!-- ปุ่ม Logout ถูกเรียกใช้ผ่าน JS ของ Profile Chip -->
+                    <button id="logout-btn" class="d-none"></button>
                 </div>
             </header>
-
 <!-- Navigation Tabs (Modern Redesign) -->
             <div class="modern-nav-container">
                 <ul class="nav nav-pills nav-fill" id="pills-tab" role="tablist" style="row-gap: 8px;">
@@ -2317,8 +2318,11 @@ if (isInitialLoad) {
         });
     }
 	try {
-        const response = await fetch(SCRIPT_URL, {
+        // แนบเวลาปัจจุบัน (Timestamp) ไปด้วย เพื่อป้องกันเบราว์เซอร์จำค่าเก่า (Cache)
+// ป้องกันเบราว์เซอร์จำข้อมูลเก่า (Cache) เพื่อให้ดึงรหัสสินค้าใหม่มาได้ทันที
+        const response = await fetch(SCRIPT_URL + '?action=getData&t=' + new Date().getTime(), {
             method: 'GET',
+            cache: 'no-store', // คำสั่งเด็ดขาด ห้ามจำค่าเก่า!
             redirect: 'follow'
         });
 
@@ -3387,8 +3391,31 @@ clearInterval(window.mascotLoopTimer);
                     const T = translations[currentLanguage];
                     const roleText = T.user_role_display.replace('{role}', currentUser.role);
 
-                    userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`;
-                    userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`;
+                    // --- 🎨 ระบบวาด Profile Chip สไตล์ Modern ---
+                    const profileContainer = document.getElementById('user-profile-dropdown');
+                    if (profileContainer) {
+                        const displayName = currentUser.fullname || currentUser.username;
+                        const roleColor = currentUser.role === 'admin' ? '#198754' : '#0dcaf0'; // แอดมินสีเขียว / ยูสเซอร์สีฟ้า
+                        
+                        profileContainer.innerHTML = `
+                            <div class="d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.08); border-radius: 50px; padding: 4px 16px 4px 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: all 0.2s;">
+                                ${window.getAvatarHtml(currentUser, 38)}
+                                <div class="d-none d-md-block text-start lh-1 ms-1">
+                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">${displayName}</div>
+                                    <div class="fw-semibold mt-1" style="font-size: 0.7rem; color: ${roleColor};"><i class="bi bi-shield-check me-1"></i>${roleText}</div>
+                                </div>
+                                <i class="bi bi-chevron-down text-muted ms-2" style="font-size: 0.7rem;"></i>
+                            </div>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" style="border-radius: 16px; min-width: 220px; animation: slideUpFade 0.2s ease;">
+                                <li class="px-4 py-3 text-center border-bottom mb-2" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 16px 16px 0 0;">
+                                    <div class="d-flex justify-content-center mb-2">${window.getAvatarHtml(currentUser, 65)}</div>
+                                    <div class="fw-bold fs-6 text-dark">${displayName}</div>
+                                    <div class="text-muted small">@${currentUser.username}</div>
+                                </li>
+                                <li><a class="dropdown-item fw-bold text-danger py-2 rounded mx-2 w-auto mb-1" href="#" onclick="document.getElementById('logout-btn').click()"><i class="bi bi-box-arrow-right me-2"></i> ออกจากระบบ</a></li>
+                            </ul>
+                        `;
+                    }
 
 // =========================================================
         // --- เริ่มต้นระบบจัดการสิทธิ์ใหม่ (ยึดตามสวิตช์เป็นหลัก) ---
@@ -4159,6 +4186,17 @@ function handleLogin(e) {
     }
 }
                 // --- HELPER FUNCTIONS ---
+                window.getAvatarHtml = function(user, size = 40) {
+                    if (user && user.avatarUrl && user.avatarUrl.trim() !== '') {
+                        return `<img src="${user.avatarUrl}" alt="${user.username}" style="width: ${size}px; height: ${size}px; object-fit: cover; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
+                    } else {
+                        // ดึงอักษรตัวแรกของชื่อมาทำรูป (ถ้าไม่มีรูปลิงก์)
+                        const initial = ((user && user.fullname) ? user.fullname : (user && user.username ? user.username : '?')).charAt(0).toUpperCase();
+                        const colors = ['#0d6efd', '#198754', '#dc3545', '#fd7e14', '#6f42c1', '#20c997', '#e83e8c'];
+                        const bgColor = colors[((user && user.username) ? user.username.length : 0) % colors.length];
+                        return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; background-color: ${bgColor}; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: ${size*0.45}px; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer;">${initial}</div>`;
+                    }
+                };
                 function formatDate(dateInput) {
                     if (!dateInput || dateInput === 'Manual Adjustment' || dateInput === 'Stock Count Adjustment') return dateInput;
                     let date;
@@ -4334,8 +4372,23 @@ function getFilteredHistory() {
                     }
                     db.users.forEach(u => {
                         const r = document.createElement('tr');
-                        r.innerHTML = `<td><i class="bi bi-person-circle me-2"></i>${u.username}</td><td><span class="badge rounded-pill ${u.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}">${u.role}</span></td><td><button class="btn btn-warning btn-sm" onclick="window.app.editUser('${u.username}')"><i class="bi bi-pencil-fill"></i></button> ${u.username !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="window.app.deleteUser('${u.username}')"><i class="bi bi-trash3-fill"></i></button>` : ''}</td>`;
-                        userManagementTable.appendChild(r);
+                        const displayName = u.fullname || u.username;
+                        r.innerHTML = `
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    ${window.getAvatarHtml(u, 40)}
+                                    <div class="lh-1">
+                                        <div class="fw-bold text-dark" style="font-size: 0.95rem;">${displayName}</div>
+                                        <div class="text-muted mt-1" style="font-size: 0.8rem;">@${u.username}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge rounded-pill ${u.role === 'admin' ? 'bg-success px-3' : 'bg-info text-dark px-3'} py-2 shadow-sm">${u.role}</span></td>
+                            <td>
+                                <button class="btn btn-warning btn-sm shadow-sm" onclick="window.app.editUser('${u.username}')"><i class="bi bi-pencil-fill"></i></button> 
+                                ${u.username !== 'admin' ? `<button class="btn btn-danger btn-sm shadow-sm" onclick="window.app.deleteUser('${u.username}')"><i class="bi bi-trash3-fill"></i></button>` : ''}
+                            </td>
+                        `;
                     });
                 }
 
@@ -4864,9 +4917,11 @@ const permissions = [
             `).join('');
 
                     userFormEl.innerHTML = `
-                <div class="col-12"> <label for="user-username" class="form-label">${T.username_label}</label> <input type="text" id="user-username" class="form-control" required value="${user.username || ''}"> </div>
-                <div class="col-12"> <label for="user-password" class="form-label">${T.password_label}</label> <input type="password" id="user-password" class="form-control" required value="${user.password || ''}"> </div>
-                <div class="col-12"> <label for="user-role-select" class="form-label">${T.user_role}</label> <select id="user-role-select" class="form-select" required><option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option><option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option></select> </div>
+                <div class="col-md-6"> <label for="user-username" class="form-label">${T.username_label}</label> <input type="text" id="user-username" class="form-control border-primary" required value="${user.username || ''}"> </div>
+                <div class="col-md-6"> <label for="user-password" class="form-label">${T.password_label}</label> <input type="password" id="user-password" class="form-control" required value="${user.password || ''}"> </div>
+                <div class="col-md-12"> <label for="user-fullname" class="form-label text-success fw-bold"><i class="bi bi-person-vcard me-1"></i>ชื่อ-สกุลจริง (โชว์บนเว็บ)</label> <input type="text" id="user-fullname" class="form-control" placeholder="เช่น ไกรวิชญ์ C." value="${user.fullname || ''}"> </div>
+                <div class="col-md-6"> <label for="user-avatar" class="form-label text-info fw-bold"><i class="bi bi-image me-1"></i>ลิงก์รูปโปรไฟล์ URL</label> <input type="text" id="user-avatar" class="form-control" placeholder="วางลิงก์รูปภาพ (ถ้ามี)" value="${user.avatarUrl || ''}"> </div>
+                <div class="col-md-6"> <label for="user-role-select" class="form-label">${T.user_role}</label> <select id="user-role-select" class="form-select border-warning" required><option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option><option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option></select> </div>
                 <div class="col-12 mt-3"> <label class="form-label fw-bold">${T.user_permissions}</label> <div class="border rounded p-2 bg-light">${permissionsHtml}</div> </div>
                 <div class="col-12 mt-4"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.user_save_button}</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
                 }
@@ -5158,14 +5213,20 @@ function populateStockCountMainView() {
 // ========================================================
                 // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
                 // ========================================================
+// ========================================================
+                // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
+                // ========================================================
+// ========================================================
+                // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
+                // ========================================================
                 function renderStockCountModalBody() {
                     const T = translations[currentLanguage];
                     const body = document.getElementById('stockCountModalBody');
                     
                     let html = `<div class="container-fluid"><div class="row g-3">`;
                     
-                    // ดึงสินค้าทั้งหมดในระบบมาแสดง (เรียงตามรหัส)
-                    const allProducts = [...db.products].sort((a, b) => a.id.localeCompare(b.id));
+                    // ดึงสินค้าทั้งหมดในระบบมาแสดง (บังคับแปลงเป็น String ป้องกันบัคหน้าต่างพัง)
+                    const allProducts = [...db.products].sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
 
                     if (allProducts.length === 0) {
                         html += `<div class="col-12 text-center p-5 text-muted"><i class="bi bi-box-seam opacity-50 d-block mb-3" style="font-size: 3rem;"></i>ไม่พบข้อมูลสินค้าในระบบ</div>`;
@@ -5183,24 +5244,27 @@ function populateStockCountMainView() {
                         `;
 
                         allProducts.forEach(product => {
-                            // ดึงสต็อกปัจจุบันมาแสดง
-                            const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(product.id).trim());
+                            const safeId = String(product.id || '');
+                            const safeName = String(product.name || '');
+                            const escapedName = safeName.replace(/"/g, '&quot;'); 
+
+                            const stockInfo = calculatedStock.find(s => String(s.productId).trim() === safeId.trim());
                             const currentQty = stockInfo ? stockInfo.totalQuantity : 0;
                             
                             html += `
-                            <div class="col-12 manual-count-item" data-search="${product.id.toLowerCase()} ${product.name.toLowerCase()}">
-                                <div class="card shadow-sm product-count-group border-0" style="border-radius: 15px;" data-product-id="${product.id}" data-product-name="${product.name}">
+                            <div class="col-12 manual-count-item" data-search="${safeId.toLowerCase()} ${safeName.toLowerCase()}">
+                                <div class="card shadow-sm product-count-group border-0" style="border-radius: 15px;" data-product-id="${safeId}" data-product-name="${escapedName}">
                                     <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center py-3" style="border-radius: 15px 15px 0 0;">
                                         <div class="mb-2 mb-md-0">
-                                            <span class="fw-bold text-primary" style="font-size: 1.1rem;"><i class="bi bi-box-seam-fill me-2"></i>${product.id}</span>
-                                            <span class="ms-2 text-dark fw-semibold">${product.name}</span>
+                                            <span class="fw-bold text-primary" style="font-size: 1.1rem;"><i class="bi bi-box-seam-fill me-2"></i>${safeId}</span>
+                                            <span class="ms-2 text-dark fw-semibold">${safeName}</span>
                                             <span class="badge bg-secondary-subtle text-secondary-emphasis ms-2 border">ระบบมี: ${currentQty.toLocaleString()}</span>
                                         </div>
-                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold" onclick="window.app.addCountLotRow('${product.id}')">
+                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold" onclick="window.app.addCountLotRow('${safeId}')">
                                             <i class="bi bi-plus-circle-fill me-1"></i>เพิ่มการนับ
                                         </button>
                                     </div>
-                                    <div class="card-body p-2 bg-white" id="lots-container-${product.id}" style="border-radius: 0 0 15px 15px;">
+                                    <div class="card-body p-2 bg-white" id="lots-container-${safeId}" style="border-radius: 0 0 15px 15px;">
                                         <p class="text-muted text-center mb-0 small py-3" style="font-style: italic;">-- หากนับสินค้านี้แล้วมียอด กรุณากดปุ่ม "เพิ่มการนับ" ด้านบน --</p>
                                     </div>
                                 </div>
@@ -5214,6 +5278,18 @@ function populateStockCountMainView() {
                     body.innerHTML = html;
                 }
 
+                // ฟังก์ชันค้นหาสินค้าตอนนับสด (ค้นหาแบบ Real-time)
+                window.filterManualCountProducts = function() {
+                    const search = document.getElementById('manual-count-search').value.toLowerCase();
+                    const items = document.querySelectorAll('.manual-count-item');
+                    items.forEach(item => {
+                        if (item.dataset.search.includes(search)) {
+                            item.style.display = '';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                };
                 // ฟังก์ชันค้นหาสินค้าตอนนับสด (ค้นหาแบบ Real-time)
                 window.filterManualCountProducts = function() {
                     const search = document.getElementById('manual-count-search').value.toLowerCase();
@@ -5811,6 +5887,8 @@ function populateSalesDashboard(startDate, endDate) {
                         const userData = {
                             username: document.getElementById('user-username').value.trim(),
                             password: document.getElementById('user-password').value.trim(),
+                            fullname: document.getElementById('user-fullname').value.trim(),
+                            avatarUrl: document.getElementById('user-avatar').value.trim(),
                             role: document.getElementById('user-role-select').value,
                             canImport: document.getElementById('permission-canImport').checked,
                             canExport: document.getElementById('permission-canExport').checked,
