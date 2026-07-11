@@ -12,12 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-/* ========================================= */
-        /* --- MODERN CONTACT WIDGET (พับเก็บได้) --- */
-        /* ========================================= */
-/* ========================================= */
-        /* --- HEADER CONTACT WIDGET (พับเก็บได้) --- */
-        /* ========================================= */
         .header-contact-widget {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(10px);
@@ -752,9 +746,123 @@
         .main-wrapper, .tab-content, .container-fluid {
             overflow: visible !important; /* ปลดล็อกให้เมนูย่อยยื่นออกมาได้ */
         }
-
-        /* --- ถ้าจะเอาเมนูภาษาออก (ย้ำอีกครั้ง) --- */
-        /* ให้แน่ใจว่าได้ลบโค้ดส่วน Language Switcher ออกจาก HTML แล้วนะครับ */
+/* ========================================= */
+        /* --- MODERN CALCULATOR WIDGET --- */
+        /* ========================================= */
+        .calculator-fab {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+            color: white;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 20px rgba(13, 110, 253, 0.4);
+            cursor: pointer;
+            z-index: 1060;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 2px solid rgba(255,255,255,0.8);
+        }
+        .calculator-fab:hover {
+            transform: scale(1.1) rotate(15deg);
+        }
+        .modern-calculator {
+            position: fixed;
+            bottom: 100px;
+            right: 25px;
+            width: 320px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 24px;
+            border: 1px solid rgba(13, 110, 253, 0.2);
+            z-index: 1060;
+            overflow: hidden;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            animation: slideUpCalc 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideUpCalc {
+            0% { opacity: 0; transform: translateY(30px) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .calc-header {
+            background: #f8f9fa;
+            color: #212529;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e9ecef;
+        }
+        /* --- แถบประวัติเครื่องคิดเลข --- */
+        .calc-history-container {
+            max-height: 120px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border-bottom: 1px inset #e9ecef;
+            padding: 10px 20px;
+        }
+        .calc-history-item {
+            text-align: right;
+            padding: 4px 0;
+            border-bottom: 1px dashed #dee2e6;
+        }
+        .calc-history-item:last-child { border-bottom: none; }
+        .calc-history-expr { font-size: 0.8rem; color: #6c757d; margin-bottom: 2px; }
+        .calc-history-res { font-size: 1rem; font-weight: bold; color: #0d6efd; }
+        .calc-history-clear { font-size: 0.75rem; color: #dc3545; cursor: pointer; transition: all 0.2s; }
+        .calc-history-clear:hover { color: #bb2d3b; text-decoration: underline; }
+        .calc-title { font-weight: 700; font-size: 0.95rem; color: #0d6efd; }
+        .calc-display-container {
+            padding: 20px;
+            background-color: #ffffff;
+        }
+        .calc-display {
+            width: 100%;
+            background: transparent;
+            border: none;
+            text-align: right;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #212529;
+            outline: none;
+            font-family: 'Inter', monospace;
+            padding: 0;
+            overflow-x: auto;
+        }
+        .calc-keys {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+        .calc-btn {
+            border: none;
+            background: #ffffff;
+            border-radius: 14px;
+            height: 55px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            border: 1px solid #e9ecef;
+        }
+        .calc-btn:hover { background: #e9ecef; transform: translateY(-2px); box-shadow: 0 5px 10px rgba(0,0,0,0.08); }
+        .calc-btn:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
+        .calc-btn-operator { background: #e7f1ff; color: #0d6efd; border-color: #cfe2ff; font-size: 1.5rem; }
+        .calc-btn-operator:hover { background: #d0e7ff; }
+        .calc-btn-clear { background: #fff5f5; color: #dc3545; border-color: #f8d7da; }
+        .calc-btn-clear:hover { background: #ffe5e5; }
+        .calc-btn-equal { background: linear-gradient(135deg, #0d6efd, #0dcaf0); color: white; border: none; box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3); font-size: 1.8rem; }
+        .calc-btn-equal:hover { opacity: 0.9; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.4); }
     </style>
 <body>
 
@@ -1254,10 +1362,11 @@
                                     class="bi bi-download me-1"></i><span
                                     data-lang-key="backup_history">ดาวน์โหลดประวัติ (CSV)</span></button>
                         </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead id="history-table-header"></thead>
+                            <div class="card-body px-4 pb-4 pt-0 mt-3">
+                            <!-- ล็อกความสูงตาราง (max-height) เพื่อให้เลื่อนเฉพาะข้างใน และทำ position: sticky ที่หัวตาราง -->
+                            <div class="table-responsive shadow-sm" style="max-height: calc(100vh - 350px); overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6;">
+                                <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
+                                    <thead id="history-table-header" class="table-light" style="position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.08);"></thead>
                                     <tbody id="history-table"></tbody>
                                 </table>
                             </div>
@@ -1360,7 +1469,55 @@
                 </div>
             </div>
         </div>
+<!-- ================= MODERN CALCULATOR WIDGET ================= -->
+        <!-- ปุ่มเปิด-ปิด เครื่องคิดเลข (ลอยอยู่มุมขวาล่าง) -->
+        <div class="calculator-fab" onclick="window.toggleCalculator()" title="เปิดเครื่องคิดเลข (NumPad)">
+            <i class="bi bi-calculator-fill"></i>
+        </div>
 
+        <!-- หน้าต่างเครื่องคิดเลข -->
+        <div id="calculator-widget" class="modern-calculator d-none shadow-lg">
+            <div class="calc-header">
+                <span class="calc-title"><i class="bi bi-calculator me-2"></i>เครื่องคิดเลข</span>
+                <button type="button" class="btn-close" onclick="window.toggleCalculator()"></button>
+            </div>
+            <!-- ส่วนแสดงประวัติการคำนวณ -->
+            <div id="calc-history-area" class="calc-history-container d-none">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span style="font-size: 0.75rem; color: #adb5bd; font-weight: bold;"><i class="bi bi-clock-history me-1"></i>ประวัติล่าสุด</span>
+                    <span class="calc-history-clear" onclick="window.clearCalcHistory()"><i class="bi bi-trash"></i> ล้าง</span>
+                </div>
+                <div id="calc-history-list"></div>
+            </div>
+            <div class="calc-display-container">
+                <input type="text" id="calc-display" class="calc-display" value="0" readonly>
+            </div>
+            <div class="calc-keys">
+                <button class="calc-btn calc-btn-clear" onclick="window.calcClear()">C</button>
+                <button class="calc-btn calc-btn-operator" onclick="window.calcDelete()"><i class="bi bi-backspace"></i></button>
+                <button class="calc-btn calc-btn-operator" onclick="window.calcInput('/')">÷</button>
+                <button class="calc-btn calc-btn-operator" onclick="window.calcInput('*')">×</button>
+
+                <button class="calc-btn" onclick="window.calcInput('7')">7</button>
+                <button class="calc-btn" onclick="window.calcInput('8')">8</button>
+                <button class="calc-btn" onclick="window.calcInput('9')">9</button>
+                <button class="calc-btn calc-btn-operator" onclick="window.calcInput('-')">-</button>
+
+                <button class="calc-btn" onclick="window.calcInput('4')">4</button>
+                <button class="calc-btn" onclick="window.calcInput('5')">5</button>
+                <button class="calc-btn" onclick="window.calcInput('6')">6</button>
+                <button class="calc-btn calc-btn-operator" onclick="window.calcInput('+')">+</button>
+
+                <button class="calc-btn" onclick="window.calcInput('1')">1</button>
+                <button class="calc-btn" onclick="window.calcInput('2')">2</button>
+                <button class="calc-btn" onclick="window.calcInput('3')">3</button>
+                <button class="calc-btn calc-btn-equal" style="grid-row: span 2;" onclick="window.calcResult()">=</button>
+
+                <button class="calc-btn" style="grid-column: span 2;" onclick="window.calcInput('0')">0</button>
+                <button class="calc-btn" onclick="window.calcInput('.')">.</button>
+            </div>
+        </div>
+        <!-- ================= END CALCULATOR ================= -->
         <!-- Modals -->
         <div class="modal fade" id="lotDetailModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -5928,11 +6085,12 @@ function populateSalesDashboard(startDate, endDate) {
                         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
                     }
                 };
-
                 // ========================================================
-                // CALCULATOR FUNCTIONS (Keyboard Support)
+// ========================================================
+                // CALCULATOR FUNCTIONS (Modern UI & Keyboard Support + History)
                 // ========================================================
                 let calcExpression = '';
+                let calcHistory = []; // ตัวแปรเก็บประวัติการคำนวณ
                 
                 window.toggleCalculator = function() {
                     const calc = document.getElementById('calculator-widget');
@@ -5940,6 +6098,8 @@ function populateSalesDashboard(startDate, endDate) {
                         calc.classList.toggle('d-none');
                         if (!calc.classList.contains('d-none')) {
                             document.addEventListener('keydown', handleCalcKeyboard);
+                            document.getElementById('calc-display').focus();
+                            window.renderCalcHistory(); // โชว์ประวัติตอนเปิด
                         } else {
                             document.removeEventListener('keydown', handleCalcKeyboard);
                         }
@@ -5948,29 +6108,46 @@ function populateSalesDashboard(startDate, endDate) {
 
                 function handleCalcKeyboard(e) {
                     const calc = document.getElementById('calculator-widget');
-                    if (calc.classList.contains('d-none')) return; 
+                    if (!calc || calc.classList.contains('d-none')) return; 
+
+                    const activeTag = document.activeElement.tagName;
+                    if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') {
+                       if (document.activeElement.id !== 'calc-display') return;
+                    }
 
                     const key = e.key;
-                    if (['+', '-', '*', '/', 'Enter', 'Backspace', 'Escape'].includes(key)) {
+                    if (['+', '-', '*', '/', 'Enter', 'Backspace', 'Escape', '=', '%'].includes(key)) {
                         e.preventDefault();
                     }
 
-                    if (!isNaN(key) || ['+', '-', '*', '/', '.'].includes(key)) {
+                    if (['0','1','2','3','4','5','6','7','8','9','+', '-', '*', '/', '.'].includes(key)) {
                         window.calcInput(key);
-                    } else if (key === 'Enter') {
+                    } else if (key === 'Enter' || key === '=') {
                         window.calcResult();
                     } else if (key === 'Backspace') {
                         window.calcDelete();
-                    } else if (key === 'Escape' || key === 'c' || key === 'C') {
+                    } else if (key === 'Escape' || key.toLowerCase() === 'c') {
                         window.calcClear();
                     }
                 }
 
+                function formatCalcDisplay(expr) {
+                    if (!expr) return '0';
+                    return expr.replace(/\*/g, '×').replace(/\//g, '÷');
+                }
+
                 window.calcInput = function(val) {
                     const display = document.getElementById('calc-display');
-                    if (calcExpression === '0' && val !== '.') calcExpression = '';
-                    calcExpression += val;
-                    display.value = calcExpression;
+                    const operators = ['+', '-', '*', '/'];
+                    
+                    if (operators.includes(val) && operators.includes(calcExpression.slice(-1))) {
+                        calcExpression = calcExpression.slice(0, -1) + val;
+                    } else {
+                        if (calcExpression === '0' && val !== '.') calcExpression = '';
+                        calcExpression += val;
+                    }
+                    display.value = formatCalcDisplay(calcExpression);
+                    display.scrollLeft = display.scrollWidth; 
                 };
 
                 window.calcClear = function() {
@@ -5980,24 +6157,68 @@ function populateSalesDashboard(startDate, endDate) {
 
                 window.calcDelete = function() {
                     calcExpression = calcExpression.slice(0, -1);
-                    document.getElementById('calc-display').value = calcExpression || '0';
+                    document.getElementById('calc-display').value = formatCalcDisplay(calcExpression) || '0';
                 };
 
+                // ฟังก์ชันคำนวณและบันทึกประวัติ
                 window.calcResult = function() {
                     const display = document.getElementById('calc-display');
                     try {
-                        const result = eval(calcExpression);
-                        const finalResult = Number.isInteger(result) ? result : result.toFixed(2);
+                        if (!calcExpression) return;
+                        
+                        // ถ่ายรูปสมการก่อนคำนวณเก็บไว้
+                        const originalExpr = formatCalcDisplay(calcExpression); 
+
+                        let result = eval(calcExpression);
+                        const finalResult = Number.isInteger(result) ? result : parseFloat(result.toFixed(4));
+                        
                         display.value = finalResult.toLocaleString();
                         calcExpression = String(finalResult);
+
+                        // ถ้าคำนวณแล้วได้ผลลัพธ์ใหม่ ให้ดันเข้าประวัติ (เช็คว่าไม่ใช่การกด = ซ้ำเฉยๆ)
+                        if (originalExpr !== String(finalResult)) {
+                            calcHistory.push({
+                                expr: originalExpr,
+                                res: finalResult.toLocaleString()
+                            });
+                            // เก็บประวัติย้อนหลังแค่ 10 รายการล่าสุด ป้องกันหน้าต่างยาวเกินไป
+                            if (calcHistory.length > 10) calcHistory.shift(); 
+                            window.renderCalcHistory();
+                        }
+
                     } catch (e) {
                         display.value = 'Error';
                         calcExpression = '';
                     }
                 };
 
-                // ========================================================
+                // ฟังก์ชันโชว์ประวัติบนหน้าจอ
+                window.renderCalcHistory = function() {
+                    const historyArea = document.getElementById('calc-history-area');
+                    const historyList = document.getElementById('calc-history-list');
+                    if (!historyArea || !historyList) return;
 
+                    if (calcHistory.length === 0) {
+                        historyArea.classList.add('d-none'); // ซ่อนถ้าไม่มีประวัติ
+                    } else {
+                        historyArea.classList.remove('d-none'); // โชว์ถ้ามีประวัติ
+                        historyList.innerHTML = calcHistory.map(item => `
+                            <div class="calc-history-item">
+                                <div class="calc-history-expr">${item.expr} =</div>
+                                <div class="calc-history-res">${item.res}</div>
+                            </div>
+                        `).join('');
+                        // เลื่อนสกอร์บาร์ไปล่างสุดเสมอ เพื่อให้เห็นรายการล่าสุด
+                        historyArea.scrollTop = historyArea.scrollHeight;
+                    }
+                };
+
+                // ฟังก์ชันล้างประวัติ
+                window.clearCalcHistory = function() {
+                    calcHistory = [];
+                    window.renderCalcHistory();
+                };
+                // ========================================================
                     window.openConvertModal = function() {
                     // แก้ไขจาก isAdmin อย่างเดียว เป็นเช็คสิทธิ์ canConvertPart ด้วย
                     if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canConvertPart)) {
@@ -6213,14 +6434,6 @@ function populateSalesDashboard(startDate, endDate) {
 };
             }); // ปิด DOMContentLoaded ที่ถูกต้องตรงนี้
         </script>
-
-<button class="btn shadow-lg d-flex align-items-center justify-content-center" id="calc-toggle-btn" 
-        style="position: fixed; bottom: 95px; right: 25px; width: 55px; height: 55px; z-index: 4000; 
-               background: #212529; border: 2px solid #0d6efd; border-radius: 16px; 
-               color: #0d6efd; transition: all 0.3s ease; padding: 0;"
-        onclick="window.toggleCalculator()">
-    <i class="bi bi-calculator fs-3"></i>
-</button>
 <div id="floating-mascot-container" class="d-none" style="position: fixed; bottom: 15px; left: 20px; z-index: 4000; pointer-events: none; display: flex; align-items: center; gap: 12px;">
     
     <div id="mascot-img" class="cute-robot-css dug-dik-always" title="ฉันคอยเชียร์เธออยู่ตรงนี้น้า!" style="flex-shrink: 0;">
