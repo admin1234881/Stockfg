@@ -12,6 +12,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
+/* ========================================= */
+        /* --- MODERN CONTACT WIDGET (พับเก็บได้) --- */
+        /* ========================================= */
+/* ========================================= */
+        /* --- HEADER CONTACT WIDGET (พับเก็บได้) --- */
+        /* ========================================= */
         .header-contact-widget {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(10px);
@@ -746,123 +752,9 @@
         .main-wrapper, .tab-content, .container-fluid {
             overflow: visible !important; /* ปลดล็อกให้เมนูย่อยยื่นออกมาได้ */
         }
-/* ========================================= */
-        /* --- MODERN CALCULATOR WIDGET --- */
-        /* ========================================= */
-        .calculator-fab {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
-            color: white;
-            font-size: 1.8rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 5px 20px rgba(13, 110, 253, 0.4);
-            cursor: pointer;
-            z-index: 1060;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 2px solid rgba(255,255,255,0.8);
-        }
-        .calculator-fab:hover {
-            transform: scale(1.1) rotate(15deg);
-        }
-        .modern-calculator {
-            position: fixed;
-            bottom: 100px;
-            right: 25px;
-            width: 320px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(15px);
-            border-radius: 24px;
-            border: 1px solid rgba(13, 110, 253, 0.2);
-            z-index: 1060;
-            overflow: hidden;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-            animation: slideUpCalc 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        @keyframes slideUpCalc {
-            0% { opacity: 0; transform: translateY(30px) scale(0.9); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .calc-header {
-            background: #f8f9fa;
-            color: #212529;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #e9ecef;
-        }
-        /* --- แถบประวัติเครื่องคิดเลข --- */
-        .calc-history-container {
-            max-height: 120px;
-            overflow-y: auto;
-            background-color: #f8f9fa;
-            border-bottom: 1px inset #e9ecef;
-            padding: 10px 20px;
-        }
-        .calc-history-item {
-            text-align: right;
-            padding: 4px 0;
-            border-bottom: 1px dashed #dee2e6;
-        }
-        .calc-history-item:last-child { border-bottom: none; }
-        .calc-history-expr { font-size: 0.8rem; color: #6c757d; margin-bottom: 2px; }
-        .calc-history-res { font-size: 1rem; font-weight: bold; color: #0d6efd; }
-        .calc-history-clear { font-size: 0.75rem; color: #dc3545; cursor: pointer; transition: all 0.2s; }
-        .calc-history-clear:hover { color: #bb2d3b; text-decoration: underline; }
-        .calc-title { font-weight: 700; font-size: 0.95rem; color: #0d6efd; }
-        .calc-display-container {
-            padding: 20px;
-            background-color: #ffffff;
-        }
-        .calc-display {
-            width: 100%;
-            background: transparent;
-            border: none;
-            text-align: right;
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #212529;
-            outline: none;
-            font-family: 'Inter', monospace;
-            padding: 0;
-            overflow-x: auto;
-        }
-        .calc-keys {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-top: 1px solid #e9ecef;
-        }
-        .calc-btn {
-            border: none;
-            background: #ffffff;
-            border-radius: 14px;
-            height: 55px;
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #495057;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-            border: 1px solid #e9ecef;
-        }
-        .calc-btn:hover { background: #e9ecef; transform: translateY(-2px); box-shadow: 0 5px 10px rgba(0,0,0,0.08); }
-        .calc-btn:active { transform: translateY(1px); box-shadow: 0 2px 4px rgba(0,0,0,0.04); }
-        .calc-btn-operator { background: #e7f1ff; color: #0d6efd; border-color: #cfe2ff; font-size: 1.5rem; }
-        .calc-btn-operator:hover { background: #d0e7ff; }
-        .calc-btn-clear { background: #fff5f5; color: #dc3545; border-color: #f8d7da; }
-        .calc-btn-clear:hover { background: #ffe5e5; }
-        .calc-btn-equal { background: linear-gradient(135deg, #0d6efd, #0dcaf0); color: white; border: none; box-shadow: 0 5px 15px rgba(13, 110, 253, 0.3); font-size: 1.8rem; }
-        .calc-btn-equal:hover { opacity: 0.9; box-shadow: 0 8px 20px rgba(13, 110, 253, 0.4); }
+
+        /* --- ถ้าจะเอาเมนูภาษาออก (ย้ำอีกครั้ง) --- */
+        /* ให้แน่ใจว่าได้ลบโค้ดส่วน Language Switcher ออกจาก HTML แล้วนะครับ */
     </style>
 <body>
 
@@ -1000,14 +892,13 @@
                             <li><a class="dropdown-item" href="#" onclick="setLanguage('en')">English</a></li>
                         </ul>
                     </div>
-                    <!-- Modern Profile Chip -->
-                    <div class="dropdown ms-2" id="user-profile-dropdown">
-                        <!-- Profile Chip จะถูกสร้างด้วย JS ที่นี่ -->
-                    </div>
-                    <!-- ปุ่ม Logout ถูกเรียกใช้ผ่าน JS ของ Profile Chip -->
-                    <button id="logout-btn" class="d-none"></button>
+                    <span id="user-role" class="badge rounded-pill me-2 fs-6 align-middle"></span>
+                    <button id="logout-btn" class="btn btn-outline-danger btn-sm"><i
+                            class="bi bi-box-arrow-right me-1"></i><span
+                            data-lang-key="logout_button">ออกจากระบบ</span></button>
                 </div>
             </header>
+
 <!-- Navigation Tabs (Modern Redesign) -->
             <div class="modern-nav-container">
                 <ul class="nav nav-pills nav-fill" id="pills-tab" role="tablist" style="row-gap: 8px;">
@@ -1069,10 +960,6 @@
             <div class="tab-content" id="pills-tabContent">
 <div class="tab-pane fade show active" id="pills-stock" role="tabpanel">
                     <div class="col-12" id="stock-content-column">
-                        <!-- 📊 Widget สรุปยอดสต็อกแยกลูกค้า (เลื่อนซ้ายขวาได้) -->
-                            <div id="customer-stock-summary-row" class="row g-3 mb-4 flex-nowrap pb-2" style="overflow-x: auto; scroll-behavior: smooth;">
-                                <!-- โค้ดกล่องสรุปยอดจะถูกสร้างอัตโนมัติด้วย JS ตรงนี้ -->
-                            </div>
                         <div class="card mb-4 border-0 shadow-sm" style="border-radius: 20px;">
                             <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-white border-0 pt-4 pb-2 px-4" style="border-radius: 20px 20px 0 0;">
                                 <h5 class="fw-bold text-primary mb-0"><i class="bi bi-table me-2"></i><span data-lang-key="stock_summary_title">สรุปยอดสต็อกสินค้าคงเหลือ</span></h5>
@@ -1124,9 +1011,7 @@
                 </div>
                 <div class="col-md-3">
                     <label for="plan-customer" class="form-label">ลูกค้า</label>
-                    <select id="plan-customer" class="form-select border-primary" required>
-                        <option value="" disabled selected>-- โหลดรายชื่อลูกค้า... --</option>
-                    </select>
+                    <input type="text" id="plan-customer" class="form-control" placeholder="ระบุชื่อลูกค้า เช่น LG, Hanon" required>
                 </div>
                 <div class="col-md-3">
                     <label for="plan-product-id" class="form-label">รหัสสินค้า</label>
@@ -1144,8 +1029,8 @@
                     <input type="number" id="plan-quantity" class="form-control" min="1" placeholder="จำนวนชิ้น" required>
                 </div>
                 <div class="col-md-3">
-                    <label for="plan-time" class="form-label">เวลาจัดส่ง (24h)</label>
-                    <input type="text" id="plan-time" class="form-control border-primary" placeholder="เช่น 08:30" required autocomplete="off" oninput="let v = this.value.replace(/[^0-9]/g, ''); if(v.length >= 2) { v = v.substring(0,2) + ':' + v.substring(2); } this.value = v.substring(0,5);">
+                    <label for="plan-time" class="form-label">เวลาจัดส่ง (รอบ/Time)</label>
+                    <input type="time" id="plan-time" class="form-control" required>
                 </div>
                 <div class="col-md-6">
                     <label for="plan-remarks" class="form-label">หมายเหตุ</label>
@@ -1159,40 +1044,34 @@
     </div>
 
     <div class="card">
-<div class="card-header fw-bold d-flex justify-content-between align-items-center bg-light">
+        <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-light">
             <span><i class="bi bi-table me-2 text-success"></i>ตารางสรุปแผนการจัดส่งรวมประจำวัน</span>
-            <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center gap-2">
-                    <label for="view-plan-date" class="form-label mb-0 small-text" style="white-space: nowrap;">ดูแผนงานวันที่:</label>
-                    <input type="date" id="view-plan-date" class="form-control form-control-sm border-primary">
-                </div>
-                <button class="btn btn-danger btn-sm shadow-sm fw-bold px-3" onclick="window.exportDeliveryPlanPDF()" title="ดาวน์โหลดแผนเป็นไฟล์ PDF">
-                    <i class="bi bi-filetype-pdf me-1"></i> โหลด PDF
-                </button>
+            <div class="d-flex align-items-center gap-2">
+                <label for="view-plan-date" class="form-label mb-0 small-text" style="white-space: nowrap;">ดูแผนงานวันที่:</label>
+                <input type="date" id="view-plan-date" class="form-control form-control-sm">
             </div>
-        </div>
+		<div class="d-flex align-items-center gap-2">
+    <label for="view-plan-date" class="form-label mb-0 small-text" style="white-space: nowrap;">ดูแผนงานวันที่:</label>
+    <input type="date" id="view-plan-date" class="form-control form-control-sm">
+</div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover align-middle">
- <thead class="table-primary text-center" style="position: sticky; top: 0; z-index: 1;">
+                    <thead class="table-primary text-center">
                         <tr>
-                            <th style="width: 8%;">เวลา</th>
-                            <th style="width: 12%;">ลูกค้า</th>
-                            <th style="width: 15%;">รหัสสินค้า</th>
-                            <th style="width: 18%;">ชื่อสินค้า</th>
-                            <th class="text-end" style="width: 12%;">จำนวน (ชิ้น)</th>
-                            <th style="width: 20%; background-color: #0d6efd; color: white;">📦 แนะนำล็อต (FIFO)</th>
-                            <th style="width: 10%;">หมายเหตุ</th>
-                            <th style="width: 5%;">จัดการ</th>
+                            <th>เวลา</th>
+                            <th>ลูกค้า</th>
+                            <th>รหัสสินค้า</th>
+                            <th>ชื่อสินค้า</th>
+                            <th class="text-end">จำนวน (ชิ้น)</th>
+                            <th>หมายเหตุ</th>
+                            <th>การจัดการ</th>
                         </tr>
                     </thead>
                     <tbody id="delivery-plan-table-body">
                         <tr>
-                            <td colspan="8" class="text-center text-muted p-5">
-                                <i class="bi bi-calendar2-x opacity-25 d-block mb-3" style="font-size: 3rem;"></i>
-                                กรุณาเลือกวันที่ต้องการดูแผนการจัดส่งค่ะ
-                            </td>
+                            <td colspan="7" class="text-center text-muted p-4">กรุณาเลือกวันที่ต้องการดูแผนการจัดส่งค่ะ</td>
                         </tr>
                     </tbody>
                 </table>
@@ -1374,11 +1253,10 @@
                                     class="bi bi-download me-1"></i><span
                                     data-lang-key="backup_history">ดาวน์โหลดประวัติ (CSV)</span></button>
                         </div>
-                            <div class="card-body px-4 pb-4 pt-0 mt-3">
-                            <!-- ล็อกความสูงตาราง (max-height) เพื่อให้เลื่อนเฉพาะข้างใน และทำ position: sticky ที่หัวตาราง -->
-                            <div class="table-responsive shadow-sm" style="max-height: calc(100vh - 350px); overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6;">
-                                <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
-                                    <thead id="history-table-header" class="table-light" style="position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.08);"></thead>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead id="history-table-header"></thead>
                                     <tbody id="history-table"></tbody>
                                 </table>
                             </div>
@@ -1481,55 +1359,7 @@
                 </div>
             </div>
         </div>
-<!-- ================= MODERN CALCULATOR WIDGET ================= -->
-        <!-- ปุ่มเปิด-ปิด เครื่องคิดเลข (ลอยอยู่มุมขวาล่าง) -->
-        <div class="calculator-fab" onclick="window.toggleCalculator()" title="เปิดเครื่องคิดเลข (NumPad)">
-            <i class="bi bi-calculator-fill"></i>
-        </div>
 
-        <!-- หน้าต่างเครื่องคิดเลข -->
-        <div id="calculator-widget" class="modern-calculator d-none shadow-lg">
-            <div class="calc-header">
-                <span class="calc-title"><i class="bi bi-calculator me-2"></i>เครื่องคิดเลข</span>
-                <button type="button" class="btn-close" onclick="window.toggleCalculator()"></button>
-            </div>
-            <!-- ส่วนแสดงประวัติการคำนวณ -->
-            <div id="calc-history-area" class="calc-history-container d-none">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span style="font-size: 0.75rem; color: #adb5bd; font-weight: bold;"><i class="bi bi-clock-history me-1"></i>ประวัติล่าสุด</span>
-                    <span class="calc-history-clear" onclick="window.clearCalcHistory()"><i class="bi bi-trash"></i> ล้าง</span>
-                </div>
-                <div id="calc-history-list"></div>
-            </div>
-            <div class="calc-display-container">
-                <input type="text" id="calc-display" class="calc-display" value="0" readonly>
-            </div>
-            <div class="calc-keys">
-                <button class="calc-btn calc-btn-clear" onclick="window.calcClear()">C</button>
-                <button class="calc-btn calc-btn-operator" onclick="window.calcDelete()"><i class="bi bi-backspace"></i></button>
-                <button class="calc-btn calc-btn-operator" onclick="window.calcInput('/')">÷</button>
-                <button class="calc-btn calc-btn-operator" onclick="window.calcInput('*')">×</button>
-
-                <button class="calc-btn" onclick="window.calcInput('7')">7</button>
-                <button class="calc-btn" onclick="window.calcInput('8')">8</button>
-                <button class="calc-btn" onclick="window.calcInput('9')">9</button>
-                <button class="calc-btn calc-btn-operator" onclick="window.calcInput('-')">-</button>
-
-                <button class="calc-btn" onclick="window.calcInput('4')">4</button>
-                <button class="calc-btn" onclick="window.calcInput('5')">5</button>
-                <button class="calc-btn" onclick="window.calcInput('6')">6</button>
-                <button class="calc-btn calc-btn-operator" onclick="window.calcInput('+')">+</button>
-
-                <button class="calc-btn" onclick="window.calcInput('1')">1</button>
-                <button class="calc-btn" onclick="window.calcInput('2')">2</button>
-                <button class="calc-btn" onclick="window.calcInput('3')">3</button>
-                <button class="calc-btn calc-btn-equal" style="grid-row: span 2;" onclick="window.calcResult()">=</button>
-
-                <button class="calc-btn" style="grid-column: span 2;" onclick="window.calcInput('0')">0</button>
-                <button class="calc-btn" onclick="window.calcInput('.')">.</button>
-            </div>
-        </div>
-        <!-- ================= END CALCULATOR ================= -->
         <!-- Modals -->
         <div class="modal fade" id="lotDetailModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -1672,7 +1502,6 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         <script>
             // --- TRANSLATION OBJECT ---
             const translations = {
@@ -2358,7 +2187,6 @@ function handleLogin(e) {
 
                 // --- GOOGLE APPS SCRIPT CONFIGURATION ---
                 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDGLLwqnY1hOyDqM-Q6UlKRktrSneEAEtHkcsEuBQDaQMsgiBYGZPb30RMEQD2S17_OQ/exec';
-
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [] };
                 let calculatedStock = []; // This will hold the stock calculated from history
@@ -2488,11 +2316,8 @@ if (isInitialLoad) {
         });
     }
 	try {
-        // แนบเวลาปัจจุบัน (Timestamp) ไปด้วย เพื่อป้องกันเบราว์เซอร์จำค่าเก่า (Cache)
-// ป้องกันเบราว์เซอร์จำข้อมูลเก่า (Cache) เพื่อให้ดึงรหัสสินค้าใหม่มาได้ทันที
-        const response = await fetch(SCRIPT_URL + '?action=getData&t=' + new Date().getTime(), {
+        const response = await fetch(SCRIPT_URL, {
             method: 'GET',
-            cache: 'no-store', // คำสั่งเด็ดขาด ห้ามจำค่าเก่า!
             redirect: 'follow'
         });
 
@@ -2818,6 +2643,7 @@ startNewStockCount: () => {
                         stockCountModal.show();
                     },
                     // --- ฟังก์ชันใหม่ สำหรับเพิ่มล็อตที่เจอหน้างาน ---
+// --- ฟังก์ชันใหม่ สำหรับเพิ่มล็อตที่เจอหน้างาน ---
                     addCountLotRow: (productId) => {
                         const T = translations[currentLanguage];
                         const container = document.getElementById(`lots-container-${productId}`);
@@ -2828,21 +2654,22 @@ startNewStockCount: () => {
                         row.className = 'row g-2 mb-2 align-items-center count-lot-row border border-success p-2 rounded position-relative bg-white';
                         row.dataset.systemQty = "0";
 
+                        // อัปเดต HTML: ใส่ onchange เพื่อให้มันวิ่งไปเช็คยอดสต็อกทุกครั้งที่เปลี่ยนวันที่หรือแพ็คกิ้ง
                         row.innerHTML = `
                             <div class="col-md-3">
                                 <label class="form-label small-text mb-0 d-md-none">วันที่ผลิต <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control form-control-sm count-prod-date" required>
+                                <input type="date" class="form-control form-control-sm count-prod-date" required onchange="window.app.updateManualCountSystemQty(this, '${productId}')">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small-text mb-0 d-md-none">แพ็คกิ้ง <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm count-packaging-type" required>
+                                <select class="form-select form-select-sm count-packaging-type" required onchange="window.app.updateManualCountSystemQty(this, '${productId}')">
                                     <option value="standard" selected>${T.packaging_std}</option>
                                     <option value="temporary">${T.packaging_temp}</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small-text mb-0 d-md-none">ยอดในระบบ</label>
-                                <input type="text" class="form-control form-control-sm text-center bg-light" value="0" readonly>
+                                <input type="text" class="form-control form-control-sm text-center bg-light count-sys-qty-display" value="0" readonly>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small-text mb-0 d-md-none fw-bold text-success">ยอดที่นับได้จริง</label>
@@ -2853,6 +2680,45 @@ startNewStockCount: () => {
                             </div>
                         `;
                         container.appendChild(row);
+                    },
+
+                    // NEW: ฟังก์ชันดึงยอดสต็อกปัจจุบันมาแสดงอัตโนมัติ ตอนเลือกวันที่และแพ็คกิ้ง
+                    updateManualCountSystemQty: (element, productId) => {
+                        const row = element.closest('.count-lot-row');
+                        if (!row) return;
+
+                        const prodDate = row.querySelector('.count-prod-date').value;
+                        const packType = row.querySelector('.count-packaging-type').value;
+                        const displayInput = row.querySelector('.count-sys-qty-display');
+                        
+                        let sysQty = 0;
+                        
+                        if (prodDate && packType) {
+                            // ดึงสต็อกทั้งหมดของสินค้านี้
+                            const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim());
+                            if (stockInfo && stockInfo.lots) {
+                                // หาล็อตที่ตรงกับวันที่และแพ็คกิ้งที่เลือกเป๊ะๆ
+                                const formattedDate = formatDate(prodDate);
+                                const lot = stockInfo.lots.find(l => l.productionDate === formattedDate && l.packagingType === packType);
+                                if (lot) {
+                                    sysQty = lot.quantity;
+                                }
+                            }
+                        }
+                        
+                        // อัปเดตค่าลงใน dataset (เตรียมส่งบันทึก) และหน้าจอ (ให้ผู้ใช้เห็น)
+                        row.dataset.systemQty = sysQty;
+                        if (displayInput) {
+                            displayInput.value = sysQty.toLocaleString();
+                            // เปลี่ยนสีช่องยอดในระบบให้เด่นขึ้นถ้ายอด > 0
+                            if (sysQty > 0) {
+                                displayInput.classList.remove('bg-light');
+                                displayInput.classList.add('bg-warning-subtle', 'text-dark', 'fw-bold');
+                            } else {
+                                displayInput.classList.add('bg-light');
+                                displayInput.classList.remove('bg-warning-subtle', 'text-dark', 'fw-bold');
+                            }
+                        }
                     },
                     saveStockCount: async () => {
                         const T = translations[currentLanguage];
@@ -3561,31 +3427,8 @@ clearInterval(window.mascotLoopTimer);
                     const T = translations[currentLanguage];
                     const roleText = T.user_role_display.replace('{role}', currentUser.role);
 
-                    // --- 🎨 ระบบวาด Profile Chip สไตล์ Modern ---
-                    const profileContainer = document.getElementById('user-profile-dropdown');
-                    if (profileContainer) {
-                        const displayName = currentUser.fullname || currentUser.username;
-                        const roleColor = currentUser.role === 'admin' ? '#198754' : '#0dcaf0'; // แอดมินสีเขียว / ยูสเซอร์สีฟ้า
-                        
-                        profileContainer.innerHTML = `
-                            <div class="d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.08); border-radius: 50px; padding: 4px 16px 4px 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: all 0.2s;">
-                                ${window.getAvatarHtml(currentUser, 38)}
-                                <div class="d-none d-md-block text-start lh-1 ms-1">
-                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">${displayName}</div>
-                                    <div class="fw-semibold mt-1" style="font-size: 0.7rem; color: ${roleColor};"><i class="bi bi-shield-check me-1"></i>${roleText}</div>
-                                </div>
-                                <i class="bi bi-chevron-down text-muted ms-2" style="font-size: 0.7rem;"></i>
-                            </div>
-                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" style="border-radius: 16px; min-width: 220px; animation: slideUpFade 0.2s ease;">
-                                <li class="px-4 py-3 text-center border-bottom mb-2" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 16px 16px 0 0;">
-                                    <div class="d-flex justify-content-center mb-2">${window.getAvatarHtml(currentUser, 65)}</div>
-                                    <div class="fw-bold fs-6 text-dark">${displayName}</div>
-                                    <div class="text-muted small">@${currentUser.username}</div>
-                                </li>
-                                <li><a class="dropdown-item fw-bold text-danger py-2 rounded mx-2 w-auto mb-1" href="#" onclick="document.getElementById('logout-btn').click()"><i class="bi bi-box-arrow-right me-2"></i> ออกจากระบบ</a></li>
-                            </ul>
-                        `;
-                    }
+                    userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`;
+                    userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`;
 
 // =========================================================
         // --- เริ่มต้นระบบจัดการสิทธิ์ใหม่ (ยึดตามสวิตช์เป็นหลัก) ---
@@ -3663,10 +3506,11 @@ const mascotBubble = document.getElementById('mascot-bubble');
 const cheerTexts = [
     "สู้ๆ นะเธอ! ✌️",
     "ตั้งใจทำงานน้า 🥰",
-    "เห็นนะผิดอีกแล้ว 📦",
+    "เช็กยอดดีๆ จ้า 📦",
     "วันนี้งานราบรื่น! 🔥",
     "FG ลุยยย 🚀",
-    "อย่าลืมกินน้ำท่อม น๊า ☕",
+    "พักสายตาบ้างน้า ☕",
+    "คีย์แพลนปังๆ จ้า 📅",
     "เหนื่อยไหมสู้ๆ นะ 💕"
 ];
 
@@ -3706,7 +3550,6 @@ if (mascotBubble) {
                     displayActiveAnnouncements();
                     populateStockCountMainView();
                     window.app.populateDashboard(); // NEW: Call dashboard population
-                    window.populateCustomerDropdown();
                 }
 
                 // --- RENDER FUNCTIONS (for dynamic content) ---
@@ -3719,7 +3562,7 @@ if (mascotBubble) {
                     renderHistoryFilterForm();
                 }
 
-function populateStockSummary() {
+                function populateStockSummary() {
                     const T = translations[currentLanguage];
                     const header = document.getElementById('stock-summary-table-header');
                     const isAdmin = currentUser.role === 'admin';
@@ -3732,77 +3575,12 @@ function populateStockSummary() {
                 ${isAdmin ? `<th>${T.actions}</th>` : ''}
             </tr>`;
 
-                    const stockSummaryTable = document.getElementById('stock-summary-table');
                     stockSummaryTable.innerHTML = '';
-                    const filterOldStock = document.getElementById('show-old-stock-filter').checked;
-                    const searchTerm = document.getElementById('stock-search-input').value.toLowerCase();
+                    const filterOldStock = showOldStockFilter.checked;
+                    const searchTerm = stockSearchInput.value.toLowerCase();
                     const threeMonthsAgo = new Date();
                     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-                    // ==========================================
-                    // 📊 ลอจิกใหม่: คำนวณยอดแยกลูกค้าและกลุ่ม (ออโต้/อิเล็ก)
-                    // ==========================================
-                    const customerSummary = new Map();
-                    
-                    calculatedStock.forEach(stockItem => {
-                        if(stockItem.totalQuantity <= 0) return; // ไม่นับสินค้าที่ของหมด
-                        
-                        const productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim()) || {};
-                        const customer = productInfo.customer || 'ไม่ระบุลูกค้า';
-                        const group = productInfo.customerGroup || 'Other';
-                        
-                        if(!customerSummary.has(customer)) {
-                            customerSummary.set(customer, { total: 0, autopart: 0, electronic: 0, other: 0 });
-                        }
-                        
-                        const custData = customerSummary.get(customer);
-                        custData.total += stockItem.totalQuantity;
-                        
-                        if(group === 'Autopart') custData.autopart += stockItem.totalQuantity;
-                        else if(group === 'Electronic') custData.electronic += stockItem.totalQuantity;
-                        else custData.other += stockItem.totalQuantity;
-                    });
-
-                    // วาด Widget การ์ดสรุปยอด
-                    const summaryRow = document.getElementById('customer-stock-summary-row');
-                    if(summaryRow) {
-                        summaryRow.innerHTML = ''; 
-                        // เรียงลำดับลูกค้าที่มียอดสต็อกเยอะสุดขึ้นก่อน
-                        const sortedCustomers = Array.from(customerSummary.entries()).sort((a, b) => b[1].total - a[1].total);
-                        
-                        if (sortedCustomers.length === 0) {
-                            summaryRow.style.display = 'none';
-                        } else {
-                            summaryRow.style.display = 'flex';
-                            sortedCustomers.forEach(([customer, data]) => {
-                                // สร้างป้าย Badge สำหรับ Auto และ Elec
-                                let badgesHtml = '';
-                                if(data.autopart > 0) badgesHtml += `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill py-1"><i class="bi bi-car-front-fill me-1"></i>Auto: ${data.autopart.toLocaleString()}</span>`;
-                                if(data.electronic > 0) badgesHtml += `<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill py-1 ms-1"><i class="bi bi-cpu-fill me-1"></i>Elec: ${data.electronic.toLocaleString()}</span>`;
-                                
-                                summaryRow.innerHTML += `
-                                    <div class="col-12 col-md-4 col-lg-3" style="min-width: 260px;">
-                                        <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; background: #ffffff; border-left: 6px solid #0d6efd !important; transition: transform 0.2s;">
-                                            <div class="card-body p-3">
-                                                <div class="text-muted fw-bold mb-1" style="font-size: 0.75rem;"><i class="bi bi-building me-1"></i>ลูกค้า (Customer)</div>
-                                                <h6 class="fw-bold text-dark text-truncate mb-2" style="font-size: 1.05rem;">${customer}</h6>
-                                                <div class="d-flex align-items-end justify-content-between mb-2">
-                                                    <h3 class="fw-bolder mb-0 text-primary" style="line-height: 1;">${data.total.toLocaleString()}</h3>
-                                                    <span class="text-muted small fw-bold mb-1">ชิ้น</span>
-                                                </div>
-                                                <div class="d-flex flex-wrap gap-1 mt-2 pt-2 border-top border-light-subtle">
-                                                    ${badgesHtml || `<span class="badge bg-light text-secondary border rounded-pill py-1"><i class="bi bi-box me-1"></i>ทั่วไป: ${data.other.toLocaleString()}</span>`}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                            });
-                        }
-                    }
-                    // ==========================================
-
-                    // สร้างตารางสต็อกรายการทั้งหมด (ของเดิม)
                     let summary = calculatedStock.map(stockItem => {
                         let productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim());
                         if (!productInfo) {
@@ -3840,14 +3618,15 @@ function populateStockSummary() {
                         <small class="text-muted">${item.name}</small>
                     </td>
                     <td class="small-text">${item.erpCode || '-'}</td>
-                    <td class="small-text fw-bold text-dark">${item.customer || '-'}</td>
-                    <td><span class="fw-bold fs-6 text-primary">${item.totalQuantity.toLocaleString()}</span></td>
-                    ${isAdmin ? `<td><button class="btn btn-warning btn-sm shadow-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')" title="${T.edit_stock_modal_title}"><i class="bi bi-pencil-fill"></i></button></td>` : ''}
+                    <td class="small-text">${item.customer || '-'}</td>
+                    <td><span class="fw-bold">${item.totalQuantity.toLocaleString()}</span></td>
+                    ${isAdmin ? `<td><button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')" title="${T.edit_stock_modal_title}"><i class="bi bi-pencil-fill"></i></button></td>` : ''}
                 `;
                         row.addEventListener('click', () => window.app.showLotDetails(item.id));
                         stockSummaryTable.appendChild(row);
                     });
                 }
+
                 function populateHistoryTable() {
                     const T = translations[currentLanguage];
                     const header = document.getElementById('history-table-header');
@@ -4181,74 +3960,33 @@ document.body.addEventListener('submit', function (e) {
 });
 
 // ฟังก์ชันคำนวณและแสดงตารางแผนงานประจำวันรวมทุกเจ้า
-// ฟังก์ชันคำนวณและแสดงตารางแผนงานประจำวันรวมทุกเจ้า พร้อมระบบช่วยจัดสรร FIFO อัตโนมัติ
 function renderDeliveryPlanTable(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
     if (!tableBody) return;
     
     db.deliveryPlans = db.deliveryPlans || [];
-    // กรองเอาเฉพาะข้อมูลแผนจัดส่งในวันที่เลือก และเรียงตามเวลา (เพื่อจัดสรร FIFO ตามคิวรอบรถ)
+    // กรองเอาเฉพาะข้อมูลแผนจัดส่งในวันที่เลือก และเรียงตามเวลา (FIFO/Timeline)
     const dailyPlans = db.deliveryPlans.filter(p => p.date === targetDate)
                                        .sort((a, b) => a.time.localeCompare(b.time));
     
     if (dailyPlans.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted p-5"><i class="bi bi-emoji-smile opacity-25 d-block mb-3" style="font-size: 3rem;"></i>ไม่มีแผนการจัดส่งสินค้าสำหรับวันที่ ${targetDate} ค่ะ</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4">ไม่มีแผนการจัดส่งสินค้าสำหรับวันที่ ${targetDate} ค่ะ</td></tr>`;
         return;
     }
-
-    // -------------------------------------------------------------
-    // 🧠 ระบบจำลองการตัดสต็อก (Virtual Deduction) เพื่อคำนวณ FIFO 
-    // ช่วยให้ถ้ารถ 2 รอบมาเอาของชนิดเดียวกัน ระบบจะจ่ายล็อตเก่าให้รอบแรก และล็อตถัดไปให้รอบหลังแบบไม่ซ้ำกัน
-    // -------------------------------------------------------------
-    const virtualStock = {};
-    calculatedStock.forEach(p => {
-        // ก๊อปปี้ข้อมูลล็อตสต็อกปัจจุบันมาทำจำลอง โดยเรียงจากเก่าไปใหม่ (FIFO)
-        virtualStock[p.productId] = p.lots.map(l => ({...l})).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate));
-    });
-
-    const rowsHtml = dailyPlans.map(p => {
-        let remainingQty = parseInt(p.quantity, 10);
-        let recommendation = [];
-        let lots = virtualStock[p.productId] || [];
-
-        // วนลูปหักยอดสต็อกจำลองเพื่อจ่ายให้รถคันนี้
-        for (let i = 0; i < lots.length; i++) {
-            let lot = lots[i];
-            if (lot.quantity > 0 && remainingQty > 0) {
-                const takeQty = Math.min(lot.quantity, remainingQty);
-                
-                let packBadge = lot.packagingType === 'temporary' ? '<span class="badge bg-warning-subtle text-warning-emphasis ms-1" style="font-size: 0.65rem;">Temp</span>' : '';
-                recommendation.push(`<div class="mb-1 text-nowrap" style="font-size: 0.85rem;"><i class="bi bi-box-arrow-right text-success me-1"></i>${lot.productionDate} <b class="text-dark">(${takeQty.toLocaleString()})</b>${packBadge}</div>`);
-                
-                lot.quantity -= takeQty; // หักยอดสต็อกจำลอง เพื่อให้รถคิวถัดไปไม่ได้ล็อตนี้ซ้ำ
-                remainingQty -= takeQty;
-            }
-        }
-
-        // ถ้ายอดในสต็อกไม่พอจ่าย
-        if (remainingQty > 0) {
-            recommendation.push(`<div class="text-danger mt-1 fw-bold text-nowrap" style="font-size: 0.8rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>ของขาด ${remainingQty.toLocaleString()} ชิ้น</div>`);
-        }
-
-        const fifoSuggestionHtml = recommendation.length > 0 ? recommendation.join('') : '<span class="text-danger small fw-bold"><i class="bi bi-x-circle me-1"></i>ไม่มีของในสต็อก</span>';
-
-        return `
-        <tr class="align-middle">
+    
+    tableBody.innerHTML = dailyPlans.map(p => `
+        <tr>
             <td class="text-center fw-bold text-primary"><i class="bi bi-clock me-1"></i>${p.time} น.</td>
-            <td><b class="text-dark">${p.customer}</b></td>
-            <td><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill px-3 py-2 border shadow-sm">${p.productId}</span></td>
-            <td><small class="text-muted fw-bold">${p.productName}</small></td>
-            <td class="text-end fw-bolder text-success fs-6">${p.quantity.toLocaleString()}</td>
-            <td style="background-color: #f8f9fa; border-radius: 8px; border: 1px dashed #ced4da;" class="p-2">${fifoSuggestionHtml}</td>
-            <td><span class="text-muted" style="font-size: 0.8rem;">${p.remarks || '-'}</span></td>
+            <td><b>${p.customer}</b></td>
+            <td><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${p.productId}</span></td>
+            <td><small>${p.productName}</small></td>
+            <td class="text-end fw-bold text-success">${p.quantity.toLocaleString()}</td>
+            <td><span class="small-text">${p.remarks || '-'}</span></td>
             <td class="text-center">
-                <button class="btn btn-outline-danger btn-sm p-1 shadow-sm rounded" onclick="deletePlanItem('${p.id}', '${p.date}')" title="ลบรายการ"><i class="bi bi-trash-fill"></i></button>
+                <button class="btn btn-danger btn-sm p-1" onclick="deletePlanItem('${p.id}', '${p.date}')" title="ลบรายการ"><i class="bi bi-trash-fill"></i></button>
             </td>
         </tr>
-        `;
-    }).join('');
-
-    tableBody.innerHTML = rowsHtml;
+    `).join('');
 }
 
 // ฟังก์ชันสำหรับลบรายการแผนจัดส่งออกจากตารางชั่วคราว
@@ -4462,17 +4200,6 @@ function handleLogin(e) {
     }
 }
                 // --- HELPER FUNCTIONS ---
-                window.getAvatarHtml = function(user, size = 40) {
-                    if (user && user.avatarUrl && user.avatarUrl.trim() !== '') {
-                        return `<img src="${user.avatarUrl}" alt="${user.username}" style="width: ${size}px; height: ${size}px; object-fit: cover; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
-                    } else {
-                        // ดึงอักษรตัวแรกของชื่อมาทำรูป (ถ้าไม่มีรูปลิงก์)
-                        const initial = ((user && user.fullname) ? user.fullname : (user && user.username ? user.username : '?')).charAt(0).toUpperCase();
-                        const colors = ['#0d6efd', '#198754', '#dc3545', '#fd7e14', '#6f42c1', '#20c997', '#e83e8c'];
-                        const bgColor = colors[((user && user.username) ? user.username.length : 0) % colors.length];
-                        return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; background-color: ${bgColor}; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: ${size*0.45}px; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer;">${initial}</div>`;
-                    }
-                };
                 function formatDate(dateInput) {
                     if (!dateInput || dateInput === 'Manual Adjustment' || dateInput === 'Stock Count Adjustment') return dateInput;
                     let date;
@@ -4635,7 +4362,7 @@ function getFilteredHistory() {
                     return stockBackup;
                 }
 
-function populateUserManagementTable() {
+                function populateUserManagementTable() {
                     const T = translations[currentLanguage];
                     const header = document.getElementById('user-management-table-header');
                     header.innerHTML = `<tr><th>${T.username_label}</th><th>${T.user_role}</th><th>${T.actions}</th></tr>`;
@@ -4648,24 +4375,7 @@ function populateUserManagementTable() {
                     }
                     db.users.forEach(u => {
                         const r = document.createElement('tr');
-                        const displayName = u.fullname || u.username;
-                        r.innerHTML = `
-                            <td>
-                                <div class="d-flex align-items-center gap-3">
-                                    ${window.getAvatarHtml(u, 40)}
-                                    <div class="lh-1">
-                                        <div class="fw-bold text-dark" style="font-size: 0.95rem;">${displayName}</div>
-                                        <div class="text-muted mt-1" style="font-size: 0.8rem;">@${u.username}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td><span class="badge rounded-pill ${u.role === 'admin' ? 'bg-success px-3' : 'bg-info text-dark px-3'} py-2 shadow-sm">${u.role}</span></td>
-                            <td>
-                                <button class="btn btn-warning btn-sm shadow-sm" onclick="window.app.editUser('${u.username}')"><i class="bi bi-pencil-fill"></i></button> 
-                                ${u.username !== 'admin' ? `<button class="btn btn-danger btn-sm shadow-sm" onclick="window.app.deleteUser('${u.username}')"><i class="bi bi-trash3-fill"></i></button>` : ''}
-                            </td>
-                        `;
-                        // เติมบรรทัดนี้ เพื่อสั่งให้เอาข้อมูลที่จัดทรงแล้ว ไปแสดงในตารางครับ!
+                        r.innerHTML = `<td><i class="bi bi-person-circle me-2"></i>${u.username}</td><td><span class="badge rounded-pill ${u.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}">${u.role}</span></td><td><button class="btn btn-warning btn-sm" onclick="window.app.editUser('${u.username}')"><i class="bi bi-pencil-fill"></i></button> ${u.username !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="window.app.deleteUser('${u.username}')"><i class="bi bi-trash3-fill"></i></button>` : ''}</td>`;
                         userManagementTable.appendChild(r);
                     });
                 }
@@ -5195,11 +4905,9 @@ const permissions = [
             `).join('');
 
                     userFormEl.innerHTML = `
-                <div class="col-md-6"> <label for="user-username" class="form-label">${T.username_label}</label> <input type="text" id="user-username" class="form-control border-primary" required value="${user.username || ''}"> </div>
-                <div class="col-md-6"> <label for="user-password" class="form-label">${T.password_label}</label> <input type="password" id="user-password" class="form-control" required value="${user.password || ''}"> </div>
-                <div class="col-md-12"> <label for="user-fullname" class="form-label text-success fw-bold"><i class="bi bi-person-vcard me-1"></i>ชื่อ-สกุลจริง (โชว์บนเว็บ)</label> <input type="text" id="user-fullname" class="form-control" placeholder="เช่น ไกรวิชญ์ C." value="${user.fullname || ''}"> </div>
-                <div class="col-md-6"> <label for="user-avatar" class="form-label text-info fw-bold"><i class="bi bi-image me-1"></i>ลิงก์รูปโปรไฟล์ URL</label> <input type="text" id="user-avatar" class="form-control" placeholder="วางลิงก์รูปภาพ (ถ้ามี)" value="${user.avatarUrl || ''}"> </div>
-                <div class="col-md-6"> <label for="user-role-select" class="form-label">${T.user_role}</label> <select id="user-role-select" class="form-select border-warning" required><option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option><option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option></select> </div>
+                <div class="col-12"> <label for="user-username" class="form-label">${T.username_label}</label> <input type="text" id="user-username" class="form-control" required value="${user.username || ''}"> </div>
+                <div class="col-12"> <label for="user-password" class="form-label">${T.password_label}</label> <input type="password" id="user-password" class="form-control" required value="${user.password || ''}"> </div>
+                <div class="col-12"> <label for="user-role-select" class="form-label">${T.user_role}</label> <select id="user-role-select" class="form-select" required><option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option><option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option></select> </div>
                 <div class="col-12 mt-3"> <label class="form-label fw-bold">${T.user_permissions}</label> <div class="border rounded p-2 bg-light">${permissionsHtml}</div> </div>
                 <div class="col-12 mt-4"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.user_save_button}</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
                 }
@@ -5221,73 +4929,83 @@ const permissions = [
                 }
 
 function renderHistoryFilterForm() {
-                    const T = translations[currentLanguage];
-                    const historyFilterForm = document.getElementById('history-filter-form');
+    const T = translations[currentLanguage];
+    const historyFilterForm = document.getElementById('history-filter-form');
 
-                    historyFilterForm.innerHTML = `
-                        <div class="col-lg-2 col-md-6 mb-3">
-                            <label for="filter-start-date" class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">
-                                <i class="bi bi-calendar3 me-1"></i>${T.history_filter_from}
-                            </label>
-                            <input type="date" id="filter-start-date" class="form-control form-control-sm shadow-sm border-0 bg-white">
-                        </div>
+    historyFilterForm.innerHTML = `
+        <div class="col-lg-2 col-md-6">
+            <label for="filter-start-date" class="form-label">${T.history_filter_from}</label>
+            <input type="date" id="filter-start-date" class="form-control form-control-sm">
+        </div>
 
-                        <div class="col-lg-2 col-md-6 mb-3">
-                            <label for="filter-end-date" class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">
-                                <i class="bi bi-calendar3 me-1"></i>${T.history_filter_to}
-                            </label>
-                            <input type="date" id="filter-end-date" class="form-control form-control-sm shadow-sm border-0 bg-white">
-                        </div>
+        <div class="col-lg-2 col-md-6">
+            <label for="filter-end-date" class="form-label">${T.history_filter_to}</label>
+            <input type="date" id="filter-end-date" class="form-control form-control-sm">
+        </div>
 
-                        <div class="col-lg-2 col-md-6 mb-3">
-                            <label for="filter-type" class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">
-                                <i class="bi bi-funnel-fill me-1"></i>${T.history_filter_type}
-                            </label>
-                            <select id="filter-type" class="form-select form-select-sm shadow-sm border-0 bg-white">
-                                <option value="">${T.history_filter_type_all}</option>
-                                <option value="import">${T.history_filter_type_import}</option>
-                                <option value="export">${T.history_filter_type_export}</option>
-                                <option value="adjustment">${T.history_filter_type_adjustment}</option>
-                                <option value="reversal">${T.history_filter_type_reversal}</option>
-                            </select>
-                        </div>
+        <div class="col-lg-2 col-md-6">
+            <label for="filter-type" class="form-label">${T.history_filter_type}</label>
+            <select id="filter-type" class="form-select form-select-sm">
+                <option value="">${T.history_filter_type_all}</option>
+                <option value="import">${T.history_filter_type_import}</option>
+                <option value="export">${T.history_filter_type_export}</option>
+                <option value="adjustment">${T.history_filter_type_adjustment}</option>
+                <option value="reversal">${T.history_filter_type_reversal}</option>
+            </select>
+        </div>
 
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <label for="filter-product-search" class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">
-                                <i class="bi bi-box-seam me-1"></i>${T.history_filter_product}
-                            </label>
-                            <div class="position-relative">
-                                <input type="text" id="filter-product-search" class="form-control form-control-sm shadow-sm border-0 bg-white" placeholder="${T.history_filter_type_all}" autocomplete="off">
-                                <input type="hidden" id="filter-product-id">
-                                <div id="filter-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div>
-                            </div>
-                        </div>
+        <div class="col-lg-3 col-md-6">
+            <label for="filter-product-search" class="form-label">${T.history_filter_product}</label>
 
-                        <div class="col-lg-3 col-md-12 mb-3">
-                            <label for="filter-invoice-search" class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">
-                                <i class="bi bi-receipt me-1"></i>${T.history_filter_invoice}
-                            </label>
-                            <div class="input-group input-group-sm shadow-sm" style="border-radius: 6px; overflow: hidden;">
-                                <input type="text" id="filter-invoice-search" class="form-control border-0 bg-white" placeholder="${T.search_placeholder}" autocomplete="off">
-                                <select id="filter-erp-status" class="form-select border-0" style="max-width: 120px; background-color: #fff3cd; font-weight: bold; color: #856404;">
-                                    <option value="">-- ERP --</option>
-                                    <option value="Pending">รอเคลียร์</option>
-                                    <option value="Cleared">เคลียร์แล้ว</option>
-                                </select>
-                            </div>
-                        </div>
+            <div class="position-relative">
+                <input type="text"
+                       id="filter-product-search"
+                       class="form-control form-control-sm"
+                       placeholder="${T.history_filter_type_all}"
+                       autocomplete="off">
 
-                        <!-- แยกปุ่มลงมาบรรทัดล่างสุด มีเส้นคั่น และเว้นระยะห่างให้สวยงาม -->
-                        <div class="col-12 mt-3 pt-3 border-top border-secondary-subtle d-flex justify-content-end gap-3">
-                            <button type="submit" class="btn btn-primary px-4 shadow-sm" style="border-radius: 8px; font-weight: 500;">
-                                <i class="bi bi-search me-2"></i>${T.history_filter_search}
-                            </button>
-                            <button type="reset" id="history-filter-reset-btn" class="btn btn-secondary px-4 shadow-sm" style="border-radius: 8px; font-weight: 500;">
-                                <i class="bi bi-eraser-fill me-2"></i>${T.history_filter_clear}
-                            </button>
-                        </div>
-                    `;
+                <input type="hidden" id="filter-product-id">
+
+                <div id="filter-product-suggestions"
+                     class="list-group position-absolute w-100 suggestions-container"></div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-12">
+            <label for="filter-invoice-search" class="form-label">
+                ${T.history_filter_invoice}
+            </label>
+
+            <input type="text"
+                   id="filter-invoice-search"
+                   class="form-control form-control-sm mb-2"
+                   placeholder="${T.search_placeholder}"
+                   autocomplete="off">
+
+            <select id="filter-erp-status"
+                    class="form-select form-select-sm border-warning">
+                <option value="">-- สถานะ ERP ทั้งหมด --</option>
+                <option value="Pending">⚠️ รอเคลียร์ ERP</option>
+                <option value="Cleared">✅ เคลียร์แล้ว</option>
+            </select>
+        </div>
+
+        <div class="col-lg-12 d-flex justify-content-end gap-2 mt-2">
+            <button type="submit"
+                    class="btn btn-primary btn-sm px-4">
+                <i class="bi bi-search me-1"></i>${T.history_filter_search}
+            </button>
+
+            <button type="reset"
+                    id="history-filter-reset-btn"
+                    class="btn btn-secondary btn-sm px-4">
+                ${T.history_filter_clear}
+            </button>
+        </div>
+</div>
+                <div class="col-lg-2 col-md-12 d-flex mt-auto"> <button type="submit" class="btn btn-primary btn-sm flex-grow-1 me-1"><i class="bi bi-search me-1"></i>${T.history_filter_search}</button> <button type="reset" id="history-filter-reset-btn" class="btn btn-secondary btn-sm flex-grow-1 ms-1">${T.history_filter_clear}</button> </div>`;
                 }
+
                 function renderEditStockForm(product, totalQuantity) {
                     const T = translations[currentLanguage];
                     const editStockForm = document.getElementById('edit-stock-form');
@@ -5481,20 +5199,14 @@ function populateStockCountMainView() {
 // ========================================================
                 // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
                 // ========================================================
-// ========================================================
-                // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
-                // ========================================================
-// ========================================================
-                // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
-                // ========================================================
                 function renderStockCountModalBody() {
                     const T = translations[currentLanguage];
                     const body = document.getElementById('stockCountModalBody');
                     
                     let html = `<div class="container-fluid"><div class="row g-3">`;
                     
-                    // ดึงสินค้าทั้งหมดในระบบมาแสดง (บังคับแปลงเป็น String ป้องกันบัคหน้าต่างพัง)
-                    const allProducts = [...db.products].sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
+                    // ดึงสินค้าทั้งหมดในระบบมาแสดง (เรียงตามรหัส)
+                    const allProducts = [...db.products].sort((a, b) => a.id.localeCompare(b.id));
 
                     if (allProducts.length === 0) {
                         html += `<div class="col-12 text-center p-5 text-muted"><i class="bi bi-box-seam opacity-50 d-block mb-3" style="font-size: 3rem;"></i>ไม่พบข้อมูลสินค้าในระบบ</div>`;
@@ -5512,27 +5224,24 @@ function populateStockCountMainView() {
                         `;
 
                         allProducts.forEach(product => {
-                            const safeId = String(product.id || '');
-                            const safeName = String(product.name || '');
-                            const escapedName = safeName.replace(/"/g, '&quot;'); 
-
-                            const stockInfo = calculatedStock.find(s => String(s.productId).trim() === safeId.trim());
+                            // ดึงสต็อกปัจจุบันมาแสดง
+                            const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(product.id).trim());
                             const currentQty = stockInfo ? stockInfo.totalQuantity : 0;
                             
                             html += `
-                            <div class="col-12 manual-count-item" data-search="${safeId.toLowerCase()} ${safeName.toLowerCase()}">
-                                <div class="card shadow-sm product-count-group border-0" style="border-radius: 15px;" data-product-id="${safeId}" data-product-name="${escapedName}">
+                            <div class="col-12 manual-count-item" data-search="${product.id.toLowerCase()} ${product.name.toLowerCase()}">
+                                <div class="card shadow-sm product-count-group border-0" style="border-radius: 15px;" data-product-id="${product.id}" data-product-name="${product.name}">
                                     <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center py-3" style="border-radius: 15px 15px 0 0;">
                                         <div class="mb-2 mb-md-0">
-                                            <span class="fw-bold text-primary" style="font-size: 1.1rem;"><i class="bi bi-box-seam-fill me-2"></i>${safeId}</span>
-                                            <span class="ms-2 text-dark fw-semibold">${safeName}</span>
+                                            <span class="fw-bold text-primary" style="font-size: 1.1rem;"><i class="bi bi-box-seam-fill me-2"></i>${product.id}</span>
+                                            <span class="ms-2 text-dark fw-semibold">${product.name}</span>
                                             <span class="badge bg-secondary-subtle text-secondary-emphasis ms-2 border">ระบบมี: ${currentQty.toLocaleString()}</span>
                                         </div>
-                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold" onclick="window.app.addCountLotRow('${safeId}')">
+                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold" onclick="window.app.addCountLotRow('${product.id}')">
                                             <i class="bi bi-plus-circle-fill me-1"></i>เพิ่มการนับ
                                         </button>
                                     </div>
-                                    <div class="card-body p-2 bg-white" id="lots-container-${safeId}" style="border-radius: 0 0 15px 15px;">
+                                    <div class="card-body p-2 bg-white" id="lots-container-${product.id}" style="border-radius: 0 0 15px 15px;">
                                         <p class="text-muted text-center mb-0 small py-3" style="font-style: italic;">-- หากนับสินค้านี้แล้วมียอด กรุณากดปุ่ม "เพิ่มการนับ" ด้านบน --</p>
                                     </div>
                                 </div>
@@ -5546,18 +5255,6 @@ function populateStockCountMainView() {
                     body.innerHTML = html;
                 }
 
-                // ฟังก์ชันค้นหาสินค้าตอนนับสด (ค้นหาแบบ Real-time)
-                window.filterManualCountProducts = function() {
-                    const search = document.getElementById('manual-count-search').value.toLowerCase();
-                    const items = document.querySelectorAll('.manual-count-item');
-                    items.forEach(item => {
-                        if (item.dataset.search.includes(search)) {
-                            item.style.display = '';
-                        } else {
-                            item.style.display = 'none';
-                        }
-                    });
-                };
                 // ฟังก์ชันค้นหาสินค้าตอนนับสด (ค้นหาแบบ Real-time)
                 window.filterManualCountProducts = function() {
                     const search = document.getElementById('manual-count-search').value.toLowerCase();
@@ -5950,9 +5647,15 @@ function populateSalesDashboard(startDate, endDate) {
                                 totalElectronicQuantity += quantityAffectingSales;
                                 totalElectronicValue += valueAffectingSales;
                             }
-
+// --- อัปเดตลอจิกการจัดกลุ่มลูกค้า (ป้องกันการโดนปาดหน้า) ---
                             if (!customerSales.has(customer)) {
                                 customerSales.set(customer, { quantity: 0, value: 0, group: cGroup });
+                            } else {
+                                // ถ้าเคยเจอแล้ว แต่ข้อมูลเดิมเป็น "อื่นๆ" ให้ดึงกลุ่มหลัก (Autopart/Electronic) มาทับแทนที่ทันที!
+                                const currentData = customerSales.get(customer);
+                                if (currentData.group === 'Other' && cGroup !== 'Other') {
+                                    currentData.group = cGroup;
+                                }
                             }
                             const currentSales = customerSales.get(customer);
                             currentSales.quantity += quantityAffectingSales;
@@ -6053,149 +5756,14 @@ function populateSalesDashboard(startDate, endDate) {
                     }
                 }
                // --- START THE APP ---
-               // ========================================================
-                // ฟังก์ชันดึงรายชื่อลูกค้าเข้า Dropdown อัตโนมัติ
-                // ========================================================
-                window.populateCustomerDropdown = function() {
-                    const customerSelect = document.getElementById('plan-customer');
-                    if (!customerSelect) return;
-                    
-                    // ดึงชื่อลูกค้าแบบไม่ให้ซ้ำกัน จากฐานข้อมูลสินค้า
-                    const uniqueCustomers = Array.from(new Set(db.products.map(p => p.customer).filter(Boolean))).sort();
-                    
-                    const currentValue = customerSelect.value;
-                    customerSelect.innerHTML = '<option value="" disabled selected>-- เลือกลูกค้า --</option>';
-                    
-                    uniqueCustomers.forEach(cust => {
-                        const option = document.createElement('option');
-                        option.value = cust;
-                        option.textContent = cust;
-                        customerSelect.appendChild(option);
-                    });
-                    
-                    // เลือกลูกค้าเดิมกลับมา ถ้ามี
-                    if (currentValue && uniqueCustomers.includes(currentValue)) {
-                        customerSelect.value = currentValue;
-                    }
-                };
-                window.exportDeliveryPlanPDF = function() {
-                    const targetDate = document.getElementById('view-plan-date').value;
-                    if (!targetDate) {
-                        Swal.fire('แจ้งเตือน', 'กรุณาเลือกวันที่ต้องการดาวน์โหลดก่อนครับ', 'warning');
-                        return;
-                    }
-
-                    const dailyPlans = (db.deliveryPlans || []).filter(p => p.date === targetDate).sort((a, b) => a.time.localeCompare(b.time));
-                    
-                    if (dailyPlans.length === 0) {
-                        Swal.fire('ไม่มีข้อมูล', `ไม่มีแผนการจัดส่งในวันที่ ${targetDate} ครับ`, 'info');
-                        return;
-                    }
-
-                    const totalTrips = dailyPlans.length;
-                    const totalQty = dailyPlans.reduce((sum, p) => sum + parseInt(p.quantity || 0), 0);
-
-                    const printDiv = document.createElement('div');
-                    printDiv.style.padding = '20px'; // ลดขอบกระดาษจำลอง
-                    printDiv.style.fontFamily = "'Mitr', sans-serif";
-                    printDiv.style.color = '#000';
-                    printDiv.style.backgroundColor = '#fff';
-                    printDiv.style.width = '1050px'; // ล็อกความกว้างไว้ที่ไม่เกิน A4 แนวนอน
-                    
-                    let tableRows = dailyPlans.map((p, index) => `
-                        <tr style="border-bottom: 1px solid #dee2e6;">
-                            <td style="padding: 6px 4px; text-align: center;">${index + 1}</td>
-                            <td style="padding: 6px 4px; text-align: center; font-weight: bold; color: #0d6efd;">${p.time} น.</td>
-                            <td style="padding: 6px 4px; font-weight: bold;">${p.customer}</td>
-                            <td style="padding: 6px 4px;">${p.productId}</td>
-                            <td style="padding: 6px 4px; font-size: 0.8rem;">${p.productName}</td>
-                            <td style="padding: 6px 4px; text-align: right; font-weight: bold; color: #198754;">${p.quantity.toLocaleString()}</td>
-                            <td style="padding: 6px 4px; font-size: 0.8rem;">${p.remarks || '-'}</td>
-                        </tr>
-                    `).join('');
-
-                    printDiv.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #0d6efd; padding-bottom: 10px; margin-bottom: 15px;">
-                            <div>
-                                <img src="https://i.ibb.co/KxttMHxc/291315-logo-20230216140112-5.jpg" alt="ATECH" style="height: 45px; margin-bottom: 8px;">
-                                <h2 style="margin: 0; color: #0d6efd; font-weight: 800; font-size: 20px;">DAILY DELIVERY PLAN</h2>
-                                <h4 style="margin: 5px 0 0 0; color: #495057; font-size: 14px;">ตารางสรุปแผนการจัดส่งสินค้าประจำวัน (FG Stock)</h4>
-                            </div>
-                            <div style="text-align: right;">
-                                <h3 style="margin: 0 0 10px 0; color: #212529; font-size: 16px;">วันที่ (Date): <span style="color: #0d6efd;">${targetDate}</span></h3>
-                                <div style="display: flex; gap: 15px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 8px 12px; border-radius: 8px;">
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 11px; color: #6c757d; font-weight: bold;">รวมรอบรถจัดส่ง</div>
-                                        <div style="font-size: 18px; font-weight: 800; color: #0d6efd;">${totalTrips} <span style="font-size: 12px;">รอบ</span></div>
-                                    </div>
-                                    <div style="border-left: 1px solid #dee2e6;"></div>
-                                    <div style="text-align: center;">
-                                        <div style="font-size: 11px; color: #6c757d; font-weight: bold;">ยอดจัดส่งรวมทั้งหมด</div>
-                                        <div style="font-size: 18px; font-weight: 800; color: #198754;">${totalQty.toLocaleString()} <span style="font-size: 12px;">ชิ้น</span></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                            <thead>
-                                <tr style="background-color: #0d6efd; color: white;">
-                                    <th style="padding: 8px 4px; width: 5%; text-align: center;">No.</th>
-                                    <th style="padding: 8px 4px; width: 10%; text-align: center;">เวลา (Time)</th>
-                                    <th style="padding: 8px 4px; width: 15%; text-align: left;">ลูกค้า (Customer)</th>
-                                    <th style="padding: 8px 4px; width: 20%; text-align: left;">รหัสสินค้า (Part No)</th>
-                                    <th style="padding: 8px 4px; width: 25%; text-align: left;">ชื่อสินค้า (Part Name)</th>
-                                    <th style="padding: 8px 4px; width: 10%; text-align: right;">จำนวน (Qty)</th>
-                                    <th style="padding: 8px 4px; width: 15%; text-align: left;">หมายเหตุ (Remarks)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${tableRows}
-                            </tbody>
-                        </table>
-
-                        <div style="margin-top: 40px; display: flex; justify-content: space-around; font-size: 12px; color: #495057;">
-                            <div style="text-align: center; width: 25%;">
-                                <div style="border-bottom: 1px dashed #000; height: 30px; margin-bottom: 10px;"></div>
-                                <div style="font-weight: bold;">Prepared By (FG)</div>
-                                <div style="font-size: 11px; margin-top: 5px;">ผู้จัดทำแผนการจัดส่ง</div>
-                            </div>
-                            <div style="text-align: center; width: 25%;">
-                                <div style="border-bottom: 1px dashed #000; height: 30px; margin-bottom: 10px;"></div>
-                                <div style="font-weight: bold;">Approved By</div>
-                                <div style="font-size: 11px; margin-top: 5px;">ผู้อนุมัติการจัดส่ง</div>
-                            </div>
-                            <div style="text-align: center; width: 25%;">
-                                <div style="border-bottom: 1px dashed #000; height: 30px; margin-bottom: 10px;"></div>
-                                <div style="font-weight: bold;">Logistics / Driver</div>
-                                <div style="font-size: 11px; margin-top: 5px;">พนักงานขับรถ / ผู้รับสินค้า</div>
-                            </div>
-                        </div>
-                    `;
-
-                    Swal.fire({
-                        title: 'กำลังประมวลผล PDF...',
-                        html: 'กรุณารอสักครู่ ระบบกำลังจัดหน้ากระดาษครับ',
-                        allowOutsideClick: false,
-                        didOpen: () => Swal.showLoading()
-                    });
-
-                    // อัปเดตตั้งค่า html2pdf เพื่อบีบให้เข้ารูป A4
-                    const opt = {
-                        margin:       [10, 10, 10, 10], 
-                        filename:     `Daily_Delivery_Plan_${targetDate}.pdf`,
-                        image:        { type: 'jpeg', quality: 1.0 },
-                        html2canvas:  { scale: 2, useCORS: true, windowWidth: 1080 }, // ล็อกหน้าต่างจำลองไม่ให้บานออก
-                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-                    };
-
-                    html2pdf().set(opt).from(printDiv).save().then(() => {
-                        Swal.fire('สำเร็จ!', 'ดาวน์โหลดแผนจัดส่งเป็น PDF เรียบร้อยแล้วครับ', 'success');
-                    }).catch(err => {
-                        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้าง PDF ได้: ' + err.message, 'error');
-                    });
-                };
                 init();
+
+                // ========================================================
+                // User Form Submit
+                // ========================================================
+			// ========================================================
+                // ฟังก์ชันสำหรับแอดมินกดแก้ไขยอดสต็อก (Manual Adjustment)
+                // ========================================================
                 window.handleEditStockSubmit = async function(e) {
                     e.preventDefault(); // คำสั่งสำคัญ: ป้องกันไม่ให้เบราว์เซอร์รีเฟรชหน้าเว็บ
                     
@@ -6290,8 +5858,6 @@ function populateSalesDashboard(startDate, endDate) {
                         const userData = {
                             username: document.getElementById('user-username').value.trim(),
                             password: document.getElementById('user-password').value.trim(),
-                            fullname: document.getElementById('user-fullname').value.trim(),
-                            avatarUrl: document.getElementById('user-avatar').value.trim(),
                             role: document.getElementById('user-role-select').value,
                             canImport: document.getElementById('permission-canImport').checked,
                             canExport: document.getElementById('permission-canExport').checked,
@@ -6339,12 +5905,11 @@ function populateSalesDashboard(startDate, endDate) {
                         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
                     }
                 };
+
                 // ========================================================
-// ========================================================
-                // CALCULATOR FUNCTIONS (Modern UI & Keyboard Support + History)
+                // CALCULATOR FUNCTIONS (Keyboard Support)
                 // ========================================================
                 let calcExpression = '';
-                let calcHistory = []; // ตัวแปรเก็บประวัติการคำนวณ
                 
                 window.toggleCalculator = function() {
                     const calc = document.getElementById('calculator-widget');
@@ -6352,8 +5917,6 @@ function populateSalesDashboard(startDate, endDate) {
                         calc.classList.toggle('d-none');
                         if (!calc.classList.contains('d-none')) {
                             document.addEventListener('keydown', handleCalcKeyboard);
-                            document.getElementById('calc-display').focus();
-                            window.renderCalcHistory(); // โชว์ประวัติตอนเปิด
                         } else {
                             document.removeEventListener('keydown', handleCalcKeyboard);
                         }
@@ -6362,46 +5925,29 @@ function populateSalesDashboard(startDate, endDate) {
 
                 function handleCalcKeyboard(e) {
                     const calc = document.getElementById('calculator-widget');
-                    if (!calc || calc.classList.contains('d-none')) return; 
-
-                    const activeTag = document.activeElement.tagName;
-                    if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') {
-                       if (document.activeElement.id !== 'calc-display') return;
-                    }
+                    if (calc.classList.contains('d-none')) return; 
 
                     const key = e.key;
-                    if (['+', '-', '*', '/', 'Enter', 'Backspace', 'Escape', '=', '%'].includes(key)) {
+                    if (['+', '-', '*', '/', 'Enter', 'Backspace', 'Escape'].includes(key)) {
                         e.preventDefault();
                     }
 
-                    if (['0','1','2','3','4','5','6','7','8','9','+', '-', '*', '/', '.'].includes(key)) {
+                    if (!isNaN(key) || ['+', '-', '*', '/', '.'].includes(key)) {
                         window.calcInput(key);
-                    } else if (key === 'Enter' || key === '=') {
+                    } else if (key === 'Enter') {
                         window.calcResult();
                     } else if (key === 'Backspace') {
                         window.calcDelete();
-                    } else if (key === 'Escape' || key.toLowerCase() === 'c') {
+                    } else if (key === 'Escape' || key === 'c' || key === 'C') {
                         window.calcClear();
                     }
                 }
 
-                function formatCalcDisplay(expr) {
-                    if (!expr) return '0';
-                    return expr.replace(/\*/g, '×').replace(/\//g, '÷');
-                }
-
                 window.calcInput = function(val) {
                     const display = document.getElementById('calc-display');
-                    const operators = ['+', '-', '*', '/'];
-                    
-                    if (operators.includes(val) && operators.includes(calcExpression.slice(-1))) {
-                        calcExpression = calcExpression.slice(0, -1) + val;
-                    } else {
-                        if (calcExpression === '0' && val !== '.') calcExpression = '';
-                        calcExpression += val;
-                    }
-                    display.value = formatCalcDisplay(calcExpression);
-                    display.scrollLeft = display.scrollWidth; 
+                    if (calcExpression === '0' && val !== '.') calcExpression = '';
+                    calcExpression += val;
+                    display.value = calcExpression;
                 };
 
                 window.calcClear = function() {
@@ -6411,68 +5957,24 @@ function populateSalesDashboard(startDate, endDate) {
 
                 window.calcDelete = function() {
                     calcExpression = calcExpression.slice(0, -1);
-                    document.getElementById('calc-display').value = formatCalcDisplay(calcExpression) || '0';
+                    document.getElementById('calc-display').value = calcExpression || '0';
                 };
 
-                // ฟังก์ชันคำนวณและบันทึกประวัติ
                 window.calcResult = function() {
                     const display = document.getElementById('calc-display');
                     try {
-                        if (!calcExpression) return;
-                        
-                        // ถ่ายรูปสมการก่อนคำนวณเก็บไว้
-                        const originalExpr = formatCalcDisplay(calcExpression); 
-
-                        let result = eval(calcExpression);
-                        const finalResult = Number.isInteger(result) ? result : parseFloat(result.toFixed(4));
-                        
+                        const result = eval(calcExpression);
+                        const finalResult = Number.isInteger(result) ? result : result.toFixed(2);
                         display.value = finalResult.toLocaleString();
                         calcExpression = String(finalResult);
-
-                        // ถ้าคำนวณแล้วได้ผลลัพธ์ใหม่ ให้ดันเข้าประวัติ (เช็คว่าไม่ใช่การกด = ซ้ำเฉยๆ)
-                        if (originalExpr !== String(finalResult)) {
-                            calcHistory.push({
-                                expr: originalExpr,
-                                res: finalResult.toLocaleString()
-                            });
-                            // เก็บประวัติย้อนหลังแค่ 10 รายการล่าสุด ป้องกันหน้าต่างยาวเกินไป
-                            if (calcHistory.length > 10) calcHistory.shift(); 
-                            window.renderCalcHistory();
-                        }
-
                     } catch (e) {
                         display.value = 'Error';
                         calcExpression = '';
                     }
                 };
 
-                // ฟังก์ชันโชว์ประวัติบนหน้าจอ
-                window.renderCalcHistory = function() {
-                    const historyArea = document.getElementById('calc-history-area');
-                    const historyList = document.getElementById('calc-history-list');
-                    if (!historyArea || !historyList) return;
-
-                    if (calcHistory.length === 0) {
-                        historyArea.classList.add('d-none'); // ซ่อนถ้าไม่มีประวัติ
-                    } else {
-                        historyArea.classList.remove('d-none'); // โชว์ถ้ามีประวัติ
-                        historyList.innerHTML = calcHistory.map(item => `
-                            <div class="calc-history-item">
-                                <div class="calc-history-expr">${item.expr} =</div>
-                                <div class="calc-history-res">${item.res}</div>
-                            </div>
-                        `).join('');
-                        // เลื่อนสกอร์บาร์ไปล่างสุดเสมอ เพื่อให้เห็นรายการล่าสุด
-                        historyArea.scrollTop = historyArea.scrollHeight;
-                    }
-                };
-
-                // ฟังก์ชันล้างประวัติ
-                window.clearCalcHistory = function() {
-                    calcHistory = [];
-                    window.renderCalcHistory();
-                };
                 // ========================================================
+
                     window.openConvertModal = function() {
                     // แก้ไขจาก isAdmin อย่างเดียว เป็นเช็คสิทธิ์ canConvertPart ด้วย
                     if (!currentUser || (currentUser.role !== 'admin' && !currentUser.canConvertPart)) {
@@ -6688,6 +6190,14 @@ function populateSalesDashboard(startDate, endDate) {
 };
             }); // ปิด DOMContentLoaded ที่ถูกต้องตรงนี้
         </script>
+
+<button class="btn shadow-lg d-flex align-items-center justify-content-center" id="calc-toggle-btn" 
+        style="position: fixed; bottom: 95px; right: 25px; width: 55px; height: 55px; z-index: 4000; 
+               background: #212529; border: 2px solid #0d6efd; border-radius: 16px; 
+               color: #0d6efd; transition: all 0.3s ease; padding: 0;"
+        onclick="window.toggleCalculator()">
+    <i class="bi bi-calculator fs-3"></i>
+</button>
 <div id="floating-mascot-container" class="d-none" style="position: fixed; bottom: 15px; left: 20px; z-index: 4000; pointer-events: none; display: flex; align-items: center; gap: 12px;">
     
     <div id="mascot-img" class="cute-robot-css dug-dik-always" title="ฉันคอยเชียร์เธออยู่ตรงนี้น้า!" style="flex-shrink: 0;">
