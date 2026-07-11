@@ -1069,6 +1069,10 @@
             <div class="tab-content" id="pills-tabContent">
 <div class="tab-pane fade show active" id="pills-stock" role="tabpanel">
                     <div class="col-12" id="stock-content-column">
+                        <!-- 📊 Widget สรุปยอดสต็อกแยกลูกค้า (เลื่อนซ้ายขวาได้) -->
+                            <div id="customer-stock-summary-row" class="row g-3 mb-4 flex-nowrap pb-2" style="overflow-x: auto; scroll-behavior: smooth;">
+                                <!-- โค้ดกล่องสรุปยอดจะถูกสร้างอัตโนมัติด้วย JS ตรงนี้ -->
+                            </div>
                         <div class="card mb-4 border-0 shadow-sm" style="border-radius: 20px;">
                             <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-white border-0 pt-4 pb-2 px-4" style="border-radius: 20px 20px 0 0;">
                                 <h5 class="fw-bold text-primary mb-0"><i class="bi bi-table me-2"></i><span data-lang-key="stock_summary_title">สรุปยอดสต็อกสินค้าคงเหลือ</span></h5>
@@ -1120,7 +1124,9 @@
                 </div>
                 <div class="col-md-3">
                     <label for="plan-customer" class="form-label">ลูกค้า</label>
-                    <input type="text" id="plan-customer" class="form-control" placeholder="ระบุชื่อลูกค้า เช่น LG, Hanon" required>
+                    <select id="plan-customer" class="form-select border-primary" required>
+                        <option value="" disabled selected>-- โหลดรายชื่อลูกค้า... --</option>
+                    </select>
                 </div>
                 <div class="col-md-3">
                     <label for="plan-product-id" class="form-label">รหัสสินค้า</label>
@@ -1138,8 +1144,8 @@
                     <input type="number" id="plan-quantity" class="form-control" min="1" placeholder="จำนวนชิ้น" required>
                 </div>
                 <div class="col-md-3">
-                    <label for="plan-time" class="form-label">เวลาจัดส่ง (รอบ/Time)</label>
-                    <input type="time" id="plan-time" class="form-control" required>
+                    <label for="plan-time" class="form-label">เวลาจัดส่ง (24h)</label>
+                    <input type="text" id="plan-time" class="form-control border-primary" placeholder="เช่น 08:30" required autocomplete="off" oninput="let v = this.value.replace(/[^0-9]/g, ''); if(v.length >= 2) { v = v.substring(0,2) + ':' + v.substring(2); } this.value = v.substring(0,5);">
                 </div>
                 <div class="col-md-6">
                     <label for="plan-remarks" class="form-label">หมายเหตุ</label>
@@ -1153,34 +1159,40 @@
     </div>
 
     <div class="card">
-        <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-light">
+<div class="card-header fw-bold d-flex justify-content-between align-items-center bg-light">
             <span><i class="bi bi-table me-2 text-success"></i>ตารางสรุปแผนการจัดส่งรวมประจำวัน</span>
-            <div class="d-flex align-items-center gap-2">
-                <label for="view-plan-date" class="form-label mb-0 small-text" style="white-space: nowrap;">ดูแผนงานวันที่:</label>
-                <input type="date" id="view-plan-date" class="form-control form-control-sm">
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="view-plan-date" class="form-label mb-0 small-text" style="white-space: nowrap;">ดูแผนงานวันที่:</label>
+                    <input type="date" id="view-plan-date" class="form-control form-control-sm border-primary">
+                </div>
+                <button class="btn btn-danger btn-sm shadow-sm fw-bold px-3" onclick="window.exportDeliveryPlanPDF()" title="ดาวน์โหลดแผนเป็นไฟล์ PDF">
+                    <i class="bi bi-filetype-pdf me-1"></i> โหลด PDF
+                </button>
             </div>
-		<div class="d-flex align-items-center gap-2">
-    <label for="view-plan-date" class="form-label mb-0 small-text" style="white-space: nowrap;">ดูแผนงานวันที่:</label>
-    <input type="date" id="view-plan-date" class="form-control form-control-sm">
-</div>
+        </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover align-middle">
-                    <thead class="table-primary text-center">
+ <thead class="table-primary text-center" style="position: sticky; top: 0; z-index: 1;">
                         <tr>
-                            <th>เวลา</th>
-                            <th>ลูกค้า</th>
-                            <th>รหัสสินค้า</th>
-                            <th>ชื่อสินค้า</th>
-                            <th class="text-end">จำนวน (ชิ้น)</th>
-                            <th>หมายเหตุ</th>
-                            <th>การจัดการ</th>
+                            <th style="width: 8%;">เวลา</th>
+                            <th style="width: 12%;">ลูกค้า</th>
+                            <th style="width: 15%;">รหัสสินค้า</th>
+                            <th style="width: 18%;">ชื่อสินค้า</th>
+                            <th class="text-end" style="width: 12%;">จำนวน (ชิ้น)</th>
+                            <th style="width: 20%; background-color: #0d6efd; color: white;">📦 แนะนำล็อต (FIFO)</th>
+                            <th style="width: 10%;">หมายเหตุ</th>
+                            <th style="width: 5%;">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody id="delivery-plan-table-body">
                         <tr>
-                            <td colspan="7" class="text-center text-muted p-4">กรุณาเลือกวันที่ต้องการดูแผนการจัดส่งค่ะ</td>
+                            <td colspan="8" class="text-center text-muted p-5">
+                                <i class="bi bi-calendar2-x opacity-25 d-block mb-3" style="font-size: 3rem;"></i>
+                                กรุณาเลือกวันที่ต้องการดูแผนการจัดส่งค่ะ
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -1660,6 +1672,7 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         <script>
             // --- TRANSLATION OBJECT ---
             const translations = {
@@ -3693,6 +3706,7 @@ if (mascotBubble) {
                     displayActiveAnnouncements();
                     populateStockCountMainView();
                     window.app.populateDashboard(); // NEW: Call dashboard population
+                    window.populateCustomerDropdown();
                 }
 
                 // --- RENDER FUNCTIONS (for dynamic content) ---
@@ -3705,7 +3719,7 @@ if (mascotBubble) {
                     renderHistoryFilterForm();
                 }
 
-                function populateStockSummary() {
+function populateStockSummary() {
                     const T = translations[currentLanguage];
                     const header = document.getElementById('stock-summary-table-header');
                     const isAdmin = currentUser.role === 'admin';
@@ -3718,12 +3732,77 @@ if (mascotBubble) {
                 ${isAdmin ? `<th>${T.actions}</th>` : ''}
             </tr>`;
 
+                    const stockSummaryTable = document.getElementById('stock-summary-table');
                     stockSummaryTable.innerHTML = '';
-                    const filterOldStock = showOldStockFilter.checked;
-                    const searchTerm = stockSearchInput.value.toLowerCase();
+                    const filterOldStock = document.getElementById('show-old-stock-filter').checked;
+                    const searchTerm = document.getElementById('stock-search-input').value.toLowerCase();
                     const threeMonthsAgo = new Date();
                     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
+                    // ==========================================
+                    // 📊 ลอจิกใหม่: คำนวณยอดแยกลูกค้าและกลุ่ม (ออโต้/อิเล็ก)
+                    // ==========================================
+                    const customerSummary = new Map();
+                    
+                    calculatedStock.forEach(stockItem => {
+                        if(stockItem.totalQuantity <= 0) return; // ไม่นับสินค้าที่ของหมด
+                        
+                        const productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim()) || {};
+                        const customer = productInfo.customer || 'ไม่ระบุลูกค้า';
+                        const group = productInfo.customerGroup || 'Other';
+                        
+                        if(!customerSummary.has(customer)) {
+                            customerSummary.set(customer, { total: 0, autopart: 0, electronic: 0, other: 0 });
+                        }
+                        
+                        const custData = customerSummary.get(customer);
+                        custData.total += stockItem.totalQuantity;
+                        
+                        if(group === 'Autopart') custData.autopart += stockItem.totalQuantity;
+                        else if(group === 'Electronic') custData.electronic += stockItem.totalQuantity;
+                        else custData.other += stockItem.totalQuantity;
+                    });
+
+                    // วาด Widget การ์ดสรุปยอด
+                    const summaryRow = document.getElementById('customer-stock-summary-row');
+                    if(summaryRow) {
+                        summaryRow.innerHTML = ''; 
+                        // เรียงลำดับลูกค้าที่มียอดสต็อกเยอะสุดขึ้นก่อน
+                        const sortedCustomers = Array.from(customerSummary.entries()).sort((a, b) => b[1].total - a[1].total);
+                        
+                        if (sortedCustomers.length === 0) {
+                            summaryRow.style.display = 'none';
+                        } else {
+                            summaryRow.style.display = 'flex';
+                            sortedCustomers.forEach(([customer, data]) => {
+                                // สร้างป้าย Badge สำหรับ Auto และ Elec
+                                let badgesHtml = '';
+                                if(data.autopart > 0) badgesHtml += `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill py-1"><i class="bi bi-car-front-fill me-1"></i>Auto: ${data.autopart.toLocaleString()}</span>`;
+                                if(data.electronic > 0) badgesHtml += `<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill py-1 ms-1"><i class="bi bi-cpu-fill me-1"></i>Elec: ${data.electronic.toLocaleString()}</span>`;
+                                
+                                summaryRow.innerHTML += `
+                                    <div class="col-12 col-md-4 col-lg-3" style="min-width: 260px;">
+                                        <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; background: #ffffff; border-left: 6px solid #0d6efd !important; transition: transform 0.2s;">
+                                            <div class="card-body p-3">
+                                                <div class="text-muted fw-bold mb-1" style="font-size: 0.75rem;"><i class="bi bi-building me-1"></i>ลูกค้า (Customer)</div>
+                                                <h6 class="fw-bold text-dark text-truncate mb-2" style="font-size: 1.05rem;">${customer}</h6>
+                                                <div class="d-flex align-items-end justify-content-between mb-2">
+                                                    <h3 class="fw-bolder mb-0 text-primary" style="line-height: 1;">${data.total.toLocaleString()}</h3>
+                                                    <span class="text-muted small fw-bold mb-1">ชิ้น</span>
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-1 mt-2 pt-2 border-top border-light-subtle">
+                                                    ${badgesHtml || `<span class="badge bg-light text-secondary border rounded-pill py-1"><i class="bi bi-box me-1"></i>ทั่วไป: ${data.other.toLocaleString()}</span>`}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                        }
+                    }
+                    // ==========================================
+
+                    // สร้างตารางสต็อกรายการทั้งหมด (ของเดิม)
                     let summary = calculatedStock.map(stockItem => {
                         let productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim());
                         if (!productInfo) {
@@ -3761,15 +3840,14 @@ if (mascotBubble) {
                         <small class="text-muted">${item.name}</small>
                     </td>
                     <td class="small-text">${item.erpCode || '-'}</td>
-                    <td class="small-text">${item.customer || '-'}</td>
-                    <td><span class="fw-bold">${item.totalQuantity.toLocaleString()}</span></td>
-                    ${isAdmin ? `<td><button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')" title="${T.edit_stock_modal_title}"><i class="bi bi-pencil-fill"></i></button></td>` : ''}
+                    <td class="small-text fw-bold text-dark">${item.customer || '-'}</td>
+                    <td><span class="fw-bold fs-6 text-primary">${item.totalQuantity.toLocaleString()}</span></td>
+                    ${isAdmin ? `<td><button class="btn btn-warning btn-sm shadow-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')" title="${T.edit_stock_modal_title}"><i class="bi bi-pencil-fill"></i></button></td>` : ''}
                 `;
                         row.addEventListener('click', () => window.app.showLotDetails(item.id));
                         stockSummaryTable.appendChild(row);
                     });
                 }
-
                 function populateHistoryTable() {
                     const T = translations[currentLanguage];
                     const header = document.getElementById('history-table-header');
@@ -4103,33 +4181,74 @@ document.body.addEventListener('submit', function (e) {
 });
 
 // ฟังก์ชันคำนวณและแสดงตารางแผนงานประจำวันรวมทุกเจ้า
+// ฟังก์ชันคำนวณและแสดงตารางแผนงานประจำวันรวมทุกเจ้า พร้อมระบบช่วยจัดสรร FIFO อัตโนมัติ
 function renderDeliveryPlanTable(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
     if (!tableBody) return;
     
     db.deliveryPlans = db.deliveryPlans || [];
-    // กรองเอาเฉพาะข้อมูลแผนจัดส่งในวันที่เลือก และเรียงตามเวลา (FIFO/Timeline)
+    // กรองเอาเฉพาะข้อมูลแผนจัดส่งในวันที่เลือก และเรียงตามเวลา (เพื่อจัดสรร FIFO ตามคิวรอบรถ)
     const dailyPlans = db.deliveryPlans.filter(p => p.date === targetDate)
                                        .sort((a, b) => a.time.localeCompare(b.time));
     
     if (dailyPlans.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4">ไม่มีแผนการจัดส่งสินค้าสำหรับวันที่ ${targetDate} ค่ะ</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-muted p-5"><i class="bi bi-emoji-smile opacity-25 d-block mb-3" style="font-size: 3rem;"></i>ไม่มีแผนการจัดส่งสินค้าสำหรับวันที่ ${targetDate} ค่ะ</td></tr>`;
         return;
     }
-    
-    tableBody.innerHTML = dailyPlans.map(p => `
-        <tr>
+
+    // -------------------------------------------------------------
+    // 🧠 ระบบจำลองการตัดสต็อก (Virtual Deduction) เพื่อคำนวณ FIFO 
+    // ช่วยให้ถ้ารถ 2 รอบมาเอาของชนิดเดียวกัน ระบบจะจ่ายล็อตเก่าให้รอบแรก และล็อตถัดไปให้รอบหลังแบบไม่ซ้ำกัน
+    // -------------------------------------------------------------
+    const virtualStock = {};
+    calculatedStock.forEach(p => {
+        // ก๊อปปี้ข้อมูลล็อตสต็อกปัจจุบันมาทำจำลอง โดยเรียงจากเก่าไปใหม่ (FIFO)
+        virtualStock[p.productId] = p.lots.map(l => ({...l})).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate));
+    });
+
+    const rowsHtml = dailyPlans.map(p => {
+        let remainingQty = parseInt(p.quantity, 10);
+        let recommendation = [];
+        let lots = virtualStock[p.productId] || [];
+
+        // วนลูปหักยอดสต็อกจำลองเพื่อจ่ายให้รถคันนี้
+        for (let i = 0; i < lots.length; i++) {
+            let lot = lots[i];
+            if (lot.quantity > 0 && remainingQty > 0) {
+                const takeQty = Math.min(lot.quantity, remainingQty);
+                
+                let packBadge = lot.packagingType === 'temporary' ? '<span class="badge bg-warning-subtle text-warning-emphasis ms-1" style="font-size: 0.65rem;">Temp</span>' : '';
+                recommendation.push(`<div class="mb-1 text-nowrap" style="font-size: 0.85rem;"><i class="bi bi-box-arrow-right text-success me-1"></i>${lot.productionDate} <b class="text-dark">(${takeQty.toLocaleString()})</b>${packBadge}</div>`);
+                
+                lot.quantity -= takeQty; // หักยอดสต็อกจำลอง เพื่อให้รถคิวถัดไปไม่ได้ล็อตนี้ซ้ำ
+                remainingQty -= takeQty;
+            }
+        }
+
+        // ถ้ายอดในสต็อกไม่พอจ่าย
+        if (remainingQty > 0) {
+            recommendation.push(`<div class="text-danger mt-1 fw-bold text-nowrap" style="font-size: 0.8rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>ของขาด ${remainingQty.toLocaleString()} ชิ้น</div>`);
+        }
+
+        const fifoSuggestionHtml = recommendation.length > 0 ? recommendation.join('') : '<span class="text-danger small fw-bold"><i class="bi bi-x-circle me-1"></i>ไม่มีของในสต็อก</span>';
+
+        return `
+        <tr class="align-middle">
             <td class="text-center fw-bold text-primary"><i class="bi bi-clock me-1"></i>${p.time} น.</td>
-            <td><b>${p.customer}</b></td>
-            <td><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${p.productId}</span></td>
-            <td><small>${p.productName}</small></td>
-            <td class="text-end fw-bold text-success">${p.quantity.toLocaleString()}</td>
-            <td><span class="small-text">${p.remarks || '-'}</span></td>
+            <td><b class="text-dark">${p.customer}</b></td>
+            <td><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill px-3 py-2 border shadow-sm">${p.productId}</span></td>
+            <td><small class="text-muted fw-bold">${p.productName}</small></td>
+            <td class="text-end fw-bolder text-success fs-6">${p.quantity.toLocaleString()}</td>
+            <td style="background-color: #f8f9fa; border-radius: 8px; border: 1px dashed #ced4da;" class="p-2">${fifoSuggestionHtml}</td>
+            <td><span class="text-muted" style="font-size: 0.8rem;">${p.remarks || '-'}</span></td>
             <td class="text-center">
-                <button class="btn btn-danger btn-sm p-1" onclick="deletePlanItem('${p.id}', '${p.date}')" title="ลบรายการ"><i class="bi bi-trash-fill"></i></button>
+                <button class="btn btn-outline-danger btn-sm p-1 shadow-sm rounded" onclick="deletePlanItem('${p.id}', '${p.date}')" title="ลบรายการ"><i class="bi bi-trash-fill"></i></button>
             </td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
+
+    tableBody.innerHTML = rowsHtml;
 }
 
 // ฟังก์ชันสำหรับลบรายการแผนจัดส่งออกจากตารางชั่วคราว
@@ -5934,14 +6053,149 @@ function populateSalesDashboard(startDate, endDate) {
                     }
                 }
                // --- START THE APP ---
-                init();
+               // ========================================================
+                // ฟังก์ชันดึงรายชื่อลูกค้าเข้า Dropdown อัตโนมัติ
+                // ========================================================
+                window.populateCustomerDropdown = function() {
+                    const customerSelect = document.getElementById('plan-customer');
+                    if (!customerSelect) return;
+                    
+                    // ดึงชื่อลูกค้าแบบไม่ให้ซ้ำกัน จากฐานข้อมูลสินค้า
+                    const uniqueCustomers = Array.from(new Set(db.products.map(p => p.customer).filter(Boolean))).sort();
+                    
+                    const currentValue = customerSelect.value;
+                    customerSelect.innerHTML = '<option value="" disabled selected>-- เลือกลูกค้า --</option>';
+                    
+                    uniqueCustomers.forEach(cust => {
+                        const option = document.createElement('option');
+                        option.value = cust;
+                        option.textContent = cust;
+                        customerSelect.appendChild(option);
+                    });
+                    
+                    // เลือกลูกค้าเดิมกลับมา ถ้ามี
+                    if (currentValue && uniqueCustomers.includes(currentValue)) {
+                        customerSelect.value = currentValue;
+                    }
+                };
+                window.exportDeliveryPlanPDF = function() {
+                    const targetDate = document.getElementById('view-plan-date').value;
+                    if (!targetDate) {
+                        Swal.fire('แจ้งเตือน', 'กรุณาเลือกวันที่ต้องการดาวน์โหลดก่อนครับ', 'warning');
+                        return;
+                    }
 
-                // ========================================================
-                // User Form Submit
-                // ========================================================
-			// ========================================================
-                // ฟังก์ชันสำหรับแอดมินกดแก้ไขยอดสต็อก (Manual Adjustment)
-                // ========================================================
+                    const dailyPlans = (db.deliveryPlans || []).filter(p => p.date === targetDate).sort((a, b) => a.time.localeCompare(b.time));
+                    
+                    if (dailyPlans.length === 0) {
+                        Swal.fire('ไม่มีข้อมูล', `ไม่มีแผนการจัดส่งในวันที่ ${targetDate} ครับ`, 'info');
+                        return;
+                    }
+
+                    const totalTrips = dailyPlans.length;
+                    const totalQty = dailyPlans.reduce((sum, p) => sum + parseInt(p.quantity || 0), 0);
+
+                    const printDiv = document.createElement('div');
+                    printDiv.style.padding = '20px'; // ลดขอบกระดาษจำลอง
+                    printDiv.style.fontFamily = "'Mitr', sans-serif";
+                    printDiv.style.color = '#000';
+                    printDiv.style.backgroundColor = '#fff';
+                    printDiv.style.width = '1050px'; // ล็อกความกว้างไว้ที่ไม่เกิน A4 แนวนอน
+                    
+                    let tableRows = dailyPlans.map((p, index) => `
+                        <tr style="border-bottom: 1px solid #dee2e6;">
+                            <td style="padding: 6px 4px; text-align: center;">${index + 1}</td>
+                            <td style="padding: 6px 4px; text-align: center; font-weight: bold; color: #0d6efd;">${p.time} น.</td>
+                            <td style="padding: 6px 4px; font-weight: bold;">${p.customer}</td>
+                            <td style="padding: 6px 4px;">${p.productId}</td>
+                            <td style="padding: 6px 4px; font-size: 0.8rem;">${p.productName}</td>
+                            <td style="padding: 6px 4px; text-align: right; font-weight: bold; color: #198754;">${p.quantity.toLocaleString()}</td>
+                            <td style="padding: 6px 4px; font-size: 0.8rem;">${p.remarks || '-'}</td>
+                        </tr>
+                    `).join('');
+
+                    printDiv.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #0d6efd; padding-bottom: 10px; margin-bottom: 15px;">
+                            <div>
+                                <img src="https://i.ibb.co/KxttMHxc/291315-logo-20230216140112-5.jpg" alt="ATECH" style="height: 45px; margin-bottom: 8px;">
+                                <h2 style="margin: 0; color: #0d6efd; font-weight: 800; font-size: 20px;">DAILY DELIVERY PLAN</h2>
+                                <h4 style="margin: 5px 0 0 0; color: #495057; font-size: 14px;">ตารางสรุปแผนการจัดส่งสินค้าประจำวัน (FG Stock)</h4>
+                            </div>
+                            <div style="text-align: right;">
+                                <h3 style="margin: 0 0 10px 0; color: #212529; font-size: 16px;">วันที่ (Date): <span style="color: #0d6efd;">${targetDate}</span></h3>
+                                <div style="display: flex; gap: 15px; background: #f8f9fa; border: 1px solid #dee2e6; padding: 8px 12px; border-radius: 8px;">
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 11px; color: #6c757d; font-weight: bold;">รวมรอบรถจัดส่ง</div>
+                                        <div style="font-size: 18px; font-weight: 800; color: #0d6efd;">${totalTrips} <span style="font-size: 12px;">รอบ</span></div>
+                                    </div>
+                                    <div style="border-left: 1px solid #dee2e6;"></div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 11px; color: #6c757d; font-weight: bold;">ยอดจัดส่งรวมทั้งหมด</div>
+                                        <div style="font-size: 18px; font-weight: 800; color: #198754;">${totalQty.toLocaleString()} <span style="font-size: 12px;">ชิ้น</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <thead>
+                                <tr style="background-color: #0d6efd; color: white;">
+                                    <th style="padding: 8px 4px; width: 5%; text-align: center;">No.</th>
+                                    <th style="padding: 8px 4px; width: 10%; text-align: center;">เวลา (Time)</th>
+                                    <th style="padding: 8px 4px; width: 15%; text-align: left;">ลูกค้า (Customer)</th>
+                                    <th style="padding: 8px 4px; width: 20%; text-align: left;">รหัสสินค้า (Part No)</th>
+                                    <th style="padding: 8px 4px; width: 25%; text-align: left;">ชื่อสินค้า (Part Name)</th>
+                                    <th style="padding: 8px 4px; width: 10%; text-align: right;">จำนวน (Qty)</th>
+                                    <th style="padding: 8px 4px; width: 15%; text-align: left;">หมายเหตุ (Remarks)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRows}
+                            </tbody>
+                        </table>
+
+                        <div style="margin-top: 40px; display: flex; justify-content: space-around; font-size: 12px; color: #495057;">
+                            <div style="text-align: center; width: 25%;">
+                                <div style="border-bottom: 1px dashed #000; height: 30px; margin-bottom: 10px;"></div>
+                                <div style="font-weight: bold;">Prepared By (FG)</div>
+                                <div style="font-size: 11px; margin-top: 5px;">ผู้จัดทำแผนการจัดส่ง</div>
+                            </div>
+                            <div style="text-align: center; width: 25%;">
+                                <div style="border-bottom: 1px dashed #000; height: 30px; margin-bottom: 10px;"></div>
+                                <div style="font-weight: bold;">Approved By</div>
+                                <div style="font-size: 11px; margin-top: 5px;">ผู้อนุมัติการจัดส่ง</div>
+                            </div>
+                            <div style="text-align: center; width: 25%;">
+                                <div style="border-bottom: 1px dashed #000; height: 30px; margin-bottom: 10px;"></div>
+                                <div style="font-weight: bold;">Logistics / Driver</div>
+                                <div style="font-size: 11px; margin-top: 5px;">พนักงานขับรถ / ผู้รับสินค้า</div>
+                            </div>
+                        </div>
+                    `;
+
+                    Swal.fire({
+                        title: 'กำลังประมวลผล PDF...',
+                        html: 'กรุณารอสักครู่ ระบบกำลังจัดหน้ากระดาษครับ',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    // อัปเดตตั้งค่า html2pdf เพื่อบีบให้เข้ารูป A4
+                    const opt = {
+                        margin:       [10, 10, 10, 10], 
+                        filename:     `Daily_Delivery_Plan_${targetDate}.pdf`,
+                        image:        { type: 'jpeg', quality: 1.0 },
+                        html2canvas:  { scale: 2, useCORS: true, windowWidth: 1080 }, // ล็อกหน้าต่างจำลองไม่ให้บานออก
+                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                    };
+
+                    html2pdf().set(opt).from(printDiv).save().then(() => {
+                        Swal.fire('สำเร็จ!', 'ดาวน์โหลดแผนจัดส่งเป็น PDF เรียบร้อยแล้วครับ', 'success');
+                    }).catch(err => {
+                        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถสร้าง PDF ได้: ' + err.message, 'error');
+                    });
+                };
+                init();
                 window.handleEditStockSubmit = async function(e) {
                     e.preventDefault(); // คำสั่งสำคัญ: ป้องกันไม่ให้เบราว์เซอร์รีเฟรชหน้าเว็บ
                     
