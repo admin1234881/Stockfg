@@ -752,12 +752,160 @@
         .main-wrapper, .tab-content, .container-fluid {
             overflow: visible !important; /* ปลดล็อกให้เมนูย่อยยื่นออกมาได้ */
         }
+/* ========================================= */
+        /* --- HEADER ANNOUNCEMENT MARQUEE --- */
+        /* ========================================= */
+        .header-announcement-wrapper {
+            background: linear-gradient(90deg, #fff3cd, #fff8e5);
+            border: 1px solid #ffeeba;
+            border-radius: 50px;
+            padding: 4px 15px 4px 4px;
+            margin: 0 25px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+        .header-announcement-badge {
+            background: linear-gradient(135deg, #dc3545, #ff4d4d);
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 50px;
+            white-space: nowrap;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+            letter-spacing: 0.5px;
+        }
+        .header-marquee-container {
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            white-space: nowrap;
+            /* ไล่ระดับความเบลอซ้ายขวาให้ตัวหนังสือค่อยๆ จางตอนมุดเข้าออก */
+            mask-image: linear-gradient(to right, transparent, black 2%, black 98%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 2%, black 98%, transparent);
+        }
+        .header-marquee-content {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marqueeScroll 25s linear infinite; /* ความเร็ววิ่ง */
+            color: #b02a37;
+            font-size: 0.95rem;
+        }
+        .header-marquee-content:hover {
+            animation-play-state: paused; /* เอาเมาส์ชี้แล้วจะหยุดให้อ่าน */
+            cursor: pointer;
+        }
+        @keyframes marqueeScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+        /* ========================================= */
+        /* --- HI-TECH DOOR ANIMATION --- */
+        /* ========================================= */
+        .hitech-door-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 9999999; /* ให้อยู่หน้าสุดของทุกสิ่ง */
+            pointer-events: none;
+            display: flex;
+            visibility: hidden; /* ซ่อนไว้ก่อนตอนปกติ */
+        }
+        .hitech-door-container.active {
+            visibility: visible;
+        }
+        
+        /* แผ่นประตูซ้ายและขวา */
+        .hitech-door-left, .hitech-door-right {
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            position: relative;
+            transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+            display: flex;
+            align-items: center;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+        }
+        .hitech-door-left {
+            transform: translateX(-100%); /* ซ่อนไว้ขอบซ้าย */
+            border-right: 4px solid #0dcaf0;
+            justify-content: flex-end;
+        }
+        .hitech-door-right {
+            transform: translateX(100%); /* ซ่อนไว้ขอบขวา */
+            border-left: 4px solid #0dcaf0;
+            justify-content: flex-start;
+        }
 
-        /* --- ถ้าจะเอาเมนูภาษาออก (ย้ำอีกครั้ง) --- */
-        /* ให้แน่ใจว่าได้ลบโค้ดส่วน Language Switcher ออกจาก HTML แล้วนะครับ */
+        /* ตกแต่งวงกลมแกนกลางประตู */
+        .door-logo-half {
+            width: 80px;
+            height: 160px;
+            background: #0f2027;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+        .hitech-door-left .door-logo-half {
+            right: 0;
+            border-radius: 80px 0 0 80px;
+            border: 4px solid #0dcaf0;
+            border-right: none;
+            box-shadow: -5px 0 25px rgba(13, 202, 240, 0.4);
+        }
+        .hitech-door-right .door-logo-half {
+            left: 0;
+            border-radius: 0 80px 80px 0;
+            border: 4px solid #0dcaf0;
+            border-left: none;
+            box-shadow: 5px 0 25px rgba(13, 202, 240, 0.4);
+        }
+        
+        /* คลาสคำสั่งเวลาปิดประตู */
+        .hitech-door-container.close-doors .hitech-door-left { transform: translateX(0); }
+        .hitech-door-container.close-doors .hitech-door-right { transform: translateX(0); }
+        
+        /* เอฟเฟกต์เส้นแสงวาบตอนประตูปิดชนกัน */
+        .door-glow {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 100%;
+            background: #ffffff;
+            box-shadow: 0 0 40px 15px #0dcaf0;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .hitech-door-container.close-doors .door-glow {
+            animation: flashGlow 0.5s 0.8s forwards; /* วาบขึ้นมาตอนวินาทีที่ 0.8 (ประตูปิดสนิท) */
+        }
+        @keyframes flashGlow {
+            0% { opacity: 0; width: 2px; }
+            50% { opacity: 1; width: 20px; }
+            100% { opacity: 0; width: 0; }
+        }
     </style>
 <body>
-
+<!-- ========================================= -->
+    <!-- 🚪 เอฟเฟกต์ประตูไฮเทค (Sci-Fi Door) -->
+    <!-- ========================================= -->
+    <div id="hitech-door-container" class="hitech-door-container">
+        <div class="hitech-door-left">
+            <div class="door-logo-half"></div>
+        </div>
+        <div class="hitech-door-right">
+            <div class="door-logo-half"></div>
+        </div>
+        <div class="door-glow"></div>
+    </div>
     <div id="login-page" class="container">
         <div class="login-container">
 <div class="position-absolute top-0 end-0 p-3 d-flex align-items-center" style="z-index: 100;">
@@ -858,11 +1006,21 @@
         <div
             style="position: sticky; top: 0; z-index: 1020; background-color: var(--bg-color); box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
             <header class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2 px-4">
-                <h1 class="h4 d-flex align-items-center mb-0" style="font-weight: 700;">
+<h1 class="h4 d-flex align-items-center mb-0 flex-grow-1 pe-4" style="font-weight: 700; overflow: hidden;">
                     <img src="https://i.ibb.co/KxttMHxc/291315-logo-20230216140112-5.jpg" alt="ATECH Logo" style="height: 38px; border-radius: 8px;" class="me-3 shadow-sm border border-light">
-                    <span style="background: linear-gradient(135deg, #0550da, #2493d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 4px rgba(238, 235, 235, 0));">
+                    <span style="background: linear-gradient(135deg, #0550da, #2493d3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 2px 4px rgba(238, 235, 235, 0)); white-space: nowrap;">
                         STOCK IN-OUT FG
                     </span>
+                    
+                    <!-- 📢 ป้ายประกาศวิ่ง (ย้ายเข้ามามัดรวมไว้ต่อท้ายชื่อโปรแกรม) -->
+                    <div id="header-announcement-wrapper" class="header-announcement-wrapper d-none flex-grow-1" style="margin: 0 0 0 25px; max-width: 650px;">
+                        <div class="header-announcement-badge">
+                            <i class="bi bi-megaphone-fill me-1"></i> ประกาศ
+                        </div>
+                        <div class="header-marquee-container ms-2">
+                            <div id="header-marquee-content" class="header-marquee-content fw-semibold"></div>
+                        </div>
+                    </div>
                 </h1>
                 <div class="d-flex align-items-center">
                     <div class="d-flex align-items-center">
@@ -4202,57 +4360,58 @@ function handleLogin(e) {
         usernameInput.value = '';
         passwordInput.value = '';
 
-        // 3. บันทึก Session ลงระบบเบราว์เซอร์
-        sessionStorage.setItem('currentUser', JSON.stringify(foundUser));
-        
-        // 4. สั่งเปลี่ยนสถานะหน้าจอเข้าสู่หน้าแดชบอร์ดหลักทันที (เพื่อดึงโครงสร้างสิทธิ์ผู้ใช้ขึ้นมาก่อน)
-        checkLoginState();
-
-        // 5. สั่งเปิดตัวน้องมาสคอตและลูปคำพูดวนลูปทันที (ไม่ต้องรอรีเฟรชหน้าเว็บแล้วเธอ)
-        if (document.getElementById('floating-mascot-container')) {
-            document.getElementById('floating-mascot-container').classList.remove('d-none');
-        }
-
-        // ดึงระบบสุ่มคำพูดมาทำงานทันทีหลังล็อกอินสำเร็จ
-        if (typeof rotateSpeech === 'function') {
-            rotateSpeech();
-            clearInterval(window.mascotLoopTimer);
-            window.mascotLoopTimer = setInterval(rotateSpeech, 5000);
-        } else {
-            // กรณีฟังก์ชัน rotateSpeech อยู่ใน scope ที่เรียกไม่ได้โดยตรง ให้สั่งทำซ้ำตรงนี้เพื่อความชัวร์
-            const mascotBubble = document.getElementById('mascot-bubble');
-            if (mascotBubble) {
-                const cheerTexts = [
-                    "สู้ๆ นะเธอ! ✌️", "ตั้งใจทำงานน้า 🥰", "เช็กยอดดีๆ จ้า 📦", 
-                    "วันนี้งานราบรื่น! 🔥", "OFFICE FG ลุยยย 🚀", "พักสายตาบ้างน้า ☕"
-                ];
-                const runLocalRotate = () => {
-                    let newText = mascotBubble.textContent.trim();
-                    while (newText === mascotBubble.textContent.trim()) {
-                        newText = cheerTexts[Math.floor(Math.random() * cheerTexts.length)];
+// ============================================
+            // 🚀 เริ่มแอนิเมชันเปิดประตูไฮเทค
+            // ============================================
+            const doorContainer = document.getElementById('hitech-door-container');
+            
+            if (doorContainer) {
+                // 1. โชว์ประตู และสั่งให้ "ปิด" (เลื่อนมาชนกันตรงกลาง)
+                doorContainer.classList.add('active');
+                doorContainer.classList.add('close-doors');
+                
+                // 2. รอให้ประตูปิดสนิท (0.8s) + ให้เห็นแสงวาบ (0.4s) รวมเป็น 1.2 วินาที
+                setTimeout(() => {
+                    // เปลี่ยนฉากหลังเป็นหน้า Dashboard โดยที่ประตูยังบังอยู่
+                    sessionStorage.setItem('currentUser', JSON.stringify(foundUser));
+                    checkLoginState();
+                    
+                    if (document.getElementById('floating-mascot-container')) {
+                        document.getElementById('floating-mascot-container').classList.remove('d-none');
                     }
-                    mascotBubble.style.opacity = 0;
-                    mascotBubble.style.transition = "opacity 0.3s ease";
+                    
+                    const mascotBubble = document.getElementById('mascot-bubble');
+                    if (mascotBubble) {
+                        const cheerTexts = ["สู้ๆ นะเธอ! ✌️", "ตั้งใจทำงานน้า 🥰", "เช็กยอดดีๆ จ้า 📦", "วันนี้งานราบรื่น! 🔥", "OFFICE FG ลุยยย 🚀", "พักสายตาบ้างน้า ☕"];
+                        const runLocalRotate = () => {
+                            let newText = mascotBubble.textContent.trim();
+                            while (newText === mascotBubble.textContent.trim()) { newText = cheerTexts[Math.floor(Math.random() * cheerTexts.length)]; }
+                            mascotBubble.style.opacity = 0;
+                            mascotBubble.style.transition = "opacity 0.3s ease";
+                            setTimeout(() => { mascotBubble.textContent = newText; mascotBubble.style.opacity = 1; }, 300);
+                        };
+                        runLocalRotate();
+                        clearInterval(window.mascotLoopTimer);
+                        window.mascotLoopTimer = setInterval(runLocalRotate, 5000);
+                    }
+                    
+                    // 3. สั่งให้ "เปิด" ประตู (เลื่อนออกซ้าย-ขวาเผยให้เห็นแดชบอร์ด)
+                    doorContainer.classList.remove('close-doors');
+                    
+                    // 4. รอให้ประตูเปิดเสร็จ (0.8s) แล้วค่อยซ่อนกล่องแอนิเมชัน + เด้งแจ้งเตือน
                     setTimeout(() => {
-                        mascotBubble.textContent = newText;
-                        mascotBubble.style.opacity = 1;
-                    }, 300);
-                };
-                runLocalRotate();
-                clearInterval(window.mascotLoopTimer);
-                window.mascotLoopTimer = setInterval(runLocalRotate, 5000);
+                        doorContainer.classList.remove('active');
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'เข้าสู่ระบบสำเร็จ',
+                            text: 'ยินดีต้อนรับเข้าสู่งานจัดการสินค้าค่ะคุณ ' + foundUser.username,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    }, 800); 
+
+                }, 1200); 
             }
-        }
-
-        // 6. แจ้งเตือนความสำเร็จแบบซอฟต์ๆ 
-        Swal.fire({
-            icon: 'success',
-            title: 'เข้าสู่ระบบสำเร็จ',
-            text: 'ยินดีต้อนรับเข้าสู่งานจัดการสินค้าค่ะคุณ ' + foundUser.username,
-            timer: 1500,
-            showConfirmButton: false
-        });
-
     } else {
         if (errorMsg) errorMsg.classList.remove('d-none');
     }
@@ -4527,35 +4686,32 @@ function populateUserManagementTable() {
                     });
                 }
 
-                function displayActiveAnnouncements() {
+function displayActiveAnnouncements() {
                     const T = translations[currentLanguage];
-                    const announcementsDisplayArea = document.getElementById('announcements-display-area');
-                    announcementsDisplayArea.innerHTML = '';
+                    const wrapper = document.getElementById('header-announcement-wrapper');
+                    const content = document.getElementById('header-marquee-content');
+
+                    if (!wrapper || !content) return;
+
+                    // ดึงเฉพาะประกาศที่เปิดใช้งานอยู่ และเรียงจากใหม่ไปเก่า
                     const activeAnnouncements = db.announcements.filter(ann => ann.isActive)
                         .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate));
 
-                    if (activeAnnouncements.length === 0) return;
+                    if (activeAnnouncements.length === 0) {
+                        wrapper.classList.add('d-none');
+                        wrapper.classList.remove('d-flex');
+                        return;
+                    }
 
-                    activeAnnouncements.forEach(ann => {
-                        const formattedDate = new Date(ann.postedDate).toLocaleString(currentLanguage === 'th' ? 'th-TH' : 'en-GB', {
-                            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok'
-                        });
-                        const footerText = T.announcement_posted_by_on.replace('{user}', ann.postedBy).replace('{date}', formattedDate);
-                        const announcementHtml = `
-                    <div class="card announcement-card mb-3">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-megaphone-fill me-2"></i>${ann.title}</span>
-                            <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill">${T.announcement_badge}</span>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text">${ann.message}</p>
-                        </div>
-                        <div class="card-footer text-end">${footerText}</div>
-                    </div>`;
-                        announcementsDisplayArea.insertAdjacentHTML('beforeend', announcementHtml);
-                    });
+                    // เอาหัวข้อและข้อความมาต่อกัน ใส่ Emoji สวยๆ แบ่งแต่ละประกาศ
+                    let combinedText = activeAnnouncements.map(ann => 
+                        `🔥 <b>${ann.title}</b>: <span class="fw-normal">${ann.message}</span> <span class="text-secondary ms-1" style="font-size: 0.8rem;">(โดย ${ann.postedBy})</span>`
+                    ).join(' &nbsp;&nbsp;&nbsp;🚀&nbsp;&nbsp;&nbsp; ');
+                    
+                    content.innerHTML = combinedText;
+                    wrapper.classList.remove('d-none');
+                    wrapper.classList.add('d-flex');
                 }
-
                 function populateExportLotsList(productId) {
                     const T = translations[currentLanguage];
                     const container = document.getElementById('export-lots-container');
@@ -5538,10 +5694,32 @@ function renderStockCountReportModalBody(count) {
 
                             // 5. โชว์แจ้งเตือนสำเร็จแบบสวยๆ
                             Swal.fire('ยกเลิกสำเร็จ!', 'รายการนี้ถูกปัดตกและไม่อนุมัติเรียบร้อยแล้ว', 'success');
+                            
                         }
                     });
                 };
-
+                // ========================================================
+                // ฟังก์ชันสำหรับกรองแถวข้อมูลในหน้า "รายงานนับสต็อก"
+                // ========================================================
+                window.filterVarianceReport = function(filterClass) {
+                    // ดึงแถวข้อมูลทั้งหมดในตารางรายงานมา
+                    const rows = document.querySelectorAll('.report-item-row');
+                    
+                    rows.forEach(row => {
+                        if (filterClass === 'all') {
+                            // ถ้าเลือก "แสดงทั้งหมด" ให้ล้างค่าการซ่อนทิ้ง (โชว์ทุกแถว)
+                            row.style.display = ''; 
+                        } else {
+                            // ถ้าแถวไหนมีคลาสตรงกับตัวกรอง (เช่น filter-positive) ให้โชว์
+                            if (row.classList.contains(filterClass)) {
+                                row.style.display = ''; 
+                            } else {
+                                // อันไหนไม่ตรงให้ซ่อนทิ้งไป
+                                row.style.display = 'none'; 
+                            }
+                        }
+                    });
+                };
                 // ฟังก์ชันสำหรับดาวน์โหลดตารางออกเป็นไฟล์ CSV
                 window.downloadVarianceCSV = function(countId) {
                     const count = db.stockCounts.find(sc => sc.id === countId);
