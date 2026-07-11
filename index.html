@@ -892,10 +892,13 @@
                             <li><a class="dropdown-item" href="#" onclick="setLanguage('en')">English</a></li>
                         </ul>
                     </div>
-                    <span id="user-role" class="badge rounded-pill me-2 fs-6 align-middle"></span>
-                    <button id="logout-btn" class="btn btn-outline-danger btn-sm"><i
-                            class="bi bi-box-arrow-right me-1"></i><span
-                            data-lang-key="logout_button">ออกจากระบบ</span></button>
+                    <!-- Modern Profile Chip -->
+ <!-- Modern Profile Chip -->
+                    <div class="dropdown ms-2" id="user-profile-dropdown">
+                        <!-- Profile Chip จะถูกสร้างด้วย JS ที่นี่ -->
+                    </div>
+                    <!-- ปุ่ม Logout ถูกเรียกใช้ผ่าน JS ของ Profile Chip -->
+                    <button id="logout-btn" class="d-none"></button>
                 </div>
             </header>
 
@@ -960,6 +963,10 @@
             <div class="tab-content" id="pills-tabContent">
 <div class="tab-pane fade show active" id="pills-stock" role="tabpanel">
                     <div class="col-12" id="stock-content-column">
+                        <!-- 📊 Widget สรุปยอดสต็อกแยกลูกค้า (เลื่อนซ้ายขวาได้) -->
+                            <div id="customer-stock-summary-row" class="row g-3 mb-4 flex-nowrap pb-2" style="overflow-x: auto; scroll-behavior: smooth;">
+                                <!-- โค้ดกล่องสรุปยอดจะถูกสร้างอัตโนมัติด้วย JS ตรงนี้ -->
+                            </div>
                         <div class="card mb-4 border-0 shadow-sm" style="border-radius: 20px;">
                             <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-white border-0 pt-4 pb-2 px-4" style="border-radius: 20px 20px 0 0;">
                                 <h5 class="fw-bold text-primary mb-0"><i class="bi bi-table me-2"></i><span data-lang-key="stock_summary_title">สรุปยอดสต็อกสินค้าคงเหลือ</span></h5>
@@ -1253,10 +1260,11 @@
                                     class="bi bi-download me-1"></i><span
                                     data-lang-key="backup_history">ดาวน์โหลดประวัติ (CSV)</span></button>
                         </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle">
-                                    <thead id="history-table-header"></thead>
+                        <div class="card-body px-4 pb-4 pt-0 mt-3">
+                            <!-- ล็อกความสูงตาราง (max-height) เพื่อให้เลื่อนเฉพาะข้างใน และทำ position: sticky ที่หัวตาราง -->
+                            <div class="table-responsive shadow-sm" style="max-height: calc(100vh - 350px); overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6;">
+                                <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
+                                    <thead id="history-table-header" class="table-light" style="position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.08);"></thead>
                                     <tbody id="history-table"></tbody>
                                 </table>
                             </div>
@@ -2187,6 +2195,7 @@ function handleLogin(e) {
 
                 // --- GOOGLE APPS SCRIPT CONFIGURATION ---
                 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDGLLwqnY1hOyDqM-Q6UlKRktrSneEAEtHkcsEuBQDaQMsgiBYGZPb30RMEQD2S17_OQ/exec';
+
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [] };
                 let calculatedStock = []; // This will hold the stock calculated from history
@@ -2316,8 +2325,11 @@ if (isInitialLoad) {
         });
     }
 	try {
-        const response = await fetch(SCRIPT_URL, {
+        // แนบเวลาปัจจุบัน (Timestamp) ไปด้วย เพื่อป้องกันเบราว์เซอร์จำค่าเก่า (Cache)
+// ป้องกันเบราว์เซอร์จำข้อมูลเก่า (Cache) เพื่อให้ดึงรหัสสินค้าใหม่มาได้ทันที
+        const response = await fetch(SCRIPT_URL + '?action=getData&t=' + new Date().getTime(), {
             method: 'GET',
+            cache: 'no-store', // คำสั่งเด็ดขาด ห้ามจำค่าเก่า!
             redirect: 'follow'
         });
 
@@ -2643,7 +2655,6 @@ startNewStockCount: () => {
                         stockCountModal.show();
                     },
                     // --- ฟังก์ชันใหม่ สำหรับเพิ่มล็อตที่เจอหน้างาน ---
-// --- ฟังก์ชันใหม่ สำหรับเพิ่มล็อตที่เจอหน้างาน ---
                     addCountLotRow: (productId) => {
                         const T = translations[currentLanguage];
                         const container = document.getElementById(`lots-container-${productId}`);
@@ -2654,22 +2665,21 @@ startNewStockCount: () => {
                         row.className = 'row g-2 mb-2 align-items-center count-lot-row border border-success p-2 rounded position-relative bg-white';
                         row.dataset.systemQty = "0";
 
-                        // อัปเดต HTML: ใส่ onchange เพื่อให้มันวิ่งไปเช็คยอดสต็อกทุกครั้งที่เปลี่ยนวันที่หรือแพ็คกิ้ง
                         row.innerHTML = `
                             <div class="col-md-3">
                                 <label class="form-label small-text mb-0 d-md-none">วันที่ผลิต <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control form-control-sm count-prod-date" required onchange="window.app.updateManualCountSystemQty(this, '${productId}')">
+                                <input type="date" class="form-control form-control-sm count-prod-date" required>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small-text mb-0 d-md-none">แพ็คกิ้ง <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm count-packaging-type" required onchange="window.app.updateManualCountSystemQty(this, '${productId}')">
+                                <select class="form-select form-select-sm count-packaging-type" required>
                                     <option value="standard" selected>${T.packaging_std}</option>
                                     <option value="temporary">${T.packaging_temp}</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small-text mb-0 d-md-none">ยอดในระบบ</label>
-                                <input type="text" class="form-control form-control-sm text-center bg-light count-sys-qty-display" value="0" readonly>
+                                <input type="text" class="form-control form-control-sm text-center bg-light" value="0" readonly>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small-text mb-0 d-md-none fw-bold text-success">ยอดที่นับได้จริง</label>
@@ -2680,45 +2690,6 @@ startNewStockCount: () => {
                             </div>
                         `;
                         container.appendChild(row);
-                    },
-
-                    // NEW: ฟังก์ชันดึงยอดสต็อกปัจจุบันมาแสดงอัตโนมัติ ตอนเลือกวันที่และแพ็คกิ้ง
-                    updateManualCountSystemQty: (element, productId) => {
-                        const row = element.closest('.count-lot-row');
-                        if (!row) return;
-
-                        const prodDate = row.querySelector('.count-prod-date').value;
-                        const packType = row.querySelector('.count-packaging-type').value;
-                        const displayInput = row.querySelector('.count-sys-qty-display');
-                        
-                        let sysQty = 0;
-                        
-                        if (prodDate && packType) {
-                            // ดึงสต็อกทั้งหมดของสินค้านี้
-                            const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(productId).trim());
-                            if (stockInfo && stockInfo.lots) {
-                                // หาล็อตที่ตรงกับวันที่และแพ็คกิ้งที่เลือกเป๊ะๆ
-                                const formattedDate = formatDate(prodDate);
-                                const lot = stockInfo.lots.find(l => l.productionDate === formattedDate && l.packagingType === packType);
-                                if (lot) {
-                                    sysQty = lot.quantity;
-                                }
-                            }
-                        }
-                        
-                        // อัปเดตค่าลงใน dataset (เตรียมส่งบันทึก) และหน้าจอ (ให้ผู้ใช้เห็น)
-                        row.dataset.systemQty = sysQty;
-                        if (displayInput) {
-                            displayInput.value = sysQty.toLocaleString();
-                            // เปลี่ยนสีช่องยอดในระบบให้เด่นขึ้นถ้ายอด > 0
-                            if (sysQty > 0) {
-                                displayInput.classList.remove('bg-light');
-                                displayInput.classList.add('bg-warning-subtle', 'text-dark', 'fw-bold');
-                            } else {
-                                displayInput.classList.add('bg-light');
-                                displayInput.classList.remove('bg-warning-subtle', 'text-dark', 'fw-bold');
-                            }
-                        }
                     },
                     saveStockCount: async () => {
                         const T = translations[currentLanguage];
@@ -3427,8 +3398,31 @@ clearInterval(window.mascotLoopTimer);
                     const T = translations[currentLanguage];
                     const roleText = T.user_role_display.replace('{role}', currentUser.role);
 
-                    userRoleSpan.innerHTML = `<i class="bi bi-person-check-fill me-1"></i> ${currentUser.username} (${roleText})`;
-                    userRoleSpan.className = `badge rounded-pill me-2 fs-6 align-middle ${currentUser.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}`;
+                    // --- 🎨 ระบบวาด Profile Chip สไตล์ Modern ---
+                    const profileContainer = document.getElementById('user-profile-dropdown');
+                    if (profileContainer) {
+                        const displayName = currentUser.fullname || currentUser.username;
+                        const roleColor = currentUser.role === 'admin' ? '#198754' : '#0dcaf0'; // แอดมินสีเขียว / ยูสเซอร์สีฟ้า
+                        
+                        profileContainer.innerHTML = `
+                            <div class="d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.08); border-radius: 50px; padding: 4px 16px 4px 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: all 0.2s;">
+                                ${window.getAvatarHtml(currentUser, 38)}
+                                <div class="d-none d-md-block text-start lh-1 ms-1">
+                                    <div class="fw-bold text-dark" style="font-size: 0.95rem;">${displayName}</div>
+                                    <div class="fw-semibold mt-1" style="font-size: 0.7rem; color: ${roleColor};"><i class="bi bi-shield-check me-1"></i>${roleText}</div>
+                                </div>
+                                <i class="bi bi-chevron-down text-muted ms-2" style="font-size: 0.7rem;"></i>
+                            </div>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" style="border-radius: 16px; min-width: 220px; animation: slideUpFade 0.2s ease;">
+                                <li class="px-4 py-3 text-center border-bottom mb-2" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 16px 16px 0 0;">
+                                    <div class="d-flex justify-content-center mb-2">${window.getAvatarHtml(currentUser, 65)}</div>
+                                    <div class="fw-bold fs-6 text-dark">${displayName}</div>
+                                    <div class="text-muted small">@${currentUser.username}</div>
+                                </li>
+                                <li><a class="dropdown-item fw-bold text-danger py-2 rounded mx-2 w-auto mb-1" href="#" onclick="document.getElementById('logout-btn').click()"><i class="bi bi-box-arrow-right me-2"></i> ออกจากระบบ</a></li>
+                            </ul>
+                        `;
+                    }
 
 // =========================================================
         // --- เริ่มต้นระบบจัดการสิทธิ์ใหม่ (ยึดตามสวิตช์เป็นหลัก) ---
@@ -3506,11 +3500,10 @@ const mascotBubble = document.getElementById('mascot-bubble');
 const cheerTexts = [
     "สู้ๆ นะเธอ! ✌️",
     "ตั้งใจทำงานน้า 🥰",
-    "เช็กยอดดีๆ จ้า 📦",
+    "เห็นนะผิดอีกแล้ว 📦",
     "วันนี้งานราบรื่น! 🔥",
     "FG ลุยยย 🚀",
-    "พักสายตาบ้างน้า ☕",
-    "คีย์แพลนปังๆ จ้า 📅",
+    "อย่าลืมกินน้ำท่อม น๊า ☕",
     "เหนื่อยไหมสู้ๆ นะ 💕"
 ];
 
@@ -3562,7 +3555,7 @@ if (mascotBubble) {
                     renderHistoryFilterForm();
                 }
 
-                function populateStockSummary() {
+ function populateStockSummary() {
                     const T = translations[currentLanguage];
                     const header = document.getElementById('stock-summary-table-header');
                     const isAdmin = currentUser.role === 'admin';
@@ -3575,12 +3568,77 @@ if (mascotBubble) {
                 ${isAdmin ? `<th>${T.actions}</th>` : ''}
             </tr>`;
 
+                    const stockSummaryTable = document.getElementById('stock-summary-table');
                     stockSummaryTable.innerHTML = '';
-                    const filterOldStock = showOldStockFilter.checked;
-                    const searchTerm = stockSearchInput.value.toLowerCase();
+                    const filterOldStock = document.getElementById('show-old-stock-filter').checked;
+                    const searchTerm = document.getElementById('stock-search-input').value.toLowerCase();
                     const threeMonthsAgo = new Date();
                     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
+                    // ==========================================
+                    // 📊 ลอจิกใหม่: คำนวณยอดแยกลูกค้าและกลุ่ม (ออโต้/อิเล็ก)
+                    // ==========================================
+                    const customerSummary = new Map();
+                    
+                    calculatedStock.forEach(stockItem => {
+                        if(stockItem.totalQuantity <= 0) return; // ไม่นับสินค้าที่ของหมด
+                        
+                        const productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim()) || {};
+                        const customer = productInfo.customer || 'ไม่ระบุลูกค้า';
+                        const group = productInfo.customerGroup || 'Other';
+                        
+                        if(!customerSummary.has(customer)) {
+                            customerSummary.set(customer, { total: 0, autopart: 0, electronic: 0, other: 0 });
+                        }
+                        
+                        const custData = customerSummary.get(customer);
+                        custData.total += stockItem.totalQuantity;
+                        
+                        if(group === 'Autopart') custData.autopart += stockItem.totalQuantity;
+                        else if(group === 'Electronic') custData.electronic += stockItem.totalQuantity;
+                        else custData.other += stockItem.totalQuantity;
+                    });
+
+                    // วาด Widget การ์ดสรุปยอด
+                    const summaryRow = document.getElementById('customer-stock-summary-row');
+                    if(summaryRow) {
+                        summaryRow.innerHTML = ''; 
+                        // เรียงลำดับลูกค้าที่มียอดสต็อกเยอะสุดขึ้นก่อน
+                        const sortedCustomers = Array.from(customerSummary.entries()).sort((a, b) => b[1].total - a[1].total);
+                        
+                        if (sortedCustomers.length === 0) {
+                            summaryRow.style.display = 'none';
+                        } else {
+                            summaryRow.style.display = 'flex';
+                            sortedCustomers.forEach(([customer, data]) => {
+                                // สร้างป้าย Badge สำหรับ Auto และ Elec
+                                let badgesHtml = '';
+                                if(data.autopart > 0) badgesHtml += `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill py-1"><i class="bi bi-car-front-fill me-1"></i>Auto: ${data.autopart.toLocaleString()}</span>`;
+                                if(data.electronic > 0) badgesHtml += `<span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill py-1 ms-1"><i class="bi bi-cpu-fill me-1"></i>Elec: ${data.electronic.toLocaleString()}</span>`;
+                                
+                                summaryRow.innerHTML += `
+                                    <div class="col-12 col-md-4 col-lg-3" style="min-width: 260px;">
+                                        <div class="card border-0 shadow-sm h-100" style="border-radius: 16px; background: #ffffff; border-left: 6px solid #0d6efd !important; transition: transform 0.2s;">
+                                            <div class="card-body p-3">
+                                                <div class="text-muted fw-bold mb-1" style="font-size: 0.75rem;"><i class="bi bi-building me-1"></i>ลูกค้า (Customer)</div>
+                                                <h6 class="fw-bold text-dark text-truncate mb-2" style="font-size: 1.05rem;">${customer}</h6>
+                                                <div class="d-flex align-items-end justify-content-between mb-2">
+                                                    <h3 class="fw-bolder mb-0 text-primary" style="line-height: 1;">${data.total.toLocaleString()}</h3>
+                                                    <span class="text-muted small fw-bold mb-1">ชิ้น</span>
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-1 mt-2 pt-2 border-top border-light-subtle">
+                                                    ${badgesHtml || `<span class="badge bg-light text-secondary border rounded-pill py-1"><i class="bi bi-box me-1"></i>ทั่วไป: ${data.other.toLocaleString()}</span>`}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                        }
+                    }
+                    // ==========================================
+
+                    // สร้างตารางสต็อกรายการทั้งหมด (ของเดิม)
                     let summary = calculatedStock.map(stockItem => {
                         let productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim());
                         if (!productInfo) {
@@ -3618,9 +3676,9 @@ if (mascotBubble) {
                         <small class="text-muted">${item.name}</small>
                     </td>
                     <td class="small-text">${item.erpCode || '-'}</td>
-                    <td class="small-text">${item.customer || '-'}</td>
-                    <td><span class="fw-bold">${item.totalQuantity.toLocaleString()}</span></td>
-                    ${isAdmin ? `<td><button class="btn btn-warning btn-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')" title="${T.edit_stock_modal_title}"><i class="bi bi-pencil-fill"></i></button></td>` : ''}
+                    <td class="small-text fw-bold text-dark">${item.customer || '-'}</td>
+                    <td><span class="fw-bold fs-6 text-primary">${item.totalQuantity.toLocaleString()}</span></td>
+                    ${isAdmin ? `<td><button class="btn btn-warning btn-sm shadow-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')" title="${T.edit_stock_modal_title}"><i class="bi bi-pencil-fill"></i></button></td>` : ''}
                 `;
                         row.addEventListener('click', () => window.app.showLotDetails(item.id));
                         stockSummaryTable.appendChild(row);
@@ -4200,6 +4258,17 @@ function handleLogin(e) {
     }
 }
                 // --- HELPER FUNCTIONS ---
+                window.getAvatarHtml = function(user, size = 40) {
+                    if (user && user.avatarUrl && user.avatarUrl.trim() !== '') {
+                        return `<img src="${user.avatarUrl}" alt="${user.username}" style="width: ${size}px; height: ${size}px; object-fit: cover; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">`;
+                    } else {
+                        // ดึงอักษรตัวแรกของชื่อมาทำรูป (ถ้าไม่มีรูปลิงก์)
+                        const initial = ((user && user.fullname) ? user.fullname : (user && user.username ? user.username : '?')).charAt(0).toUpperCase();
+                        const colors = ['#0d6efd', '#198754', '#dc3545', '#fd7e14', '#6f42c1', '#20c997', '#e83e8c'];
+                        const bgColor = colors[((user && user.username) ? user.username.length : 0) % colors.length];
+                        return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; background-color: ${bgColor}; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: ${size*0.45}px; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer;">${initial}</div>`;
+                    }
+                };
                 function formatDate(dateInput) {
                     if (!dateInput || dateInput === 'Manual Adjustment' || dateInput === 'Stock Count Adjustment') return dateInput;
                     let date;
@@ -4362,7 +4431,7 @@ function getFilteredHistory() {
                     return stockBackup;
                 }
 
-                function populateUserManagementTable() {
+function populateUserManagementTable() {
                     const T = translations[currentLanguage];
                     const header = document.getElementById('user-management-table-header');
                     header.innerHTML = `<tr><th>${T.username_label}</th><th>${T.user_role}</th><th>${T.actions}</th></tr>`;
@@ -4375,7 +4444,24 @@ function getFilteredHistory() {
                     }
                     db.users.forEach(u => {
                         const r = document.createElement('tr');
-                        r.innerHTML = `<td><i class="bi bi-person-circle me-2"></i>${u.username}</td><td><span class="badge rounded-pill ${u.role === 'admin' ? 'bg-success' : 'bg-info text-dark'}">${u.role}</span></td><td><button class="btn btn-warning btn-sm" onclick="window.app.editUser('${u.username}')"><i class="bi bi-pencil-fill"></i></button> ${u.username !== 'admin' ? `<button class="btn btn-danger btn-sm" onclick="window.app.deleteUser('${u.username}')"><i class="bi bi-trash3-fill"></i></button>` : ''}</td>`;
+                        const displayName = u.fullname || u.username;
+                        r.innerHTML = `
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    ${window.getAvatarHtml(u, 40)}
+                                    <div class="lh-1">
+                                        <div class="fw-bold text-dark" style="font-size: 0.95rem;">${displayName}</div>
+                                        <div class="text-muted mt-1" style="font-size: 0.8rem;">@${u.username}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge rounded-pill ${u.role === 'admin' ? 'bg-success px-3' : 'bg-info text-dark px-3'} py-2 shadow-sm">${u.role}</span></td>
+                            <td>
+                                <button class="btn btn-warning btn-sm shadow-sm" onclick="window.app.editUser('${u.username}')"><i class="bi bi-pencil-fill"></i></button> 
+                                ${u.username !== 'admin' ? `<button class="btn btn-danger btn-sm shadow-sm" onclick="window.app.deleteUser('${u.username}')"><i class="bi bi-trash3-fill"></i></button>` : ''}
+                            </td>
+                        `;
+                        // เติมบรรทัดนี้ เพื่อสั่งให้เอาข้อมูลที่จัดทรงแล้ว ไปแสดงในตารางครับ!
                         userManagementTable.appendChild(r);
                     });
                 }
@@ -4905,9 +4991,11 @@ const permissions = [
             `).join('');
 
                     userFormEl.innerHTML = `
-                <div class="col-12"> <label for="user-username" class="form-label">${T.username_label}</label> <input type="text" id="user-username" class="form-control" required value="${user.username || ''}"> </div>
-                <div class="col-12"> <label for="user-password" class="form-label">${T.password_label}</label> <input type="password" id="user-password" class="form-control" required value="${user.password || ''}"> </div>
-                <div class="col-12"> <label for="user-role-select" class="form-label">${T.user_role}</label> <select id="user-role-select" class="form-select" required><option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option><option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option></select> </div>
+                <div class="col-md-6"> <label for="user-username" class="form-label">${T.username_label}</label> <input type="text" id="user-username" class="form-control border-primary" required value="${user.username || ''}"> </div>
+                <div class="col-md-6"> <label for="user-password" class="form-label">${T.password_label}</label> <input type="password" id="user-password" class="form-control" required value="${user.password || ''}"> </div>
+                <div class="col-md-12"> <label for="user-fullname" class="form-label text-success fw-bold"><i class="bi bi-person-vcard me-1"></i>ชื่อ-สกุลจริง (โชว์บนเว็บ)</label> <input type="text" id="user-fullname" class="form-control" placeholder="เช่น ไกรวิชญ์ C." value="${user.fullname || ''}"> </div>
+                <div class="col-md-6"> <label for="user-avatar" class="form-label text-info fw-bold"><i class="bi bi-image me-1"></i>ลิงก์รูปโปรไฟล์ URL</label> <input type="text" id="user-avatar" class="form-control" placeholder="วางลิงก์รูปภาพ (ถ้ามี)" value="${user.avatarUrl || ''}"> </div>
+                <div class="col-md-6"> <label for="user-role-select" class="form-label">${T.user_role}</label> <select id="user-role-select" class="form-select border-warning" required><option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option><option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option></select> </div>
                 <div class="col-12 mt-3"> <label class="form-label fw-bold">${T.user_permissions}</label> <div class="border rounded p-2 bg-light">${permissionsHtml}</div> </div>
                 <div class="col-12 mt-4"> <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save-fill me-2"></i>${T.user_save_button}</button> <button type="button" id="clear-user-form-btn" class="btn btn-secondary w-100 mt-2">${T.clear_form_button}</button> </div>`;
                 }
@@ -4929,83 +5017,67 @@ const permissions = [
                 }
 
 function renderHistoryFilterForm() {
-    const T = translations[currentLanguage];
-    const historyFilterForm = document.getElementById('history-filter-form');
+                    const T = translations[currentLanguage];
+                    const historyFilterForm = document.getElementById('history-filter-form');
 
-    historyFilterForm.innerHTML = `
-        <div class="col-lg-2 col-md-6">
-            <label for="filter-start-date" class="form-label">${T.history_filter_from}</label>
-            <input type="date" id="filter-start-date" class="form-control form-control-sm">
-        </div>
+                    historyFilterForm.innerHTML = `
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <label for="filter-start-date" class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">
+                                <i class="bi bi-calendar3 me-1"></i>${T.history_filter_from}
+                            </label>
+                            <input type="date" id="filter-start-date" class="form-control form-control-sm shadow-sm border-0 bg-white">
+                        </div>
 
-        <div class="col-lg-2 col-md-6">
-            <label for="filter-end-date" class="form-label">${T.history_filter_to}</label>
-            <input type="date" id="filter-end-date" class="form-control form-control-sm">
-        </div>
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <label for="filter-end-date" class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">
+                                <i class="bi bi-calendar3 me-1"></i>${T.history_filter_to}
+                            </label>
+                            <input type="date" id="filter-end-date" class="form-control form-control-sm shadow-sm border-0 bg-white">
+                        </div>
 
-        <div class="col-lg-2 col-md-6">
-            <label for="filter-type" class="form-label">${T.history_filter_type}</label>
-            <select id="filter-type" class="form-select form-select-sm">
-                <option value="">${T.history_filter_type_all}</option>
-                <option value="import">${T.history_filter_type_import}</option>
-                <option value="export">${T.history_filter_type_export}</option>
-                <option value="adjustment">${T.history_filter_type_adjustment}</option>
-                <option value="reversal">${T.history_filter_type_reversal}</option>
-            </select>
-        </div>
+                        <div class="col-lg-2 col-md-6 mb-3">
+                            <label for="filter-type" class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">
+                                <i class="bi bi-funnel-fill me-1"></i>${T.history_filter_type}
+                            </label>
+                            <select id="filter-type" class="form-select form-select-sm shadow-sm border-0 bg-white">
+                                <option value="">${T.history_filter_type_all}</option>
+                                <option value="import">${T.history_filter_type_import}</option>
+                                <option value="export">${T.history_filter_type_export}</option>
+                                <option value="adjustment">${T.history_filter_type_adjustment}</option>
+                                <option value="reversal">${T.history_filter_type_reversal}</option>
+                            </select>
+                        </div>
 
-        <div class="col-lg-3 col-md-6">
-            <label for="filter-product-search" class="form-label">${T.history_filter_product}</label>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <label for="filter-product-search" class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">
+                                <i class="bi bi-box-seam me-1"></i>${T.history_filter_product}
+                            </label>
+                            <div class="position-relative">
+                                <input type="text" id="filter-product-search" class="form-control form-control-sm shadow-sm border-0 bg-white" placeholder="${T.history_filter_type_all}" autocomplete="off">
+                                <input type="hidden" id="filter-product-id">
+                                <div id="filter-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div>
+                            </div>
+                        </div>
 
-            <div class="position-relative">
-                <input type="text"
-                       id="filter-product-search"
-                       class="form-control form-control-sm"
-                       placeholder="${T.history_filter_type_all}"
-                       autocomplete="off">
+                        <div class="col-lg-3 col-md-12 mb-3">
+                            <label for="filter-invoice-search" class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">
+                                <i class="bi bi-receipt me-1"></i>${T.history_filter_invoice}
+                            </label>
+                            <div class="input-group input-group-sm shadow-sm" style="border-radius: 6px; overflow: hidden;">
+                                <input type="text" id="filter-invoice-search" class="form-control border-0 bg-white" placeholder="${T.search_placeholder}" autocomplete="off">
+                                <select id="filter-erp-status" class="form-select border-0" style="max-width: 120px; background-color: #fff3cd; font-weight: bold; color: #856404;">
+                                    <option value="">-- ERP --</option>
+                                    <option value="Pending">รอเคลียร์</option>
+                                    <option value="Cleared">เคลียร์แล้ว</option>
+                                </select>
+                            </div>
+                        </div>
 
-                <input type="hidden" id="filter-product-id">
-
-                <div id="filter-product-suggestions"
-                     class="list-group position-absolute w-100 suggestions-container"></div>
-            </div>
-        </div>
-
-        <div class="col-lg-3 col-md-12">
-            <label for="filter-invoice-search" class="form-label">
-                ${T.history_filter_invoice}
-            </label>
-
-            <input type="text"
-                   id="filter-invoice-search"
-                   class="form-control form-control-sm mb-2"
-                   placeholder="${T.search_placeholder}"
-                   autocomplete="off">
-
-            <select id="filter-erp-status"
-                    class="form-select form-select-sm border-warning">
-                <option value="">-- สถานะ ERP ทั้งหมด --</option>
-                <option value="Pending">⚠️ รอเคลียร์ ERP</option>
-                <option value="Cleared">✅ เคลียร์แล้ว</option>
-            </select>
-        </div>
-
-        <div class="col-lg-12 d-flex justify-content-end gap-2 mt-2">
-            <button type="submit"
-                    class="btn btn-primary btn-sm px-4">
-                <i class="bi bi-search me-1"></i>${T.history_filter_search}
-            </button>
-
-            <button type="reset"
-                    id="history-filter-reset-btn"
-                    class="btn btn-secondary btn-sm px-4">
-                ${T.history_filter_clear}
-            </button>
-        </div>
-</div>
+                        <!-- แยกปุ่มลงมาบรรทัดล่างสุด มีเส้นคั่น และเว้นระยะห่างให้สวยงาม -->
+                        <div class="col-12 mt-3 pt-3 border-top border-secondary-subtle d-flex justify-content-end gap-3">
+                        </div>
                 <div class="col-lg-2 col-md-12 d-flex mt-auto"> <button type="submit" class="btn btn-primary btn-sm flex-grow-1 me-1"><i class="bi bi-search me-1"></i>${T.history_filter_search}</button> <button type="reset" id="history-filter-reset-btn" class="btn btn-secondary btn-sm flex-grow-1 ms-1">${T.history_filter_clear}</button> </div>`;
                 }
-
                 function renderEditStockForm(product, totalQuantity) {
                     const T = translations[currentLanguage];
                     const editStockForm = document.getElementById('edit-stock-form');
@@ -5199,14 +5271,20 @@ function populateStockCountMainView() {
 // ========================================================
                 // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
                 // ========================================================
+// ========================================================
+                // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
+                // ========================================================
+// ========================================================
+                // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
+                // ========================================================
                 function renderStockCountModalBody() {
                     const T = translations[currentLanguage];
                     const body = document.getElementById('stockCountModalBody');
                     
                     let html = `<div class="container-fluid"><div class="row g-3">`;
                     
-                    // ดึงสินค้าทั้งหมดในระบบมาแสดง (เรียงตามรหัส)
-                    const allProducts = [...db.products].sort((a, b) => a.id.localeCompare(b.id));
+                    // ดึงสินค้าทั้งหมดในระบบมาแสดง (บังคับแปลงเป็น String ป้องกันบัคหน้าต่างพัง)
+                    const allProducts = [...db.products].sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
 
                     if (allProducts.length === 0) {
                         html += `<div class="col-12 text-center p-5 text-muted"><i class="bi bi-box-seam opacity-50 d-block mb-3" style="font-size: 3rem;"></i>ไม่พบข้อมูลสินค้าในระบบ</div>`;
@@ -5224,24 +5302,27 @@ function populateStockCountMainView() {
                         `;
 
                         allProducts.forEach(product => {
-                            // ดึงสต็อกปัจจุบันมาแสดง
-                            const stockInfo = calculatedStock.find(s => String(s.productId).trim() === String(product.id).trim());
+                            const safeId = String(product.id || '');
+                            const safeName = String(product.name || '');
+                            const escapedName = safeName.replace(/"/g, '&quot;'); 
+
+                            const stockInfo = calculatedStock.find(s => String(s.productId).trim() === safeId.trim());
                             const currentQty = stockInfo ? stockInfo.totalQuantity : 0;
                             
                             html += `
-                            <div class="col-12 manual-count-item" data-search="${product.id.toLowerCase()} ${product.name.toLowerCase()}">
-                                <div class="card shadow-sm product-count-group border-0" style="border-radius: 15px;" data-product-id="${product.id}" data-product-name="${product.name}">
+                            <div class="col-12 manual-count-item" data-search="${safeId.toLowerCase()} ${safeName.toLowerCase()}">
+                                <div class="card shadow-sm product-count-group border-0" style="border-radius: 15px;" data-product-id="${safeId}" data-product-name="${escapedName}">
                                     <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center py-3" style="border-radius: 15px 15px 0 0;">
                                         <div class="mb-2 mb-md-0">
-                                            <span class="fw-bold text-primary" style="font-size: 1.1rem;"><i class="bi bi-box-seam-fill me-2"></i>${product.id}</span>
-                                            <span class="ms-2 text-dark fw-semibold">${product.name}</span>
+                                            <span class="fw-bold text-primary" style="font-size: 1.1rem;"><i class="bi bi-box-seam-fill me-2"></i>${safeId}</span>
+                                            <span class="ms-2 text-dark fw-semibold">${safeName}</span>
                                             <span class="badge bg-secondary-subtle text-secondary-emphasis ms-2 border">ระบบมี: ${currentQty.toLocaleString()}</span>
                                         </div>
-                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold" onclick="window.app.addCountLotRow('${product.id}')">
+                                        <button type="button" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold" onclick="window.app.addCountLotRow('${safeId}')">
                                             <i class="bi bi-plus-circle-fill me-1"></i>เพิ่มการนับ
                                         </button>
                                     </div>
-                                    <div class="card-body p-2 bg-white" id="lots-container-${product.id}" style="border-radius: 0 0 15px 15px;">
+                                    <div class="card-body p-2 bg-white" id="lots-container-${safeId}" style="border-radius: 0 0 15px 15px;">
                                         <p class="text-muted text-center mb-0 small py-3" style="font-style: italic;">-- หากนับสินค้านี้แล้วมียอด กรุณากดปุ่ม "เพิ่มการนับ" ด้านบน --</p>
                                     </div>
                                 </div>
@@ -5255,6 +5336,18 @@ function populateStockCountMainView() {
                     body.innerHTML = html;
                 }
 
+                // ฟังก์ชันค้นหาสินค้าตอนนับสด (ค้นหาแบบ Real-time)
+                window.filterManualCountProducts = function() {
+                    const search = document.getElementById('manual-count-search').value.toLowerCase();
+                    const items = document.querySelectorAll('.manual-count-item');
+                    items.forEach(item => {
+                        if (item.dataset.search.includes(search)) {
+                            item.style.display = '';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                };
                 // ฟังก์ชันค้นหาสินค้าตอนนับสด (ค้นหาแบบ Real-time)
                 window.filterManualCountProducts = function() {
                     const search = document.getElementById('manual-count-search').value.toLowerCase();
@@ -5647,15 +5740,9 @@ function populateSalesDashboard(startDate, endDate) {
                                 totalElectronicQuantity += quantityAffectingSales;
                                 totalElectronicValue += valueAffectingSales;
                             }
-// --- อัปเดตลอจิกการจัดกลุ่มลูกค้า (ป้องกันการโดนปาดหน้า) ---
+
                             if (!customerSales.has(customer)) {
                                 customerSales.set(customer, { quantity: 0, value: 0, group: cGroup });
-                            } else {
-                                // ถ้าเคยเจอแล้ว แต่ข้อมูลเดิมเป็น "อื่นๆ" ให้ดึงกลุ่มหลัก (Autopart/Electronic) มาทับแทนที่ทันที!
-                                const currentData = customerSales.get(customer);
-                                if (currentData.group === 'Other' && cGroup !== 'Other') {
-                                    currentData.group = cGroup;
-                                }
                             }
                             const currentSales = customerSales.get(customer);
                             currentSales.quantity += quantityAffectingSales;
@@ -5858,6 +5945,8 @@ function populateSalesDashboard(startDate, endDate) {
                         const userData = {
                             username: document.getElementById('user-username').value.trim(),
                             password: document.getElementById('user-password').value.trim(),
+                            fullname: document.getElementById('user-fullname').value.trim(),
+                            avatarUrl: document.getElementById('user-avatar').value.trim(),
                             role: document.getElementById('user-role-select').value,
                             canImport: document.getElementById('permission-canImport').checked,
                             canExport: document.getElementById('permission-canExport').checked,
