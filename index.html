@@ -2794,11 +2794,27 @@ if (isInitialLoad) {
                         }
                     },
                     // NEW: Stock Count Functions
-startNewStockCount: () => {
+startNewStockCount: async () => {
+                        // 1. โชว์หน้าต่างโหลดดิ้ง ป้องกันพนักงานกดเบิ้ล
+                        Swal.fire({
+                            title: 'กำลังซิงค์ข้อมูล...',
+                            text: 'กำลังดึงรายชื่อสินค้าและสต็อกล่าสุดจากฐานข้อมูล',
+                            allowOutsideClick: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+
+                        // 2. บังคับวิ่งไปดึงข้อมูลพาร์ทและสต็อก ใหม่ล่าสุดจาก Google Sheet ทันที!
+                        await loadDataFromSheet(false);
+
+                        // 3. คำนวณและวาดหน้าจอให้พร้อม
+                        calculateStockFromHistory(); 
                         renderStockCountModalBody();
+                        
+                        // 4. ปิดโหลดดิ้ง แล้วโชว์หน้าต่างนับสต็อก
+                        Swal.close();
                         stockCountModal.show();
                     },
-                    // --- ฟังก์ชันใหม่ สำหรับเพิ่มล็อตที่เจอหน้างาน ---
+                    // --- ฟังก์ชันใหม่ สำหรับเพิ่มล็อตที่เจอหน้างาน (แบบฉุกเฉิน) ---
                     addCountLotRow: (productId) => {
                         const T = translations[currentLanguage];
                         const container = document.getElementById(`lots-container-${productId}`);
@@ -2806,31 +2822,34 @@ startNewStockCount: () => {
                         if (noStockMsg) noStockMsg.remove();
 
                         const row = document.createElement('div');
-                        row.className = 'row g-2 mb-2 align-items-center count-lot-row border border-success p-2 rounded position-relative bg-white';
+                        row.className = 'row g-2 mb-2 align-items-center count-lot-row border border-warning p-2 rounded position-relative bg-white shadow-sm mt-2';
                         row.dataset.systemQty = "0";
 
                         row.innerHTML = `
                             <div class="col-md-3">
-                                <label class="form-label small-text mb-0 d-md-none">วันที่ผลิต <span class="text-danger">*</span></label>
-                                <input type="date" class="form-control form-control-sm count-prod-date" required>
+                                <label class="form-label small-text mb-0 d-md-none text-muted">วันที่ผลิต <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control form-control-sm count-prod-date border-warning" required>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small-text mb-0 d-md-none">แพ็คกิ้ง <span class="text-danger">*</span></label>
-                                <select class="form-select form-select-sm count-packaging-type" required>
+                                <label class="form-label small-text mb-0 d-md-none text-muted">แพ็คกิ้ง <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm count-packaging-type border-warning" required>
                                     <option value="standard" selected>${T.packaging_std}</option>
                                     <option value="temporary">${T.packaging_temp}</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small-text mb-0 d-md-none">ยอดในระบบ</label>
-                                <input type="text" class="form-control form-control-sm text-center bg-light" value="0" readonly>
+                                <label class="form-label small-text mb-0 d-md-none text-muted">ยอดในระบบ</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white border-secondary text-secondary"><i class="bi bi-database"></i></span>
+                                    <input type="text" class="form-control text-center bg-light border-secondary text-secondary" value="0" readonly>
+                                </div>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small-text mb-0 d-md-none fw-bold text-success">ยอดที่นับได้จริง</label>
-                                <input type="number" class="form-control form-control-sm count-qty-input border-success text-center" min="0" placeholder="ระบุ" required>
+                                <input type="number" class="form-control form-control-sm count-qty-input border-success text-center fw-bold text-success shadow-sm" min="0" placeholder="ระบุยอด" required>
                             </div>
                             <div class="col-md-1 text-center">
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.count-lot-row').remove()"><i class="bi bi-trash"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-danger shadow-sm" onclick="this.closest('.count-lot-row').remove()"><i class="bi bi-trash"></i></button>
                             </div>
                         `;
                         container.appendChild(row);
@@ -5583,33 +5602,26 @@ function populateStockCountMainView() {
                 </div>
             `;
                 }
-// ========================================================
-                // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
-                // ========================================================
-// ========================================================
-                // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
-                // ========================================================
-// ========================================================
-                // ฟังก์ชันสร้างหน้าต่าง เริ่มนับสต็อกใหม่ (Manual Count)
-                // ========================================================
                 function renderStockCountModalBody() {
                     const T = translations[currentLanguage];
                     const body = document.getElementById('stockCountModalBody');
                     
                     let html = `<div class="container-fluid"><div class="row g-3">`;
                     
-                    // ดึงสินค้าทั้งหมดในระบบมาแสดง (บังคับแปลงเป็น String ป้องกันบัคหน้าต่างพัง)
                     const allProducts = [...db.products].sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
 
                     if (allProducts.length === 0) {
                         html += `<div class="col-12 text-center p-5 text-muted"><i class="bi bi-box-seam opacity-50 d-block mb-3" style="font-size: 3rem;"></i>ไม่พบข้อมูลสินค้าในระบบ</div>`;
                     } else {
-                        // เพิ่มช่องค้นหาเพื่อให้หาสินค้าได้ง่ายเวลาจดหน้างาน
                         html += `
-                        <div class="col-12 sticky-top pt-3 pb-2" style="background-color: #fff; z-index: 10;">
-                            <div class="input-group shadow-sm" style="border-radius: 12px; overflow: hidden;">
-                                <span class="input-group-text bg-primary text-white border-primary"><i class="bi bi-search"></i></span>
-                                <input type="text" id="manual-count-search" class="form-control border-primary" placeholder="ค้นหารหัส หรือชื่อสินค้า เพื่อเริ่มนับ..." onkeyup="filterManualCountProducts()">
+                                <div class="col-12 sticky-top pt-3 pb-2" style="background-color: #fff; z-index: 10;">
+                            <div class="position-relative shadow-sm" style="border-radius: 12px;">
+                                <div class="input-group" style="border-radius: 12px; overflow: hidden;">
+                                    <span class="input-group-text bg-primary text-white border-primary"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="manual-count-search" class="form-control border-primary" placeholder="ค้นหารหัส หรือชื่อสินค้า เพื่อเริ่มนับ..." oninput="filterManualCountProducts()" autocomplete="off">
+                                </div>
+                                <!-- เพิ่มกล่องเด้ง Auto-complete ตรงนี้ครับ -->
+                                <div id="manual-count-suggestions" class="list-group position-absolute w-100 suggestions-container" style="z-index: 99999; top: 100%;"></div>
                             </div>
                         </div>
                         <div class="col-12" id="manual-count-list">
@@ -5623,22 +5635,63 @@ function populateStockCountMainView() {
 
                             const stockInfo = calculatedStock.find(s => String(s.productId).trim() === safeId.trim());
                             const currentQty = stockInfo ? stockInfo.totalQuantity : 0;
+                            // กรองเอาเฉพาะล็อตที่ยังมีของอยู่ในระบบมาแสดงให้กรอก
+                            const activeLots = stockInfo ? stockInfo.lots.filter(l => l.quantity > 0) : [];
                             
+                            let lotsHtml = '';
+                            if (activeLots.length > 0) {
+                                activeLots.sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate));
+                                lotsHtml = activeLots.map(lot => {
+                                    const isTemp = lot.packagingType === 'temporary';
+                                    return `
+                                    <div class="row g-2 mb-2 align-items-center count-lot-row border border-light p-2 rounded position-relative bg-light" data-system-qty="${lot.quantity}">
+                                        <div class="col-md-3">
+                                            <label class="form-label small-text mb-0 d-md-none text-muted">วันที่ผลิต</label>
+                                            <input type="date" class="form-control form-control-sm count-prod-date fw-bold text-secondary" value="${lot.productionDate}" readonly style="pointer-events: none;">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small-text mb-0 d-md-none text-muted">แพ็คกิ้ง</label>
+                                            <select class="form-select form-select-sm count-packaging-type fw-bold text-secondary" disabled style="pointer-events: none;">
+                                                <option value="standard" ${!isTemp ? 'selected' : ''}>Standard</option>
+                                                <option value="temporary" ${isTemp ? 'selected' : ''}>Temporary</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small-text mb-0 d-md-none text-muted">ยอดในระบบ</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-white border-secondary text-secondary"><i class="bi bi-database"></i></span>
+                                                <input type="text" class="form-control text-center bg-white border-secondary fw-bold text-secondary" value="${lot.quantity.toLocaleString()}" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small-text mb-0 d-md-none fw-bold text-primary">ยอดที่นับได้จริง</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" class="form-control count-qty-input border-primary text-center fw-bold text-primary shadow-sm" min="0" placeholder="นับได้กี่ชิ้น?">
+                                                <span class="input-group-text bg-primary text-white border-primary"><i class="bi bi-pencil-square"></i></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    `;
+                                }).join('');
+                            } else {
+                                lotsHtml = `<p class="text-muted text-center mb-0 small py-3" style="font-style: italic;">-- สินค้านี้ไม่มีสต็อกในระบบ หากพบของหน้างานให้กดปุ่ม "เพิ่มล็อตที่เจอหน้างาน" --</p>`;
+                            }
+
                             html += `
                             <div class="col-12 manual-count-item" data-search="${safeId.toLowerCase()} ${safeName.toLowerCase()}">
                                 <div class="card shadow-sm product-count-group border-0" style="border-radius: 15px;" data-product-id="${safeId}" data-product-name="${escapedName}">
-                                    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center py-3" style="border-radius: 15px 15px 0 0;">
+                                    <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center py-3" style="border-radius: 15px 15px 0 0; border-bottom: 2px solid #0d6efd;">
                                         <div class="mb-2 mb-md-0">
                                             <span class="fw-bold text-primary" style="font-size: 1.1rem;"><i class="bi bi-box-seam-fill me-2"></i>${safeId}</span>
                                             <span class="ms-2 text-dark fw-semibold">${safeName}</span>
-                                            <span class="badge bg-secondary-subtle text-secondary-emphasis ms-2 border">ระบบมี: ${currentQty.toLocaleString()}</span>
+                                            <span class="badge bg-primary-subtle text-primary-emphasis ms-2 border border-primary-subtle">ยอดรวมระบบ: ${currentQty.toLocaleString()}</span>
                                         </div>
                                         <button type="button" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm fw-bold" onclick="window.app.addCountLotRow('${safeId}')">
-                                            <i class="bi bi-plus-circle-fill me-1"></i>เพิ่มการนับ
+                                            <i class="bi bi-plus-circle-fill me-1"></i>เพิ่มล็อตที่เจอหน้างาน
                                         </button>
                                     </div>
                                     <div class="card-body p-2 bg-white" id="lots-container-${safeId}" style="border-radius: 0 0 15px 15px;">
-                                        <p class="text-muted text-center mb-0 small py-3" style="font-style: italic;">-- หากนับสินค้านี้แล้วมียอด กรุณากดปุ่ม "เพิ่มการนับ" ด้านบน --</p>
+                                        ${lotsHtml}
                                     </div>
                                 </div>
                             </div>`;
@@ -5650,31 +5703,6 @@ function populateStockCountMainView() {
                     html += `</div></div>`;
                     body.innerHTML = html;
                 }
-
-                // ฟังก์ชันค้นหาสินค้าตอนนับสด (ค้นหาแบบ Real-time)
-                window.filterManualCountProducts = function() {
-                    const search = document.getElementById('manual-count-search').value.toLowerCase();
-                    const items = document.querySelectorAll('.manual-count-item');
-                    items.forEach(item => {
-                        if (item.dataset.search.includes(search)) {
-                            item.style.display = '';
-                        } else {
-                            item.style.display = 'none';
-                        }
-                    });
-                };
-                // ฟังก์ชันค้นหาสินค้าตอนนับสด (ค้นหาแบบ Real-time)
-                window.filterManualCountProducts = function() {
-                    const search = document.getElementById('manual-count-search').value.toLowerCase();
-                    const items = document.querySelectorAll('.manual-count-item');
-                    items.forEach(item => {
-                        if (item.dataset.search.includes(search)) {
-                            item.style.display = '';
-                        } else {
-                            item.style.display = 'none';
-                        }
-                    });
-                };
 function renderStockCountReportModalBody(count) {
                     const T = translations[currentLanguage];
                     const body = document.getElementById('stockCountReportModalBody');
@@ -5806,15 +5834,6 @@ function renderStockCountReportModalBody(count) {
                         ` : ''}
                     `;
                 }
-                    // ========================================================
-                // ฟังก์ชัน ไม่อนุมัติ / ยกเลิกรายการนับสต็อก
-                // ========================================================
-// ========================================================
-                // ฟังก์ชัน ไม่อนุมัติ / ยกเลิกรายการนับสต็อก (อัปเดตแก้บัคแจ้งเตือน)
-                // ========================================================
-// ========================================================
-                // ฟังก์ชัน ไม่อนุมัติ / ยกเลิกรายการนับสต็อก (ซ่อน False Alarm)
-                // ========================================================
                 window.rejectStockCount = function(countId) {
                     const count = db.stockCounts.find(sc => sc.id === countId);
                     if (!count || count.status !== 'pending') return;
@@ -5857,9 +5876,50 @@ function renderStockCountReportModalBody(count) {
                         }
                     });
                 };
+                // ฟังก์ชันค้นหาสินค้าตอนนับสด (อัปเกรดมี Auto-complete ให้จิ้มเลือกได้)
                 // ========================================================
-                // ฟังก์ชันสำหรับกรองแถวข้อมูลในหน้า "รายงานนับสต็อก"
-                // ========================================================
+                window.filterManualCountProducts = function() {
+                    const searchInput = document.getElementById('manual-count-search');
+                    const search = searchInput.value.toLowerCase().trim();
+                    const items = document.querySelectorAll('.manual-count-item');
+                    const suggestionsContainer = document.getElementById('manual-count-suggestions');
+                    
+                    // 1. กรองการ์ดด้านล่าง
+                    items.forEach(item => {
+                        item.style.display = item.dataset.search.includes(search) ? '' : 'none';
+                    });
+
+                    // 2. สร้างกล่อง Dropdown เด้งลงมาให้กดเลือก
+                    if (suggestionsContainer) {
+                        suggestionsContainer.innerHTML = '';
+                        if (!search) return;
+
+                        // ดึงฐานข้อมูลพาร์ทมาค้นหา
+                        const filteredProducts = db.products.filter(p => String(p.id).trim().toLowerCase().includes(search) || p.name.toLowerCase().includes(search));
+                        
+                        // เอา 5 รายการแรกที่ตรงกันมาโชว์
+                        filteredProducts.slice(0, 5).forEach(item => {
+                            const suggestionEl = document.createElement('a');
+                            suggestionEl.href = '#';
+                            suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'text-primary', 'fw-bold');
+                            suggestionEl.innerHTML = `<i class="bi bi-box-seam me-2"></i>${item.id} <span class="text-dark fw-normal">- ${item.name}</span>`;
+                            
+                            // จังหวะที่พนักงาน "คลิกเลือก" พาร์ทที่ต้องการ
+                            suggestionEl.addEventListener('click', (e) => {
+                                e.preventDefault();
+                                searchInput.value = item.id; // พิมพ์รหัสเต็มใส่ช่องให้เลย
+                                suggestionsContainer.innerHTML = ''; // ซ่อนกล่อง
+                                
+                                // ล็อกให้โชว์การ์ดเฉพาะพาร์ทที่กดเลือกเท่านั้น
+                                const exactMatch = item.id.toLowerCase();
+                                items.forEach(card => {
+                                    card.style.display = card.dataset.search.includes(exactMatch) ? '' : 'none';
+                                });
+                            });
+                            suggestionsContainer.appendChild(suggestionEl);
+                        });
+                    }
+                };
                 window.filterVarianceReport = function(filterClass) {
                     // ดึงแถวข้อมูลทั้งหมดในตารางรายงานมา
                     const rows = document.querySelectorAll('.report-item-row');
