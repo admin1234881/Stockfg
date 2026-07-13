@@ -28,7 +28,6 @@
             cursor: pointer;
             margin-right: 15px;
         }
-
         .header-contact-widget:hover {
             width: 460px;
             background: rgba(255, 255, 255, 0.95);
@@ -36,7 +35,6 @@
             border-color: rgba(13, 110, 253, 0.4);
             box-shadow: 0 8px 20px rgba(13, 110, 253, 0.15);
         }
-
         .header-contact-widget .contact-icon {
             min-width: 32px;
             height: 32px;
@@ -49,11 +47,9 @@
             font-size: 1.1rem;
             transition: transform 0.5s ease;
         }
-
         .header-contact-widget:hover .contact-icon {
             transform: rotate(360deg);
         }
-
         .header-contact-widget .contact-details {
             white-space: nowrap;
             opacity: 0;
@@ -2366,7 +2362,7 @@ function handleLogin(e) {
                         confirmButtonText: translations[currentLanguage].ok_button,
                         allowOutsideClick: false,
                     }).then(() => {
-                        showLoginPage();
+                        logoutWithAnimation();
                     });
                 }
 
@@ -3520,7 +3516,36 @@ async function handleImport(e) {
                         showError(translations[currentLanguage].save_error_title, translations[currentLanguage].save_error_text.replace('{error}', error.message));
                     }
                 }
-
+                // ============================================
+                // 🚪 ฟังก์ชันออกจากระบบพร้อมแอนิเมชันเปิด-ปิดประตู
+                // ============================================
+                function logoutWithAnimation() {
+                    const doorContainer = document.getElementById('hitech-door-container');
+                    if (doorContainer) {
+                        // 1. โชว์ประตู (ที่แอบซ่อนอยู่ขอบซ้าย-ขวา)
+                        doorContainer.classList.add('active');
+                        
+                        // ให้เวลาเบราว์เซอร์เตรียมตัวนิดนึง แล้วพุ่งมาปิดชนกัน
+                        setTimeout(() => {
+                            doorContainer.classList.add('close-doors');
+                            
+                            // 2. รอประตูปิดสนิท + แสงวาบ (1.2 วินาที) แล้วแอบสลับเป็นหน้า Login หลังประตู
+                            setTimeout(() => {
+                                showLoginPage(); 
+                                
+                                // 3. สั่งให้ประตูเลื่อนเปิดออก เผยให้เห็นหน้าจอ Login
+                                doorContainer.classList.remove('close-doors');
+                                
+                                // 4. รอประตูเปิดเสร็จ แล้วซ่อนกล่องประตูทิ้งไป
+                                setTimeout(() => {
+                                    doorContainer.classList.remove('active');
+                                }, 800);
+                            }, 1200);
+                        }, 50);
+                    } else {
+                        showLoginPage();
+                    }
+                }
                 function showLoginPage() {
                     stopDataSync();
                     clearTimeout(inactivityTimer);
@@ -3990,7 +4015,7 @@ if (mascotBubble) {
                 // --- ADD EVENT LISTENERS ---
                 function addEventListeners() {
                     loginForm.addEventListener('submit', handleLogin);
-                    logoutBtn.addEventListener('click', () => confirmAction(translations[currentLanguage].confirm_logout_title, '', showLoginPage));
+                    logoutBtn.addEventListener('click', () => confirmAction(translations[currentLanguage].confirm_logout_title, '', logoutWithAnimation));
                     document.getElementById('refresh-stock-summary-btn').addEventListener('click', () => loadDataFromSheet(true));
 
                     // --- แก้ไขโค้ดสำหรับปุ่มดาวน์โหลด ---
@@ -4065,9 +4090,8 @@ if (mascotBubble) {
                         }
                         if (e.target.id === 'export-product-id') {
                             const searchTerm = e.target.value;
-                            const productsInStockIds = calculatedStock.filter(s => s.totalQuantity > 0).map(s => String(s.productId).trim());
-                            const productSource = db.products.filter(p => productsInStockIds.includes(String(p.id).trim()));
-                            showSuggestions(e.target, document.getElementById('export-product-suggestions'), productSource, searchTerm);
+                            // โชว์รายชื่อพาร์ท "ทั้งหมด" เวลาพิมพ์ค้นหา
+                            showSuggestions(e.target, document.getElementById('export-product-suggestions'), db.products, searchTerm);
                         }
                         if (e.target.id === 'filter-product-search') {
                             const searchTerm = e.target.value;
@@ -4229,6 +4253,7 @@ window.deletePlanItem = function(id, date) {
                             document.getElementById('export-erp-code').value = product ? product.erpCode : '';
                             document.getElementById('export-fullbox').value = product ? product.fullBoxQuantity : '';
                             populateExportLotsList(e.target.value);
+                            updateExportTotal(); // อัปเดต QR Code และยอดรวม
                         }
                         if (e.target.type === 'checkbox' && e.target.closest('.export-lot-row')) {
                             const row = e.target.closest('.export-lot-row');
@@ -4900,27 +4925,12 @@ function updateImportTotal() {
     // เรียกฟังก์ชันสร้าง QR โชว์ทันที
     generateLiveQR(total);
 }
-// --- วางโค้ดนี้ต่อท้ายบล็อกของ updateImportTotal ได้เลยครับ ---
-function updateExportTotal() {
-    const allLotRows = document.querySelectorAll('#export-lots-container .export-lot-row');
-    let total = 0;
-    
-    // วนลูปเช็คทีละแถวแทน เพื่อรองรับการทำงานในทุกเบราว์เซอร์
-    allLotRows.forEach(row => {
-        const checkbox = row.querySelector('input[type="checkbox"]');
-        if (checkbox && checkbox.checked) {
-            const quantityInput = row.querySelector('.export-quantity');
-            total += parseInt(quantityInput.value) || 0;
-        }
-    });
-    
-    const totalInput = document.getElementById('export-total-quantity');
-    if(totalInput) {
-        totalInput.value = total.toLocaleString();
-    }
-}
-
-// --- ฟังก์ชันย่อยสำหรับวาด QR Code ล่วงหน้า ---
+// ========================================================
+// --- ฟังก์ชันย่อยสำหรับวาด QR Code ล่วงหน้า (ฝั่งรับเข้า) ที่หายไป ---
+// ========================================================
+// ========================================================
+// --- ฟังก์ชันสร้าง QR Code รับเข้า (แบบมีวันหมดอายุ 1 นาที) ---
+// ========================================================
 function generateLiveQR(totalQty) {
     const qrOutputContainer = document.getElementById('import-qrcode-output');
     const qrArea = document.getElementById('import-qrcode-area');
@@ -4931,14 +4941,16 @@ function generateLiveQR(totalQty) {
 
     const erpCode = erpCodeInput ? erpCodeInput.value : '-';
 
-    // ถ้ายอดยังเป็น 0 หรือยังไม่ได้เลือกสินค้า ให้ซ่อน QR ไว้ก่อน
+    // ล้าง Timer เก่าทิ้งทุกครั้งที่มีการพิมพ์ตัวเลขใหม่
+    if (window.importQrTimer) clearInterval(window.importQrTimer);
+
     if (totalQty <= 0 || !erpCode || erpCode === '') {
         qrArea.classList.add('d-none');
         return;
     }
 
     try {
-        qrOutputContainer.innerHTML = ''; // ล้างรูปภาพเก่า
+        qrOutputContainer.innerHTML = ''; 
         const now = new Date();
         const yyyy = now.getFullYear();
         const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -4957,13 +4969,140 @@ function generateLiveQR(totalQty) {
             correctLevel: QRCode.CorrectLevel.H
         });
 
-        qrTextContainer.textContent = qrContent;
-        qrArea.classList.remove('d-none'); // โชว์ QR Code ทันที
+        // สร้างข้อความและตัวนับเวลา 60 วินาที
+        qrTextContainer.innerHTML = `
+            <div style="word-break: break-all;">${qrContent}</div>
+            <div id="import-qr-countdown" class="badge bg-warning text-dark mt-2 py-1 px-3 fs-6 rounded-pill shadow-sm">
+                <i class="bi bi-hourglass-split me-1"></i>เหลือเวลา: <span id="import-timer-sec">60</span> วิ
+            </div>
+        `;
+        qrArea.classList.remove('d-none'); 
+
+        // เริ่มนับถอยหลัง
+        let timeLeft = 60;
+        window.importQrTimer = setInterval(() => {
+            timeLeft--;
+            const timerSecEl = document.getElementById('import-timer-sec');
+            if (timerSecEl) timerSecEl.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(window.importQrTimer);
+                // เบลอ QR Code และขึ้นป้ายหมดอายุ
+                qrOutputContainer.innerHTML = `
+                    <div class="d-flex flex-column align-items-center justify-content-center bg-light rounded" style="width: 160px; height: 160px; border: 2px dashed #dc3545;">
+                        <i class="bi bi-shield-x text-danger mb-1" style="font-size: 2.5rem;"></i>
+                        <div class="text-danger fw-bold small">หมดเวลาสแกน</div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2 fw-bold" onclick="updateImportTotal()"><i class="bi bi-arrow-clockwise me-1"></i>สร้างใหม่</button>
+                    </div>
+                `;
+                document.getElementById('import-qr-countdown').className = "badge bg-danger text-white mt-2 py-1 px-3 fs-6 rounded-pill shadow-sm";
+                document.getElementById('import-qr-countdown').innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>QR Code หมดอายุ`;
+            }
+        }, 1000);
+
     } catch (err) {
         console.error("Live QR Code Generation Error:", err);
     }
 }
+function updateExportTotal() {
+    const allLotRows = document.querySelectorAll('#export-lots-container .export-lot-row');
+    let total = 0;
+    
+    // วนลูปเช็คทีละแถวแทน เพื่อรองรับการทำงานในทุกเบราว์เซอร์
+    allLotRows.forEach(row => {
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        if (checkbox && checkbox.checked) {
+            const quantityInput = row.querySelector('.export-quantity');
+            total += parseInt(quantityInput.value) || 0;
+        }
+    });
+    
+    const totalInput = document.getElementById('export-total-quantity');
+    if(totalInput) {
+        totalInput.value = total.toLocaleString();
+    }
+    
+    // เรียกฟังก์ชันสร้าง QR โชว์ทันทีสำหรับฝั่งส่งออก
+    generateLiveExportQR(total);
+}
 
+// --- ฟังก์ชันย่อยสำหรับวาด QR Code ล่วงหน้า (ฝั่งส่งออก) ---
+// ========================================================
+// --- ฟังก์ชันสร้าง QR Code ส่งออก (แบบมีวันหมดอายุ 1 นาที) ---
+// ========================================================
+function generateLiveExportQR(totalQty) {
+    const qrOutputContainer = document.getElementById('export-qrcode-output');
+    const qrArea = document.getElementById('export-qrcode-area');
+    const qrTextContainer = document.getElementById('export-qrcode-text');
+    const erpCodeInput = document.getElementById('export-erp-code');
+
+    if (!qrOutputContainer || !qrArea || !qrTextContainer) return;
+
+    const erpCode = erpCodeInput ? erpCodeInput.value : '-';
+
+    // ล้าง Timer เก่าทิ้ง
+    if (window.exportQrTimer) clearInterval(window.exportQrTimer);
+
+    if (totalQty <= 0 || !erpCode || erpCode === '') {
+        qrArea.classList.add('d-none');
+        return;
+    }
+
+    try {
+        qrOutputContainer.innerHTML = ''; 
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const formattedRegDate = `${yyyy}${mm}${dd}`;
+
+        const cleanQty = Number(totalQty).toFixed(2);
+        const qrContent = `${erpCode}/${cleanQty}/TX1/${formattedRegDate}/A/1/${erpCode}`;
+
+        new QRCode(qrOutputContainer, {
+            text: qrContent,
+            width: 160,
+            height: 160,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        // สร้างข้อความและตัวนับเวลา 60 วินาที
+        qrTextContainer.innerHTML = `
+            <div style="word-break: break-all;">${qrContent}</div>
+            <div id="export-qr-countdown" class="badge bg-warning text-dark mt-2 py-1 px-3 fs-6 rounded-pill shadow-sm">
+                <i class="bi bi-hourglass-split me-1"></i>เหลือเวลา: <span id="export-timer-sec">60</span> วิ
+            </div>
+        `;
+        qrArea.classList.remove('d-none'); 
+
+        // เริ่มนับถอยหลัง
+        let timeLeft = 60;
+        window.exportQrTimer = setInterval(() => {
+            timeLeft--;
+            const timerSecEl = document.getElementById('export-timer-sec');
+            if (timerSecEl) timerSecEl.textContent = timeLeft;
+
+            if (timeLeft <= 0) {
+                clearInterval(window.exportQrTimer);
+                // เบลอ QR Code และขึ้นป้ายหมดอายุ
+                qrOutputContainer.innerHTML = `
+                    <div class="d-flex flex-column align-items-center justify-content-center bg-light rounded" style="width: 160px; height: 160px; border: 2px dashed #dc3545;">
+                        <i class="bi bi-shield-x text-danger mb-1" style="font-size: 2.5rem;"></i>
+                        <div class="text-danger fw-bold small">หมดเวลาสแกน</div>
+                        <button type="button" class="btn btn-sm btn-outline-success mt-2 fw-bold" onclick="updateExportTotal()"><i class="bi bi-arrow-clockwise me-1"></i>สร้างใหม่</button>
+                    </div>
+                `;
+                document.getElementById('export-qr-countdown').className = "badge bg-danger text-white mt-2 py-1 px-3 fs-6 rounded-pill shadow-sm";
+                document.getElementById('export-qr-countdown').innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>QR Code หมดอายุ`;
+            }
+        }, 1000);
+
+    } catch (err) {
+        console.error("Live Export QR Code Generation Error:", err);
+    }
+}
 function renderImportForm() {
     const T = translations[currentLanguage];
     const importFormEl = document.getElementById('import-form');
@@ -5025,7 +5164,7 @@ function renderImportForm() {
                 <div id="import-qrcode-area" class="w-100 d-none h-100">
                     <div class="card border-primary h-100" style="border-radius: 16px; box-shadow: 0 4px 12px rgba(13,110,253,0.1);">
                         <div class="card-header bg-primary text-white text-center small fw-bold py-2">
-                            <i class="bi bi-qr-code-scan me-2"></i>QR CODE ERP 
+                            <i class="bi bi-qr-code-scan me-2"></i>QR CODE ERP รับเข้า
                         </div>
                         <div class="card-body d-flex flex-column align-items-center justify-content-center bg-white p-2">
                             <div id="import-qrcode-output" class="p-1 border rounded bg-white"></div>
@@ -5063,7 +5202,7 @@ function renderImportForm() {
     `;
                     container.appendChild(newRow);
                 }
-                function renderExportForm() {
+function renderExportForm() {
                     const T = translations[currentLanguage];
                     const exportFormEl = document.getElementById('export-form');
                     exportFormEl.innerHTML = `
@@ -5075,22 +5214,51 @@ function renderImportForm() {
             <hr class="my-3">
             <div class="col-12"><label class="form-label fw-bold">${T.export_lot_select}</label><div id="export-lots-container" class="border rounded p-2 bg-light"></div></div>
             <hr class="my-3">
-            <div class="col-md-3"> <label for="export-total-quantity" class="form-label">${T.export_total_quantity}</label> <input type="text" id="export-total-quantity" class="form-control fw-bold" value="0" readonly style="background-color: #e9ecef; font-size: 1.2rem;"> </div>
-            
-            <div class="col-md-3"> 
-                <label for="export-type" class="form-label">${T.export_type_label}</label> 
-                <select id="export-type" class="form-select" required>
-                    <option value="Sale" selected>${T.export_type_sale}</option>
-                    <option value="Production">${T.export_type_production}</option>
-                    <option value="QC">${T.export_type_qc}</option>
-                    <option value="Other">${T.export_type_other}</option>
-                </select> 
-            </div>
-            <div class="col-md-3"> <label for="export-invoice-number" class="form-label">${T.export_invoice}</label> <input type="text" id="export-invoice-number" class="form-control"> </div>
-            <div class="col-md-3"> <label for="export-remarks" class="form-label">${T.remarks}</label> <textarea id="export-remarks" class="form-control" rows="1"></textarea> </div>
 
-            <div class="col-12 mt-2"> <p class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>${T.export_warning}</p> </div>
-            <div class="col-12 mt-3"> <button type="submit" class="btn btn-success"><i class="bi bi-send-check-fill me-2"></i>${T.export_save_button}</button> <button type="button" id="clear-export-form-btn" class="btn btn-secondary ms-2"><i class="bi bi-eraser-fill me-2"></i>${T.clear_form_button}</button> </div>`;
+            <!-- ปรับโครงสร้างส่วนท้ายให้แบ่งเป็น 3 คอลัมน์ (มี QR Code) แบบเดียวกับหน้ารับเข้า -->
+            <div class="row g-3 w-100 m-0">
+                <div class="col-md-4 d-flex flex-column justify-content-between p-0 pe-md-2">
+                    <div>
+                        <label for="export-total-quantity" class="form-label fw-bold">${T.export_total_quantity}</label>
+                        <input type="text" id="export-total-quantity" class="form-control fw-bold text-center" value="0" readonly style="background-color: #e9ecef; font-size: 1.2rem;">
+                        <div class="text-danger fw-bold mt-2" style="font-size: 0.85rem; line-height: 1.3;"><i class="bi bi-exclamation-triangle-fill me-1"></i>${T.export_warning}</div>
+                    </div>
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-success flex-grow-1 shadow-sm"><i class="bi bi-send-check-fill me-2"></i>${T.export_save_button}</button>
+                        <button type="button" id="clear-export-form-btn" class="btn btn-secondary px-3 shadow-sm" title="${T.clear_form_button}"><i class="bi bi-eraser-fill"></i></button>
+                    </div>
+                </div>
+
+                <div class="col-md-4 d-flex flex-column justify-content-between p-0 px-md-2">
+                    <div>
+                        <label for="export-type" class="form-label fw-bold">${T.export_type_label}</label>
+                        <select id="export-type" class="form-select mb-2" required>
+                            <option value="Sale" selected>${T.export_type_sale}</option>
+                            <option value="Production">${T.export_type_production}</option>
+                            <option value="QC">${T.export_type_qc}</option>
+                            <option value="Other">${T.export_type_other}</option>
+                        </select>
+                        <label for="export-invoice-number" class="form-label fw-bold">${T.export_invoice}</label>
+                        <input type="text" id="export-invoice-number" class="form-control mb-2">
+                        <label for="export-remarks" class="form-label fw-bold">${T.remarks}</label>
+                        <textarea id="export-remarks" class="form-control" rows="1"></textarea>
+                    </div>
+                </div>
+
+                <div class="col-md-4 d-flex justify-content-center align-items-center p-0 ps-md-2 mt-3 mt-md-0">
+                    <div id="export-qrcode-area" class="w-100 d-none h-100">
+                        <div class="card border-success h-100" style="border-radius: 16px; box-shadow: 0 4px 12px rgba(25,135,84,0.1);">
+                            <div class="card-header bg-success text-white text-center small fw-bold py-2">
+                                <i class="bi bi-qr-code-scan me-2"></i>QR CODE ERP (ส่งออก)
+                            </div>
+                            <div class="card-body d-flex flex-column align-items-center justify-content-center bg-white p-2">
+                                <div id="export-qrcode-output" class="p-1 border rounded bg-white"></div>
+                                <div id="export-qrcode-text" class="mt-1 text-center text-muted fw-bold" style="font-size: 0.75rem; word-break: break-all;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
                 }
 function renderProductForm() {
                     const T = translations[currentLanguage];
