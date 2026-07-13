@@ -344,9 +344,11 @@
             z-index: 1050;
         }
 
-        .suggestions-container a:hover {
-            background-color: var(--primary-color);
-            color: white;
+.suggestions-container a:hover {
+            background-color: #e7f1ff !important; /* เปลี่ยนแถบเป็นสีฟ้าสว่างนวลๆ */
+            border-left: 4px solid #0d6efd; /* เพิ่มเส้นเน้นขอบซ้ายให้ดูหรูขึ้น */
+            transform: scale(1.01); /* ตอนชี้ให้กล่องเด้งป๊อปอัปขึ้นมานิดนึง */
+            transition: all 0.2s;
         }
 
         .filter-card {
@@ -6239,6 +6241,62 @@ function populateSalesDashboard(startDate, endDate) {
                         }
                     }
                 }
+// ========================================================
+                // ฟังก์ชันสำหรับ Admin เคลียร์ยอด ERP ค้างรับเข้า
+                // ========================================================
+                window.toggleErpStatus = async function(historyId) {
+                    if (!currentUser || currentUser.role !== 'admin') return;
+
+                    const historyItem = db.history.find(h => h.id === historyId);
+                    if (!historyItem) return;
+
+                    // 1. เด้งหน้าต่างให้กรอกเลขที่เอกสารอ้างอิง
+                    const { value: docNumber } = await Swal.fire({
+                        title: 'เคลียร์ยอด ERP',
+                        html: `รหัสสินค้า: <b>${historyItem.productId}</b><br>ค้างรับเข้า: <b>${historyItem.failedErpQty} ชิ้น</b>`,
+                        input: 'text',
+                        inputLabel: 'ใส่เลขที่เอกสาร หรือ หมายเหตุอ้างอิง',
+                        inputPlaceholder: 'เช่น เคลียร์แล้ว เอกสาร INV-12345',
+                        showCancelButton: true,
+                        confirmButtonText: '<i class="bi bi-check-circle-fill me-1"></i> บันทึกเคลียร์ยอด',
+                        cancelButtonText: 'ยกเลิก',
+                        confirmButtonColor: '#198754',
+                        inputValidator: (value) => {
+                            if (!value) return 'กรุณาใส่เลขที่เอกสารหรือหมายเหตุด้วยครับ!';
+                        }
+                    });
+
+                    if (docNumber) {
+                        // 2. นำเลขที่เอกสารไปต่อท้ายในช่อง หมายเหตุ
+                        const oldRemarks = historyItem.remarks || '';
+                        const newRemarks = oldRemarks ? `${oldRemarks} | [เคลียร์ ERP: ${docNumber}]` : `[เคลียร์ ERP: ${docNumber}]`;
+
+                        // อัปเดตหน้าเว็บทันที
+                        historyItem.erpStatus = 'Cleared';
+                        historyItem.remarks = newRemarks;
+                        populateHistoryTable();
+
+                        // 3. ยิงไปเซฟลง Google Sheets
+                        try {
+                            Swal.fire({ title: 'กำลังบันทึกลงระบบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                            
+                            // ส่งข้อมูลใหม่ไปหลังบ้าน
+                            await callAppsScript('updateErpStatus', { 
+                                id: historyId, 
+                                erpStatus: 'Cleared',
+                                remarks: newRemarks 
+                            });
+
+                            Swal.fire('สำเร็จ!', 'อัปเดตสถานะ ERP ในระบบเรียบร้อยแล้ว', 'success');
+                        } catch (error) {
+                            // ถ้าพังหรือเน็ตหลุด ให้สเตตัสกลับเป็นเหมือนเดิม
+                            historyItem.erpStatus = 'Pending';
+                            historyItem.remarks = oldRemarks;
+                            populateHistoryTable();
+                            showError('บันทึกไม่สำเร็จ', 'เชื่อมต่อฐานข้อมูลไม่ได้: ' + error.message);
+                        }
+                    }
+                };
                // --- START THE APP ---
                 init();
 
