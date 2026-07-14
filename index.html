@@ -1136,7 +1136,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="card-body px-4 pb-4 pt-2">
+                            <div class="card-body px-4 pb-4 pt-2 d-flex flex-column">
                                 <div class="input-group mb-3 shadow-sm" style="border-radius: 12px; overflow: hidden;">
                                     <input type="text" id="stock-search-input" class="form-control border-0 bg-light" data-lang-key-placeholder="stock_search_placeholder" placeholder="ค้นหารหัสสินค้า, ชื่อสินค้า หรือลูกค้า...">
                                     <button class="btn btn-primary" type="button" id="refresh-stock-summary-btn" title="Refresh Data"><i class="bi bi-arrow-clockwise"></i></button>
@@ -1392,9 +1392,8 @@
                 <!-- ========================================== -->
                 <div class="tab-pane fade" id="pills-rack" role="tabpanel">
                     <div class="row">
-                        <!-- ฝั่งซ้าย: ฟอร์มโยกย้าย -->
                         <div class="col-lg-4 mb-4">
-                            <div class="card shadow-sm border-0" style="border-radius: 20px;">
+                            <div class="card shadow-sm border-0" style="border-radius: 20px; min-height: calc(100vh - 145px);">
                                 <div class="card-header fw-bold bg-white pt-4 pb-2 px-4 border-0" style="border-radius: 20px 20px 0 0;">
                                     <h5 class="fw-bold text-primary mb-0"><i class="bi bi-arrow-left-right me-2"></i>โยกย้ายแพ็คกิ้ง (Rack)</h5>
                                 </div>
@@ -1418,7 +1417,7 @@
                                     </form>
 
                                     <!-- ตารางพักข้อมูลที่สแกนแล้ว -->
-                                    <div class="table-responsive mb-3 shadow-sm border" style="max-height: 250px; overflow-y: auto; border-radius: 10px;">
+                                    <div class="table-responsive mb-3 shadow-sm border flex-grow-1" style="max-height: calc(100vh - 430px); overflow-y: auto; border-radius: 10px;">
                                         <table class="table table-hover align-middle text-center mb-0">
                                             <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
                                                 <tr>
@@ -1438,14 +1437,13 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- ฝั่งขวา: ตารางสรุปยอด -->
                         <div class="col-lg-8">
-                            <div class="card shadow-sm border-0" style="border-radius: 20px;">
+                            <div class="card shadow-sm border-0 d-flex flex-column" style="border-radius: 20px; min-height: calc(100vh - 145px);">
                                 <div class="card-header fw-bold bg-white pt-4 pb-3 px-4 border-0 d-flex justify-content-between align-items-center" style="border-radius: 20px 20px 0 0;">
                                     <h5 class="fw-bold text-primary mb-0"><i class="bi bi-boxes me-2"></i>สรุปสถานะ Rack ทั้งหมด</h5>
                                 </div>
-                                <div class="card-body px-4 pb-4 pt-0">
-                                    <div class="table-responsive" style="max-height: calc(100vh - 220px); overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6;">
+                                    <div class="card-body px-4 pb-4 pt-0">
+                                    <div class="table-responsive bg-white shadow-sm" style="max-height: calc(100vh - 250px); overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6;">
                                         <table class="table table-hover align-middle mb-0">
                                             <thead class="table-dark text-center" style="position: sticky; top: 0; z-index: 1;">
                                                 <tr>
