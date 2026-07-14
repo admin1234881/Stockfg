@@ -1408,6 +1408,7 @@
                                                 </thead>
                                                 <tbody id="dash-rack-summary-tbody">
                                                     <tr><td colspan="6" class="text-center text-muted p-5">กำลังโหลดข้อมูล...</td></tr>
+                                                    
                                                 </tbody>
                                             </table>
                                         </div>
@@ -1421,6 +1422,9 @@
                                     <div class="card-header bg-white border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
                                         <h5 class="fw-bold text-danger mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i> ไม่เคลื่อนไหวเกิน (> 3 วัน)</h5>
                                         <span class="badge bg-danger rounded-pill shadow-sm" id="dash-rack-idle-count">0</span>
+                                        <button type="button" class="btn btn-sm btn-outline-danger ms-2" style="border-radius: 8px; font-size: 0.8rem;" onclick="downloadCSV('dash-rack-idle-tbody', 'รายงาน_แพ็คกิ้งไม่เคลื่อนไหว.csv')">
+                                        <i class="bi bi-download me-1"></i> CSV
+                                        </button>
                                     </div>
                                     <div class="card-body px-3 pb-4 pt-2">
                                         <div class="table-responsive" style="max-height: 400px; overflow-y: auto; border-radius: 10px;">
@@ -1436,6 +1440,31 @@
                                                     <tr><td colspan="3" class="text-center text-success p-4"><i class="bi bi-check-circle-fill fs-4 d-block mb-2"></i>เยี่ยมมาก! ไม่มีของค้าง</td></tr>
                                                 </tbody>
                                             </table>
+                                        <div class="card shadow-sm mt-4" style="background: #ffffff; border-radius: 20px; border-top: 5px solid #6c757d;">
+                                    <div class="card-header bg-white border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+                                        <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-tools me-2"></i> ชำรุด (รอตัดทิ้ง/ซ่อม)</h5>
+                                        <span class="badge bg-secondary rounded-pill shadow-sm" id="dash-rack-damaged-count">0</span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" style="border-radius: 8px; font-size: 0.8rem;" onclick="downloadCSV('dash-rack-damaged-tbody', 'รายงาน_แพ็คกิ้งชำรุด.csv')">
+                                         <i class="bi bi-download me-1"></i> CSV
+                                        </button>
+                                    </div>
+                                    <div class="card-body px-3 pb-4 pt-2">
+                                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto; border-radius: 10px;">
+                                            <table class="table table-hover align-middle mb-0 text-center">
+                                                <thead style="background-color: #f8f9fa; position: sticky; top: 0; z-index: 1;">
+                                                <tr>
+                                                    <th class="text-start ps-3 text-secondary border-0" style="border-radius: 10px 0 0 10px;">นำเบอร์ (ID)</th>
+                                                    <th class="text-secondary border-0">ลูกค้า</th>
+                                                    <th class="text-secondary border-0" style="border-radius: 0 10px 10px 0;">วันเวลาที่ชำรุด</th>
+                                                </tr>
+                                            </thead>
+                                                <tbody id="dash-rack-damaged-tbody">
+                                                    <tr><td colspan="2" class="text-center text-muted p-4"><i class="bi bi-emoji-smile fs-4 d-block mb-2"></i>ไม่มีแพ็คกิ้งชำรุด</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
                                         </div>
                                     </div>
                                 </div>
@@ -3911,6 +3940,113 @@ if (mascotBubble) {
                     renderAnnouncementForm();
                     renderHistoryFilterForm();
                 }
+                // ฟังก์ชันเปิดป๊อปอัปจัดการแร็ค เมื่อกดจากตารางแดชบอร์ด
+// ฟังก์ชันเปิดป๊อปอัปจัดการแร็ค เมื่อกดจากตารางแดชบอร์ด
+function openRackAction(rackId) {
+    document.getElementById('action-rack-id').value = rackId;
+    document.getElementById('action-rack-status').value = ""; // รีเซ็ตตัวเลือก
+    var myModal = new bootstrap.Modal(document.getElementById('rackActionModal'));
+    myModal.show();
+} // 🔴 เพิ่มปีกกาปิดของฟังก์ชันนี้ให้ถูกต้องตรงนี้ครับ
+
+// ฟังก์ชันสำหรับดึงข้อมูลจากตารางแดชบอร์ดแปลงเป็นไฟล์ CSV (แก้ไขให้ทำงานจากปุ่มได้ 100%)
+window.downloadCSV = function(tbodyId, filename) {
+    var tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+    
+    var table = tbody.closest('table');
+    var headers = [];
+    
+    // ดึงหัวข้อคอลัมน์จากตาราง
+    if (table) {
+        var ths = table.querySelectorAll('thead th');
+        ths.forEach(function(th) {
+            headers.push('"' + th.innerText.trim().replace(/"/g, '""') + '"');
+        });
+    }
+    
+    var csv = [];
+    if (headers.length > 0) {
+        csv.push(headers.join(','));
+    }
+    
+    // ดึงข้อมูลแต่ละแถวในตาราง
+    var rows = tbody.querySelectorAll('tr');
+    var hasData = false;
+    
+    rows.forEach(function(row) {
+        var cols = row.querySelectorAll('td');
+        
+        // ข้ามแถวที่เป็นข้อความแจ้งเตือนตอนไม่มีข้อมูล
+        if (cols.length === 1 && (cols[0].getAttribute('colspan') || cols[0].innerText.includes('ไม่มี') || cols[0].innerText.includes('เยี่ยมมาก'))) {
+            return;
+        }
+        
+        var rowData = [];
+        cols.forEach(function(col) {
+            rowData.push('"' + col.innerText.trim().replace(/"/g, '""') + '"');
+        });
+        
+        if (rowData.length > 0) {
+            csv.push(rowData.join(','));
+            hasData = true;
+        }
+    });
+    
+    // แจ้งเตือนถ้ากดโหลดตอนไม่มีข้อมูลในตาราง
+    if (!hasData) {
+        Swal.fire({ icon: 'warning', title: 'ไม่พบข้อมูล', text: 'ในตารางยังไม่มีข้อมูลให้ดาวน์โหลดครับ', timer: 2000, showConfirmButton: false });
+        return;
+    }
+    
+    // รวมข้อความ CSV และใส่ \ufeff เพื่อกำกับรหัสฟอนต์ภาษาไทยให้เปิดใน Excel ได้ถูกต้อง
+    var csvString = csv.join('\n');
+    var blob = new Blob(['\ufeff' + csvString], { type: 'text/csv;charset=utf-8;' });
+    
+    // สร้างลิงก์หลอกๆ ขึ้นมาเพื่อสั่งดาวน์โหลดไฟล์เข้าเครื่อง
+    var link = document.createElement("a");
+    if (link.download !== undefined) {
+        var url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+};
+
+
+// ฟังก์ชันส่งข้อมูลสถานะแร็คไปบันทึกที่ Google Sheets (RackHistory)
+function submitRackAction() {
+    var rackId = document.getElementById('action-rack-id').value;
+    var status = document.getElementById('action-rack-status').value;
+    
+    if(!status) {
+        alert("กรุณาเลือกการดำเนินการก่อนครับ");
+        return;
+    }
+    
+    // แสดงสถานะกำลังโหลด
+    Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    
+    // เรียกใช้ฟังก์ชันฝั่ง Google Apps Script (ฝั่ง GS หลังบ้านของคุณ)
+    google.script.run
+        .withSuccessHandler(function(response) {
+            Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ!', text: 'อัปเดตสถานะแร็คเรียบร้อยแล้ว', timer: 2000, showConfirmButton: false });
+            // ปิดหน้าต่างป๊อปอัป
+            var modalEl = document.getElementById('rackActionModal');
+            var modal = bootstrap.Modal.getInstance(modalEl);
+            if(modal) modal.hide();
+            
+            // รีเฟรชข้อมูลแดชบอร์ดใหม่ (อ้างอิงชื่อฟังก์ชันโหลดข้อมูลเดิมของคุณ)
+            if(typeof loadDashboardData === "function") loadDashboardData();
+        })
+        .withFailureHandler(function(err) {
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: err.message });
+        })
+        .updateRackHistoryStatus(rackId, status); // ชื่อฟังก์ชันที่จะไปทำงานที่ไฟล์ Code.gs
+}
 
  function populateStockSummary() {
                     const T = translations[currentLanguage];
@@ -4262,14 +4398,16 @@ if (mascotBubble) {
                         const customerName = (foundProd && foundProd.customer) ? foundProd.customer : '<span class="text-danger">ไม่ระบุลูกค้า</span>';
 
                         // 🛠️ ตรวจจับของชำรุด (OUT) จับแยกใส่ตารางชำรุด แล้วข้ามวงจร KPI ทันที!
-                        if (loc === 'OUT') {
-                            damagedRacks.push({
-                                code: erpCode,
-                                customer: customerName,
-                                lastDate: rack.lastMoved.toLocaleDateString('th-TH')
-                            });
-                            continue; // ข้ามการคำนวณ KPI และกล่องสรุปยอดซ้ายมือ
-                        }
+                        // 🛠️ ตรวจจับของชำรุด (OUT) จับแยกใส่ตารางชำรุด แล้วข้ามวงจร KPI ทันที!
+// 🛠️ ตรวจจับของชำรุด (OUT) จับแยกใส่ตารางชำรุด แล้วข้ามวงจร KPI ทันที!
+if (loc === 'OUT') {
+    damagedRacks.push({
+        code: erpCode,
+        customer: customerName,
+        lastDate: rack.lastMoved.toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })
+    });
+    continue; // ข้ามการคำนวณ KPI และกล่องสรุปยอดซ้ายมือ
+}
 
                         // อัปเดต KPI บนสุด
                         kpi.total++;
@@ -4372,18 +4510,19 @@ if (mascotBubble) {
                     if (damagedCountBadge) damagedCountBadge.innerText = damagedRacks.length;
 
                     if (damagedRacks.length === 0) {
-                        damagedHtml = `<tr><td colspan="2" class="text-center text-muted p-3"><i class="bi bi-emoji-smile d-block mb-1"></i>ไม่มีแพ็คกิ้งชำรุด</td></tr>`;
-                    } else {
-                        // เรียงอันที่ชำรุดล่าสุดขึ้นบนสุด
-                        damagedRacks.reverse().forEach(rack => {
-                            damagedHtml += `
-                                <tr onclick="Swal.fire('รายละเอียดแพ็คกิ้งชำรุด', 'รหัส: ${rack.code}<br>ลูกค้า: ${rack.customer}<br>ทำรายการชำรุดเมื่อ: ${rack.lastDate}', 'warning')" style="cursor: pointer;">
-                                    <td class="text-start ps-3 fw-bold text-secondary">${rack.code}</td>
-                                    <td><span class="badge bg-light text-dark border shadow-sm text-truncate" style="max-width: 120px;">${rack.customer}</span></td>
-                                </tr>
-                            `;
-                        });
-                    }
+    damagedHtml = `<tr><td colspan="3" class="text-center text-muted p-3"><i class="bi bi-emoji-smile d-block mb-1"></i>ไม่มีแพ็คกิ้งชำรุด</td></tr>`;
+} else {
+    // เรียงอันที่ชำรุดล่าสุดขึ้นบนสุด
+    damagedRacks.reverse().forEach(rack => {
+        damagedHtml += `
+            <tr onclick="Swal.fire('รายละเอียดแพ็คกิ้งชำรุด', 'รหัส: ${rack.code}<br>ลูกค้า: ${rack.customer}<br>ทำรายการชำรุดเมื่อ: ${rack.lastDate}', 'warning')" style="cursor: pointer;">
+                <td class="text-start ps-3 fw-bold text-secondary">${rack.code}</td>
+                <td><span class="badge bg-light text-dark border shadow-sm text-truncate" style="max-width: 120px;">${rack.customer}</span></td>
+                <td class="text-secondary small fw-semibold">${rack.lastDate}</td>
+            </tr>
+        `;
+    });
+}
                     if(damagedTbody) damagedTbody.innerHTML = damagedHtml;
                 };
                 // --- ADD EVENT LISTENERS ---
@@ -7501,5 +7640,35 @@ function populateSalesDashboard(startDate, endDate) {
         </div>
     </div>
 </div>
+<div class="modal fade" id="rackActionModal" tabindex="-1" aria-labelledby="rackActionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                <div class="modal-header border-0 pt-4 px-4">
+                    <h5 class="fw-bold text-dark mb-0" id="rackActionModalLabel"><i class="bi bi-gear-wide-connected me-2 text-secondary"></i>จัดการสถานะแพ็คกิ้ง</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 pb-4">
+                    <form id="form-rack-action">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">นำเบอร์ (ID) ที่เลือก</label>
+                            <input type="text" class="form-control form-control-lg bg-light fw-bold text-center text-primary" id="action-rack-id" readonly style="border-radius: 12px;">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small">เลือกการดำเนินการ</label>
+                            <select class="form-select form-control-lg" id="action-rack-status" style="border-radius: 12px;" required>
+                                <option value="" disabled selected>-- กรุณาเลือกรายการ --</option>
+                                <option value="SCRAP">❌ ตัดออกจากระบบเพื่อทำลาย (Scrap)</option>
+                                <option value="NORMAL">✅ ซ่อมเสร็จแล้ว / นำกลับเข้าคลังปกติ</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-secondary w-100 py-3 fw-bold" style="border-radius: 12px; background: #6c757d;" onclick="submitRackAction()">
+                            <i class="bi bi-check-circle me-2"></i>บันทึกลง RackHistory
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
