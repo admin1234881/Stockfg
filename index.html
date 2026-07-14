@@ -411,8 +411,8 @@
             color: var(--danger-color);
             font-weight: bold;
         }
-/* --- โครงสร้างน้องหุ่นยนต์น่ารักด้วย Pure CSS --- */
-.cute-robot-css {
+/* --- โครงสร้างลูฟี่ด้วย Pure CSS --- */
+.cute-luffy-css {
     width: 70px;
     height: 85px;
     display: flex;
@@ -423,93 +423,134 @@
     cursor: pointer;
     filter: drop-shadow(2px 5px 10px rgba(0,0,0,0.15));
 }
-/* หัวหุ่นยนต์ */
-.cute-robot-css .robot-head {
-    width: 66px;
-    height: 50px;
-    background: linear-gradient(135deg, #e7f1ff, #b8daff);
-    border: 3px solid #0d6efd;
-    border-radius: 20px 20px 15px 15px;
+/* หมวกฟาง */
+.cute-luffy-css .luffy-hat {
     position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
+    z-index: 3;
+}
+.cute-luffy-css .luffy-hat-top {
+    width: 40px;
+    height: 20px;
+    background: #f4c430;
+    border-radius: 20px 20px 0 0;
+    border: 2px solid #212529;
+    border-bottom: none;
+    position: relative;
+    overflow: hidden;
+}
+.cute-luffy-css .luffy-hat-band {
+    width: 100%;
+    height: 6px;
+    background: #e63946;
+    position: absolute;
+    bottom: 0;
+    border-top: 2px solid #212529;
+}
+.cute-luffy-css .luffy-hat-brim {
+    width: 66px;
+    height: 12px;
+    background: #f4c430;
+    border-radius: 50%;
+    border: 2px solid #212529;
+    margin-top: -6px;
     z-index: 2;
 }
-/* หู/เสาอากาศข้างหัว */
-.cute-robot-css .robot-ears {
-    position: absolute;
-    width: 76px;
-    height: 12px;
-    background: #0d6efd;
-    top: 20px;
-    border-radius: 6px;
+/* หัวและหน้า */
+.cute-luffy-css .luffy-head {
+    width: 44px;
+    height: 38px;
+    background: #ffdfc4;
+    border-radius: 0 0 20px 20px;
+    border: 2px solid #212529;
+    border-top: none;
+    position: relative;
     z-index: 1;
+    margin-top: -8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
-/* ตาโตเป็นประกาย */
-.cute-robot-css .robot-eyes-container {
+.cute-luffy-css .luffy-hair {
+    position: absolute;
+    width: 48px;
+    height: 10px;
+    background: #212529;
+    top: -2px;
+    border-radius: 4px;
+    z-index: 0;
+}
+.cute-luffy-css .luffy-eyes-container {
     display: flex;
     gap: 12px;
-    margin-bottom: 2px;
+    margin-top: 10px;
 }
-.cute-robot-css .robot-eye {
-    width: 14px;
-    height: 14px;
+.cute-luffy-css .luffy-eye {
+    width: 8px;
+    height: 8px;
     background: #212529;
     border-radius: 50%;
     position: relative;
 }
-/* ประกายตาบิ๊กอายมุ้งมิ้ง */
-.cute-robot-css .robot-eye::after {
+.cute-luffy-css .luffy-eye::after {
     content: '';
     position: absolute;
-    width: 5px;
-    height: 5px;
+    width: 3px;
+    height: 3px;
     background: #fff;
     border-radius: 50%;
-    top: 2px;
-    left: 2px;
+    top: 1px;
+    left: 1px;
 }
-/* แก้มชมพูระเรื่อ */
-.cute-robot-css .robot-blush {
+/* แผลเป็นใต้ตา */
+.cute-luffy-css .luffy-scar {
     position: absolute;
     width: 8px;
-    height: 5px;
-    background: #ff8fa3;
-    border-radius: 50%;
-    bottom: 12px;
+    height: 2px;
+    background: #c28876;
+    right: 5px;
+    top: 18px;
+    transform: rotate(15deg);
 }
-.cute-robot-css .robot-blush.left { left: 8px; }
-.cute-robot-css .robot-blush.right { right: 8px; }
-/* ปากยิ้มหวาน */
-.cute-robot-css .robot-mouth {
-    width: 10px;
+.cute-luffy-css .luffy-scar::after {
+    content: '';
+    position: absolute;
+    width: 2px;
     height: 6px;
-    border-bottom: 3px solid #212529;
-    border-radius: 0 0 5px 5px;
-    margin-top: 2px;
+    background: #c28876;
+    top: -2px;
+    left: 3px;
 }
-/* ตัวหุ่นยนต์ */
-.cute-robot-css .robot-body {
-    width: 46px;
-    height: 32px;
-    background: #0d6efd;
-    border-radius: 0 0 12px 12px;
-    margin-top: -4px;
-    z-index: 1;
+/* ปาก */
+.cute-luffy-css .luffy-mouth {
+    width: 20px;
+    height: 10px;
+    background: #fff;
+    border: 2px solid #212529;
+    border-radius: 0 0 10px 10px;
+    margin-top: 3px;
+}
+/* ลำตัว (เสื้อแดงเปิดอก) */
+.cute-luffy-css .luffy-body {
+    width: 36px;
+    height: 24px;
+    background: #e63946;
+    border-radius: 8px 8px 0 0;
+    border: 2px solid #212529;
+    border-bottom: none;
+    margin-top: -3px;
+    z-index: 0;
     display: flex;
     justify-content: center;
-    align-items: center;
 }
-/* ป้ายข้อความบนตัวน้อง */
-.cute-robot-css .robot-badge {
-    color: #fff;
-    font-size: 0.65rem;
-    font-weight: bold;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 1px 6px;
-    border-radius: 8px;
+.cute-luffy-css .luffy-chest {
+    width: 14px;
+    height: 100%;
+    background: #ffdfc4;
+    border-left: 2px solid #212529;
+    border-right: 2px solid #212529;
 }
 
 /* --- เอฟเฟกต์ดุ๊กดิ๊กเด้งนุ่มสไตล์อนิเมะ --- */
@@ -880,6 +921,147 @@
             50% { opacity: 1; width: 20px; }
             100% { opacity: 0; width: 0; }
         }
+        /* --- โครงสร้างลูฟี่ด้วย Pure CSS --- */
+.cute-luffy-css {
+    width: 70px;
+    height: 85px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    pointer-events: auto;
+    cursor: pointer;
+    filter: drop-shadow(2px 5px 10px rgba(0,0,0,0.15));
+}
+/* หมวกฟาง */
+.cute-luffy-css .luffy-hat {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 3;
+}
+.cute-luffy-css .luffy-hat-top {
+    width: 40px;
+    height: 20px;
+    background: #f4c430;
+    border-radius: 20px 20px 0 0;
+    border: 2px solid #212529;
+    border-bottom: none;
+    position: relative;
+    overflow: hidden;
+}
+.cute-luffy-css .luffy-hat-band {
+    width: 100%;
+    height: 6px;
+    background: #e63946;
+    position: absolute;
+    bottom: 0;
+    border-top: 2px solid #212529;
+}
+.cute-luffy-css .luffy-hat-brim {
+    width: 66px;
+    height: 12px;
+    background: #f4c430;
+    border-radius: 50%;
+    border: 2px solid #212529;
+    margin-top: -6px;
+    z-index: 2;
+}
+/* หัวและหน้า */
+.cute-luffy-css .luffy-head {
+    width: 44px;
+    height: 38px;
+    background: #ffdfc4;
+    border-radius: 0 0 20px 20px;
+    border: 2px solid #212529;
+    border-top: none;
+    position: relative;
+    z-index: 1;
+    margin-top: -8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.cute-luffy-css .luffy-hair {
+    position: absolute;
+    width: 48px;
+    height: 10px;
+    background: #212529;
+    top: -2px;
+    border-radius: 4px;
+    z-index: 0;
+}
+.cute-luffy-css .luffy-eyes-container {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+.cute-luffy-css .luffy-eye {
+    width: 8px;
+    height: 8px;
+    background: #212529;
+    border-radius: 50%;
+    position: relative;
+}
+.cute-luffy-css .luffy-eye::after {
+    content: '';
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: #fff;
+    border-radius: 50%;
+    top: 1px;
+    left: 1px;
+}
+/* แผลเป็นใต้ตา */
+.cute-luffy-css .luffy-scar {
+    position: absolute;
+    width: 8px;
+    height: 2px;
+    background: #c28876;
+    right: 5px;
+    top: 18px;
+    transform: rotate(15deg);
+}
+.cute-luffy-css .luffy-scar::after {
+    content: '';
+    position: absolute;
+    width: 2px;
+    height: 6px;
+    background: #c28876;
+    top: -2px;
+    left: 3px;
+}
+/* ปาก */
+.cute-luffy-css .luffy-mouth {
+    width: 20px;
+    height: 10px;
+    background: #fff;
+    border: 2px solid #212529;
+    border-radius: 0 0 10px 10px;
+    margin-top: 3px;
+}
+/* ลำตัว (เสื้อแดงเปิดอก) */
+.cute-luffy-css .luffy-body {
+    width: 36px;
+    height: 24px;
+    background: #e63946;
+    border-radius: 8px 8px 0 0;
+    border: 2px solid #212529;
+    border-bottom: none;
+    margin-top: -3px;
+    z-index: 0;
+    display: flex;
+    justify-content: center;
+}
+.cute-luffy-css .luffy-chest {
+    width: 14px;
+    height: 100%;
+    background: #ffdfc4;
+    border-left: 2px solid #212529;
+    border-right: 2px solid #212529;
+}
     </style>
 <body>
 <!-- ========================================= -->
@@ -7581,25 +7763,31 @@ function populateSalesDashboard(startDate, endDate) {
         onclick="window.toggleCalculator()">
     <i class="bi bi-calculator fs-3"></i>
 </button>
-<div id="floating-mascot-container" class="d-none" style="position: fixed; bottom: 15px; left: 20px; z-index: 4000; pointer-events: none; display: flex; align-items: center; gap: 12px;">
-    
-    <div id="mascot-img" class="cute-robot-css dug-dik-always" title="ฉันคอยเชียร์เธออยู่ตรงนี้น้า!" style="flex-shrink: 0;">
-        <div class="robot-ears"></div>
-        <div class="robot-head">
-            <div class="robot-eyes-container">
-                <div class="robot-eye left"></div>
-                <div class="robot-eye right"></div>
+<div id="mascot-img" class="cute-luffy-css dug-dik-always" title="ฉันจะเป็นราชาโจรสลัดให้ได้เลย!" style="flex-shrink: 0;">
+        <div class="luffy-hat">
+            <div class="luffy-hat-top">
+                <div class="luffy-hat-band"></div>
             </div>
-            <div class="robot-blush left"></div>
-            <div class="robot-blush right"></div>
-            <div class="robot-mouth"></div>
+            <div class="luffy-hat-brim"></div>
         </div>
-        <div class="robot-body">
-            <div class="robot-badge">FG</div>
+        <div class="luffy-head">
+            <div class="luffy-hair"></div>
+            <div class="luffy-eyes-container">
+                <div class="luffy-eye"></div>
+                <div class="luffy-eye"></div>
+            </div>
+            <div class="luffy-scar"></div>
+            <div class="luffy-mouth"></div>
+        </div>
+        <div class="luffy-body">
+            <div class="luffy-chest"></div>
         </div>
     </div>
+    <div id="mascot-img" class="dug-dik-always" title="ฉันคอยเชียร์เธออยู่ตรงนี้น้า!" style="flex-shrink: 0; pointer-events: auto; cursor: pointer;">
+        <img src="https://media.tenor.com/2YhG1Z8bW9YAAAAi/one-piece-luffy.gif" alt="Luffy Mascot" style="width: 85px; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));">
+    </div>
 
-    <div id="mascot-bubble" class="card p-2 shadow-sm text-center d-flex align-items-center justify-content-center" 
+    <div id="mascot-bubble" class="card p-2 shadow-sm text-center d-flex align-items-center justify-content-center"
          style="width: 145px; min-height: 45px; border-radius: 16px; border: 2px solid #0d6efd; 
                 font-size: 0.85rem; background: #fff; font-weight: bold; margin: 0;
                 box-shadow: 0 8px 20px rgba(13, 110, 253, 0.15) !important; position: relative;">
