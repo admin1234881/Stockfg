@@ -1076,7 +1076,7 @@
                             <li id="nav-import-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-import"><i class="bi bi-arrow-down-square-fill me-3 text-success fs-5 align-middle"></i><span data-lang-key="nav_import">รับเข้าสินค้า</span></button></li>
                             
                             <li id="nav-export-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-export"><i class="bi bi-arrow-up-square-fill me-3 text-info fs-5 align-middle"></i><span data-lang-key="nav_export">ส่งออกสินค้า</span></button></li>
-                            
+                            <li id="nav-rack-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-rack"><i class="bi bi-inboxes-fill me-3 fs-5 align-middle" style="color: #6f42c1;"></i><span data-lang-key="nav_rack">ระบบจัดการ Rack (แพ็คกิ้ง)</span></button></li>
                             <li><hr class="dropdown-divider opacity-25"></li>
                             
                             <li id="nav-stock-count-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-stock-count"><i class="bi bi-clipboard2-check-fill me-3 text-warning fs-5 align-middle"></i><span data-lang-key="nav_stock_count">นับสต็อก</span></button></li>
@@ -1387,7 +1387,86 @@
                         </div>
                     </div>
                 </div>
+                <!-- ========================================== -->
+                <!-- Rack System Tab (หน้าจัดการแพ็คกิ้ง) -->
+                <!-- ========================================== -->
+                <div class="tab-pane fade" id="pills-rack" role="tabpanel">
+                    <div class="row">
+                        <!-- ฝั่งซ้าย: ฟอร์มโยกย้าย -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="card shadow-sm border-0" style="border-radius: 20px;">
+                                <div class="card-header fw-bold bg-white pt-4 pb-2 px-4 border-0" style="border-radius: 20px 20px 0 0;">
+                                    <h5 class="fw-bold text-primary mb-0"><i class="bi bi-arrow-left-right me-2"></i>โยกย้ายแพ็คกิ้ง (Rack)</h5>
+                                </div>
+                                <div class="card-body px-4 pb-4 pt-2">
+ <!-- เลือกเฉพาะปลายทาง -->
+                                    <div class="mb-3 p-3 bg-light rounded border border-success-subtle">
+                                        <label class="form-label fw-bold text-success mb-1">1. เลือกปลายทางที่ต้องการนำไปเก็บ (Destination)</label>
+                                        <select id="rack-to-loc" class="form-select border-success fw-bold" required>
+                                            <option value="" disabled selected>-- เลือกปลายทางก่อนเริ่มสแกน --</option>
+                                            <option value="WH_EMPTY">📥 WH กล่องเปล่า (คืนกล่อง / เก็บกล่อง)</option>
+                                            <option value="WH_FILLED">📦 WH ใส่ชิ้นงาน (เอาไปแพ็คงาน)</option>
+                                            <option value="CUSTOMER">🚚 ลูกค้า (Customer)</option>
+                                            <option value="OUT">🗑️ ตัดออกจากระบบ (ชำรุด)</option>
+                                        </select>
+                                    </div>
 
+                                    <!-- ฟอร์มสำหรับเครื่องสแกน -->
+                                    <form id="rack-scan-form" class="mb-3">
+                                        <label class="form-label fw-bold">2. ยิงสแกน QR Code ERP ที่นี่</label>
+                                        <input type="text" id="rack-scanner-input" class="form-control border-dark text-center fw-bold fs-5 shadow-sm" placeholder="ยิงสแกนปิ๊ป... ระบบจะค้นหาต้นทางให้อัตโนมัติ" autocomplete="off">
+                                    </form>
+
+                                    <!-- ตารางพักข้อมูลที่สแกนแล้ว -->
+                                    <div class="table-responsive mb-3 shadow-sm border" style="max-height: 250px; overflow-y: auto; border-radius: 10px;">
+                                        <table class="table table-hover align-middle text-center mb-0">
+                                            <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
+                                                <tr>
+                                                    <th class="text-start ps-3">รหัส ERP</th>
+                                                    <th>เส้นทางโยกย้าย</th>
+                                                    <th>ลบ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="rack-staging-list">
+                                                <tr id="rack-empty-row"><td colspan="3" class="text-muted p-4"><i class="bi bi-upc-scan fs-3 d-block mb-2 opacity-50"></i>รอสแกน QR Code</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- ปุ่มบันทึกเหมาเข่ง -->
+                                    <button type="button" id="btn-save-rack-batch" class="btn btn-primary w-100 fw-bold shadow-sm py-2 fs-5"><i class="bi bi-save-fill me-2"></i>บันทึกข้อมูลทั้งหมด</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- ฝั่งขวา: ตารางสรุปยอด -->
+                        <div class="col-lg-8">
+                            <div class="card shadow-sm border-0" style="border-radius: 20px;">
+                                <div class="card-header fw-bold bg-white pt-4 pb-3 px-4 border-0 d-flex justify-content-between align-items-center" style="border-radius: 20px 20px 0 0;">
+                                    <h5 class="fw-bold text-primary mb-0"><i class="bi bi-boxes me-2"></i>สรุปสถานะ Rack ทั้งหมด</h5>
+                                </div>
+                                <div class="card-body px-4 pb-4 pt-0">
+                                    <div class="table-responsive" style="max-height: calc(100vh - 220px); overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6;">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-dark text-center" style="position: sticky; top: 0; z-index: 1;">
+                                                <tr>
+                                                    <th class="text-start">รหัส ERP / ชื่อแพ็คกิ้ง</th>
+                                                    <th style="background-color: #495057;">WH กล่องเปล่า</th>
+                                                    <th style="background-color: #343a40;">WH กล่องมีงาน</th>
+                                                    <th style="background-color: #212529;">อยู่ที่ลูกค้า</th>
+                                                    <th class="bg-primary">รวมทั้งหมด</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="rack-summary-table">
+                                                <!-- ข้อมูล Rack จะแสดงตรงนี้ -->
+                                                <tr><td colspan="5" class="text-center text-muted p-5">ยังไม่มีข้อมูลแพ็คกิ้งในระบบ</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- History Tab -->
                 <div class="tab-pane fade" id="pills-history" role="tabpanel">
                     <div class="card mb-3 filter-card">
@@ -2340,10 +2419,10 @@ function handleLogin(e) {
                 };
 
                 // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDGLLwqnY1hOyDqM-Q6UlKRktrSneEAEtHkcsEuBQDaQMsgiBYGZPb30RMEQD2S17_OQ/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXtAdOPiTu2qeCIS6bncy4s_yR_7WYM9ApAhOf8192wnGWl_lAX6-z8X6DTjco563iVA/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
-                let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [] };
+                let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [] };
                 let calculatedStock = []; // This will hold the stock calculated from history
                 let dataSyncInterval = null;
                 let inactivityTimer = null;
@@ -2503,7 +2582,7 @@ if (isInitialLoad) {
         newData.announcements = newData.announcements || [];
         newData.stockCounts = newData.stockCounts || [];
         newData.deliveryPlans = newData.deliveryPlans || [];
-
+        newData.rackHistory = newData.rackHistory || [];
         if (JSON.stringify(db) !== JSON.stringify(newData)) {
             db = newData;
             console.log('Data updated from Google Sheet at:', new Date().toLocaleTimeString());
@@ -3632,7 +3711,7 @@ clearInterval(window.mascotLoopTimer);
         const canCountStock = isMasterAdmin || currentUser.canCountStock;
         const canConvert = isMasterAdmin || currentUser.canConvertPart;
         const canDeliveryPlan = isMasterAdmin || currentUser.canManageDeliveryPlan;
-        
+        const canManageRack = isMasterAdmin || currentUser.canManageRack; // 👈 ดึงค่าสิทธิ์ Rack
         const canManageProducts = isMasterAdmin || currentUser.canManageProducts;
         const canManageUsers = isMasterAdmin || currentUser.canManageUsers;
         const canManageAnn = isMasterAdmin || currentUser.canManageAnnouncements;
@@ -3651,7 +3730,7 @@ clearInterval(window.mascotLoopTimer);
         if (document.getElementById('nav-convert-item')) document.getElementById('nav-convert-item').style.display = canConvert ? '' : 'none';
         if (document.getElementById('nav-history-item')) document.getElementById('nav-history-item').style.display = canViewHistory ? '' : 'none';
         if (document.getElementById('nav-delivery-plan-item')) document.getElementById('nav-delivery-plan-item').style.display = canDeliveryPlan ? '' : 'none';
-
+        if (document.getElementById('nav-rack-item')) document.getElementById('nav-rack-item').style.display = canManageRack ? '' : 'none'; // 
         if (document.getElementById('nav-products-item')) document.getElementById('nav-products-item').style.display = canManageProducts ? '' : 'none';
         if (document.getElementById('nav-users-item')) document.getElementById('nav-users-item').style.display = canManageUsers ? '' : 'none';
         if (document.getElementById('nav-announcements-item')) document.getElementById('nav-announcements-item').style.display = canManageAnn ? '' : 'none';
@@ -3737,6 +3816,7 @@ if (mascotBubble) {
                     displayActiveAnnouncements();
                     populateStockCountMainView();
                     window.app.populateDashboard(); // NEW: Call dashboard population
+                    if (typeof renderRackSummaryTable === 'function') renderRackSummaryTable(); // ✅ สั่งอัปเดตตาราง Rack
                 }
 
                 // --- RENDER FUNCTIONS (for dynamic content) ---
@@ -5295,8 +5375,9 @@ function renderProductForm() {
                     <select id="product-customer-group" class="form-select border-primary">
                         <option value="Autopart">Autopart (ชิ้นส่วนรถยนต์)</option>
                         <option value="Electronic">Electronic (เครื่องใช้ไฟฟ้า)</option>
+                        <option value="Packaging">Packaging (แพ็คกิ้ง/กล่อง)</option>
                         <option value="Other" selected>อื่นๆ (Other)</option>
-                    </select> 
+                    </select>
                 </div>
 
                 <div class="col-12 mt-2"> <label for="product-fullBoxQuantity" class="form-label">${T.product_fullbox_rack}</label> <input type="number" id="product-fullBoxQuantity" class="form-control" required min="1"> </div>
@@ -5317,7 +5398,8 @@ const permissions = [
                         { key: 'canManageUsers', label: T.permission_canManageUsers },
                         { key: 'canManageAnnouncements', label: T.permission_canManageAnnouncements },
                         { key: 'canManageDeliveryPlan', label: 'จัดการแผนการจัดส่ง' },
-                        { key: 'canConvertPart', label: 'เปลี่ยนรหัสสินค้า (Convert)' } 
+                        { key: 'canConvertPart', label: 'เปลี่ยนรหัสสินค้า (Convert)' },
+                        { key: 'canManageRack', label: 'ระบบจัดการ Rack (แพ็คกิ้ง)' }
                     ];
                     let permissionsHtml = permissions.map(p => `
                 <div class="form-check form-switch">
@@ -5610,7 +5692,9 @@ function populateStockCountMainView() {
                     
                     let html = `<div class="container-fluid"><div class="row g-3">`;
                     
-                    const allProducts = [...db.products].sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
+                    const allProducts = [...db.products]
+                    .filter(p => p.customerGroup !== 'Packaging')
+                    .sort((a, b) => String(a.id || '').localeCompare(String(b.id || '')));
 
                     if (allProducts.length === 0) {
                         html += `<div class="col-12 text-center p-5 text-muted"><i class="bi bi-box-seam opacity-50 d-block mb-3" style="font-size: 3rem;"></i>ไม่พบข้อมูลสินค้าในระบบ</div>`;
@@ -5897,7 +5981,10 @@ function renderStockCountReportModalBody(count) {
                         if (!search) return;
 
                         // ดึงฐานข้อมูลพาร์ทมาค้นหา
-                        const filteredProducts = db.products.filter(p => String(p.id).trim().toLowerCase().includes(search) || p.name.toLowerCase().includes(search));
+                        const filteredProducts = db.products.filter(p => 
+                        p.customerGroup !== 'Packaging' && // ซ่อนแพ็คกิ้งออกจากผลการค้นหา
+                        (String(p.id).trim().toLowerCase().includes(search) || p.name.toLowerCase().includes(search))
+                        );
                         
                         // เอา 5 รายการแรกที่ตรงกันมาโชว์
                         filteredProducts.slice(0, 5).forEach(item => {
@@ -6297,6 +6384,219 @@ function populateSalesDashboard(startDate, endDate) {
                         }
                     }
                 };
+                // ========================================================
+                // ระบบจัดการ RACK SYSTEM (แพ็คกิ้ง)
+                // ========================================================
+                
+// ========================================================
+                // ระบบจัดการ RACK SYSTEM (สแกนทีละใบ & บันทึกทีละหลายรายการ)
+                // ========================================================
+                let rackStagingList = []; // ถังเก็บข้อมูลชั่วคราวตอนสแกน
+
+// 1. ดักจับตอนปืนสแกนยิง (หารหัสต้นทางอัตโนมัติ)
+                document.body.addEventListener('submit', (e) => {
+                    if (e.target.id === 'rack-scan-form') {
+                        e.preventDefault(); 
+                        
+                        const targetLoc = document.getElementById('rack-to-loc').value;
+                        const inputEl = document.getElementById('rack-scanner-input');
+                        let rawInput = inputEl.value.trim();
+
+                        if (!targetLoc) {
+                            Swal.fire('แจ้งเตือน', 'กรุณาเลือก "ปลายทาง" (ข้อ 1) ก่อนยิงสแกนครับ', 'warning');
+                            inputEl.value = '';
+                            return;
+                        }
+                        if (!rawInput) return;
+
+                        // หั่น QR Code ดึงมาแค่รหัส ERP ท่อนหน้าสุด
+                        let scannedErp = rawInput.split('/')[0].trim();
+
+                        // 🚫 กฎข้อ 1: ป้องกันสแกนซ้ำ
+                        if (rackStagingList.some(item => item.erpCode.toUpperCase() === scannedErp.toUpperCase())) {
+                            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+                            Toast.fire({ icon: 'warning', title: `รหัส ${scannedErp} สแกนไปแล้ว` });
+                            inputEl.value = ''; inputEl.focus();
+                            return;
+                        }
+
+                        // 🔍 ค้นหาว่าปัจจุบันกล่องใบนี้อยู่ที่ไหน
+                        const currentStock = calculateRackStock(scannedErp);
+                        let fromLoc = 'NEW'; // ค่าเริ่มต้นคือกล่องใหม่
+                        if (currentStock.WH_EMPTY > 0) fromLoc = 'WH_EMPTY';
+                        else if (currentStock.WH_FILLED > 0) fromLoc = 'WH_FILLED';
+                        else if (currentStock.CUSTOMER > 0) fromLoc = 'CUSTOMER';
+
+                        let finalToLoc = targetLoc;
+
+                        // 🤖 ความฉลาดที่ 1: ถ้าเป็นกล่องใหม่ บังคับรับเข้า WH กล่องเปล่าเสมอ
+                        if (fromLoc === 'NEW') {
+                            finalToLoc = 'WH_EMPTY';
+                            const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
+                            Toast.fire({ icon: 'info', title: `พบกล่องใหม่! รับเข้าระบบ (WH เปล่า)` });
+                        } 
+                        // 🤖 ความฉลาดที่ 2: ถ้ากล่องอยู่ที่ปลายทางนี้อยู่แล้ว ให้ด่าและปฏิเสธ
+                        else {
+                            if (fromLoc === targetLoc) {
+                                let locName = fromLoc === 'WH_EMPTY' ? 'WH กล่องเปล่า' : (fromLoc === 'WH_FILLED' ? 'WH ใส่ชิ้นงาน' : 'อยู่ที่ลูกค้า');
+                                Swal.fire('ย้ายไม่ได้!', `กล่อง ${scannedErp} ปัจจุบันอยู่ที่ "${locName}" อยู่แล้วครับ`, 'error');
+                                inputEl.value = ''; inputEl.focus();
+                                return;
+                            }
+                        }
+
+                        // ตัด _0001 ออก เพื่อหารหัสแม่มันในฐานข้อมูล (เช่น หา BR_B001)
+                        const baseScanned = scannedErp.substring(0, scannedErp.lastIndexOf('_')) || scannedErp;
+                        const foundProduct = db.products.find(p => p.erpCode && (p.erpCode.toUpperCase() === scannedErp.toUpperCase() || p.erpCode.toUpperCase() === baseScanned.toUpperCase()));
+                        const rackName = foundProduct ? foundProduct.name : "แพ็คกิ้งนอกระบบ";
+
+                        // ยัดข้อมูลลงถัง
+                        rackStagingList.push({ erpCode: scannedErp, name: rackName, qty: 1, from: fromLoc, to: finalToLoc });
+                        
+                        renderRackStagingTable();
+                        inputEl.value = ''; inputEl.focus();
+                    }
+                });
+
+                // 2. ฟังก์ชันวาดตารางของที่สแกนรอไว้ (โชว์เส้นทาง From -> To)
+                window.renderRackStagingTable = function() {
+                    const tbody = document.getElementById('rack-staging-list');
+                    if (rackStagingList.length === 0) {
+                        tbody.innerHTML = '<tr id="rack-empty-row"><td colspan="3" class="text-muted p-4"><i class="bi bi-upc-scan fs-3 d-block mb-2 opacity-50"></i>รอสแกน QR Code</td></tr>';
+                        return;
+                    }
+
+                    let html = '';
+                    // ย้อนกลับ Array เพื่อให้ของที่สแกนล่าสุดโชว์บนสุด
+                    [...rackStagingList].reverse().forEach(item => {
+                        let fromName = item.from === 'NEW' ? '✨ กล่องใหม่' : (item.from === 'WH_EMPTY' ? 'WH เปล่า' : (item.from === 'WH_FILLED' ? 'WH มีงาน' : 'ลูกค้า'));
+                        let toName = item.to === 'WH_EMPTY' ? 'WH เปล่า' : (item.to === 'WH_FILLED' ? 'WH มีงาน' : (item.to === 'CUSTOMER' ? 'ลูกค้า' : 'ชำรุด'));
+                        
+                        let badgeColor = item.from === 'NEW' ? 'success' : 'primary';
+
+                        html += `
+                            <tr>
+                                <td class="text-start ps-3">
+                                    <div class="fw-bold text-dark">${item.erpCode}</div>
+                                    <div class="small text-muted" style="font-size: 0.75rem;">${item.name}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-${badgeColor}-subtle text-${badgeColor}-emphasis border px-2 shadow-sm">
+                                        ${fromName} <i class="bi bi-arrow-right mx-1 fw-bold"></i> ${toName}
+                                    </span>
+                                </td>
+                                <td><button class="btn btn-sm btn-outline-danger shadow-sm py-0 px-2" onclick="removeRackStaging('${item.erpCode}')"><i class="bi bi-x-lg"></i></button></td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+                };
+
+                // ปุ่มกากบาทลบรายการที่สแกนผิด
+                window.removeRackStaging = function(erpCode) {
+                    rackStagingList = rackStagingList.filter(item => item.erpCode !== erpCode);
+                    renderRackStagingTable();
+                    document.getElementById('rack-scanner-input').focus();
+                };
+
+                // 3. ฟังก์ชันกดบันทึกตู้มเดียวลงระบบ
+                document.getElementById('btn-save-rack-batch').addEventListener('click', async () => {
+                    if (rackStagingList.length === 0) {
+                        Swal.fire('แจ้งเตือน', 'ยังไม่มีรายการสแกนให้บันทึกครับ', 'warning');
+                        return;
+                    }
+
+                    // สร้างประวัติ
+                    const newHistoryEntries = [];
+                    const timestamp = new Date().toISOString();
+                    const user = currentUser ? currentUser.username : 'Unknown';
+
+                    rackStagingList.forEach(item => {
+                        const newTransfer = {
+                            id: 'rack-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                            date: timestamp,
+                            erpCode: item.erpCode,
+                            name: item.name,
+                            from: item.from,
+                            to: item.to,
+                            quantity: 1, // บังคับเซฟทีละ 1 ใบตามนำเบอร์
+                            actionType: 'AUTO_ROUTE',
+                            user: user
+                        };
+                        newHistoryEntries.push(newTransfer);
+                        db.rackHistory = db.rackHistory || [];
+                        db.rackHistory.push(newTransfer);
+                    });
+
+                    // ล้างข้อมูลชั่วคราวทิ้ง
+                    rackStagingList = [];
+                    renderRackStagingTable();
+                    renderRackSummaryTable();
+                    
+                    // ปรับค่าป้ายประกาศให้แดชบอร์ดอัปเดตด้วยถ้าเปิดอยู่
+                    if(!document.getElementById('view-dash-rack').classList.contains('d-none')){
+                        populateRackDashboard();
+                    }
+
+                    Swal.fire({ icon: 'success', title: 'บันทึกการโยกย้ายสำเร็จ!', text: `ย้ายข้อมูลทั้งหมด ${newHistoryEntries.length} ใบ`, timer: 1500, showConfirmButton: false });
+
+                    // แอบส่งไปเซฟหลังบ้าน
+                    try {
+                        await callAppsScript('appendBatchRackHistory', newHistoryEntries);
+                    } catch (error) {
+                        console.error('Error saving rack history to sheet:', error);
+                    }
+                });
+                // 4. ฟังก์ชันคำนวณยอดคงเหลือของ Rack แต่ละประเภท
+                function calculateRackStock(erpCodeTarget = null) {
+                    const rackLedger = {};
+                    const history = db.rackHistory || [];
+
+                    history.forEach(record => {
+                        if (!rackLedger[record.erpCode]) {
+                            rackLedger[record.erpCode] = { name: record.name, WH_EMPTY: 0, WH_FILLED: 0, CUSTOMER: 0 };
+                        }
+                        const rack = rackLedger[record.erpCode];
+                        if (record.from !== 'NEW') rack[record.from] -= record.quantity;
+                        if (record.to !== 'OUT') rack[record.to] += record.quantity;
+                    });
+                    if (erpCodeTarget) return rackLedger[erpCodeTarget] || { WH_EMPTY: 0, WH_FILLED: 0, CUSTOMER: 0 };
+                    return rackLedger;
+                }
+                // 5. ฟังก์ชันวาดตารางสรุปยอดทั้งหมด
+                window.renderRackSummaryTable = function() {
+                    const tableBody = document.getElementById('rack-summary-table');
+                    if (!tableBody) return;
+
+                    const allRacks = calculateRackStock();
+                    let html = '';
+
+                    for (const [erpCode, data] of Object.entries(allRacks)) {
+                        const total = data.WH_EMPTY + data.WH_FILLED + data.CUSTOMER;
+                        if (total <= 0) continue; 
+
+                        html += `
+                            <tr class="text-center">
+                                <td class="text-start">
+                                    <div class="fw-bold text-primary">${erpCode}</div>
+                                    <div class="text-muted small">${data.name}</div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border fs-6 shadow-sm px-3">${data.WH_EMPTY.toLocaleString()}</span></td>
+                                <td><span class="badge bg-warning text-dark border fs-6 shadow-sm px-3">${data.WH_FILLED.toLocaleString()}</span></td>
+                                <td><span class="badge bg-danger-subtle text-danger-emphasis border fs-6 shadow-sm px-3">${data.CUSTOMER.toLocaleString()}</span></td>
+                                <td><span class="badge bg-primary fs-5 shadow-sm px-3">${total.toLocaleString()}</span></td>
+                            </tr>
+                        `;
+                    }
+
+                    if (html === '') {
+                        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted p-5">ยังไม่มีข้อมูลแพ็คกิ้งในระบบ</td></tr>`;
+                    } else {
+                        tableBody.innerHTML = html;
+                    }
+                };
+
+                setTimeout(() => renderRackSummaryTable(), 1000);
                // --- START THE APP ---
                 init();
 
@@ -6398,21 +6698,22 @@ function populateSalesDashboard(startDate, endDate) {
                     const T = translations[currentLanguage];
                     try {
                         const userData = {
-                            username: document.getElementById('user-username').value.trim(),
-                            password: document.getElementById('user-password').value.trim(),
-                            fullname: document.getElementById('user-fullname').value.trim(),
-                            avatarUrl: document.getElementById('user-avatar').value.trim(),
-                            role: document.getElementById('user-role-select').value,
-                            canImport: document.getElementById('permission-canImport').checked,
-                            canExport: document.getElementById('permission-canExport').checked,
-                            canViewHistory: document.getElementById('permission-canViewHistory').checked,
-                            canCountStock: document.getElementById('permission-canCountStock').checked,
-                            canManageProducts: document.getElementById('permission-canManageProducts').checked,
-                            canManageUsers: document.getElementById('permission-canManageUsers').checked,
-                            canManageAnnouncements: document.getElementById('permission-canManageAnnouncements').checked,
-                            canManageDeliveryPlan: document.getElementById('permission-canManageDeliveryPlan').checked,
-                            canConvertPart: document.getElementById('permission-canConvertPart').checked
-                        };
+                        username: document.getElementById('user-username').value.trim(),
+                        password: document.getElementById('user-password').value,
+                        fullname: document.getElementById('user-fullname').value.trim(),
+                        avatarUrl: document.getElementById('user-avatar').value.trim(),
+                        role: document.getElementById('user-role-select').value,
+                        canImport: document.getElementById('permission-canImport').checked,
+                        canExport: document.getElementById('permission-canExport').checked,
+                        canViewHistory: document.getElementById('permission-canViewHistory').checked,
+                        canCountStock: document.getElementById('permission-canCountStock').checked,
+                        canManageProducts: document.getElementById('permission-canManageProducts').checked,
+                        canManageUsers: document.getElementById('permission-canManageUsers').checked,
+                        canManageAnnouncements: document.getElementById('permission-canManageAnnouncements').checked,
+                        canManageDeliveryPlan: document.getElementById('permission-canManageDeliveryPlan').checked, // 👈 สิทธิ์จัดส่ง
+                        canConvertPart: document.getElementById('permission-canConvertPart').checked, // 👈 สิทธิ์ Convert
+                        canManageRack: document.getElementById('permission-canManageRack').checked // 👈 สิทธิ์ Rack System
+                    };
 
                         Swal.fire({
                             title: T.saving || 'กำลังบันทึก...',
