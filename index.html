@@ -1234,138 +1234,216 @@
 </div>                <!-- Dashboard Tab (NEW) -->
 <!-- Dashboard Tab (Modern Redesign + Chart) -->
                 <div class="tab-pane fade" id="pills-dashboard" role="tabpanel">
-                    <div class="row g-4">
-                        
-                        <!-- 1. แถบตัวกรองวันที่ (Filter Card) วางแนวนอนยาวเต็ม -->
-                        <div class="col-12">
-                            <div class="card dashboard-filter-card shadow-sm">
-                                <div class="card-body p-4">
-                                    <div class="row align-items-end g-3">
-                                        <div class="col-12 mb-1">
-                                            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-range-fill me-2"></i><span data-lang-key="dashboard_filter_date_range_title">เลือกช่วงวันที่ดูยอดขาย</span></h5>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="dashboard-start-date" class="form-label text-muted fw-bold small-text mb-1" data-lang-key="dashboard_filter_from">จากวันที่</label>
-                                            <input type="date" id="dashboard-start-date" class="form-control form-control-lg bg-white" style="border-radius: 12px; font-size: 1rem;">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="dashboard-end-date" class="form-label text-muted fw-bold small-text mb-1" data-lang-key="dashboard_filter_to">ถึงวันที่</label>
-                                            <input type="date" id="dashboard-end-date" class="form-control form-control-lg bg-white" style="border-radius: 12px; font-size: 1rem;">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <button class="btn btn-primary btn-lg w-100 fw-bold shadow-sm" id="dashboard-filter-btn" style="border-radius: 12px; font-size: 1rem;">
-                                                <i class="bi bi-search me-2"></i><span data-lang-key="dashboard_show_data">แสดงข้อมูล</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    
+                    <!-- 🔀 ปุ่มสลับแดชบอร์ด (ดีไซน์ Modern Pill) -->
+                    <div class="d-flex justify-content-center mb-4">
+                        <div class="btn-group shadow-sm p-1 bg-white border border-primary-subtle" role="group" style="border-radius: 50px;">
+                            <input type="radio" class="btn-check" name="dashToggle" id="btn-dash-sales" autocomplete="off" checked onchange="toggleDashboardView('sales')">
+                            <label class="btn btn-outline-primary border-0 rounded-pill px-4 fw-bold" for="btn-dash-sales"><i class="bi bi-graph-up-arrow me-2"></i>แดชบอร์ดงานขาย</label>
 
-                        <!-- 2. กล่อง KPI 4 กล่องเรียงกัน -->
-                        <!-- Total Stock Card -->
-                        <div class="col-xl-3 col-lg-6 col-md-6">
-                            <div class="card modern-stat-card bg-gradient-stock h-100 p-2">
-                                <div class="card-body">
-                                    <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_total_stock_value_title">มูลค่าสต็อกสินค้าทั้งหมด</h6>
-                                    <h2 class="card-text fw-bolder mb-1" id="dashboard-total-stock-quantity">...</h2>
-                                    <h5 class="fw-bold" id="dashboard-total-stock-value" style="opacity: 0.95;">...</h5>
-                                    <i class="bi bi-boxes card-icon"></i>
-                                </div>
-                            </div>
+                            <input type="radio" class="btn-check" name="dashToggle" id="btn-dash-rack" autocomplete="off" onchange="toggleDashboardView('rack')">
+                            <label class="btn btn-outline-primary border-0 rounded-pill px-4 fw-bold" for="btn-dash-rack"><i class="bi bi-inboxes-fill me-2"></i>สถานะ Rack (แพ็คกิ้ง)</label>
                         </div>
-
-                        <!-- Total Sales Card -->
-                        <div class="col-xl-3 col-lg-6 col-md-6">
-                            <div class="card modern-stat-card bg-gradient-sales h-100 p-2">
-                                <div class="card-body">
-                                    <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_total_sales_title">ยอดขายทั้งหมด (ช่วงวันที่)</h6>
-                                    <h2 class="card-text fw-bolder mb-1" id="dashboard-total-sales-quantity">...</h2>
-                                    <h5 class="fw-bold" id="dashboard-total-sales-value" style="opacity: 0.95;">...</h5>
-                                    <i class="bi bi-graph-up-arrow card-icon"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Autopart Sales Card -->
-                        <div class="col-xl-3 col-lg-6 col-md-6">
-                            <div class="card modern-stat-card bg-gradient-auto h-100 p-2">
-                                <div class="card-body">
-                                    <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_autopart_sales_title">ยอดขาย Autopart</h6>
-                                    <h2 class="card-text fw-bolder mb-1 text-dark" id="dashboard-autopart-sales-quantity">...</h2>
-                                    <h5 class="fw-bold text-dark" id="dashboard-autopart-sales-value" style="opacity: 0.85;">...</h5>
-                                    <i class="bi bi-car-front-fill card-icon text-dark"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Electronic Sales Card -->
-                        <div class="col-xl-3 col-lg-6 col-md-6">
-                            <div class="card modern-stat-card bg-gradient-elec h-100 p-2">
-                                <div class="card-body">
-                                    <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_electronic_sales_title">ยอดขาย Electronic</h6>
-                                    <h2 class="card-text fw-bolder mb-1" id="dashboard-electronic-sales-quantity">...</h2>
-                                    <h5 class="fw-bold" id="dashboard-electronic-sales-value" style="opacity: 0.95;">...</h5>
-                                    <i class="bi bi-cpu-fill card-icon"></i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- 3. Sales Summary Table & Chart (ดีไซน์ใหม่) -->
-                        <div class="col-12 mt-2">
-                            <div class="row g-4">
-                                
-                                <!-- ฝั่งซ้าย: กราฟวงกลม -->
-                                <div class="col-xl-5 col-lg-12">
-                                    <div class="card modern-stat-card shadow-sm h-100" style="background: #ffffff; border-radius: 20px;">
-                                        <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
-                                            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-pie-chart-fill me-2"></i>สัดส่วนยอดขาย (มูลค่า)</h5>
-                                        </div>
-                                        <div class="card-body d-flex align-items-center justify-content-center p-4">
-                                            <div style="position: relative; height: 320px; width: 100%;">
-                                                <canvas id="salesChart"></canvas>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- ฝั่งขวา: ตารางยอดขาย -->
-                                <div class="col-xl-7 col-lg-12">
-                                    <div class="card modern-stat-card shadow-sm h-100" style="background: #ffffff; border-radius: 20px;">
-                                        <div class="card-header bg-white border-0 pt-4 pb-3 px-4">
-                                            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-bar-chart-steps me-2"></i><span data-lang-key="dashboard_sales_by_customer_title">สรุปรายละเอียด (ช่วงวันที่)</span></h5>
-                                        </div>
-                                        <div class="card-body px-4 pb-4 pt-0">
-                                            <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
-                                                <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0 8px;">
-                                                    <thead style="background-color: #f8f9fa; position: sticky; top: 0; z-index: 1;">
-                                                        <tr>
-                                                            <th style="width: 5%; border-radius: 10px 0 0 10px; border:none;" data-lang-key="dashboard_rank" class="text-center">อันดับ</th>
-                                                            <th style="border:none;" data-lang-key="customer">ชื่อลูกค้า</th>
-                                                            <th style="width: 15%; border:none;" data-lang-key="dashboard_type">ประเภท</th>
-                                                            <th class="text-end" style="border:none;" data-lang-key="dashboard_sales_qty">จำนวน (ชิ้น)</th>
-                                                            <th class="text-end" style="width: 35%; border-radius: 0 10px 10px 0; border:none;" data-lang-key="dashboard_sales_value">มูลค่า (บาท)</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="dashboard-sales-table">
-                                                        <tr>
-                                                            <td colspan="5" class="text-center text-muted p-5">
-                                                                <i class="bi bi-calendar2-check text-secondary opacity-50 d-block mb-3" style="font-size: 3rem;"></i>
-                                                                กรุณาเลือกช่วงวันที่แล้วกด "แสดงข้อมูล"
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                            </div>
-                        </div>
-                        
                     </div>
-                </div>
+
+                    <!-- 📊 View 1: แดชบอร์ดงานขาย (ยอดขายเดิม) -->
+                    <div id="view-dash-sales">
+                        <div class="row g-4">
+                            
+                            <!-- 1. แถบตัวกรองวันที่ (Filter Card) -->
+                            <div class="col-12">
+                                <div class="card dashboard-filter-card shadow-sm">
+                                    <div class="card-body p-4">
+                                        <div class="row align-items-end g-3">
+                                            <div class="col-12 mb-1">
+                                                <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-range-fill me-2"></i><span data-lang-key="dashboard_filter_date_range_title">เลือกช่วงวันที่ดูยอดขาย</span></h5>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="dashboard-start-date" class="form-label text-muted fw-bold small-text mb-1" data-lang-key="dashboard_filter_from">จากวันที่</label>
+                                                <input type="date" id="dashboard-start-date" class="form-control form-control-lg bg-white" style="border-radius: 12px; font-size: 1rem;">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label for="dashboard-end-date" class="form-label text-muted fw-bold small-text mb-1" data-lang-key="dashboard_filter_to">ถึงวันที่</label>
+                                                <input type="date" id="dashboard-end-date" class="form-control form-control-lg bg-white" style="border-radius: 12px; font-size: 1rem;">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <button class="btn btn-primary btn-lg w-100 fw-bold shadow-sm" id="dashboard-filter-btn" style="border-radius: 12px; font-size: 1rem;">
+                                                    <i class="bi bi-search me-2"></i><span data-lang-key="dashboard_show_data">แสดงข้อมูล</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. กล่อง KPI 4 กล่องเรียงกัน -->
+                            <!-- Total Stock Card -->
+                            <div class="col-xl-3 col-lg-6 col-md-6">
+                                <div class="card modern-stat-card bg-gradient-stock h-100 p-2">
+                                    <div class="card-body">
+                                        <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_total_stock_value_title">มูลค่าสต็อกสินค้าทั้งหมด</h6>
+                                        <h2 class="card-text fw-bolder mb-1" id="dashboard-total-stock-quantity">...</h2>
+                                        <h5 class="fw-bold" id="dashboard-total-stock-value" style="opacity: 0.95;">...</h5>
+                                        <i class="bi bi-boxes card-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total Sales Card -->
+                            <div class="col-xl-3 col-lg-6 col-md-6">
+                                <div class="card modern-stat-card bg-gradient-sales h-100 p-2">
+                                    <div class="card-body">
+                                        <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_total_sales_title">ยอดขายทั้งหมด (ช่วงวันที่)</h6>
+                                        <h2 class="card-text fw-bolder mb-1" id="dashboard-total-sales-quantity">...</h2>
+                                        <h5 class="fw-bold" id="dashboard-total-sales-value" style="opacity: 0.95;">...</h5>
+                                        <i class="bi bi-graph-up-arrow card-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Autopart Sales Card -->
+                            <div class="col-xl-3 col-lg-6 col-md-6">
+                                <div class="card modern-stat-card bg-gradient-auto h-100 p-2">
+                                    <div class="card-body">
+                                        <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_autopart_sales_title">ยอดขาย Autopart</h6>
+                                        <h2 class="card-text fw-bolder mb-1 text-dark" id="dashboard-autopart-sales-quantity">...</h2>
+                                        <h5 class="fw-bold text-dark" id="dashboard-autopart-sales-value" style="opacity: 0.85;">...</h5>
+                                        <i class="bi bi-car-front-fill card-icon text-dark"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Electronic Sales Card -->
+                            <div class="col-xl-3 col-lg-6 col-md-6">
+                                <div class="card modern-stat-card bg-gradient-elec h-100 p-2">
+                                    <div class="card-body">
+                                        <h6 class="card-title fw-bold mb-3" style="opacity: 0.9;" data-lang-key="dashboard_electronic_sales_title">ยอดขาย Electronic</h6>
+                                        <h2 class="card-text fw-bolder mb-1" id="dashboard-electronic-sales-quantity">...</h2>
+                                        <h5 class="fw-bold" id="dashboard-electronic-sales-value" style="opacity: 0.95;">...</h5>
+                                        <i class="bi bi-cpu-fill card-icon"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. Sales Summary Table & Chart -->
+                            <div class="col-12 mt-2">
+                                <div class="row g-4">
+                                    <!-- ฝั่งซ้าย: กราฟวงกลม -->
+                                    <div class="col-xl-5 col-lg-12">
+                                        <div class="card modern-stat-card shadow-sm h-100" style="background: #ffffff; border-radius: 20px;">
+                                            <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+                                                <h5 class="fw-bold text-primary mb-0"><i class="bi bi-pie-chart-fill me-2"></i>สัดส่วนยอดขาย (มูลค่า)</h5>
+                                            </div>
+                                            <div class="card-body d-flex align-items-center justify-content-center p-4">
+                                                <div style="position: relative; height: 320px; width: 100%;">
+                                                    <canvas id="salesChart"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- ฝั่งขวา: ตารางยอดขาย -->
+                                    <div class="col-xl-7 col-lg-12">
+                                        <div class="card modern-stat-card shadow-sm h-100" style="background: #ffffff; border-radius: 20px;">
+                                            <div class="card-header bg-white border-0 pt-4 pb-3 px-4">
+                                                <h5 class="fw-bold text-primary mb-0"><i class="bi bi-bar-chart-steps me-2"></i><span data-lang-key="dashboard_sales_by_customer_title">สรุปรายละเอียด (ช่วงวันที่)</span></h5>
+                                            </div>
+                                            <div class="card-body px-4 pb-4 pt-0">
+                                                <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                                                    <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0 8px;">
+                                                        <thead style="background-color: #f8f9fa; position: sticky; top: 0; z-index: 1;">
+                                                            <tr>
+                                                                <th style="width: 5%; border-radius: 10px 0 0 10px; border:none;" data-lang-key="dashboard_rank" class="text-center">อันดับ</th>
+                                                                <th style="border:none;" data-lang-key="customer">ชื่อลูกค้า</th>
+                                                                <th style="width: 15%; border:none;" data-lang-key="dashboard_type">ประเภท</th>
+                                                                <th class="text-end" style="border:none;" data-lang-key="dashboard_sales_qty">จำนวน (ชิ้น)</th>
+                                                                <th class="text-end" style="width: 35%; border-radius: 0 10px 10px 0; border:none;" data-lang-key="dashboard_sales_value">มูลค่า (บาท)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="dashboard-sales-table">
+                                                            <tr>
+                                                                <td colspan="5" class="text-center text-muted p-5">
+                                                                    <i class="bi bi-calendar2-check text-secondary opacity-50 d-block mb-3" style="font-size: 3rem;"></i>
+                                                                    กรุณาเลือกช่วงวันที่แล้วกด "แสดงข้อมูล"
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 📦 View 2: แดชบอร์ดแพ็คกิ้ง (Rack System Status) -->
+                    <div id="view-dash-rack" class="d-none">
+                        <div class="row g-4">
+                            <!-- กล่อง KPI ด้านบน 4 กล่อง -->
+                            <div class="col-xl-3 col-lg-6 col-md-6"><div class="card modern-stat-card bg-gradient-stock h-100 p-2"><div class="card-body"><h6 class="card-title fw-bold mb-3" style="opacity: 0.9;">จำนวนแพ็คกิ้งทั้งหมด (ใบ)</h6><h2 class="card-text fw-bolder mb-1" id="dash-rack-kpi-total">0</h2><i class="bi bi-boxes card-icon"></i></div></div></div>
+                            <div class="col-xl-3 col-lg-6 col-md-6"><div class="card modern-stat-card bg-white border border-secondary-subtle h-100 p-2"><div class="card-body"><h6 class="card-title fw-bold text-muted mb-3">WH: กล่องเปล่า</h6><h2 class="card-text fw-bolder mb-1 text-dark" id="dash-rack-kpi-empty">0</h2><i class="bi bi-inbox card-icon text-muted" style="opacity: 0.1;"></i></div></div></div>
+                            <div class="col-xl-3 col-lg-6 col-md-6"><div class="card modern-stat-card bg-warning h-100 p-2"><div class="card-body"><h6 class="card-title fw-bold text-dark mb-3" style="opacity: 0.8;">WH: ใส่ชิ้นงานแล้ว</h6><h2 class="card-text fw-bolder mb-1 text-dark" id="dash-rack-kpi-filled">0</h2><i class="bi bi-box-seam-fill card-icon text-dark" style="opacity: 0.1;"></i></div></div></div>
+                            <div class="col-xl-3 col-lg-6 col-md-6"><div class="card modern-stat-card bg-gradient-elec h-100 p-2"><div class="card-body"><h6 class="card-title fw-bold mb-3" style="opacity: 0.9;">WH อยู่ที่ลูกค้า (รอรับกลับ)</h6><h2 class="card-text fw-bolder mb-1" id="dash-rack-kpi-customer">0</h2><i class="bi bi-truck card-icon"></i></div></div></div>
+
+<!-- ตารางสรุปแยกลูกค้า (ฝั่งซ้าย) -->
+                            <div class="col-xl-8 col-lg-7">
+                                <div class="card shadow-sm h-100" style="background: #ffffff; border-radius: 20px; border: none;">
+                                    <div class="card-header bg-white border-0 pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                                        <h5 class="fw-bold text-primary mb-0"><i class="bi bi-bar-chart-steps me-2"></i>สรุปสถานะแยกตามรุ่น</h5>
+                                        <span class="badge bg-light text-muted border"><i class="bi bi-info-circle me-1"></i>อัปเดตอัตโนมัติ</span>
+                                    </div>
+                                    <div class="card-body px-4 pb-4 pt-0">
+                                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                            <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0 8px;">
+                                                <thead style="background-color: #f8f9fa; position: sticky; top: 0; z-index: 1;">
+                                                    <tr>
+                                                        <th style="width: 25%; border-radius: 10px 0 0 10px; border:none;" class="ps-3 text-secondary">ลูกค้า</th>
+                                                        <th style="width: 15%; border:none;" class="text-secondary">ชื่อรุ่น</th>
+                                                        <th class="text-center text-secondary" style="border:none;">WH เปล่า</th>
+                                                        <th class="text-center text-secondary" style="border:none;">WH ใส่ชิ้นงาน</th>
+                                                        <th class="text-center text-secondary" style="border:none;">WH ลูกค้า</th>
+                                                        <th class="text-center text-primary" style="width: 15%; border-radius: 0 10px 10px 0; border:none;">รวม</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="dash-rack-summary-tbody">
+                                                    <tr><td colspan="6" class="text-center text-muted p-5">กำลังโหลดข้อมูล...</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- กล่องแจ้งเตือนแพ็คกิ้งไม่เคลื่อนไหว (ฝั่งขวา) -->
+                            <div class="col-xl-4 col-lg-5">
+                                <div class="card shadow-sm h-100" style="background: #ffffff; border-radius: 20px; border-top: 5px solid #dc3545;">
+                                    <div class="card-header bg-white border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center">
+                                        <h5 class="fw-bold text-danger mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i> ไม่เคลื่อนไหวเกิน (> 3 วัน)</h5>
+                                        <span class="badge bg-danger rounded-pill shadow-sm" id="dash-rack-idle-count">0</span>
+                                    </div>
+                                    <div class="card-body px-3 pb-4 pt-2">
+                                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto; border-radius: 10px;">
+                                            <table class="table table-hover align-middle mb-0 text-center">
+                                                <thead style="background-color: #fff5f5; position: sticky; top: 0; z-index: 1;">
+                                                    <tr>
+                                                        <th class="text-start ps-3 text-danger border-0" style="border-radius: 10px 0 0 10px;">นำเบอร์ (ID)</th>
+                                                        <th class="text-danger border-0">สถานะล่าสุด</th>
+                                                        <th class="text-danger border-0" style="border-radius: 0 10px 10px 0;">ระยะเวลา</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="dash-rack-idle-tbody">
+                                                    <tr><td colspan="3" class="text-center text-success p-4"><i class="bi bi-check-circle-fill fs-4 d-block mb-2"></i>เยี่ยมมาก! ไม่มีของค้าง</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> <!-- ปิดแถว (row) -->
+                    </div> <!-- ปิดหน้าแดชบอร์ด Rack (view-dash-rack) -->
+                </div> <!-- ปิดหน้าแดชบอร์ดรวมทั้งหมด (pills-dashboard) -->
+                    
                 <!-- Import Tab -->
                 <div class="tab-pane fade" id="pills-import" role="tabpanel">
                     <div class="card">
@@ -1409,13 +1487,19 @@
                                             <option value="OUT">🗑️ ตัดออกจากระบบ (ชำรุด)</option>
                                         </select>
                                     </div>
-
                                     <!-- ฟอร์มสำหรับเครื่องสแกน -->
                                     <form id="rack-scan-form" class="mb-3">
                                         <label class="form-label fw-bold">2. ยิงสแกน QR Code ERP ที่นี่</label>
                                         <input type="text" id="rack-scanner-input" class="form-control border-dark text-center fw-bold fs-5 shadow-sm" placeholder="ยิงสแกนปิ๊ป... ระบบจะค้นหาต้นทางให้อัตโนมัติ" autocomplete="off">
                                     </form>
-
+                                    <!-- ปุ่มอัปโหลดไฟล์ Excel/CSV สำหรับสแกนออฟไลน์ -->
+                                    <div class="mb-3 p-3 bg-white rounded border border-secondary-subtle shadow-sm">
+                                        <label class="form-label fw-bold text-secondary mb-1"><i class="bi bi-file-earmark-excel-fill text-success me-2"></i>อัปโหลดไฟล์สแกนออฟไลน์ (Excel / CSV)</label>
+                                        <div class="input-group">
+                                            <input class="form-control border-secondary text-secondary" type="file" id="rack-upload-file" accept=".xlsx, .xls, .csv">
+                                        </div>
+                                        <div class="form-text text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>สร้างไฟล์ Excel โดยนำรหัส ERP วางเรียงต่อกันลงมาใน <b>คอลัมน์ A</b> (ไม่ต้องมีหัวข้อ)</div>
+                                    </div>
                                     <!-- ตารางพักข้อมูลที่สแกนแล้ว -->
                                     <div class="table-responsive mb-3 shadow-sm border flex-grow-1" style="max-height: calc(100vh - 430px); overflow-y: auto; border-radius: 10px;">
                                         <table class="table table-hover align-middle text-center mb-0">
@@ -1450,7 +1534,7 @@
                                                     <th class="text-start">รหัส ERP / ชื่อแพ็คกิ้ง</th>
                                                     <th style="background-color: #495057;">WH กล่องเปล่า</th>
                                                     <th style="background-color: #343a40;">WH กล่องมีงาน</th>
-                                                    <th style="background-color: #212529;">อยู่ที่ลูกค้า</th>
+                                                    <th style="background-color: #212529;">WH อยู่ที่ลูกค้า</th>
                                                     <th class="bg-primary">รวมทั้งหมด</th>
                                                 </tr>
                                             </thead>
@@ -3815,6 +3899,7 @@ if (mascotBubble) {
                     populateStockCountMainView();
                     window.app.populateDashboard(); // NEW: Call dashboard population
                     if (typeof renderRackSummaryTable === 'function') renderRackSummaryTable(); // ✅ สั่งอัปเดตตาราง Rack
+                    if (typeof populateRackDashboard === 'function' && document.getElementById('btn-dash-rack') && document.getElementById('btn-dash-rack').checked) populateRackDashboard();
                 }
 
                 // --- RENDER FUNCTIONS (for dynamic content) ---
@@ -4111,7 +4196,196 @@ if (mascotBubble) {
                         historyTable.appendChild(row);
                     });
                 }
+                    // ========================================================
+                // ระบบ แดชบอร์ดแพ็คกิ้ง (หั่นรหัส ERP ค้นหาลูกค้า และสรุปยอด)
+                // ========================================================
+                
+                // ฟังก์ชันสลับหน้าแดชบอร์ด
+                window.toggleDashboardView = function(view) {
+                    const viewSales = document.getElementById('view-dash-sales');
+                    const viewRack = document.getElementById('view-dash-rack');
+                    
+                    if (view === 'sales') {
+                        if (viewSales) viewSales.classList.remove('d-none');
+                        if (viewRack) viewRack.classList.add('d-none');
+                    } else {
+                        if (viewSales) viewSales.classList.add('d-none');
+                        if (viewRack) viewRack.classList.remove('d-none');
+                        // ดึงข้อมูลมาคำนวณตอนกดดู
+                        if (typeof populateRackDashboard === 'function') populateRackDashboard(); 
+                    }
+                };
 
+// ฟังก์ชันคำนวณและวาดตาราง Rack
+                window.populateRackDashboard = function() {
+                    const T = translations[currentLanguage] || translations['th'];
+                    const rackStatus = {};
+                    const sortedHistory = [...(db.rackHistory || [])].sort((a,b) => new Date(a.date) - new Date(b.date));
+                    
+                    // 1. อัปเดตตำแหน่งล่าสุดของแต่ละกล่อง
+                    sortedHistory.forEach(record => {
+                        const erpCode = record.erpCode ? String(record.erpCode).trim() : '';
+                        
+                        // 🛡️ ดักจับขยะ: ถ้ารหัสว่างเปล่า ไม่ต้องเอามาคิดคำนวณเลย!
+                        if (!erpCode) return; 
+
+                        if (!rackStatus[erpCode]) rackStatus[erpCode] = { code: erpCode, location: 'NEW', lastMoved: new Date(record.date) };
+                        if (record.to !== 'OUT') rackStatus[erpCode].location = record.to;
+                        else rackStatus[erpCode].location = 'OUT';
+                        rackStatus[erpCode].lastMoved = new Date(record.date);
+                    });
+
+                    let kpi = { total: 0, empty: 0, filled: 0, customer: 0 };
+                    const summaryMap = {}; 
+                    const idleRacks = [];  
+                    const damagedRacks = []; 
+                    const today = new Date();
+
+                    for (const erpCode in rackStatus) {
+                        const rack = rackStatus[erpCode];
+                        const loc = rack.location;
+
+                        // 💡 ลำดับที่ถูกต้อง: ต้องหั่นรหัสเพื่อหาชื่อรุ่นแพ็คกิ้งก่อน!
+                        const parts = erpCode.split('_');
+                        let packingName = erpCode; 
+                        if (parts.length >= 2) packingName = parts[1];
+
+                        // 💡 แล้วค่อยเอาชื่อที่หั่นได้ (packingName) มาค้นหาลูกค้าทีหลัง
+                        const baseScanned = erpCode.substring(0, erpCode.lastIndexOf('_')) || erpCode;
+                        const foundProd = db.products.find(p => {
+                            if (!p.erpCode) return false;
+                            const pCode = p.erpCode.toUpperCase();
+                            return pCode === erpCode.toUpperCase() || 
+                                   pCode === baseScanned.toUpperCase() || 
+                                   pCode === packingName.toUpperCase(); // หาตรงๆ ด้วยคำว่า "B001" เลย
+                        });
+                        const customerName = (foundProd && foundProd.customer) ? foundProd.customer : '<span class="text-danger">ไม่ระบุลูกค้า</span>';
+
+                        // 🛠️ ตรวจจับของชำรุด (OUT) จับแยกใส่ตารางชำรุด แล้วข้ามวงจร KPI ทันที!
+                        if (loc === 'OUT') {
+                            damagedRacks.push({
+                                code: erpCode,
+                                customer: customerName,
+                                lastDate: rack.lastMoved.toLocaleDateString('th-TH')
+                            });
+                            continue; // ข้ามการคำนวณ KPI และกล่องสรุปยอดซ้ายมือ
+                        }
+
+                        // อัปเดต KPI บนสุด
+                        kpi.total++;
+                        if (loc === 'WH_EMPTY') kpi.empty++;
+                        if (loc === 'WH_FILLED') kpi.filled++;
+                        if (loc === 'CUSTOMER') kpi.customer++;
+
+                        if (!summaryMap[packingName]) {
+                            summaryMap[packingName] = { packingName: packingName, customer: customerName, empty: 0, filled: 0, customerLoc: 0, total: 0 };
+                        }
+
+                        // สะสมยอดลงตารางซ้าย
+                        summaryMap[packingName].total++;
+                        if (loc === 'WH_EMPTY') summaryMap[packingName].empty++;
+                        if (loc === 'WH_FILLED') summaryMap[packingName].filled++;
+                        if (loc === 'CUSTOMER') summaryMap[packingName].customerLoc++;
+
+                        // เช็คของค้างเติ่ง
+                        const diffTime = Math.abs(today - rack.lastMoved);
+                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                        if (diffDays >= 3) {
+                            idleRacks.push({ code: erpCode, location: loc, days: diffDays, lastDate: rack.lastMoved.toLocaleDateString('th-TH') });
+                        }
+                    }
+
+                    // ยิงตัวเลขเข้า Card KPI 
+                    const kpiTotalEl = document.getElementById('dash-rack-kpi-total');
+                    const kpiEmptyEl = document.getElementById('dash-rack-kpi-empty');
+                    const kpiFilledEl = document.getElementById('dash-rack-kpi-filled');
+                    const kpiCustomerEl = document.getElementById('dash-rack-kpi-customer');
+                    
+                    if (kpiTotalEl) kpiTotalEl.innerText = kpi.total.toLocaleString();
+                    if (kpiEmptyEl) kpiEmptyEl.innerText = kpi.empty.toLocaleString();
+                    if (kpiFilledEl) kpiFilledEl.innerText = kpi.filled.toLocaleString();
+                    if (kpiCustomerEl) kpiCustomerEl.innerText = kpi.customer.toLocaleString();
+
+                    // ==========================================
+                    // วาดตารางซ้าย: สรุปแยกตามรุ่น
+                    // ==========================================
+                    const summaryTbody = document.getElementById('dash-rack-summary-tbody');
+                    const sortedSummary = Object.values(summaryMap).sort((a,b) => a.customer.localeCompare(b.customer));
+                    let summaryHtml = '';
+
+                    if (sortedSummary.length === 0) {
+                        summaryHtml = `<tr><td colspan="6" class="text-center text-muted p-5">${T.rack_no_data || 'ไม่มีข้อมูล'}</td></tr>`;
+                    } else {
+                        sortedSummary.forEach(data => {
+                            summaryHtml += `
+                                <tr style="background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                                    <td class="ps-3"><div class="fw-bold text-dark"><i class="bi bi-building me-2 text-secondary"></i>${data.customer}</div></td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary-emphasis fs-6 rounded-pill px-3">${data.packingName}</span></td>
+                                    <td class="text-center"><span class="badge bg-light text-dark border shadow-sm fs-6 px-3" style="min-width: 50px;">${data.empty}</span></td>
+                                    <td class="text-center"><span class="badge bg-warning text-dark border border-warning shadow-sm fs-6 px-3" style="min-width: 50px;">${data.filled}</span></td>
+                                    <td class="text-center"><span class="badge bg-danger-subtle text-danger border border-danger-subtle shadow-sm fs-6 px-3" style="min-width: 50px;">${data.customerLoc}</span></td>
+                                    <td class="text-center"><span class="badge bg-primary shadow-sm fs-5 px-3" style="min-width: 60px;">${data.total}</span></td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    if(summaryTbody) summaryTbody.innerHTML = summaryHtml;
+
+                    // ==========================================
+                    // วาดตารางขวา (บน): แจ้งเตือนค้างเติ่ง
+                    // ==========================================
+                    const idleTbody = document.getElementById('dash-rack-idle-tbody');
+                    const idleCountBadge = document.getElementById('dash-rack-idle-count');
+                    let idleHtml = '';
+
+                    if (idleCountBadge) idleCountBadge.innerText = idleRacks.length;
+
+                    if (idleRacks.length === 0) {
+                        idleHtml = `<tr><td colspan="3" class="text-center text-success p-3"><i class="bi bi-check-circle-fill d-block mb-1"></i><span data-lang-key="rack_idle_empty">ไม่มีของค้าง</span></td></tr>`;
+                    } else {
+                        idleRacks.sort((a,b) => b.days - a.days);
+                        idleRacks.forEach(rack => {
+                            let locBadge = '';
+                            if (rack.location === 'WH_EMPTY') locBadge = `<span class="badge bg-light text-dark border shadow-sm">${T.rack_table_wh_empty || 'WH เปล่า'}</span>`;
+                            else if (rack.location === 'WH_FILLED') locBadge = `<span class="badge bg-warning text-dark shadow-sm">${T.rack_table_wh_filled || 'ใส่งาน'}</span>`;
+                            else if (rack.location === 'CUSTOMER') locBadge = `<span class="badge bg-info text-dark shadow-sm">${T.rack_table_wh_customer || 'ลูกค้า'}</span>`;
+
+                            idleHtml += `
+                                <tr onclick="Swal.fire('รายละเอียด', 'รหัส: ${rack.code}<br>ขยับล่าสุดเมื่อ: ${rack.lastDate}', 'info')" style="cursor: pointer;">
+                                    <td class="text-start ps-3 fw-bold text-primary">${rack.code}</td>
+                                    <td>${locBadge}</td>
+                                    <td><span class="fw-bold text-danger">${rack.days} ${T.days_label || 'วัน'}</span></td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    if(idleTbody) idleTbody.innerHTML = idleHtml;
+
+                    // ==========================================
+                    // วาดตารางขวา (ล่าง): ชำรุด (รอตัดทิ้ง) 
+                    // ==========================================
+                    const damagedTbody = document.getElementById('dash-rack-damaged-tbody');
+                    const damagedCountBadge = document.getElementById('dash-rack-damaged-count');
+                    let damagedHtml = '';
+
+                    // 🛠️ นับยอดของชำรุด แล้วไปอัปเดตป้ายแจ้งเตือนสีเทา
+                    if (damagedCountBadge) damagedCountBadge.innerText = damagedRacks.length;
+
+                    if (damagedRacks.length === 0) {
+                        damagedHtml = `<tr><td colspan="2" class="text-center text-muted p-3"><i class="bi bi-emoji-smile d-block mb-1"></i>ไม่มีแพ็คกิ้งชำรุด</td></tr>`;
+                    } else {
+                        // เรียงอันที่ชำรุดล่าสุดขึ้นบนสุด
+                        damagedRacks.reverse().forEach(rack => {
+                            damagedHtml += `
+                                <tr onclick="Swal.fire('รายละเอียดแพ็คกิ้งชำรุด', 'รหัส: ${rack.code}<br>ลูกค้า: ${rack.customer}<br>ทำรายการชำรุดเมื่อ: ${rack.lastDate}', 'warning')" style="cursor: pointer;">
+                                    <td class="text-start ps-3 fw-bold text-secondary">${rack.code}</td>
+                                    <td><span class="badge bg-light text-dark border shadow-sm text-truncate" style="max-width: 120px;">${rack.customer}</span></td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    if(damagedTbody) damagedTbody.innerHTML = damagedHtml;
+                };
                 // --- ADD EVENT LISTENERS ---
                 function addEventListeners() {
                     loginForm.addEventListener('submit', handleLogin);
@@ -6391,7 +6665,19 @@ function populateSalesDashboard(startDate, endDate) {
                 // ========================================================
                 let rackStagingList = []; // ถังเก็บข้อมูลชั่วคราวตอนสแกน
 
-// 1. ดักจับตอนปืนสแกนยิง (หารหัสต้นทางอัตโนมัติ)
+// --- ระบบค้นหาต้นทางอัตโนมัติ (ใส่ไว้ตรงนี้เพื่อไม่ให้ Error) ---
+                function calculateRackStock(erpCode) {
+                    const status = { WH_EMPTY: 0, WH_FILLED: 0, CUSTOMER: 0 };
+                    const history = (db.rackHistory || []).filter(h => h.erpCode.toUpperCase() === erpCode.toUpperCase());
+                    if (history.length > 0) {
+                        history.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        const last = history[0];
+                        if (last.to !== 'OUT') status[last.to] = 1;
+                    }
+                    return status;
+                }
+
+                // 1. ดักจับตอนปืนสแกนยิง (หารหัสต้นทางอัตโนมัติ)
                 document.body.addEventListener('submit', (e) => {
                     if (e.target.id === 'rack-scan-form') {
                         e.preventDefault(); 
@@ -6407,43 +6693,34 @@ function populateSalesDashboard(startDate, endDate) {
                         }
                         if (!rawInput) return;
 
-                        // หั่น QR Code ดึงมาแค่รหัส ERP ท่อนหน้าสุด
                         let scannedErp = rawInput.split('/')[0].trim();
 
                         // 🚫 กฎข้อ 1: ป้องกันสแกนซ้ำ
                         if (rackStagingList.some(item => item.erpCode.toUpperCase() === scannedErp.toUpperCase())) {
-                            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-                            Toast.fire({ icon: 'warning', title: `รหัส ${scannedErp} สแกนไปแล้ว` });
+                            Swal.fire('สแกนซ้ำ!', `รหัส ${scannedErp} ถูกสแกนไปแล้วครับ`, 'warning');
                             inputEl.value = ''; inputEl.focus();
                             return;
                         }
 
-                        // 🔍 ค้นหาว่าปัจจุบันกล่องใบนี้อยู่ที่ไหน
-                        const currentStock = calculateRackStock(scannedErp);
-                        let fromLoc = 'NEW'; // ค่าเริ่มต้นคือกล่องใหม่
-                        if (currentStock.WH_EMPTY > 0) fromLoc = 'WH_EMPTY';
-                        else if (currentStock.WH_FILLED > 0) fromLoc = 'WH_FILLED';
-                        else if (currentStock.CUSTOMER > 0) fromLoc = 'CUSTOMER';
+                        // 🔍 ค้นหาต้นทาง
+                        const stock = calculateRackStock(scannedErp);
+                        let fromLoc = 'NEW';
+                        if (stock.WH_EMPTY > 0) fromLoc = 'WH_EMPTY';
+                        else if (stock.WH_FILLED > 0) fromLoc = 'WH_FILLED';
+                        else if (stock.CUSTOMER > 0) fromLoc = 'CUSTOMER';
 
                         let finalToLoc = targetLoc;
 
-                        // 🤖 ความฉลาดที่ 1: ถ้าเป็นกล่องใหม่ บังคับรับเข้า WH กล่องเปล่าเสมอ
+                        // 🤖 ถ้าเป็นกล่องใหม่ บังคับรับเข้า WH กล่องเปล่า
                         if (fromLoc === 'NEW') {
                             finalToLoc = 'WH_EMPTY';
-                            const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
-                            Toast.fire({ icon: 'info', title: `พบกล่องใหม่! รับเข้าระบบ (WH เปล่า)` });
-                        } 
-                        // 🤖 ความฉลาดที่ 2: ถ้ากล่องอยู่ที่ปลายทางนี้อยู่แล้ว ให้ด่าและปฏิเสธ
-                        else {
-                            if (fromLoc === targetLoc) {
-                                let locName = fromLoc === 'WH_EMPTY' ? 'WH กล่องเปล่า' : (fromLoc === 'WH_FILLED' ? 'WH ใส่ชิ้นงาน' : 'อยู่ที่ลูกค้า');
-                                Swal.fire('ย้ายไม่ได้!', `กล่อง ${scannedErp} ปัจจุบันอยู่ที่ "${locName}" อยู่แล้วครับ`, 'error');
-                                inputEl.value = ''; inputEl.focus();
-                                return;
-                            }
+                        } else if (fromLoc === targetLoc) {
+                            Swal.fire('ย้ายไม่ได้!', `กล่องนี้อยู่ที่ปลายทางนี้อยู่แล้วครับ`, 'error');
+                            inputEl.value = ''; inputEl.focus();
+                            return;
                         }
 
-                        // ตัด _0001 ออก เพื่อหารหัสแม่มันในฐานข้อมูล (เช่น หา BR_B001)
+                        // ตัด _0001 ออก เพื่อหาชื่อรุ่น
                         const baseScanned = scannedErp.substring(0, scannedErp.lastIndexOf('_')) || scannedErp;
                         const foundProduct = db.products.find(p => p.erpCode && (p.erpCode.toUpperCase() === scannedErp.toUpperCase() || p.erpCode.toUpperCase() === baseScanned.toUpperCase()));
                         const rackName = foundProduct ? foundProduct.name : "แพ็คกิ้งนอกระบบ";
@@ -6451,11 +6728,135 @@ function populateSalesDashboard(startDate, endDate) {
                         // ยัดข้อมูลลงถัง
                         rackStagingList.push({ erpCode: scannedErp, name: rackName, qty: 1, from: fromLoc, to: finalToLoc });
                         
-                        renderRackStagingTable();
+                        if (typeof renderRackStagingTable === 'function') renderRackStagingTable();
                         inputEl.value = ''; inputEl.focus();
                     }
                 });
 
+                // 2. ฟังก์ชันวาดตารางของที่สแกน
+                window.renderRackStagingTable = function() {
+                    const tbody = document.getElementById('rack-staging-list');
+                    if (!tbody) return;
+                    if (rackStagingList.length === 0) {
+                        tbody.innerHTML = '<tr id="rack-empty-row"><td colspan="3" class="text-muted p-4">รอสแกน QR Code</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = rackStagingList.map(item => `
+                        <tr>
+                            <td class="text-start ps-3"><b>${item.erpCode}</b><br><small>${item.name}</small></td>
+                            <td><span class="badge bg-primary-subtle text-primary-emphasis">${item.from} → ${item.to}</span></td>
+                            <td><button class="btn btn-sm btn-outline-danger" onclick="removeRackStaging('${item.erpCode}')"><i class="bi bi-x-lg"></i></button></td>
+                        </tr>
+                    `).join('');
+                };
+
+                window.removeRackStaging = function(erpCode) {
+                    rackStagingList = rackStagingList.filter(item => item.erpCode !== erpCode);
+                    renderRackStagingTable();
+                };
+                    // ==========================================
+                // 4. ดักจับการอัปโหลดไฟล์ Excel (สแกนออฟไลน์)
+                // ==========================================
+                const rackUploadInput = document.getElementById('rack-upload-file');
+                if (rackUploadInput) {
+                    rackUploadInput.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        const targetLoc = document.getElementById('rack-to-loc').value;
+                        if (!targetLoc) {
+                            Swal.fire('แจ้งเตือน', 'กรุณาเลือก "ปลายทาง" (ข้อ 1) ก่อนอัปโหลดไฟล์ครับ', 'warning');
+                            e.target.value = ''; // เคลียร์ไฟล์ออก
+                            return;
+                        }
+
+                        // โชว์หน้าจอโหลดดิ้ง
+                        Swal.fire({ title: 'กำลังอ่านไฟล์...', text: 'กรุณารอสักครู่ ระบบกำลังตรวจสอบรหัส', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            try {
+                                const data = new Uint8Array(event.target.result);
+                                const workbook = XLSX.read(data, {type: 'array'});
+                                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                                // ดึงข้อมูลออกมาเป็น Array 2 มิติ
+                                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                                let successCount = 0;
+                                let skipCount = 0;
+
+                                // วนลูปอ่านข้อมูลทีละบรรทัด
+                                jsonData.forEach(row => {
+                                    if (!row || row.length === 0) return;
+                                    
+                                    // อ่านค่าจากคอลัมน์ A (Index 0)
+                                    let rawInput = String(row[0] || '').trim();
+                                    if (!rawInput) return;
+
+                                    let scannedErp = rawInput.split('/')[0].trim();
+
+                                    // 🚫 กฎข้อ 1: ข้ามรหัสที่ซ้ำกับในรายการที่เตรียมไว้แล้ว
+                                    if (rackStagingList.some(item => item.erpCode.toUpperCase() === scannedErp.toUpperCase())) {
+                                        skipCount++;
+                                        return; // ข้ามการทำงานรอบนี้
+                                    }
+
+                                    // 🔍 ค้นหาต้นทางของกล่องใบนี้
+                                    const stock = calculateRackStock(scannedErp);
+                                    let fromLoc = 'NEW';
+                                    if (stock.WH_EMPTY > 0) fromLoc = 'WH_EMPTY';
+                                    else if (stock.WH_FILLED > 0) fromLoc = 'WH_FILLED';
+                                    else if (stock.CUSTOMER > 0) fromLoc = 'CUSTOMER';
+
+                                    let finalToLoc = targetLoc;
+
+                                    // 🤖 ความฉลาดที่ 1: กล่องใหม่ บังคับรับเข้า WH กล่องเปล่า
+                                    if (fromLoc === 'NEW') {
+                                        finalToLoc = 'WH_EMPTY';
+                                    } 
+                                    // 🤖 ความฉลาดที่ 2: ถ้าย้ายไปที่ๆ มันอยู่แล้ว ให้ข้ามไปเลย ไม่ต้องแจ้งเตือนทีละอันให้รำคาญ
+                                    else if (fromLoc === targetLoc) {
+                                        skipCount++;
+                                        return; 
+                                    }
+
+                                    // หาชื่อรุ่นเพื่อเอามาโชว์ในตาราง
+                                    const baseScanned = scannedErp.substring(0, scannedErp.lastIndexOf('_')) || scannedErp;
+                                    const foundProduct = db.products.find(p => p.erpCode && (p.erpCode.toUpperCase() === scannedErp.toUpperCase() || p.erpCode.toUpperCase() === baseScanned.toUpperCase()));
+                                    const rackName = foundProduct ? foundProduct.name : "แพ็คกิ้งนอกระบบ";
+
+                                    // ยัดข้อมูลลงถัง
+                                    rackStagingList.push({ erpCode: scannedErp, name: rackName, qty: 1, from: fromLoc, to: finalToLoc });
+                                    successCount++;
+                                });
+
+                                Swal.close(); // ปิดหน้าจอโหลด
+                                
+                                // วาดตารางใหม่
+                                if (typeof renderRackStagingTable === 'function') renderRackStagingTable();
+                                
+                                // สรุปผลลัพธ์
+                                if(successCount > 0) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'อ่านไฟล์สำเร็จ!',
+                                        html: `ดึงข้อมูลเข้ารายการได้ <b>${successCount}</b> ใบ<br><span class="text-danger small">(ข้ามรหัสซ้ำ/ผิดสถานะ ${skipCount} ใบ)</span>`
+                                    });
+                                } else {
+                                    Swal.fire('ไม่มีข้อมูลใหม่', `รหัสในไฟล์ซ้ำกับในตาราง หรืออยู่ในปลายทางที่เลือกอยู่แล้วครับ`, 'info');
+                                }
+                                
+                                e.target.value = ''; // เคลียร์ไฟล์หลังอ่านเสร็จ เพื่อให้อัปโหลดไฟล์เดิมซ้ำได้ถ้ามีการแก้
+
+                            } catch (err) {
+                                console.error(err);
+                                Swal.fire('เกิดข้อผิดพลาด', 'รูปแบบไฟล์ไม่ถูกต้องครับ (ต้องเป็น .xlsx หรือ .csv)', 'error');
+                                e.target.value = '';
+                            }
+                        };
+                        reader.readAsArrayBuffer(file);
+                    });
+                }
                 // 2. ฟังก์ชันวาดตารางของที่สแกนรอไว้ (โชว์เส้นทาง From -> To)
                 window.renderRackStagingTable = function() {
                     const tbody = document.getElementById('rack-staging-list');
