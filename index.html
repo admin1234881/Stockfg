@@ -1710,9 +1710,22 @@
                                         </select>
                                     </div>
                                     <!-- ฟอร์มสำหรับเครื่องสแกน -->
-                                    <form id="rack-scan-form" class="mb-3">
+                                            <form id="rack-scan-form" class="mb-3">
                                         <label class="form-label fw-bold">2. ยิงสแกน QR Code ERP ที่นี่</label>
-                                        <input type="text" id="rack-scanner-input" class="form-control border-dark text-center fw-bold fs-5 shadow-sm" placeholder="ยิงสแกนปิ๊ป... ระบบจะค้นหาต้นทางให้อัตโนมัติ" autocomplete="off">
+                                        <div class="input-group">
+                                            <input type="text" id="rack-scanner-input" class="form-control border-dark text-center fw-bold fs-5 shadow-sm" placeholder="ยิงสแกน หรือเปิดกล้อง..." autocomplete="off">
+                                            <button type="button" id="btn-open-camera" class="btn btn-dark shadow-sm px-3" onclick="toggleCameraScanner()" title="เปิดกล้องมือถือสแกน">
+                                                <i class="bi bi-qr-code-scan fs-5"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <div id="camera-scanner-container" class="d-none mt-3 rounded overflow-hidden shadow-sm" style="border: 2px solid #0d6efd;">
+                                            <div class="bg-primary text-white text-center py-2 fw-bold small d-flex justify-content-between px-3 align-items-center">
+                                                <span><i class="bi bi-camera-video me-1"></i> กล้องกำลังทำงาน... (สแกนต่อเนื่องได้เลย)</span>
+                                                <button type="button" class="btn-close btn-close-white" style="font-size: 0.7rem;" onclick="toggleCameraScanner()"></button>
+                                            </div>
+                                            <div id="reader" width="100%"></div>
+                                        </div>
                                     </form>
                                     <!-- ปุ่มอัปโหลดไฟล์ Excel/CSV สำหรับสแกนออฟไลน์ -->
                                     <div class="mb-3 p-3 bg-white rounded border border-secondary-subtle shadow-sm">
@@ -2046,6 +2059,7 @@
 	    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+        <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
         <script>
             // --- TRANSLATION OBJECT ---
             const translations = {
@@ -7390,6 +7404,106 @@ function populateSalesDashboard(startDate, endDate) {
 
                 setTimeout(() => renderRackSummaryTable(), 1000);
                // --- START THE APP ---
+               // ========================================================
+                // ระบบสแกน QR Code ผ่านกล้อง (สแกนต่อเนื่อง Continuous Scan)
+                // ========================================================
+                let html5QrCode = null;
+                let isCameraOpen = false;
+                let lastScannedCode = "";
+                let lastScanTime = 0;
+
+                window.toggleCameraScanner = function() {
+                    const container = document.getElementById('camera-scanner-container');
+                    const btn = document.getElementById('btn-open-camera');
+                    
+                    if (isCameraOpen) {
+                        // ปิดกล้อง
+                        if (html5QrCode) {
+                            html5QrCode.stop().then(() => {
+                                container.classList.add('d-none');
+                                btn.classList.replace('btn-danger', 'btn-dark');
+                                btn.innerHTML = '<i class="bi bi-qr-code-scan fs-5"></i>';
+                                isCameraOpen = false;
+                            }).catch(err => console.error("Failed to stop camera.", err));
+                        }
+                    } else {
+                        // เปิดกล้อง
+                        container.classList.remove('d-none');
+                        btn.classList.replace('btn-dark', 'btn-danger');
+                        btn.innerHTML = '<i class="bi bi-camera-video-off-fill fs-5"></i>';
+                        
+                        if (!html5QrCode) {
+                            html5QrCode = new Html5Qrcode("reader");
+                        }
+                        
+                        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+                        
+                        // เริ่มต้นใช้งานกล้องหลัง (environment)
+                        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+                        .then(() => { isCameraOpen = true; })
+                        .catch((err) => {
+                            console.error(err);
+                            Swal.fire('ข้อผิดพลาด', 'ไม่สามารถเข้าถึงกล้องได้ กรุณาตรวจสอบการอนุญาตให้เบราว์เซอร์ใช้งานกล้องครับ', 'error');
+                            container.classList.add('d-none');
+                            btn.classList.replace('btn-danger', 'btn-dark');
+                            btn.innerHTML = '<i class="bi bi-qr-code-scan fs-5"></i>';
+                        });
+                    }
+                };
+
+                // ฟังก์ชันเมื่อกล้องจับ QR Code ได้
+                function onScanSuccess(decodedText, decodedResult) {
+                    const currentTime = new Date().getTime();
+                    
+                    // หน่วงเวลา 1.5 วินาที ป้องกันการสแกนโค้ดเดิมซ้ำๆ รัวเกินไป
+                    if (decodedText === lastScannedCode && (currentTime - lastScanTime) < 1500) {
+                        return;
+                    }
+
+                    const inputEl = document.getElementById('rack-scanner-input');
+                    const targetLoc = document.getElementById('rack-to-loc').value;
+
+                    if (!targetLoc) {
+                        // ถ้าลืมเลือกปลายทาง ให้เตือนโดยไม่ต้องปิดกล้อง (หน่วงเตือน 3 วินาทีไม่ให้เด้งรัว)
+                        if ((currentTime - lastScanTime) > 3000) {
+                            Swal.fire({ title: 'แจ้งเตือน', text: 'กรุณาเลือก "ปลายทาง" (ข้อ 1) ก่อนยิงสแกนครับ', icon: 'warning', timer: 2000, showConfirmButton: false });
+                            lastScanTime = currentTime;
+                        }
+                        return;
+                    }
+
+                    // อัปเดตข้อมูลกันซ้ำ
+                    lastScannedCode = decodedText;
+                    lastScanTime = currentTime;
+
+                    // 1. นำข้อความที่สแกนได้ไปยัดใส่ช่อง Input
+                    inputEl.value = decodedText;
+                    
+                    // 2. เล่นเสียงติ๊ดสั้นๆ ให้รู้ว่าสแกนติดแล้ว
+                    playScanSound();
+
+                    // 3. จำลองการกดปุ่ม Enter ในฟอร์ม เพื่อนำข้อมูลไปคำนวณลงตารางทันที
+                    const form = document.getElementById('rack-scan-form');
+                    form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                    
+                    // (กล้องจะทำงานต่อไปเรื่อยๆ หยิบกล่องต่อไปมาสแกนต่อได้เลย)
+                }
+
+                // ฟังก์ชันเล่นเสียงสแกน (ทำงานอัตโนมัติ)
+                function playScanSound() {
+                    try {
+                        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(800, ctx.currentTime);
+                        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                        osc.start(ctx.currentTime);
+                        osc.stop(ctx.currentTime + 0.1);
+                    } catch (e) {}
+                }
                 init();
 
                 // ========================================================
