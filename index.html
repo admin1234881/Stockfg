@@ -1702,6 +1702,7 @@
                                         <label class="form-label fw-bold text-success mb-1">1. เลือกปลายทางที่ต้องการนำไปเก็บ (Destination)</label>
                                         <select id="rack-to-loc" class="form-select border-success fw-bold" required>
                                             <option value="" disabled selected>-- เลือกปลายทางก่อนเริ่มสแกน --</option>
+                                            <option id="opt-register-new" value="REGISTER_NEW" class="text-primary fw-bold" style="display: none;">✨ เพิ่มแพ็คกิ้งใหม่เข้าระบบ (Register New)</option>
                                             <option value="WH_EMPTY">📥 WH กล่องเปล่า (คืนกล่อง / เก็บกล่อง)</option>
                                             <option value="WH_FILLED">📦 WH ใส่ชิ้นงาน (เอาไปแพ็คงาน)</option>
                                             <option value="CUSTOMER">🚚 ลูกค้า (Customer)</option>
@@ -1727,6 +1728,7 @@
                                             <thead class="table-light" style="position: sticky; top: 0; z-index: 1;">
                                                 <tr>
                                                     <th class="text-start ps-3">รหัส ERP</th>
+                                                    <th>จำนวนในระบบ</th>
                                                     <th>เส้นทางโยกย้าย</th>
                                                     <th>ลบ</th>
                                                 </tr>
@@ -1744,8 +1746,13 @@
                         </div>
                         <div class="col-lg-8">
                             <div class="card shadow-sm border-0 d-flex flex-column" style="border-radius: 20px; min-height: calc(100vh - 145px);">
-                                <div class="card-header fw-bold bg-white pt-4 pb-3 px-4 border-0 d-flex justify-content-between align-items-center" style="border-radius: 20px 20px 0 0;">
+                                <div class="card-header fw-bold bg-white pt-4 pb-3 px-4 border-0 d-flex justify-content-between align-items-center flex-wrap gap-2" style="border-radius: 20px 20px 0 0;">
                                     <h5 class="fw-bold text-primary mb-0"><i class="bi bi-boxes me-2"></i>สรุปสถานะ Rack ทั้งหมด</h5>
+                                    
+                                    <div class="input-group" style="width: 280px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                                        <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+                                        <input type="text" id="rack-summary-search" class="form-control border-0 bg-light" placeholder="ค้นหา นำเบอร์, รุ่น..." onkeyup="renderRackSummaryTable()">
+                                    </div>
                                 </div>
                                     <div class="card-body px-4 pb-4 pt-0">
                                     <div class="table-responsive bg-white shadow-sm" style="max-height: calc(100vh - 250px); overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6;">
@@ -4046,11 +4053,15 @@ clearInterval(window.mascotLoopTimer);
         if (document.getElementById('backup-stock-btn')) document.getElementById('backup-stock-btn').style.display = '';
         if (document.getElementById('backup-products-btn')) document.getElementById('backup-products-btn').style.display = canManageProducts ? '' : 'none';
         if (document.getElementById('backup-users-btn')) document.getElementById('backup-users-btn').style.display = canManageUsers ? '' : 'none';
- // 4. ปรับขนาดหน้าจอและตารางสต็อกให้สวยงาม (บังคับเต็มจอ 100% ทุกสิทธิ์)
-        const stockContentColumn = document.getElementById('stock-content-column');
-        if (stockContentColumn) {
-            stockContentColumn.classList.remove('col-lg-9', 'col-md-9');
-            stockContentColumn.classList.add('col-12'); // ปลดล็อกพื้นที่ว่าง ให้กาง 12 ส่วนเต็ม
+ // 5. โชว์ตัวเลือก "เพิ่มแพ็คกิ้งใหม่" ให้เฉพาะ Admin เท่านั้น
+        const registerOpt = document.getElementById('opt-register-new');
+        if (registerOpt && currentUser) { 
+            // เช็คว่าถ้าเป็น Admin ถึงจะแสดง
+            if (currentUser.role === 'admin' || currentUser.username === 'admin') {
+                registerOpt.style.display = 'block'; 
+            } else {
+                registerOpt.style.display = 'none';
+            }
         }
                     // --- คำสั่งสำคัญ: แสดงแถบ Support ---
                     const bar = document.getElementById('support-bar');
@@ -4675,17 +4686,21 @@ function submitRackAction() {
                         });
                         const customerName = (foundProd && foundProd.customer) ? foundProd.customer : '<span class="text-danger">ไม่ระบุลูกค้า</span>';
 
-                        // 🛠️ ตรวจจับของชำรุด (OUT) จับแยกใส่ตารางชำรุด แล้วข้ามวงจร KPI ทันที!
-                        // 🛠️ ตรวจจับของชำรุด (OUT) จับแยกใส่ตารางชำรุด แล้วข้ามวงจร KPI ทันที!
-// 🛠️ ตรวจจับของชำรุด (OUT) จับแยกใส่ตารางชำรุด แล้วข้ามวงจร KPI ทันที!
-if (loc === 'OUT') {
-    damagedRacks.push({
-        code: erpCode,
-        customer: customerName,
-        lastDate: rack.lastMoved.toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })
-    });
-    continue; // ข้ามการคำนวณ KPI และกล่องสรุปยอดซ้ายมือ
-}
+// 🛠️ ตรวจจับของชำรุด (OUT) จับแยกใส่ตารางชำรุด
+                    if (loc === 'OUT') {
+                        // ปรับฟอร์แมตวันเวลาให้ดึงข้อมูลออกมาแสดงผลในตารางได้อย่างถูกต้อง
+                        let dateStr = 'ไม่ระบุวันเวลา';
+                        if (rack.lastMoved) {
+                            dateStr = new Date(rack.lastMoved).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
+                        }
+                        
+                        damagedRacks.push({
+                            code: erpCode,
+                            customer: customerName || 'ไม่ระบุลูกค้า',
+                            lastDate: dateStr
+                        });
+                        continue; // ข้ามการคำนวณ KPI สต็อกปกติ เพื่อไม่ให้ยอดสต็อกรวมด้านบนเพี้ยน
+                    }
 
                         // อัปเดต KPI บนสุด
                         kpi.total++;
@@ -7080,19 +7095,37 @@ function populateSalesDashboard(startDate, endDate) {
                 // ========================================================
                 let rackStagingList = []; // ถังเก็บข้อมูลชั่วคราวตอนสแกน
 
-// --- ระบบค้นหาต้นทางอัตโนมัติ (ใส่ไว้ตรงนี้เพื่อไม่ให้ Error) ---
-                function calculateRackStock(erpCode) {
-                    const status = { WH_EMPTY: 0, WH_FILLED: 0, CUSTOMER: 0 };
-                    const history = (db.rackHistory || []).filter(h => h.erpCode.toUpperCase() === erpCode.toUpperCase());
-                    if (history.length > 0) {
-                        history.sort((a, b) => new Date(b.date) - new Date(a.date));
-                        const last = history[0];
-                        if (last.to !== 'OUT') status[last.to] = 1;
+                // 🌟 1. ฟังก์ชันคำนวณยอดคงเหลือของ Rack (แก้บั๊กยอดย้ายไม่ลด 100% ยึด 1 รหัส = 1 สถานะ)
+                function calculateRackStock(erpCodeTarget = null) {
+                    const rackLedger = {};
+                    const history = db.rackHistory || [];
+                    const latestStatus = {};
+
+                    // ยึดตำแหน่งปลายทางล่าสุดเท่านั้น (ใครอยู่หลังสุด ชนะ)
+                    history.forEach(record => {
+                        const erpCode = record.erpCode ? String(record.erpCode).trim() : '';
+                        if (erpCode) latestStatus[erpCode] = { name: record.name, location: record.to };
+                    });
+
+                    // นำข้อมูลล่าสุดแปลงเป็นโครงสร้างตาราง
+                    // นำข้อมูลล่าสุดแปลงเป็นโครงสร้างตาราง
+                    for (const [erpCode, data] of Object.entries(latestStatus)) {
+                        if (data.location === 'OUT') continue; // 🟢 บรรทัดนี้ต้องมีอยู่เพื่อกรองออกจากสต็อกปกติ
+
+                        if (!rackLedger[erpCode]) {
+                            rackLedger[erpCode] = { name: data.name, WH_EMPTY: 0, WH_FILLED: 0, CUSTOMER: 0 };
+                        }
+
+                        if (data.location === 'WH_EMPTY') rackLedger[erpCode].WH_EMPTY = 1;
+                        else if (data.location === 'WH_FILLED') rackLedger[erpCode].WH_FILLED = 1;
+                        else if (data.location === 'CUSTOMER') rackLedger[erpCode].CUSTOMER = 1;
                     }
-                    return status;
+
+                    if (erpCodeTarget) return rackLedger[erpCodeTarget] || { WH_EMPTY: 0, WH_FILLED: 0, CUSTOMER: 0 };
+                    return rackLedger;
                 }
 
-                // 1. ดักจับตอนปืนสแกนยิง (หารหัสต้นทางอัตโนมัติ)
+                // 2. ดักจับตอนปืนสแกนยิง (แยก "เพิ่มกล่องใหม่" ออกจาก "ย้ายกล่อง")
                 document.body.addEventListener('submit', (e) => {
                     if (e.target.id === 'rack-scan-form') {
                         e.preventDefault(); 
@@ -7102,19 +7135,17 @@ function populateSalesDashboard(startDate, endDate) {
                         let rawInput = inputEl.value.trim();
 
                         if (!targetLoc) {
-                            Swal.fire('แจ้งเตือน', 'กรุณาเลือก "ปลายทาง" (ข้อ 1) ก่อนยิงสแกนครับ', 'warning');
-                            inputEl.value = '';
-                            return;
+                            Swal.fire('แจ้งเตือน', 'กรุณาเลือก "ปลายทาง" ก่อนยิงสแกนครับ', 'warning');
+                            inputEl.value = ''; return;
                         }
                         if (!rawInput) return;
 
                         let scannedErp = rawInput.split('/')[0].trim();
 
-                        // 🚫 กฎข้อ 1: ป้องกันสแกนซ้ำ
+                        // 🚫 ป้องกันสแกนซ้ำในรอบบิลเดียวกัน
                         if (rackStagingList.some(item => item.erpCode.toUpperCase() === scannedErp.toUpperCase())) {
                             Swal.fire('สแกนซ้ำ!', `รหัส ${scannedErp} ถูกสแกนไปแล้วครับ`, 'warning');
-                            inputEl.value = ''; inputEl.focus();
-                            return;
+                            inputEl.value = ''; inputEl.focus(); return;
                         }
 
                         // 🔍 ค้นหาต้นทาง
@@ -7126,52 +7157,83 @@ function populateSalesDashboard(startDate, endDate) {
 
                         let finalToLoc = targetLoc;
 
-                        // 🤖 ถ้าเป็นกล่องใหม่ บังคับรับเข้า WH กล่องเปล่า
-                        if (fromLoc === 'NEW') {
-                            finalToLoc = 'WH_EMPTY';
-                        } else if (fromLoc === targetLoc) {
-                            Swal.fire('ย้ายไม่ได้!', `กล่องนี้อยู่ที่ปลายทางนี้อยู่แล้วครับ`, 'error');
-                            inputEl.value = ''; inputEl.focus();
-                            return;
+                        // 🌟 ลอจิกใหม่: แยก "เพิ่มกล่องใหม่" ชัดเจน
+                        if (targetLoc === 'REGISTER_NEW') {
+                            if (fromLoc !== 'NEW') {
+                                Swal.fire('มีในระบบแล้ว!', `แพ็คกิ้งรหัส ${scannedErp} มีอยู่ในระบบแล้ว (อยู่ที่ ${fromLoc === 'WH_EMPTY' ? 'WH กล่องเปล่า' : (fromLoc === 'WH_FILLED' ? 'WH ใส่ชิ้นงาน' : 'ลูกค้า')})`, 'error');
+                                inputEl.value = ''; inputEl.focus(); return;
+                            }
+                            finalToLoc = 'WH_EMPTY'; // กล่องใหม่รับเข้า WH เปล่าอัตโนมัติ
+                        } else {
+                            if (fromLoc === 'NEW') {
+                                Swal.fire('ไม่พบในระบบ!', `รหัส ${scannedErp} เป็นกล่องใหม่ กรุณาเปลี่ยนปลายทางเป็น "✨ เพิ่มแพ็คกิ้งใหม่เข้าระบบ" ก่อนครับ`, 'warning');
+                                inputEl.value = ''; inputEl.focus(); return;
+                            }
+                            if (fromLoc === targetLoc) {
+                                Swal.fire('ย้ายไม่ได้!', `กล่องนี้อยู่ที่ปลายทางนี้อยู่แล้วครับ`, 'error');
+                                inputEl.value = ''; inputEl.focus(); return;
+                            }
                         }
 
-                        // ตัด _0001 ออก เพื่อหาชื่อรุ่น
+                        // หาชื่อรุ่นเพื่อเอามาโชว์ในตาราง
                         const baseScanned = scannedErp.substring(0, scannedErp.lastIndexOf('_')) || scannedErp;
                         const foundProduct = db.products.find(p => p.erpCode && (p.erpCode.toUpperCase() === scannedErp.toUpperCase() || p.erpCode.toUpperCase() === baseScanned.toUpperCase()));
                         const rackName = foundProduct ? foundProduct.name : "แพ็คกิ้งนอกระบบ";
 
-                        // ยัดข้อมูลลงถัง
-                        rackStagingList.push({ erpCode: scannedErp, name: rackName, qty: 1, from: fromLoc, to: finalToLoc });
+                        // 📊 คำนวณจำนวนกล่องรุ่นนี้ที่มีอยู่แล้วในระบบเพื่อโชว์ในตาราง
+                        const allRacks = calculateRackStock();
+                        let currentModelCount = 0;
+                        for (const [code, data] of Object.entries(allRacks)) {
+                            const codeBase = code.substring(0, code.lastIndexOf('_')) || code;
+                            if (codeBase.toUpperCase() === baseScanned.toUpperCase()) {
+                                currentModelCount += (data.WH_EMPTY + data.WH_FILLED + data.CUSTOMER);
+                            }
+                        }
+                        // ถ้ารับเข้าใหม่ ตัวเลขจำลองจะ +1 ทันที
+                        const displayCount = targetLoc === 'REGISTER_NEW' ? currentModelCount + 1 : currentModelCount;
+
+                        // ยัดข้อมูลลงถังรอยิง
+                        rackStagingList.push({ erpCode: scannedErp, name: rackName, qty: 1, from: fromLoc, to: finalToLoc, modelCount: displayCount });
                         
                         if (typeof renderRackStagingTable === 'function') renderRackStagingTable();
                         inputEl.value = ''; inputEl.focus();
                     }
                 });
 
-                // 2. ฟังก์ชันวาดตารางของที่สแกน
+                // 3. ฟังก์ชันวาดตารางของที่สแกนรอไว้ (โชว์คอลัมน์จำนวนที่มีในระบบ)
                 window.renderRackStagingTable = function() {
                     const tbody = document.getElementById('rack-staging-list');
                     if (!tbody) return;
                     if (rackStagingList.length === 0) {
-                        tbody.innerHTML = '<tr id="rack-empty-row"><td colspan="3" class="text-muted p-4">รอสแกน QR Code</td></tr>';
+                        tbody.innerHTML = '<tr id="rack-empty-row"><td colspan="4" class="text-muted p-4"><i class="bi bi-upc-scan fs-3 d-block mb-2 opacity-50"></i>รอสแกน QR Code</td></tr>';
                         return;
                     }
-                    tbody.innerHTML = rackStagingList.map(item => `
-                        <tr>
-                            <td class="text-start ps-3"><b>${item.erpCode}</b><br><small>${item.name}</small></td>
-                            <td><span class="badge bg-primary-subtle text-primary-emphasis">${item.from} → ${item.to}</span></td>
-                            <td><button class="btn btn-sm btn-outline-danger" onclick="removeRackStaging('${item.erpCode}')"><i class="bi bi-x-lg"></i></button></td>
-                        </tr>
-                    `).join('');
+
+                    let html = '';
+                    [...rackStagingList].reverse().forEach(item => {
+                        let fromName = item.from === 'NEW' ? '✨ กล่องใหม่' : (item.from === 'WH_EMPTY' ? 'WH เปล่า' : (item.from === 'WH_FILLED' ? 'WH มีงาน' : 'ลูกค้า'));
+                        let toName = item.to === 'WH_EMPTY' ? 'WH เปล่า' : (item.to === 'WH_FILLED' ? 'WH มีงาน' : (item.to === 'CUSTOMER' ? 'ลูกค้า' : 'ชำรุด'));
+                        let badgeColor = item.from === 'NEW' ? 'success' : 'primary';
+
+                        html += `
+                            <tr>
+                                <td class="text-start ps-3"><b>${item.erpCode}</b><br><small class="text-muted">${item.name}</small></td>
+                                <td><span class="fw-bold text-primary">${item.modelCount}</span> <span class="small text-muted">ใบ</span></td>
+                                <td><span class="badge bg-${badgeColor}-subtle text-${badgeColor}-emphasis border px-2 shadow-sm">${fromName} <i class="bi bi-arrow-right mx-1 fw-bold"></i> ${toName}</span></td>
+                                <td><button class="btn btn-sm btn-outline-danger shadow-sm py-0 px-2" onclick="removeRackStaging('${item.erpCode}')"><i class="bi bi-x-lg"></i></button></td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
                 };
 
                 window.removeRackStaging = function(erpCode) {
                     rackStagingList = rackStagingList.filter(item => item.erpCode !== erpCode);
                     renderRackStagingTable();
+                    document.getElementById('rack-scanner-input').focus();
                 };
-                    // ==========================================
-                // 4. ดักจับการอัปโหลดไฟล์ Excel (สแกนออฟไลน์)
-                // ==========================================
+
+                // 4. ดักจับการอัปโหลดไฟล์ Excel (สแกนออฟไลน์ + ดักกล่องใหม่)
                 const rackUploadInput = document.getElementById('rack-upload-file');
                 if (rackUploadInput) {
                     rackUploadInput.addEventListener('change', function(e) {
@@ -7181,12 +7243,10 @@ function populateSalesDashboard(startDate, endDate) {
                         const targetLoc = document.getElementById('rack-to-loc').value;
                         if (!targetLoc) {
                             Swal.fire('แจ้งเตือน', 'กรุณาเลือก "ปลายทาง" (ข้อ 1) ก่อนอัปโหลดไฟล์ครับ', 'warning');
-                            e.target.value = ''; // เคลียร์ไฟล์ออก
-                            return;
+                            e.target.value = ''; return;
                         }
 
-                        // โชว์หน้าจอโหลดดิ้ง
-                        Swal.fire({ title: 'กำลังอ่านไฟล์...', text: 'กรุณารอสักครู่ ระบบกำลังตรวจสอบรหัส', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                        Swal.fire({ title: 'กำลังอ่านไฟล์...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
                         const reader = new FileReader();
                         reader.onload = function(event) {
@@ -7194,29 +7254,21 @@ function populateSalesDashboard(startDate, endDate) {
                                 const data = new Uint8Array(event.target.result);
                                 const workbook = XLSX.read(data, {type: 'array'});
                                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                                // ดึงข้อมูลออกมาเป็น Array 2 มิติ
                                 const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
 
-                                let successCount = 0;
-                                let skipCount = 0;
+                                let successCount = 0; let skipCount = 0;
+                                const allRacks = calculateRackStock(); // ดึงสต็อกรอบเดียวประหยัดเวลา
 
-                                // วนลูปอ่านข้อมูลทีละบรรทัด
                                 jsonData.forEach(row => {
                                     if (!row || row.length === 0) return;
-                                    
-                                    // อ่านค่าจากคอลัมน์ A (Index 0)
                                     let rawInput = String(row[0] || '').trim();
                                     if (!rawInput) return;
-
                                     let scannedErp = rawInput.split('/')[0].trim();
 
-                                    // 🚫 กฎข้อ 1: ข้ามรหัสที่ซ้ำกับในรายการที่เตรียมไว้แล้ว
                                     if (rackStagingList.some(item => item.erpCode.toUpperCase() === scannedErp.toUpperCase())) {
-                                        skipCount++;
-                                        return; // ข้ามการทำงานรอบนี้
+                                        skipCount++; return; 
                                     }
 
-                                    // 🔍 ค้นหาต้นทางของกล่องใบนี้
                                     const stock = calculateRackStock(scannedErp);
                                     let fromLoc = 'NEW';
                                     if (stock.WH_EMPTY > 0) fromLoc = 'WH_EMPTY';
@@ -7225,46 +7277,40 @@ function populateSalesDashboard(startDate, endDate) {
 
                                     let finalToLoc = targetLoc;
 
-                                    // 🤖 ความฉลาดที่ 1: กล่องใหม่ บังคับรับเข้า WH กล่องเปล่า
-                                    if (fromLoc === 'NEW') {
+                                    if (targetLoc === 'REGISTER_NEW') {
+                                        if (fromLoc !== 'NEW') { skipCount++; return; }
                                         finalToLoc = 'WH_EMPTY';
-                                    } 
-                                    // 🤖 ความฉลาดที่ 2: ถ้าย้ายไปที่ๆ มันอยู่แล้ว ให้ข้ามไปเลย ไม่ต้องแจ้งเตือนทีละอันให้รำคาญ
-                                    else if (fromLoc === targetLoc) {
-                                        skipCount++;
-                                        return; 
+                                    } else {
+                                        if (fromLoc === 'NEW' || fromLoc === targetLoc) { skipCount++; return; }
                                     }
 
-                                    // หาชื่อรุ่นเพื่อเอามาโชว์ในตาราง
                                     const baseScanned = scannedErp.substring(0, scannedErp.lastIndexOf('_')) || scannedErp;
                                     const foundProduct = db.products.find(p => p.erpCode && (p.erpCode.toUpperCase() === scannedErp.toUpperCase() || p.erpCode.toUpperCase() === baseScanned.toUpperCase()));
                                     const rackName = foundProduct ? foundProduct.name : "แพ็คกิ้งนอกระบบ";
 
-                                    // ยัดข้อมูลลงถัง
-                                    rackStagingList.push({ erpCode: scannedErp, name: rackName, qty: 1, from: fromLoc, to: finalToLoc });
+                                    let currentModelCount = 0;
+                                    for (const [code, data] of Object.entries(allRacks)) {
+                                        const codeBase = code.substring(0, code.lastIndexOf('_')) || code;
+                                        if (codeBase.toUpperCase() === baseScanned.toUpperCase()) {
+                                            currentModelCount += (data.WH_EMPTY + data.WH_FILLED + data.CUSTOMER);
+                                        }
+                                    }
+                                    const displayCount = targetLoc === 'REGISTER_NEW' ? currentModelCount + 1 : currentModelCount;
+
+                                    rackStagingList.push({ erpCode: scannedErp, name: rackName, qty: 1, from: fromLoc, to: finalToLoc, modelCount: displayCount });
                                     successCount++;
                                 });
 
-                                Swal.close(); // ปิดหน้าจอโหลด
-                                
-                                // วาดตารางใหม่
+                                Swal.close();
                                 if (typeof renderRackStagingTable === 'function') renderRackStagingTable();
                                 
-                                // สรุปผลลัพธ์
                                 if(successCount > 0) {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'อ่านไฟล์สำเร็จ!',
-                                        html: `ดึงข้อมูลเข้ารายการได้ <b>${successCount}</b> ใบ<br><span class="text-danger small">(ข้ามรหัสซ้ำ/ผิดสถานะ ${skipCount} ใบ)</span>`
-                                    });
+                                    Swal.fire({ icon: 'success', title: 'อ่านไฟล์สำเร็จ!', html: `ดึงข้อมูลเข้ารายการได้ <b>${successCount}</b> ใบ<br><span class="text-danger small">(ข้ามรหัสซ้ำ/ผิดสถานะ ${skipCount} ใบ)</span>` });
                                 } else {
-                                    Swal.fire('ไม่มีข้อมูลใหม่', `รหัสในไฟล์ซ้ำกับในตาราง หรืออยู่ในปลายทางที่เลือกอยู่แล้วครับ`, 'info');
+                                    Swal.fire('ไม่มีข้อมูลใหม่', `รหัสในไฟล์ซ้ำ หรืออยู่ในสถานะปลายทางที่เลือกอยู่แล้วครับ`, 'info');
                                 }
-                                
-                                e.target.value = ''; // เคลียร์ไฟล์หลังอ่านเสร็จ เพื่อให้อัปโหลดไฟล์เดิมซ้ำได้ถ้ามีการแก้
-
+                                e.target.value = ''; 
                             } catch (err) {
-                                console.error(err);
                                 Swal.fire('เกิดข้อผิดพลาด', 'รูปแบบไฟล์ไม่ถูกต้องครับ (ต้องเป็น .xlsx หรือ .csv)', 'error');
                                 e.target.value = '';
                             }
@@ -7272,55 +7318,14 @@ function populateSalesDashboard(startDate, endDate) {
                         reader.readAsArrayBuffer(file);
                     });
                 }
-                // 2. ฟังก์ชันวาดตารางของที่สแกนรอไว้ (โชว์เส้นทาง From -> To)
-                window.renderRackStagingTable = function() {
-                    const tbody = document.getElementById('rack-staging-list');
-                    if (rackStagingList.length === 0) {
-                        tbody.innerHTML = '<tr id="rack-empty-row"><td colspan="3" class="text-muted p-4"><i class="bi bi-upc-scan fs-3 d-block mb-2 opacity-50"></i>รอสแกน QR Code</td></tr>';
-                        return;
-                    }
 
-                    let html = '';
-                    // ย้อนกลับ Array เพื่อให้ของที่สแกนล่าสุดโชว์บนสุด
-                    [...rackStagingList].reverse().forEach(item => {
-                        let fromName = item.from === 'NEW' ? '✨ กล่องใหม่' : (item.from === 'WH_EMPTY' ? 'WH เปล่า' : (item.from === 'WH_FILLED' ? 'WH มีงาน' : 'ลูกค้า'));
-                        let toName = item.to === 'WH_EMPTY' ? 'WH เปล่า' : (item.to === 'WH_FILLED' ? 'WH มีงาน' : (item.to === 'CUSTOMER' ? 'ลูกค้า' : 'ชำรุด'));
-                        
-                        let badgeColor = item.from === 'NEW' ? 'success' : 'primary';
-
-                        html += `
-                            <tr>
-                                <td class="text-start ps-3">
-                                    <div class="fw-bold text-dark">${item.erpCode}</div>
-                                    <div class="small text-muted" style="font-size: 0.75rem;">${item.name}</div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-${badgeColor}-subtle text-${badgeColor}-emphasis border px-2 shadow-sm">
-                                        ${fromName} <i class="bi bi-arrow-right mx-1 fw-bold"></i> ${toName}
-                                    </span>
-                                </td>
-                                <td><button class="btn btn-sm btn-outline-danger shadow-sm py-0 px-2" onclick="removeRackStaging('${item.erpCode}')"><i class="bi bi-x-lg"></i></button></td>
-                            </tr>
-                        `;
-                    });
-                    tbody.innerHTML = html;
-                };
-
-                // ปุ่มกากบาทลบรายการที่สแกนผิด
-                window.removeRackStaging = function(erpCode) {
-                    rackStagingList = rackStagingList.filter(item => item.erpCode !== erpCode);
-                    renderRackStagingTable();
-                    document.getElementById('rack-scanner-input').focus();
-                };
-
-                // 3. ฟังก์ชันกดบันทึกตู้มเดียวลงระบบ
+                // 5. ฟังก์ชันกดบันทึกตู้มเดียวลงระบบ
                 document.getElementById('btn-save-rack-batch').addEventListener('click', async () => {
                     if (rackStagingList.length === 0) {
                         Swal.fire('แจ้งเตือน', 'ยังไม่มีรายการสแกนให้บันทึกครับ', 'warning');
                         return;
                     }
 
-                    // สร้างประวัติ
                     const newHistoryEntries = [];
                     const timestamp = new Date().toISOString();
                     const user = currentUser ? currentUser.username : 'Unknown';
@@ -7333,7 +7338,7 @@ function populateSalesDashboard(startDate, endDate) {
                             name: item.name,
                             from: item.from,
                             to: item.to,
-                            quantity: 1, // บังคับเซฟทีละ 1 ใบตามนำเบอร์
+                            quantity: 1, 
                             actionType: 'AUTO_ROUTE',
                             user: user
                         };
@@ -7342,45 +7347,28 @@ function populateSalesDashboard(startDate, endDate) {
                         db.rackHistory.push(newTransfer);
                     });
 
-                    // ล้างข้อมูลชั่วคราวทิ้ง
                     rackStagingList = [];
                     renderRackStagingTable();
-                    renderRackSummaryTable();
-                    
-                    // ปรับค่าป้ายประกาศให้แดชบอร์ดอัปเดตด้วยถ้าเปิดอยู่
+                    if(typeof renderRackSummaryTable === 'function') renderRackSummaryTable();
                     if(!document.getElementById('view-dash-rack').classList.contains('d-none')){
                         populateRackDashboard();
                     }
 
-                    Swal.fire({ icon: 'success', title: 'บันทึกการโยกย้ายสำเร็จ!', text: `ย้ายข้อมูลทั้งหมด ${newHistoryEntries.length} ใบ`, timer: 1500, showConfirmButton: false });
+                    Swal.fire({ icon: 'success', title: 'บันทึกสำเร็จ!', text: `อัปเดตข้อมูลแพ็คกิ้งทั้งหมด ${newHistoryEntries.length} ใบ`, timer: 1500, showConfirmButton: false });
 
-                    // แอบส่งไปเซฟหลังบ้าน
                     try {
                         await callAppsScript('appendBatchRackHistory', newHistoryEntries);
                     } catch (error) {
                         console.error('Error saving rack history to sheet:', error);
                     }
                 });
-                // 4. ฟังก์ชันคำนวณยอดคงเหลือของ Rack แต่ละประเภท
-                function calculateRackStock(erpCodeTarget = null) {
-                    const rackLedger = {};
-                    const history = db.rackHistory || [];
-
-                    history.forEach(record => {
-                        if (!rackLedger[record.erpCode]) {
-                            rackLedger[record.erpCode] = { name: record.name, WH_EMPTY: 0, WH_FILLED: 0, CUSTOMER: 0 };
-                        }
-                        const rack = rackLedger[record.erpCode];
-                        if (record.from !== 'NEW') rack[record.from] -= record.quantity;
-                        if (record.to !== 'OUT') rack[record.to] += record.quantity;
-                    });
-                    if (erpCodeTarget) return rackLedger[erpCodeTarget] || { WH_EMPTY: 0, WH_FILLED: 0, CUSTOMER: 0 };
-                    return rackLedger;
-                }
-                // 5. ฟังก์ชันวาดตารางสรุปยอดทั้งหมด
                 window.renderRackSummaryTable = function() {
                     const tableBody = document.getElementById('rack-summary-table');
                     if (!tableBody) return;
+
+                    // ดึงข้อความจากช่องค้นหา (ถ้ามี)
+                    const searchInput = document.getElementById('rack-summary-search');
+                    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
                     const allRacks = calculateRackStock();
                     let html = '';
@@ -7388,6 +7376,13 @@ function populateSalesDashboard(startDate, endDate) {
                     for (const [erpCode, data] of Object.entries(allRacks)) {
                         const total = data.WH_EMPTY + data.WH_FILLED + data.CUSTOMER;
                         if (total <= 0) continue; 
+
+                        // 🔍 ลอจิกการค้นหา (กรองถ้ารหัส ERP หรือชื่อรุ่น ไม่ตรงกับคำค้นหา)
+                        if (searchTerm) {
+                            const isMatch = erpCode.toLowerCase().includes(searchTerm) || 
+                                            (data.name && data.name.toLowerCase().includes(searchTerm));
+                            if (!isMatch) continue; // ถ้าไม่ตรง ให้ข้ามไป ไม่ต้องวาดลงตาราง
+                        }
 
                         html += `
                             <tr class="text-center">
@@ -7404,7 +7399,7 @@ function populateSalesDashboard(startDate, endDate) {
                     }
 
                     if (html === '') {
-                        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted p-5">ยังไม่มีข้อมูลแพ็คกิ้งในระบบ</td></tr>`;
+                        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted p-5">ไม่พบข้อมูล หรือยังไม่มีข้อมูลแพ็คกิ้งในระบบ</td></tr>`;
                     } else {
                         tableBody.innerHTML = html;
                     }
