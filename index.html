@@ -1142,6 +1142,11 @@
                 </div>
                 <div class="modal-body p-4 pt-0">
                     <div class="text-center mb-4">
+                        <div id="login-avatar-container" class="mx-auto mb-3" style="width: 85px; height: 85px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 100%; height: 100%; border: 3px solid #e9ecef;">
+                                <i class="bi bi-person text-secondary opacity-50" style="font-size: 3.5rem;"></i>
+                            </div>
+                        </div>
                         <h3 class="fw-bold text-primary">ลงชื่อเข้าใช้งาน</h3>
                         <p class="text-muted">กรุณาระบุชื่อผู้ใช้และรหัสผ่านเพื่อดำเนินการต่อ</p>
                     </div>
@@ -3986,7 +3991,15 @@ async function handleImport(e) {
                     dashboardPage.style.display = 'none';
                     document.getElementById('username').value = '';
                     document.getElementById('password').value = '';
-                    errorMessage.classList.add('d-none');
+                    errorMessage.classList.add('d-none');// รีเซ็ตรูปโปรไฟล์หน้าล็อกอินกลับเป็นค่าเริ่มต้น (เผื่อกรณีล็อกเอาท์)
+                    const avatarContainer = document.getElementById('login-avatar-container');
+                    if (avatarContainer) {
+                        avatarContainer.innerHTML = `
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 85px; height: 85px; border: 3px solid #e9ecef;">
+                                <i class="bi bi-person text-secondary opacity-50" style="font-size: 3.5rem;"></i>
+                            </div>
+                        `;
+                    }
 			if(document.getElementById('floating-mascot-container')) {
     document.getElementById('floating-mascot-container').classList.add('d-none');
 }
@@ -4873,7 +4886,36 @@ window.downloadRackSummaryPDF = function() {
                         // เรียกใช้ฟังก์ชัน backupToCSV พร้อมส่ง footer เข้าไปด้วย
                         backupToCSV(stockBackupData, 'stock_summary_backup.csv', footer);
                     });
+                        // 🌟 ระบบดึงรูปโปรไฟล์มาโชว์อัตโนมัติเมื่อพิมพ์ชื่อผู้ใช้
+                    document.getElementById('username').addEventListener('input', function(e) {
+                        const typedName = e.target.value.trim();
+                        const avatarContainer = document.getElementById('login-avatar-container');
+                        if (!avatarContainer) return;
 
+                        // ค้นหาในฐานข้อมูลว่ามี User คนนี้ไหม (ตรวจสอบแบบไม่สนตัวพิมพ์เล็ก/ใหญ่)
+                        const foundUser = db.users.find(u => u.username.toLowerCase() === typedName.toLowerCase());
+
+                        if (foundUser) {
+                            // ถ้าเจอชื่อ! ให้ดึงรูป หรือสร้างตัวอักษรย่อมาแสดง (ขนาด 85px)
+                            avatarContainer.innerHTML = window.getAvatarHtml(foundUser, 85);
+                            
+                            // เพิ่มลูกเล่นให้รูปมีขอบสีฟ้าและเด้งป๊อปอัปขึ้นมาเบาๆ
+                            const innerEl = avatarContainer.firstElementChild;
+                            if (innerEl) {
+                                innerEl.style.border = '3px solid #0d6efd';
+                                innerEl.style.boxShadow = '0 8px 15px rgba(13, 110, 253, 0.3)';
+                                innerEl.style.transform = 'scale(1.1)';
+                                innerEl.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                            }
+                        } else {
+                            // ถ้าไม่เจอชื่อ หรือลบชื่อทิ้ง ให้คืนค่ากลับเป็นรูปไอคอนคนแบบเดิม
+                            avatarContainer.innerHTML = `
+                                <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 85px; height: 85px; border: 3px solid #e9ecef;">
+                                    <i class="bi bi-person text-secondary opacity-50" style="font-size: 3.5rem;"></i>
+                                </div>
+                            `;
+                        }
+                    });
                     document.getElementById('backup-products-btn').addEventListener('click', () => {
                         const T = translations[currentLanguage];
                         const footer = {
