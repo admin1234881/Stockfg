@@ -4072,14 +4072,30 @@ clearInterval(window.mascotLoopTimer);
         if (document.getElementById('backup-stock-btn')) document.getElementById('backup-stock-btn').style.display = '';
         if (document.getElementById('backup-products-btn')) document.getElementById('backup-products-btn').style.display = canManageProducts ? '' : 'none';
         if (document.getElementById('backup-users-btn')) document.getElementById('backup-users-btn').style.display = canManageUsers ? '' : 'none';
- // 5. โชว์ตัวเลือก "เพิ่มแพ็คกิ้งใหม่" ให้เฉพาะ Admin เท่านั้น
-        const registerOpt = document.getElementById('opt-register-new');
-        if (registerOpt && currentUser) { 
-            // เช็คว่าถ้าเป็น Admin ถึงจะแสดง
+// 5. โชว์ตัวเลือก "เพิ่มแพ็คกิ้งใหม่" ให้เฉพาะ Admin เท่านั้น (แก้บั๊กมือถือมองเห็นตัวเลือกที่ซ่อน)
+        const selectLoc = document.getElementById('rack-to-loc');
+        let registerOpt = document.getElementById('opt-register-new');
+        
+        if (currentUser && selectLoc) { 
             if (currentUser.role === 'admin' || currentUser.username === 'admin') {
-                registerOpt.style.display = 'block'; 
+                // ถ้าเป็นแอดมิน และยังไม่มีตัวเลือกนี้ในระบบ ให้สร้างขึ้นมาใหม่
+                if (!registerOpt) {
+                    registerOpt = document.createElement('option');
+                    registerOpt.id = 'opt-register-new';
+                    registerOpt.value = 'REGISTER_NEW';
+                    registerOpt.className = 'text-primary fw-bold';
+                    registerOpt.textContent = '✨ เพิ่มแพ็คกิ้งใหม่เข้าระบบ (Register New)';
+                    // นำไปเสียบไว้ในตำแหน่งบรรทัดที่ 2 (ใต้ตัวเลือก Default)
+                    selectLoc.insertBefore(registerOpt, selectLoc.options[1]);
+                }
+                registerOpt.style.display = 'block';
+                registerOpt.hidden = false;
+                registerOpt.disabled = false;
             } else {
-                registerOpt.style.display = 'none';
+                // ถ้าเป็น User ทั่วไป ให้ "ถอนรากถอนโคน" ลบทิ้งจากระบบไปเลย (แก้บั๊กมือถือแอบโชว์)
+                if (registerOpt) {
+                    registerOpt.remove();
+                }
             }
         }
                     // --- คำสั่งสำคัญ: แสดงแถบ Support ---
