@@ -17,6 +17,64 @@
         page-break-inside: avoid; /* ป้องกันการตัดบรรทัดกลางแถวตาราง */
     }
 }
+        /* ========================================= */
+        /* 🐾 แอนิเมชันมือแมวปุ่ม Login */
+        /* ========================================= */
+        .login-btn-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .cat-paw-cute {
+            position: absolute;
+            top: 10px;
+            right: 30px;
+            width: 45px;
+            height: 50px;
+            background: #ffffff;
+            border: 2.5px solid #212529;
+            border-radius: 25px 25px 15px 15px;
+            z-index: 1; /* ซ่อนไว้หลังปุ่ม */
+            transform: translateY(20px) translateX(-10px) rotate(45deg) scale(0.5);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.5); /* เด้งดุ๋งๆ */
+            pointer-events: none;
+            box-shadow: inset -4px -4px 0 rgba(0,0,0,0.05);
+        }
+        /* นิ้วเท้าซ้าย-ขวา */
+        .cat-paw-cute::before {
+            content: '';
+            position: absolute;
+            top: 8px; left: 8px;
+            width: 10px; height: 14px;
+            background: #ff8da1; /* สีชมพูอุ้งเท้า */
+            border-radius: 50%;
+            box-shadow: 16px 2px 0 #ff8da1; 
+            transform: rotate(-5deg);
+        }
+        /* นิ้วเท้ากลาง */
+        .cat-paw-cute::after {
+            content: '';
+            position: absolute;
+            top: 4px; left: 16px;
+            width: 10px; height: 14px;
+            background: #ff8da1;
+            border-radius: 50%;
+        }
+        /* อุ้งเท้าใหญ่ */
+        .cat-paw-cute .pad-main {
+            position: absolute;
+            top: 24px; left: 11px;
+            width: 20px; height: 15px;
+            background: #ff8da1;
+            border-radius: 50% 50% 40% 40%;
+        }
+
+        /* เอฟเฟกต์ตอนชี้เมาส์ หรือตอน idle */
+        .login-btn-wrapper:hover .cat-paw-cute,
+        .cat-paw-cute.peek {
+            transform: translateY(-38px) translateX(0) rotate(15deg) scale(1);
+            opacity: 1;
+        }
         .header-contact-widget {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(10px);
@@ -1127,9 +1185,17 @@
 
  
 
-                <button class="btn btn-login-trigger shadow" data-bs-toggle="modal" data-bs-target="#loginModal">
-                    <i class="bi bi-person-lock me-2"></i> เข้าสู่ระบบ / LOGIN
-                </button>
+                <!-- 🐾 ปุ่ม Login พร้อมมือแมว -->
+                <div class="login-btn-wrapper">
+                    <!-- มือแมว Pure CSS -->
+                    <div class="cat-paw-cute" id="cat-paw">
+                        <div class="pad-main"></div>
+                    </div>
+                    <!-- ปุ่มเดิม (เพิ่ม z-index ให้บังมือแมวไว้) -->
+                    <button class="btn btn-login-trigger shadow" data-bs-toggle="modal" data-bs-target="#loginModal" style="position: relative; z-index: 5;">
+                        <i class="bi bi-person-lock me-2"></i> เข้าสู่ระบบ / LOGIN
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -8041,6 +8107,39 @@ function populateSalesDashboard(startDate, endDate) {
                         }
                     }
                 };
+                // ========================================================
+                // 🐾 แอนิเมชันมือแมว (Cat Paw Idle Timer)
+                // ========================================================
+                let pawIdleTimer;
+                let pawHideTimer;
+                const catPaw = document.getElementById('cat-paw');
+                
+                function resetPawTimer() {
+                    if(catPaw) catPaw.classList.remove('peek');
+                    clearTimeout(pawIdleTimer);
+                    clearTimeout(pawHideTimer);
+                    
+                    // ตั้งเวลา 5 วินาที ถ้าไม่ขยับเมาส์ให้มือแมวโผล่มา
+                    pawIdleTimer = setTimeout(() => {
+                        const loginPage = document.getElementById('login-page');
+                        // เช็คว่าอยู่หน้า Login จริงๆ ถึงจะโชว์ (ไม่ให้ไปกวนหน้า Dashboard)
+                        if(catPaw && loginPage && loginPage.style.display !== 'none') {
+                            catPaw.classList.add('peek');
+                            
+                            // โผล่มา 3 วินาทีแล้วมุดกลับลงไป
+                            pawHideTimer = setTimeout(() => {
+                                if(catPaw) catPaw.classList.remove('peek');
+                            }, 3000);
+                        }
+                    }, 5000);
+                }
+
+                // ดักจับการขยับเมาส์หรือกดปุ่มหน้าคีย์บอร์ด เพื่อรีเซ็ตเวลาใหม่
+                document.addEventListener('mousemove', resetPawTimer);
+                document.addEventListener('keypress', resetPawTimer);
+                
+                // เริ่มจับเวลาทันทีเมื่อโหลดหน้าเว็บ
+                resetPawTimer();
         </script>
 
 <button class="btn shadow-lg d-flex align-items-center justify-content-center" id="calc-toggle-btn" 
