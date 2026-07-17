@@ -837,94 +837,91 @@
             100% { transform: translateX(-100%); }
         }
         /* ========================================= */
-        /* --- HI-TECH DOOR ANIMATION --- */
+ /* ========================================= */
+        /* --- TRUCK TRANSITION ANIMATION --- */
         /* ========================================= */
-        .hitech-door-container {
+        .truck-transition-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100vh;
-            z-index: 9999999; /* ให้อยู่หน้าสุดของทุกสิ่ง */
+            background: rgba(15, 32, 39, 0.95);
+            backdrop-filter: blur(8px);
+            z-index: 9999999;
             pointer-events: none;
             display: flex;
-            visibility: hidden; /* ซ่อนไว้ก่อนตอนปกติ */
-        }
-        .hitech-door-container.active {
-            visibility: visible;
-        }
-        
-        /* แผ่นประตูซ้ายและขวา */
-        .hitech-door-left, .hitech-door-right {
-            width: 50%;
-            height: 100%;
-            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
-            position: relative;
-            transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
-            display: flex;
             align-items: center;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
-        }
-        .hitech-door-left {
-            transform: translateX(-100%); /* ซ่อนไว้ขอบซ้าย */
-            border-right: 4px solid #0dcaf0;
-            justify-content: flex-end;
-        }
-        .hitech-door-right {
-            transform: translateX(100%); /* ซ่อนไว้ขอบขวา */
-            border-left: 4px solid #0dcaf0;
-            justify-content: flex-start;
-        }
-
-        /* ตกแต่งวงกลมแกนกลางประตู */
-        .door-logo-half {
-            width: 80px;
-            height: 160px;
-            background: #0f2027;
-            position: absolute;
-            display: flex;
-            align-items: center;
-            overflow: hidden;
-        }
-        .hitech-door-left .door-logo-half {
-            right: 0;
-            border-radius: 80px 0 0 80px;
-            border: 4px solid #0dcaf0;
-            border-right: none;
-            box-shadow: -5px 0 25px rgba(13, 202, 240, 0.4);
-        }
-        .hitech-door-right .door-logo-half {
-            left: 0;
-            border-radius: 0 80px 80px 0;
-            border: 4px solid #0dcaf0;
-            border-left: none;
-            box-shadow: 5px 0 25px rgba(13, 202, 240, 0.4);
-        }
-        
-        /* คลาสคำสั่งเวลาปิดประตู */
-        .hitech-door-container.close-doors .hitech-door-left { transform: translateX(0); }
-        .hitech-door-container.close-doors .hitech-door-right { transform: translateX(0); }
-        
-        /* เอฟเฟกต์เส้นแสงวาบตอนประตูปิดชนกัน */
-        .door-glow {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 10px;
-            height: 100%;
-            background: #ffffff;
-            box-shadow: 0 0 40px 15px #0dcaf0;
+            justify-content: center;
             opacity: 0;
-            transition: opacity 0.3s;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
         }
-        .hitech-door-container.close-doors .door-glow {
-            animation: flashGlow 0.5s 0.8s forwards; /* วาบขึ้นมาตอนวินาทีที่ 0.8 (ประตูปิดสนิท) */
+        .truck-transition-container.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
         }
-        @keyframes flashGlow {
-            0% { opacity: 0; width: 2px; }
-            50% { opacity: 1; width: 20px; }
-            100% { opacity: 0; width: 0; }
+        .moving-truck {
+            position: relative;
+            transform: translateX(-150vw);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .moving-truck.drive-in {
+            animation: truckDriveIn 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .moving-truck.drive-out {
+            animation: truckDriveOut 0.8s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+        }
+        @keyframes truckDriveIn {
+            0% { transform: translateX(-100vw); }
+            100% { transform: translateX(0); }
+        }
+        @keyframes truckDriveOut {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(150vw); }
+        }
+        .truck-icon-large {
+            font-size: 8rem;
+            color: #ffc107;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.6));
+            animation: truckMainBounce 0.15s infinite alternate;
+        }
+        .truck-text {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 15px;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+        }
+        @keyframes truckMainBounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-8px) rotate(-1deg); }
+        }
+        .speed-lines-bg {
+            position: absolute;
+            left: -120px;
+            top: 40%;
+            width: 120px;
+            height: 60px;
+            transform: translateY(-50%);
+        }
+        .speed-lines-bg .line {
+            position: absolute;
+            background: #fff;
+            height: 4px;
+            border-radius: 4px;
+            opacity: 0.8;
+        }
+        .speed-lines-bg .l1 { width: 80px; top: 10%; left: 40px; animation: windLine 0.3s infinite linear; }
+        .speed-lines-bg .l2 { width: 110px; top: 50%; left: 0px; animation: windLine 0.4s infinite linear; }
+        .speed-lines-bg .l3 { width: 60px; top: 80%; left: 60px; animation: windLine 0.25s infinite linear; }
+        @keyframes windLine {
+            0% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(-100px); opacity: 0; }
         }
         /* --- โครงสร้างลูฟี่ด้วย Pure CSS --- */
 .cute-luffy-css {
@@ -1070,16 +1067,19 @@
     </style>
 <body>
 <!-- ========================================= -->
-    <!-- 🚪 เอฟเฟกต์ประตูไฮเทค (Sci-Fi Door) -->
+<!-- ========================================= -->
+    <!-- 🚚 เอฟเฟกต์รถบรรทุกส่งของ (Truck Transition) -->
     <!-- ========================================= -->
-    <div id="hitech-door-container" class="hitech-door-container">
-        <div class="hitech-door-left">
-            <div class="door-logo-half"></div>
+    <div id="truck-transition-container" class="truck-transition-container">
+        <div id="moving-truck" class="moving-truck">
+            <div class="speed-lines-bg">
+                <div class="line l1"></div>
+                <div class="line l2"></div>
+                <div class="line l3"></div>
+            </div>
+            <i class="bi bi-truck truck-icon-large"></i>
+            <div class="truck-text" id="truck-transition-text">กำลังโหลด...</div>
         </div>
-        <div class="hitech-door-right">
-            <div class="door-logo-half"></div>
-        </div>
-        <div class="door-glow"></div>
     </div>
     <div id="login-page" class="container">
         <div class="login-container">
@@ -3954,29 +3954,33 @@ async function handleImport(e) {
                 // ============================================
                 // 🚪 ฟังก์ชันออกจากระบบพร้อมแอนิเมชันเปิด-ปิดประตู
                 // ============================================
+// ============================================
+                // 🚚 ฟังก์ชันออกจากระบบพร้อมแอนิเมชันรถบรรทุก
+                // ============================================
                 function logoutWithAnimation() {
-                    const doorContainer = document.getElementById('hitech-door-container');
-                    if (doorContainer) {
-                        // 1. โชว์ประตู (ที่แอบซ่อนอยู่ขอบซ้าย-ขวา)
-                        doorContainer.classList.add('active');
+                    const transitionContainer = document.getElementById('truck-transition-container');
+                    const truck = document.getElementById('moving-truck');
+                    const truckText = document.getElementById('truck-transition-text');
+                    
+                    if (transitionContainer && truck && truckText) {
+                        // 1. เปลี่ยนข้อความและเรียกรถวิ่งเข้ามา
+                        truckText.innerText = "กำลังออกจากระบบ... 💨";
+                        transitionContainer.classList.add('active');
+                        truck.className = 'moving-truck drive-in'; 
                         
-                        // ให้เวลาเบราว์เซอร์เตรียมตัวนิดนึง แล้วพุ่งมาปิดชนกัน
+                        // 2. รอให้รถวิ่งมาจอดตรงกลาง
                         setTimeout(() => {
-                            doorContainer.classList.add('close-doors');
+                            // สลับกลับเป็นหน้า Login
+                            showLoginPage(); 
                             
-                            // 2. รอประตูปิดสนิท + แสงวาบ (1.2 วินาที) แล้วแอบสลับเป็นหน้า Login หลังประตู
+                            // 3. สั่งให้รถวิ่งต่อไปทางขวา
+                            truck.className = 'moving-truck drive-out';
+                            
+                            // 4. รอรถวิ่งพ้นจอค่อยซ่อน Container
                             setTimeout(() => {
-                                showLoginPage(); 
-                                
-                                // 3. สั่งให้ประตูเลื่อนเปิดออก เผยให้เห็นหน้าจอ Login
-                                doorContainer.classList.remove('close-doors');
-                                
-                                // 4. รอประตูเปิดเสร็จ แล้วซ่อนกล่องประตูทิ้งไป
-                                setTimeout(() => {
-                                    doorContainer.classList.remove('active');
-                                }, 800);
-                            }, 1200);
-                        }, 50);
+                                transitionContainer.classList.remove('active');
+                            }, 800);
+                        }, 1200);
                     } else {
                         showLoginPage();
                     }
@@ -5261,29 +5265,35 @@ function handleLogin(e) {
         passwordInput.value = '';
 
 // ============================================
-            // 🚀 เริ่มแอนิเมชันเปิดประตูไฮเทค
+// ============================================
+            // 🚀 เริ่มแอนิเมชันรถบรรทุกส่งของ (Login)
             // ============================================
-            const doorContainer = document.getElementById('hitech-door-container');
+            const transitionContainer = document.getElementById('truck-transition-container');
+            const truck = document.getElementById('moving-truck');
+            const truckText = document.getElementById('truck-transition-text');
             
-            if (doorContainer) {
-                // 1. โชว์ประตู และสั่งให้ "ปิด" (เลื่อนมาชนกันตรงกลาง)
-                doorContainer.classList.add('active');
-                doorContainer.classList.add('close-doors');
+            if (transitionContainer && truck && truckText) {
+                // 1. เปลี่ยนข้อความและเรียกรถเข้ามาจอดตรงกลาง
+                truckText.innerText = "กำลังเข้าสู่ระบบ... 📦";
+                transitionContainer.classList.add('active');
+                truck.className = 'moving-truck drive-in';
                 
-                // 2. รอให้ประตูปิดสนิท (0.8s) + ให้เห็นแสงวาบ (0.4s) รวมเป็น 1.2 วินาที
+                // 2. รอให้รถวิ่งมาจอดตรงกลาง (0.8s) + ให้จอดโชว์ (0.4s) รวมเป็น 1.2 วินาที
                 setTimeout(() => {
-                    // เปลี่ยนฉากหลังเป็นหน้า Dashboard โดยที่ประตูยังบังอยู่
+                    // เปลี่ยนฉากหลังเป็นหน้า Dashboard ขณะที่รถบังอยู่
                     sessionStorage.setItem('currentUser', JSON.stringify(foundUser));
                     checkLoginState();
                     
                     if (document.getElementById('floating-mascot-container')) {
                         document.getElementById('floating-mascot-container').classList.remove('d-none');
                     }
-                    doorContainer.classList.remove('close-doors');
                     
-                    // 4. รอให้ประตูเปิดเสร็จ (0.8s) แล้วค่อยซ่อนกล่องแอนิเมชัน + เด้งแจ้งเตือน
+                    // 3. สั่งให้รถซิ่งออกไปทางขวา
+                    truck.className = 'moving-truck drive-out';
+                    
+                    // 4. รอรถวิ่งพ้นจอ (0.8s) แล้วซ่อนกล่องแอนิเมชัน
                     setTimeout(() => {
-                        doorContainer.classList.remove('active');
+                        transitionContainer.classList.remove('active');
                         Swal.fire({
                             icon: 'success',
                             title: 'เข้าสู่ระบบสำเร็จ',
