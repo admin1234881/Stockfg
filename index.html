@@ -3420,15 +3420,17 @@ approveStockCount: (countId) => {
                             count.items.forEach(item => {
                                 const variance = item.countedQty - item.systemQty;
                                 
-                                if (variance !== 0 || isExcelUpload) {
+                                // 🟢 เปลี่ยนเงื่อนไขให้บันทึกเฉพาะเมื่อมี "ส่วนต่าง" เท่านั้น
+                                if (variance !== 0) { 
                                     const product = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
                                     
                                     let remark = `STOCK_COUNT_ADJ:${count.id}|ปรับยอดจากการนับสต็อก ${count.id} (นับโดย: ${count.user})`;
                                     let qtyToSave = variance; 
                                     
                                     if (isExcelUpload) {
-                                        remark = `MANUAL_ADJ_NEW_TOTAL:${item.countedQty}|อัปเดตสต็อกจากไฟล์ Excel ${count.id} (Cut-off 07:59)`;
-                                        qtyToSave = item.countedQty; 
+                                        // 🟢 เปลี่ยนจาก MANUAL_ADJ_NEW_TOTAL เป็นการปรับเฉพาะส่วนต่างแทน
+                                        remark = `STOCK_COUNT_ADJ_EXCEL:${count.id}|ปรับส่วนต่าง ${variance > 0 ? '+' : ''}${variance} จากไฟล์ Excel (Cut-off 07:59)`;
+                                        qtyToSave = variance; 
                                     }
 
                                     adjustmentEntries.push({
@@ -7935,11 +7937,6 @@ function populateSalesDashboard(startDate, endDate) {
 
                     if (!sourceId || !destId || !lotSelect || !lotSelect.value || isNaN(quantity) || quantity <= 0 || !destPackType) {
                         Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูล เลือกล็อต และแพ็คกิ้งปลายทางให้ครบถ้วน', 'warning');
-                        return;
-                    }
-
-                    if (sourceId === destId) {
-                        Swal.fire('ข้อผิดพลาด', 'รหัสสินค้าต้นทางและปลายทางต้องไม่ซ้ำกัน', 'warning');
                         return;
                     }
 
