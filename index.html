@@ -1344,6 +1344,7 @@
                             <li id="nav-history-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-history"><i class="bi bi-clock-history me-3 text-secondary fs-5 align-middle"></i><span data-lang-key="nav_history">ประวัติ</span></button></li>
                             
                             <li id="nav-delivery-plan-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-delivery-plan"><i class="bi bi-calendar-check-fill me-3 text-danger fs-5 align-middle"></i><span data-lang-key="nav_delivery_plan">แผนการจัดส่ง</span></button></li>
+                            <li id="nav-forecast-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-forecast"><i class="bi bi-graph-up-arrow me-3 text-success fs-5 align-middle"></i><span data-lang-key="nav_forecast">อัปโหลด Forecast (ล่วงหน้า)</span></button></li>
                         </ul>
                     </li>
     
@@ -1380,7 +1381,10 @@
                                         <input class="form-check-input" type="checkbox" role="switch" id="show-old-stock-filter">
                                         <label class="form-check-label small text-muted fw-bold" for="show-old-stock-filter" data-lang-key="stock_show_old_filter">แสดงเฉพาะสต็อกที่ผลิตเกิน 3 เดือน</label>
                                     </div>
-                                    
+                                    <div class="form-check form-switch mb-0 ms-3">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="show-low-stock-filter">
+                                        <label class="form-check-label small fw-bold text-danger" for="show-low-stock-filter">แสดงสต็อกไม่พอ 3 วัน</label>
+                                    </div>
                                     <div class="dropdown" id="backup-dropdown-container">
                                         <button class="btn btn-outline-primary btn-sm rounded-pill shadow-sm dropdown-toggle fw-bold px-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i class="bi bi-cloud-arrow-down-fill me-1"></i> <span class="d-none d-md-inline" data-lang-key="backup_title">สำรองข้อมูล</span>
@@ -1735,7 +1739,36 @@
                         </div> <!-- ปิดแถว (row) -->
                     </div> <!-- ปิดหน้าแดชบอร์ด Rack (view-dash-rack) -->
                 </div> <!-- ปิดหน้าแดชบอร์ดรวมทั้งหมด (pills-dashboard) -->
-                    
+                <!-- Forecast Tab -->
+                <div class="tab-pane fade" id="pills-forecast" role="tabpanel">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+                            <div class="card shadow-sm border-0" style="border-radius: 20px;">
+                                <div class="card-header fw-bold bg-white pt-4 pb-3 px-4 border-0 d-flex justify-content-between align-items-center" style="border-radius: 20px 20px 0 0;">
+                                    <h5 class="fw-bold text-success mb-0"><i class="bi bi-graph-up-arrow me-2"></i>อัปโหลด Forecast (ประเมินสต็อก 3 วัน)</h5>
+                                </div>
+                                <div class="card-body px-5 pb-5 pt-3 text-center">
+                                    <div class="mb-4">
+                                        <i class="bi bi-file-earmark-excel text-success" style="font-size: 4rem;"></i>
+                                        <h5 class="fw-bold mt-2">ขั้นตอนที่ 1: ดาวน์โหลดเทมเพลต</h5>
+                                        <p class="text-muted small">ระบบจะสร้างวันที่ของ "สัปดาห์หน้า" ให้อัตโนมัติ</p>
+                                        <button class="btn btn-outline-success fw-bold rounded-pill px-4" onclick="window.downloadForecastTemplate()">
+                                            <i class="bi bi-download me-2"></i>ดาวน์โหลด Template
+                                        </button>
+                                    </div>
+                                    <hr class="w-50 mx-auto my-4">
+                                    <div>
+                                        <h5 class="fw-bold mt-2">ขั้นตอนที่ 2: อัปโหลดไฟล์ที่ใส่ตัวเลขแล้ว</h5>
+                                        <p class="text-muted small">ระบบจะคำนวณเป้าสต็อก 3 วัน ไปผูกกับตาราง "สต็อกคงเหลือ"</p>
+                                        <button class="btn btn-success fw-bold shadow-sm rounded-pill px-5 py-2 fs-5" onclick="window.uploadForecastFile()">
+                                            <i class="bi bi-upload me-2"></i>คลิกเพื่ออัปโหลดไฟล์ Excel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>    
                 <!-- Import Tab -->
                 <div class="tab-pane fade" id="pills-import" role="tabpanel">
                     <div class="card">
@@ -2820,10 +2853,10 @@ function handleLogin(e) {
                 };
 
                 // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwXtAdOPiTu2qeCIS6bncy4s_yR_7WYM9ApAhOf8192wnGWl_lAX6-z8X6DTjco563iVA/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQoHwzdHSH427Yb9ZcVkUj-fNbmALDDXU_xPMPTuXE1R1gsKlH2xPTWEMyQg17MC-LEg/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
-                let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [] };
+                let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [] };
                 let calculatedStock = []; // This will hold the stock calculated from history
                 let dataSyncInterval = null;
                 let inactivityTimer = null;
@@ -2984,14 +3017,30 @@ if (isInitialLoad) {
         newData.stockCounts = newData.stockCounts || [];
         newData.deliveryPlans = newData.deliveryPlans || [];
         newData.rackHistory = newData.rackHistory || [];
+        newData.forecast = newData.forecast || []; // 🌟 1. สั่งให้ดึงแผ่น Forecast จากชีตมารอไว้
+
         if (JSON.stringify(db) !== JSON.stringify(newData)) {
             db = newData;
             console.log('Data updated from Google Sheet at:', new Date().toLocaleTimeString());
+            
+            // 🌟 2. เอาเป้า 3 วัน (req3Days) มายัดใส่ในรหัสสินค้า เพื่อให้ตารางโชว์ตัวเลข
+            if (db.forecast && db.forecast.length > 0) {
+                db.forecast.forEach(fc => {
+                    let prod = db.products.find(p => String(p.id).trim() === String(fc.productId).trim());
+                    if (prod) prod.req3Days = parseFloat(fc.req3Days) || 0;
+                });
+            }
+
             if (currentUser) {
                 calculateStockFromHistory(); 
                 populateAll();
             }
-
+            if (db.forecast && db.forecast.length > 0) {
+                db.forecast.forEach(fc => {
+                    let prod = db.products.find(p => String(p.id).trim() === String(fc.productId).trim());
+                    if (prod) prod.req3Days = parseFloat(fc.req3Days) || 0;
+                });
+            }
             if (!isInitialLoad) {
                 const Toast = Swal.mixin({
                     toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true,
@@ -4130,6 +4179,7 @@ clearInterval(window.mascotLoopTimer);
         const canManageProducts = isMasterAdmin || currentUser.canManageProducts;
         const canManageUsers = isMasterAdmin || currentUser.canManageUsers;
         const canManageAnn = isMasterAdmin || currentUser.canManageAnnouncements;
+        const canForecast = isMasterAdmin || currentUser.canForecast;
 
         // 1. หมวดหมู่ "ตั้งค่าระบบ" 
         // (แก้ไขใหม่: โชว์เมื่อมีสิทธิ์จัดการอย่างใดอย่างหนึ่ง ไม่จำเป็นต้องเป็น Admin ก็เห็นได้)
@@ -4149,6 +4199,8 @@ clearInterval(window.mascotLoopTimer);
         if (document.getElementById('nav-products-item')) document.getElementById('nav-products-item').style.display = canManageProducts ? '' : 'none';
         if (document.getElementById('nav-users-item')) document.getElementById('nav-users-item').style.display = canManageUsers ? '' : 'none';
         if (document.getElementById('nav-announcements-item')) document.getElementById('nav-announcements-item').style.display = canManageAnn ? '' : 'none';
+        if (document.getElementById('nav-forecast-item')) {document.getElementById('nav-forecast-item').style.display = canForecast ? '' : 'none';
+        }
 
  // 3. จัดการปุ่มดาวน์โหลดสำรองข้อมูลแบบใหม่ (Dropdown)
         const backupDropdown = document.getElementById('backup-dropdown-container');
@@ -4372,137 +4424,267 @@ function submitRackAction() {
         .updateRackHistoryStatus(rackId, status); // ชื่อฟังก์ชันที่จะไปทำงานที่ไฟล์ Code.gs
 }
 
- function populateStockSummary() {
-                    const T = translations[currentLanguage];
-                    const header = document.getElementById('stock-summary-table-header');
-                    const isAdmin = currentUser.role === 'admin';
-                    header.innerHTML = `<tr>
-                <th></th>
-                <th>${T.stock_table_product}</th>
-                <th>${T.erp_code}</th>
-                <th>${T.customer}</th>
-                <th>${T.stock_table_balance}</th>
-                ${isAdmin ? `<th>${T.actions}</th>` : ''}
-            </tr>`;
+ // =========================================================
+// 📈 ระบบ FORECAST คำนวณสต็อก 3 วัน
+// =========================================================
+window.downloadForecastTemplate = function() {
+    let d = new Date();
+    let currentDay = d.getDay(); 
+    let daysToNextMonday = currentDay === 0 ? 1 : 8 - currentDay; // หาวันจันทร์หน้า
+    let nextMonday = new Date(d);
+    nextMonday.setDate(d.getDate() + daysToNextMonday);
 
-                    const stockSummaryTable = document.getElementById('stock-summary-table');
-                    stockSummaryTable.innerHTML = '';
-                    const filterOldStock = document.getElementById('show-old-stock-filter').checked;
-                    const searchTerm = document.getElementById('stock-search-input').value.toLowerCase();
-                    const threeMonthsAgo = new Date();
-                    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    const headers = ["Customer", "Part No."];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    for(let i = 0; i < 7; i++) {
+        let tempD = new Date(nextMonday);
+        tempD.setDate(nextMonday.getDate() + i);
+        let dd = String(tempD.getDate()).padStart(2, '0');
+        let mm = String(tempD.getMonth() + 1).padStart(2, '0');
+        headers.push(`${dayNames[tempD.getDay()]} (${dd}/${mm}/${tempD.getFullYear()})`);
+    }
 
-// ==========================================
-                    // 📊 ลอจิกใหม่: คำนวณยอดแยกลูกค้าและกลุ่ม (ออโต้/อิเล็ก)
-                    // ==========================================
-                    const customerSummary = new Map();
+    const ws_data = [
+        headers,
+        ["LG", "PART-001", 100, 150, 0, 100, 200, 0, 0], // ตัวอย่าง
+        ["HANON", "PART-002", 0, 0, 300, 300, 0, 0, 0] // ตัวอย่าง
+    ];
+    
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    ws['!cols'] = [{wch: 15}, {wch: 25}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Forecast_NextWeek");
+    XLSX.writeFile(wb, "Forecast_Template.xlsx");
+};
+
+window.uploadForecastFile = function() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx, .xls, .csv';
+    fileInput.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return; 
+        
+        Swal.fire({ title: 'กำลังคำนวณ Forecast...', didOpen: () => Swal.showLoading() });
+        const reader = new FileReader();
+        
+        reader.onload = async function(event) { 
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+
+                let updateCount = 0;
+                // 🟢 ดึงข้อมูล Forecast เดิมจากในเครื่อง (ป้องกันข้อมูลหายตอน Auto-Sync)
+                let localForecast = JSON.parse(localStorage.getItem('forecastData') || '{}');
+
+                for(let i = 1; i < jsonData.length; i++) {
+                    let row = jsonData[i];
+                    if(!row || !row[1]) continue;
+                    let partNo = String(row[1]).trim().toUpperCase(); // คอลัมน์ B: Part No.
+
+                    let totalDemand = 0;
+                    let activeDays = 0; // ตัวนับวันทำงานจริง
+
+                for(let d = 2; d <= 8; d++) { // วนลูป 7 วัน
+                let qty = parseFloat(row[d]) || 0;
+                    if(qty > 0) {
+                        totalDemand += qty; // เอาเฉพาะยอด > 0 มาบวก
+                        activeDays++;       // นับแค่เฉพาะวันที่มียอด
+                    }
+                }
                     
-                    calculatedStock.forEach(stockItem => {
-                        if(stockItem.totalQuantity <= 0) return; // ไม่นับสินค้าที่ของหมด
-                        
-                        const productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim()) || {};
-                        const customer = productInfo.customer || 'ไม่ระบุลูกค้า';
-                        const group = productInfo.customerGroup || 'Other';
-                        
-                        if(!customerSummary.has(customer)) {
-                            customerSummary.set(customer, { total: 0, autopart: 0, electronic: 0, other: 0 });
-                        }
-                        
-                        const custData = customerSummary.get(customer);
-                        custData.total += stockItem.totalQuantity;
-                        
-                        if(group === 'Autopart') custData.autopart += stockItem.totalQuantity;
-                        else if(group === 'Electronic') custData.electronic += stockItem.totalQuantity;
-                        else custData.other += stockItem.totalQuantity;
-                    });
+                    let avgDemand = activeDays > 0 ? (totalDemand / activeDays) : 0;
+                    let req3Days = Math.ceil(avgDemand * 3);
 
-                    // วาด Widget การ์ดสรุปยอดแบบ Micro Card (กางเต็มหน้าจอ ไม่ต้องเลื่อน)
-                    const summaryRow = document.getElementById('customer-stock-summary-row');
-                    if(summaryRow) {
-                        summaryRow.innerHTML = ''; 
-                        
-                        // 1. สั่งลบ class flex-nowrap ทิ้ง และเปลี่ยนเป็น Wrap อัตโนมัติ (เรียงต่อกันหลายบรรทัด)
-                        summaryRow.className = 'row g-2 mb-3'; 
-                        // 2. ลบสไตล์การเลื่อนซ้ายขวาทิ้ง
-                        summaryRow.removeAttribute('style'); 
+                    // 🟢 อัปเกรดความฉลาด: หาจาก Product ID หรือ ERP Code หรือ ชื่อ ก็ได้!
+                    let productIndex = db.products.findIndex(p => 
+                        String(p.id).trim().toUpperCase() === partNo || 
+                        (p.erpCode && String(p.erpCode).trim().toUpperCase() === partNo) ||
+                        (p.name && String(p.name).trim().toUpperCase() === partNo)
+                    );
 
-                        // เรียงลำดับลูกค้าที่มียอดสต็อกเยอะสุดขึ้นก่อน
-                        const sortedCustomers = Array.from(customerSummary.entries()).sort((a, b) => b[1].total - a[1].total);
-                        
-                        if (sortedCustomers.length === 0) {
-                            summaryRow.style.display = 'none';
-                        } else {
-                            summaryRow.style.display = 'flex';
-                            sortedCustomers.forEach(([customer, data]) => {
-                                
-                                // โค้ดกล่องมินิมอล (Micro Card) - เล็กกะทัดรัด โมเดิร์น และดูทีเดียวจบ
-                                summaryRow.innerHTML += `
-                                    <div class="col-xl-2 col-lg-3 col-md-4 col-6">
-                                        <div class="p-2 bg-white rounded-3 shadow-sm border border-light d-flex flex-column justify-content-center h-100 position-relative overflow-hidden" style="border-left: 4px solid #0d6efd !important; transition: transform 0.2s;">
-                                            <div class="d-flex justify-content-between align-items-start mb-1">
-                                                <div class="fw-bold text-dark text-truncate pe-2" style="font-size: 0.85rem;" title="${customer}">${customer}</div>
-                                                <div class="fw-bolder text-primary" style="font-size: 1.05rem; line-height: 1;">${data.total.toLocaleString()}</div>
-                                            </div>
-                                            <div class="d-flex flex-wrap gap-2 mt-auto" style="font-size: 0.7rem;">
-                                                ${data.autopart > 0 ? `<div class="text-warning-emphasis fw-semibold"><i class="bi bi-car-front-fill opacity-75"></i> ${data.autopart.toLocaleString()}</div>` : ''}
-                                                ${data.electronic > 0 ? `<div class="text-info-emphasis fw-semibold"><i class="bi bi-cpu-fill opacity-75"></i> ${data.electronic.toLocaleString()}</div>` : ''}
-                                                ${(data.autopart === 0 && data.electronic === 0) ? `<div class="text-secondary fw-semibold opacity-75"><i class="bi bi-box-seam"></i> ทั่วไป: ${data.other.toLocaleString()}</div>` : ''}
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                            });
-                        }
+                    if(productIndex > -1 && req3Days > 0) {
+                        let matchedId = db.products[productIndex].id;
+                        db.products[productIndex].req3Days = req3Days;
+                        localForecast[matchedId] = req3Days; // เซฟเป้าหมายล็อคไว้ในเครื่อง
+                        updateCount++;
                     }
-                    // ==========================================
-
-                    // สร้างตารางสต็อกรายการทั้งหมด (ของเดิม)
-                    let summary = calculatedStock.map(stockItem => {
-                        let productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim());
-                        if (!productInfo) {
-                            productInfo = { id: stockItem.productId, name: T.product_not_found.replace('{id}', stockItem.productId), customer: '-', erpCode: '-' };
-                        }
-                        const hasOldStock = stockItem.lots.some(l => l.quantity > 0 && new Date(formatDate(l.productionDate)) < threeMonthsAgo);
-                        return { ...productInfo, ...stockItem, hasOldStock };
-                    });
-
-                    summary = summary.filter(p => p.totalQuantity > 0);
-                    if (filterOldStock) summary = summary.filter(p => p.hasOldStock);
-                    if (searchTerm) {
-                        summary = summary.filter(item =>
-                            String(item.id).trim().toLowerCase().includes(searchTerm) ||
-                            item.name.toLowerCase().includes(searchTerm) ||
-                            (item.customer && item.customer.toLowerCase().includes(searchTerm))
-                        );
-                    }
-                    summary.sort((a, b) => String(a.id).localeCompare(String(b.id)));
-
-                    if (summary.length === 0) {
-                        const message = searchTerm ? T.stock_summary_no_results : (filterOldStock ? T.stock_summary_no_old_stock : T.stock_summary_no_stock);
-                        stockSummaryTable.innerHTML = `<tr><td colspan="${isAdmin ? 6 : 5}" class="text-center p-4">${message} <i class="bi bi-emoji-wink"></i></td></tr>`;
-                        return;
-                    }
-
-                    summary.forEach(item => {
-                        const row = document.createElement('tr');
-                        row.dataset.productId = item.id;
-                        if (item.hasOldStock) { row.classList.add('table-warning'); }
-                        row.innerHTML = `
-                    <td>${item.hasOldStock ? '<i class="bi bi-exclamation-triangle-fill text-danger"></i>' : ''}</td>
-                    <td>
-                        <div><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${item.id}</span></div>
-                        <small class="text-muted">${item.name}</small>
-                    </td>
-                    <td class="small-text">${item.erpCode || '-'}</td>
-                    <td class="small-text fw-bold text-dark">${item.customer || '-'}</td>
-                    <td><span class="fw-bold fs-6 text-primary">${item.totalQuantity.toLocaleString()}</span></td>
-                    ${isAdmin ? `<td><button class="btn btn-warning btn-sm shadow-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')" title="${T.edit_stock_modal_title}"><i class="bi bi-pencil-fill"></i></button></td>` : ''}
-                `;
-                        row.addEventListener('click', () => window.app.showLotDetails(item.id));
-                        stockSummaryTable.appendChild(row);
-                    });
                 }
 
+                // 💾 บันทึกลงความจำเบราว์เซอร์ ป้องกันระบบ Auto-sync โหลดทับจนยอดหาย
+                localStorage.setItem('forecastData', JSON.stringify(localForecast));
+
+                // พยายามส่งข้อมูลไปเซฟที่ Apps Script เบื้องหลังแบบเงียบๆ
+                try {
+                    const forecastData = Object.keys(localForecast).map(k => ({ id: 'fc-' + Date.now(), productId: k, req3Days: localForecast[k] }));
+                    if (forecastData.length > 0) {
+                        callAppsScript('saveForecast', forecastData).catch(e => console.warn("Backend Sync:", e));
+                    }
+                } catch(err) {}
+
+                Swal.fire('สำเร็จ!', `คำนวณเป้า 3 วัน และอัปเดตสต็อกเรียบร้อย ${updateCount} รายการ`, 'success');
+                populateStockSummary(); 
+
+            } catch (err) {
+                console.error("Forecast Error:", err);
+                Swal.fire('เกิดข้อผิดพลาด', 'รูปแบบไฟล์ไม่ถูกต้อง หรือไม่สามารถอ่านไฟล์ได้', 'error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+    fileInput.click();
+};
+
+// =========================================================
+function populateStockSummary() {
+    const T = translations[currentLanguage];
+    const header = document.getElementById('stock-summary-table-header');
+    const isAdmin = currentUser.role === 'admin';
+    // เพิ่มคอลัมน์เป้า 3 วัน
+    header.innerHTML = `<tr>
+        <th></th>
+        <th>${T.stock_table_product}</th>
+        <th>${T.customer}</th>
+        <th>ยอดสต็อค 3 วัน</th>
+        <th>${T.stock_table_balance}</th>
+        <th>สถานะสต็อค 3 วัน</th>
+        ${isAdmin ? `<th>${T.actions}</th>` : ''}
+    </tr>`;
+
+    const stockSummaryTable = document.getElementById('stock-summary-table');
+    stockSummaryTable.innerHTML = '';
+    const filterOldStock = document.getElementById('show-old-stock-filter').checked;
+    
+    // 🟢 ตรวจจับสวิตช์กรองสต็อกไม่พอ 3 วัน
+    const showLowStockFilter = document.getElementById('show-low-stock-filter');
+    const filterLowStock = showLowStockFilter ? showLowStockFilter.checked : false;
+    
+    const searchTerm = document.getElementById('stock-search-input').value.toLowerCase();
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    const customerSummary = new Map();
+    calculatedStock.forEach(stockItem => {
+        if(stockItem.totalQuantity <= 0) return; 
+        const productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim()) || {};
+        const customer = productInfo.customer || 'ไม่ระบุลูกค้า';
+        const group = productInfo.customerGroup || 'Other';
+        
+        if(!customerSummary.has(customer)) {
+            customerSummary.set(customer, { total: 0, autopart: 0, electronic: 0, other: 0 });
+        }
+        const custData = customerSummary.get(customer);
+        custData.total += stockItem.totalQuantity;
+        if(group === 'Autopart') custData.autopart += stockItem.totalQuantity;
+        else if(group === 'Electronic') custData.electronic += stockItem.totalQuantity;
+        else custData.other += stockItem.totalQuantity;
+    });
+
+    const summaryRow = document.getElementById('customer-stock-summary-row');
+    if(summaryRow) {
+        summaryRow.innerHTML = ''; 
+        summaryRow.className = 'row g-2 mb-3'; 
+        summaryRow.removeAttribute('style'); 
+
+        const sortedCustomers = Array.from(customerSummary.entries()).sort((a, b) => b[1].total - a[1].total);
+        if (sortedCustomers.length === 0) {
+            summaryRow.style.display = 'none';
+        } else {
+            summaryRow.style.display = 'flex';
+            sortedCustomers.forEach(([customer, data]) => {
+                summaryRow.innerHTML += `
+                    <div class="col-xl-2 col-lg-3 col-md-4 col-6">
+                        <div class="p-2 bg-white rounded-3 shadow-sm border border-light d-flex flex-column justify-content-center h-100 position-relative overflow-hidden" style="border-left: 4px solid #0d6efd !important; transition: transform 0.2s;">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <div class="fw-bold text-dark text-truncate pe-2" style="font-size: 0.85rem;" title="${customer}">${customer}</div>
+                                <div class="fw-bolder text-primary" style="font-size: 1.05rem; line-height: 1;">${data.total.toLocaleString()}</div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mt-auto" style="font-size: 0.7rem;">
+                                ${data.autopart > 0 ? `<div class="text-warning-emphasis fw-semibold"><i class="bi bi-car-front-fill opacity-75"></i> ${data.autopart.toLocaleString()}</div>` : ''}
+                                ${data.electronic > 0 ? `<div class="text-info-emphasis fw-semibold"><i class="bi bi-cpu-fill opacity-75"></i> ${data.electronic.toLocaleString()}</div>` : ''}
+                                ${(data.autopart === 0 && data.electronic === 0) ? `<div class="text-secondary fw-semibold opacity-75"><i class="bi bi-box-seam"></i> ทั่วไป: ${data.other.toLocaleString()}</div>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    }
+
+    let summary = calculatedStock.map(stockItem => {
+        let productInfo = db.products.find(p => String(p.id).trim() === String(stockItem.productId).trim());
+        if (!productInfo) {
+            productInfo = { id: stockItem.productId, name: T.product_not_found.replace('{id}', stockItem.productId), customer: '-', erpCode: '-', req3Days: 0 };
+        }
+        const hasOldStock = stockItem.lots.some(l => l.quantity > 0 && new Date(formatDate(l.productionDate)) < threeMonthsAgo);
+        return { ...productInfo, ...stockItem, hasOldStock };
+    });
+
+    summary = summary.filter(p => p.totalQuantity > 0);
+    
+    // 🟢 ดักจับระบบฟิลเตอร์
+    if (filterOldStock) summary = summary.filter(p => p.hasOldStock);
+    if (filterLowStock) summary = summary.filter(p => p.req3Days > 0 && p.totalQuantity < p.req3Days); // กรองเฉพาะของที่ไม่พอ 3 วัน
+
+    if (searchTerm) {
+        summary = summary.filter(item =>
+            String(item.id).trim().toLowerCase().includes(searchTerm) ||
+            item.name.toLowerCase().includes(searchTerm) ||
+            (item.customer && item.customer.toLowerCase().includes(searchTerm))
+        );
+    }
+    summary.sort((a, b) => String(a.id).localeCompare(String(b.id)));
+
+    if (summary.length === 0) {
+        const message = searchTerm ? T.stock_summary_no_results : T.stock_summary_no_stock;
+        stockSummaryTable.innerHTML = `<tr><td colspan="${isAdmin ? 7 : 6}" class="text-center p-4">${message} <i class="bi bi-emoji-wink"></i></td></tr>`;
+        return;
+    if (summary.length === 0) {
+        // 🟢 เพิ่มเงื่อนไขตรวจสอบว่าถ้าเปิดฟิลเตอร์ตัวไหนอยู่ ให้แสดงข้อความนั้นๆ
+        let message = T.stock_summary_no_stock;
+        if (searchTerm) message = T.stock_summary_no_results;
+        else if (filterOldStock) message = T.stock_summary_no_old_stock;
+        else if (filterLowStock) message = "ไม่มียอดสต็อกที่ไม่พอ 3 วันจ้าาา 📦✨"; // ข้อความที่คุณต้องการ
+
+        stockSummaryTable.innerHTML = `<tr><td colspan="${isAdmin ? 7 : 6}" class="text-center p-4">${message}</td></tr>`;
+        return;
+    }    
+    }
+
+    summary.forEach(item => {
+        const row = document.createElement('tr');
+        row.dataset.productId = item.id;
+        
+        let req3Days = item.req3Days || 0;
+        let isLowStock = (req3Days > 0 && item.totalQuantity < req3Days);
+        let statusBadge = `<span class="badge bg-success-subtle text-success-emphasis rounded-pill">ปกติ</span>`;
+        
+        // ถ้ายอดน้อยกว่าเป้า ให้เตือนสีแดง
+        if (isLowStock) {
+            row.classList.add('table-danger');
+            statusBadge = `<span class="badge bg-danger rounded-pill"><i class="bi bi-exclamation-octagon me-1"></i>สต็อกต่ำ</span>`;
+        } else if (item.hasOldStock) {
+            row.classList.add('table-warning');
+            statusBadge = `<span class="badge bg-warning text-dark rounded-pill">ค้าง > 3 เดือน</span>`;
+        }
+
+        row.innerHTML = `
+            <td>${item.hasOldStock ? '<i class="bi bi-exclamation-triangle-fill text-warning"></i>' : ''} ${isLowStock ? '<i class="bi bi-exclamation-circle-fill text-danger"></i>' : ''}</td>
+            <td>
+                <div><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${item.id}</span></div>
+                <small class="text-muted">${item.name}</small>
+            </td>
+            <td class="small-text fw-bold text-dark">${item.customer || '-'}</td>
+            <td><span class="fw-bold text-muted">${req3Days > 0 ? req3Days.toLocaleString() : '-'}</span></td>
+            <td><span class="fw-bold fs-6 ${isLowStock ? 'text-danger' : 'text-primary'}">${item.totalQuantity.toLocaleString()}</span></td>
+            <td>${statusBadge}</td>
+            ${isAdmin ? `<td><button class="btn btn-warning btn-sm shadow-sm" onclick="event.stopPropagation(); window.app.editStockTotal('${item.id}')" title="${T.edit_stock_modal_title}"><i class="bi bi-pencil-fill"></i></button></td>` : ''}
+        `;
+        row.addEventListener('click', () => window.app.showLotDetails(item.id));
+        stockSummaryTable.appendChild(row);
+    });
+}
                 function populateHistoryTable() {
                     const T = translations[currentLanguage];
                     const header = document.getElementById('history-table-header');
@@ -5221,8 +5403,8 @@ window.deletePlanItem = function(id, date) {
                             }
                             updateExportTotal();
                         }
-                        if (e.target.id === 'show-old-stock-filter') {
-                            populateStockSummary();
+                        if (e.target.id === 'show-old-stock-filter' || e.target.id === 'show-low-stock-filter') {
+                            populateStockSummary();   
                         }
                     });
 
@@ -6243,7 +6425,8 @@ const permissions = [
                         { key: 'canManageAnnouncements', label: T.permission_canManageAnnouncements },
                         { key: 'canManageDeliveryPlan', label: 'จัดการแผนการจัดส่ง' },
                         { key: 'canConvertPart', label: 'เปลี่ยนรหัสสินค้า (Convert)' },
-                        { key: 'canManageRack', label: 'ระบบจัดการ Rack (แพ็คกิ้ง)' }
+                        { key: 'canManageRack', label: 'ระบบจัดการ Rack (แพ็คกิ้ง)' },
+                        { key: 'canForecast', label: 'อัปโหลด Forecast' }
                     ];
                     let permissionsHtml = permissions.map(p => `
                 <div class="form-check form-switch">
@@ -7763,7 +7946,8 @@ function populateSalesDashboard(startDate, endDate) {
                         canManageAnnouncements: document.getElementById('permission-canManageAnnouncements').checked,
                         canManageDeliveryPlan: document.getElementById('permission-canManageDeliveryPlan').checked, // 👈 สิทธิ์จัดส่ง
                         canConvertPart: document.getElementById('permission-canConvertPart').checked, // 👈 สิทธิ์ Convert
-                        canManageRack: document.getElementById('permission-canManageRack').checked // 👈 สิทธิ์ Rack System
+                        canManageRack: document.getElementById('permission-canManageRack').checked,
+                        canForecast: document.getElementById('user-canForecast').checked
                     };
 
                         Swal.fire({
