@@ -3457,79 +3457,75 @@ startNewStockCount: async () => {
                         if (count) { renderStockCountReportModalBody(count); stockCountReportModal.show(); }
                     },
 approveStockCount: (countId) => {
-                        const T = translations[currentLanguage];
-                        const count = db.stockCounts.find(sc => sc.id === countId);
+    const T = translations[currentLanguage];
+    const count = db.stockCounts.find(sc => sc.id === countId);
 
-                        if (!count || count.status === 'approved') return;
+    if (!count || count.status === 'approved') return;
 
-                        confirmAction(T.stock_count_confirm_approve_title, T.stock_count_confirm_approve_text, async () => {
-                            const adjustmentEntries = [];
-                            const isExcelUpload = String(count.id).includes('sc-xls-');
+    confirmAction(T.stock_count_confirm_approve_title, T.stock_count_confirm_approve_text, async () => {
+        
+        // 🟢 1. โชว์หน้าต่างโหลดดิ้งบังคับรอทันที ห้ามหน้าจอขยับก่อนเซฟเสร็จ!
+        Swal.fire({ title: 'กำลังบันทึกข้อมูล...', text: 'รอระบบ Google Sheet อัปเดตสักครู่นะครับ', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-                            // --- ลอจิก CUT-OFF เวลาปรับสต็อก ---
-                            // บังคับให้เวลาในการปรับยอด เป็น 07:59:59 เสมอ!
-                            // เพื่อให้รับเข้า/ส่งออก ที่ทำหลัง 08.00 น. ไม่โดนทับ และบวกเพิ่มตามปกติ
-                            const countDateObj = new Date(count.date);
-                            countDateObj.setHours(7, 59, 59, 0);
-                            const cutoffTimestamp = countDateObj.toISOString();
+        const adjustmentEntries = [];
+        const isExcelUpload = String(count.id).includes('sc-xls-');
 
-                            count.items.forEach(item => {
-                                const variance = item.countedQty - item.systemQty;
-                                
-                                // 🟢 เปลี่ยนเงื่อนไขให้บันทึกเฉพาะเมื่อมี "ส่วนต่าง" เท่านั้น
-                                if (variance !== 0) { 
-                                    const product = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
-                                    
-                                    let remark = `STOCK_COUNT_ADJ:${count.id}|ปรับยอดจากการนับสต็อก ${count.id} (นับโดย: ${count.user})`;
-                                    let qtyToSave = variance; 
-                                    
-                                    if (isExcelUpload) {
-                                        // 🟢 เปลี่ยนจาก MANUAL_ADJ_NEW_TOTAL เป็นการปรับเฉพาะส่วนต่างแทน
-                                        remark = `STOCK_COUNT_ADJ_EXCEL:${count.id}|ปรับส่วนต่าง ${variance > 0 ? '+' : ''}${variance} จากไฟล์ Excel (Cut-off 07:59)`;
-                                        qtyToSave = variance; 
-                                    }
+        // --- ลอจิก CUT-OFF เวลาปรับสต็อก (07:59:59) ---
+        const countDateObj = new Date(count.date);
+        countDateObj.setHours(7, 59, 59, 0);
+        const cutoffTimestamp = countDateObj.toISOString();
 
-                                    adjustmentEntries.push({
-                                        id: 'adj-' + Date.now() + '-' + item.productId + '-' + Math.random().toString(36).substr(2, 5),
-                                        date: cutoffTimestamp, // <--- ใช้เวลา 07:59:59 ในการบันทึกลงประวัติ
-                                        type: 'adjustment',
-                                        productId: item.productId,
-                                        productName: product ? product.name : item.productName,
-                                        customer: product ? product.customer : '',
-                                        erpCode: product ? product.erpCode : '',
-                                        quantity: qtyToSave, 
-                                        productionDate: item.productionDate,
-                                        user: currentUser.username,
-                                        remarks: remark,
-                                        packagingType: item.packagingType 
-                                    });
-                                }
-                            });
+        count.items.forEach(item => {
+            const variance = item.countedQty - item.systemQty;
+            if (variance !== 0) { 
+                const product = db.products.find(p => String(p.id).trim() === String(item.productId).trim());
+                let qtyToSave = item.countedQty; 
+                let remark = `MANUAL_ADJ_NEW_TOTAL:${item.countedQty}|ปรับยอดนับสต็อก ${count.id} (ส่วนต่าง ${variance > 0 ? '+' : ''}${variance})`;
+                if (isExcelUpload) {
+                    remark = `MANUAL_ADJ_NEW_TOTAL:${item.countedQty}|อัปเดตสต็อกจาก Excel ${count.id} (ส่วนต่าง ${variance > 0 ? '+' : ''}${variance})`;
+                }
+                adjustmentEntries.push({
+                    id: 'adj-' + Date.now() + '-' + item.productId + '-' + Math.random().toString(36).substr(2, 5),
+                    date: cutoffTimestamp,
+                    type: 'adjustment',
+                    productId: item.productId,
+                    productName: product ? product.name : item.productName,
+                    customer: product ? product.customer : '',
+                    erpCode: product ? product.erpCode : '',
+                    quantity: qtyToSave, 
+                    productionDate: item.productionDate,
+                    user: currentUser.username,
+                    remarks: remark,
+                    packagingType: item.packagingType 
+                });
+            }
+        });
 
-                            const originalStatus = count.status;
-                            count.status = 'approved';
-                            
-                            if(adjustmentEntries.length > 0) {
-                                adjustmentEntries.forEach(entry => db.history.unshift(entry));
-                            }
+        try {
+            // 🟢 2. สั่งยิงข้อมูลไปเซฟที่ Google Sheet ก่อนเป็นอันดับแรก!
+            if (adjustmentEntries.length > 0) await callAppsScript('appendBatchHistory', adjustmentEntries);
+            await callAppsScript('updateStockCountStatus', { id: countId, status: 'approved' });
 
-                            // ระบบจะคำนวณประวัติใหม่เรียงตามเวลา (Adjustment ตอน 07:59 จะถูกคิดก่อน Import ตอนสายๆ)
-                            calculateStockFromHistory();
-                            populateAll();
-                            stockCountReportModal.hide();
-                            showSuccess(T.success_title, T.stock_count_approve_success);
+            // 🟢 3. ถ้าเซฟหลังบ้าน "ผ่านฉลุย" ค่อยอนุญาตให้อัปเดตหน้าจอ
+            count.status = 'approved';
+            if(adjustmentEntries.length > 0) {
+                adjustmentEntries.forEach(entry => db.history.unshift(entry));
+            }
+            calculateStockFromHistory();
+            populateAll();
+            stockCountReportModal.hide();
+            
+            // ปิดโหลดดิ้งแล้วโชว์ความสำเร็จ
+            Swal.close();
+            showSuccess(T.success_title, T.stock_count_approve_success);
 
-                            try {
-                                if (adjustmentEntries.length > 0) await callAppsScript('appendBatchHistory', adjustmentEntries);
-                                await callAppsScript('updateStockCountStatus', { id: countId, status: 'approved' });
-                            } catch (error) {
-                                count.status = originalStatus;
-                                db.history.splice(0, adjustmentEntries.length);
-                                calculateStockFromHistory(); populateAll();
-                                showError(T.save_error_title, error.message);
-                            }
-                        });
-                    },
+        } catch (error) {
+            // 🟢 4. ถ้าหลังบ้าน "เซฟพัง" หน้าจอจะไม่เปลี่ยน และเด้งแจ้งเตือนสีแดงให้รู้ทันที
+            Swal.close();
+            showError(T.save_error_title, 'ระบบขัดข้อง บันทึกไม่สำเร็จ: ' + error.message);
+        }
+    });
+},
                     // NEW: Dashboard functions
                     populateDashboard: () => {
                         populateStockDashboard();
@@ -3597,27 +3593,29 @@ approveStockCount: (countId) => {
                                 const countDateStr = today.toISOString(); 
                                 const dateStrForLot = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
-                                for (let i = 1; i < jsonData.length; i++) {
+                               for (let i = 1; i < jsonData.length; i++) {
                                     const row = jsonData[i];
-                                    if (!row || row.length < 2) continue; 
+                                    
+                                    // 🟢 1. เปลี่ยนเงื่อนไข: ไม่จำเป็นต้องมีตัวเลขในคอลัมน์ B,C ก็ให้อ่าน (เผื่อปล่อยว่างไว้)
+                                    if (!row || row.length < 1) continue; 
                                     
                                     const productId = String(row[0] || '').trim(); 
                                     if (!productId) continue;
 
-                                    const stdQty = parseFloat(row[1]); 
-                                    const tempQty = parseFloat(row[2]); 
-                                    const hasStd = !isNaN(stdQty);
-                                    const hasTemp = !isNaN(tempQty);
-
-                                    if (!hasStd && !hasTemp) continue; 
-
                                     const product = db.products.find(p => String(p.id).trim() === productId);
                                     if (!product) {
                                         countNotFound++;
-                                        // ถ้ายังไม่มีรหัสนี้ในลิสต์ให้ใส่เพิ่มเข้าไป (กันรหัสซ้ำ)
                                         if (!notFoundList.includes(productId)) notFoundList.push(productId);
                                         continue; 
                                     }
+
+                                    // 🟢 2. อ่านคอลัมน์ B (Standard) ถ้าปล่อยว่างไว้ หรือใส่ 0 จะถูกแปลงเป็น 0 ทันที!
+                                    let stdQty = parseFloat(row[1]);
+                                    if (isNaN(stdQty)) stdQty = 0;
+
+                                    // 🟢 3. อ่านคอลัมน์ C (Temporary) ถ้าปล่อยว่างไว้ หรือใส่ 0 จะถูกแปลงเป็น 0 ทันที!
+                                    let tempQty = parseFloat(row[2]);
+                                    if (isNaN(tempQty)) tempQty = 0;
 
                                     // 1. ดึงสต็อก ณ เวลา "ปัจจุบัน" ออกมาก่อน
                                     const stockInfo = calculatedStock.find(s => String(s.productId).trim() === productId);
@@ -3645,23 +3643,21 @@ approveStockCount: (countId) => {
                                     sysStd = Math.max(0, sysStd);
                                     sysTemp = Math.max(0, sysTemp);
 
-                                    if (hasStd) {
-                                        countItems.push({
-                                            productId: product.id, productName: product.name,
-                                            productionDate: dateStrForLot, packagingType: 'standard',
-                                            systemQty: sysStd, countedQty: stdQty
-                                        });
-                                        countUpdated++;
-                                    }
+                                    // 🟢 4. ดันข้อมูลเข้า array เพื่อรอปรับยอดทั้ง 2 แพ็คกิ้งไปเลย
+                                    // (ถ้าในระบบมี 0 แล้วหน้างานนับได้ 0 ส่วนต่างจะกลายเป็น 0 เดี๋ยวระบบจะข้ามให้เองตอนอนุมัติครับ)
+                                    countItems.push({
+                                        productId: product.id, productName: product.name,
+                                        productionDate: dateStrForLot, packagingType: 'standard',
+                                        systemQty: sysStd, countedQty: stdQty
+                                    });
 
-                                    if (hasTemp) {
-                                        countItems.push({
-                                            productId: product.id, productName: product.name,
-                                            productionDate: dateStrForLot, packagingType: 'temporary',
-                                            systemQty: sysTemp, countedQty: tempQty
-                                        });
-                                        countUpdated++;
-                                    }
+                                    countItems.push({
+                                        productId: product.id, productName: product.name,
+                                        productionDate: dateStrForLot, packagingType: 'temporary',
+                                        systemQty: sysTemp, countedQty: tempQty
+                                    });
+                                    
+                                    countUpdated++; // นับว่ารายการนี้อัปเดตแล้ว
                                 }
 
                                 Swal.close();
