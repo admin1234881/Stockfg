@@ -1394,6 +1394,7 @@
                                             <li><a class="dropdown-item fw-bold text-secondary" href="#" id="backup-stock-btn"><i class="bi bi-archive-fill text-info me-2"></i><span data-lang-key="backup_stock">ข้อมูลสต็อก</span></a></li>
                                             <li><a class="dropdown-item fw-bold text-secondary" href="#" id="backup-products-btn"><i class="bi bi-box-seam-fill text-success me-2"></i><span data-lang-key="backup_products">ข้อมูลสินค้า</span></a></li>
                                             <li><a class="dropdown-item fw-bold text-secondary" href="#" id="backup-users-btn"><i class="bi bi-person-lines-fill text-warning me-2"></i><span data-lang-key="backup_users">ข้อมูลผู้ใช้</span></a></li>
+                                            <li><a class="dropdown-item fw-bold text-danger" href="#" id="backup-stock-pdf-btn"><i class="bi bi-file-earmark-pdf-fill text-danger me-2"></i>รายงานสต็อก (PDF)</a></li>
                                         </ul>
                                     </div>
                                 </div>
@@ -4935,6 +4936,107 @@ window.downloadRackSummaryPDF = function() {
         Toast.fire({ icon: 'success', title: 'ดาวน์โหลดรายงาน PDF เรียบร้อยครับ!' });
     });
 };
+        // ฟังก์ชันวาดและโหลด PDF สำหรับสรุปสต็อกคงเหลือ
+window.downloadStockSummaryPDF = function() {
+    if (typeof html2pdf === 'undefined') {
+        Swal.fire('ข้อผิดพลาด', 'กำลังโหลดเครื่องมือสร้าง PDF กรุณารอสักครู่แล้วกดใหม่ครับ', 'warning');
+        return;
+    }
+
+    const tbody = document.getElementById('stock-summary-table');
+    if (!tbody || tbody.innerText.includes('ไม่มีข้อมูล') || tbody.innerText.includes('กำลังโหลด')) {
+        Swal.fire('ไม่มีข้อมูล', 'ยังไม่มีข้อมูลในตารางสำหรับสร้าง PDF ครับ', 'warning');
+        return;
+    }
+
+    Swal.fire({ title: 'กำลังจัดหน้า PDF...', text: 'รวบรวมข้อมูลสต็อกทั้งหมดลงเอกสาร...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    let tableContent = '';
+    tbody.querySelectorAll('tr').forEach(row => {
+        const cols = row.querySelectorAll('td');
+        // ดึงเฉพาะแถวที่มีข้อมูลจริงๆ
+        if (cols.length >= 6) {
+            // ดึงข้อความแยกจาก HTML ในคอลัมน์ชื่อพาร์ท
+            const productId = cols[1].querySelector('.badge') ? cols[1].querySelector('.badge').innerText : '';
+            const productName = cols[1].querySelector('small') ? cols[1].querySelector('small').innerText : '';
+            const customer = cols[2].innerText;
+            const target3Days = cols[3].innerText;
+            const balance = cols[4].innerText;
+            const statusText = cols[5].innerText;
+
+            tableContent += `
+                <tr style="page-break-inside: avoid;"> 
+                    <td style="padding: 6px 10px; border: 1px solid #dee2e6; font-size: 13px; font-weight: bold; color: #0d6efd;">${productId}<br><span style="color:#6c757d; font-size:11px; font-weight: normal;">${productName}</span></td>
+                    <td style="padding: 6px 10px; border: 1px solid #dee2e6; font-size: 13px;">${customer}</td>
+                    <td style="padding: 6px 10px; border: 1px solid #dee2e6; font-size: 13px; text-align: center; color: #6c757d;">${target3Days}</td>
+                    <td style="padding: 6px 10px; border: 1px solid #dee2e6; font-size: 14px; text-align: center; font-weight: bold; color: #198754;">${balance}</td>
+                    <td style="padding: 6px 10px; border: 1px solid #dee2e6; font-size: 13px; text-align: center;">${statusText}</td>
+                </tr>
+            `;
+        }
+    });
+
+    const pdfContainer = document.createElement('div');
+    pdfContainer.style.padding = '0px'; 
+    pdfContainer.style.paddingBottom = '20px';
+    pdfContainer.style.fontFamily = "'Sarabun', 'Mitr', sans-serif";
+    pdfContainer.style.color = '#333';
+    pdfContainer.style.width = '1040px'; 
+    pdfContainer.style.backgroundColor = '#fff';
+    
+    const currentDate = new Date().toLocaleString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    pdfContainer.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0d6efd; padding-bottom: 8px; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center;">
+                <img src="https://i.ibb.co/KxttMHxc/291315-logo-20230216140112-5.jpg" style="width: 55px; height: auto; margin-right: 15px;" crossorigin="anonymous">
+                <div>
+                    <h2 style="margin: 0; color: #0d6efd; font-weight: 800; font-size: 20px;">STOCK BALANCE REPORT</h2>
+                    <div style="color: #6c757d; font-size: 12px; font-weight: bold; margin-top: 2px;">รายงานสรุปยอดสต็อกสินค้าคงเหลือ ATECH FG STOCK</div>
+                </div>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #555; line-height: 1.4;">
+                <b>วันที่พิมพ์เอกสาร:</b> ${currentDate} น.<br>
+                <b>ผู้ตรวจสอบระบบ:</b> <span style="color: #0d6efd; font-weight: bold;">${currentUser ? (currentUser.fullname || currentUser.username) : 'ไม่ระบุ'}</span>
+            </div>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6; margin-bottom: 15px;">
+            <thead>
+                <tr style="background-color: #0d6efd; color: white;">
+                    <th style="padding: 8px 10px; text-align: left; font-size: 13px; border: 1px solid #0d6efd; width: 35%;">รหัส / ชื่อสินค้า</th>
+                    <th style="padding: 8px 10px; text-align: left; font-size: 13px; border: 1px solid #0d6efd; width: 20%;">ลูกค้า</th>
+                    <th style="padding: 8px 10px; text-align: center; font-size: 13px; border: 1px solid #0d6efd; width: 15%;">เป้าสต็อก 3 วัน</th>
+                    <th style="padding: 8px 10px; text-align: center; font-size: 13px; border: 1px solid #0d6efd; width: 15%;">ยอดคงเหลือ</th>
+                    <th style="padding: 8px 10px; text-align: center; font-size: 13px; border: 1px solid #0d6efd; width: 15%;">สถานะสต็อก</th>
+                </tr>
+            </thead>
+            <tbody>${tableContent}</tbody>
+        </table>
+
+        <table style="width: 100%; border-top: 1px dashed #ccc; padding-top: 8px; font-size: 10px; color: #888; page-break-inside: avoid;">
+            <tr>
+                <td style="text-align: left;">เอกสารรายงานอัตโนมัติจากระบบ ATECH STOCK IN-OUT FG SYSTEM</td>
+                <td style="text-align: right;">แบบฟอร์มควบคุมเลขที่.....</td>
+            </tr>
+        </table>
+    `;
+
+    const opt = {
+        margin:       [0.15, 0.15, 0.35, 0.15], 
+        filename:     'Stock_Balance_Report_ATECH.pdf',
+        image:        { type: 'jpeg', quality: 1 },
+        html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, 
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }, // ปรับเป็นแนวนอนให้เหมือน Rack
+        pagebreak:    { mode: ['css', 'legacy'] }
+    };
+
+    html2pdf().set(opt).from(pdfContainer).save().then(() => {
+        Swal.close();
+        const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
+        Toast.fire({ icon: 'success', title: 'ดาวน์โหลดรายงาน PDF เรียบร้อยครับ!' });
+    });
+};
                 window.toggleDashboardView = function(view) {
                     const viewSales = document.getElementById('view-dash-sales');
                     const viewRack = document.getElementById('view-dash-rack');
@@ -5143,6 +5245,14 @@ window.downloadRackSummaryPDF = function() {
                         // เรียกใช้ฟังก์ชัน backupToCSV พร้อมส่ง footer เข้าไปด้วย
                         backupToCSV(stockBackupData, 'stock_summary_backup.csv', footer);
                     });
+                    // ดักจับปุ่มโหลด PDF สต็อกคงเหลือ
+                    const backupStockPdfBtn = document.getElementById('backup-stock-pdf-btn');
+                    if (backupStockPdfBtn) {
+                        backupStockPdfBtn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            window.downloadStockSummaryPDF();
+                        });
+                    }
                         // 🌟 ระบบดึงรูปโปรไฟล์มาโชว์อัตโนมัติเมื่อพิมพ์ชื่อผู้ใช้
                     document.getElementById('username').addEventListener('input', function(e) {
                         const typedName = e.target.value.trim();
