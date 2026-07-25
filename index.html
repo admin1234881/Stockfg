@@ -1443,7 +1443,6 @@
                 </div>
                 <div class="col-md-3">
                     <label for="plan-customer" class="form-label fw-bold text-secondary small">ลูกค้า</label>
-                    <!-- 🟢 เพิ่ม text-muted และ readonly เข้าไปเพื่อให้ทึบเหมือนช่องชื่อสินค้า -->
                     <input type="text" id="plan-customer" class="form-control bg-light border-0 text-muted" placeholder="ดึงอัตโนมัติจากรหัสสินค้า..." readonly required>
                 </div>
                 <div class="col-md-3">
@@ -1493,20 +1492,26 @@
 
     <!-- ตารางสรุปแผนการจัดส่ง -->
     <div class="card border-0 shadow-sm" style="border-radius: 20px;">
-        <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-white border-0 pt-4 pb-2 px-4" style="border-radius: 20px 20px 0 0;">
+        <!-- 🟢 หัวตารางที่มีช่องค้นหา -->
+        <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-white border-0 pt-4 pb-2 px-4 flex-wrap gap-2" style="border-radius: 20px 20px 0 0;">
             <h5 class="fw-bold text-primary mb-0"><i class="bi bi-table me-2"></i>ตารางสรุปแผนการจัดส่งรวมประจำวัน</h5>
             
-            <div class="d-flex align-items-center gap-2 shadow-sm px-3 py-1 bg-light" style="border-radius: 8px; border: 1px solid #dee2e6;">
-                <label for="view-plan-date" class="form-label mb-0 small-text fw-bold text-primary" style="white-space: nowrap;"><i class="bi bi-calendar-event me-1"></i>ดูแผนงานวันที่:</label>
-                <input type="date" id="view-plan-date" class="form-control form-control-sm border-0 fw-bold text-dark bg-light" style="outline: none; box-shadow: none;">
+            <div class="d-flex align-items-center gap-3">
+                <div class="input-group shadow-sm" style="width: 260px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6;">
+                    <span class="input-group-text bg-white border-0 py-1"><i class="bi bi-search text-muted small"></i></span>
+                    <input type="text" id="delivery-plan-search" class="form-control border-0 bg-white py-1 small" placeholder="ค้นหา ลูกค้า, ทะเบียน, เวลา..." onkeyup="renderDeliveryPlanTable(document.getElementById('view-plan-date').value)">
+                </div>
+
+                <div class="d-flex align-items-center gap-2 shadow-sm px-3 py-1 bg-light" style="border-radius: 8px; border: 1px solid #dee2e6;">
+                    <label for="view-plan-date" class="form-label mb-0 small-text fw-bold text-primary" style="white-space: nowrap;"><i class="bi bi-calendar-event me-1"></i>ดูแผนงานวันที่:</label>
+                    <input type="date" id="view-plan-date" class="form-control form-control-sm border-0 fw-bold text-dark bg-light" style="outline: none; box-shadow: none;">
+                </div>
             </div>
         </div>
         
         <div class="card-body pt-0 pb-4 px-4 mt-2">
-            <!-- 🟢 ล็อกความสูงตารางไว้ที่ไม่เกิน 450px และบังคับให้มี Scrollbar ภายในกล่องเท่านั้น -->
             <div class="table-responsive shadow-sm" style="max-height: 450px; min-height: 300px; overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6; background-color: #ffffff;">
                 <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
-                    <!-- 🟢 ตรึงหัวตารางและกำหนดสีพื้นหลังให้ทึบ 100% ป้องกันตัวหนังสือทะลุ -->
                     <thead class="text-center" style="position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.15);">
                         <tr>
                             <th style="width: 50px; background-color: #cfe2ff; color: #052c65; border-bottom: none; border-radius: 10px 0 0 0;"></th>
@@ -1534,17 +1539,27 @@
 <!-- Dashboard Tab (Modern Redesign + Chart) -->
                 <div class="tab-pane fade" id="pills-dashboard" role="tabpanel">
                     
-                    <!-- 🔀 ปุ่มสลับแดชบอร์ด (ดีไซน์ Modern Pill) -->
-                    <div class="d-flex justify-content-center mb-4">
-                        <div class="btn-group shadow-sm p-1 bg-white border border-primary-subtle" role="group" style="border-radius: 50px;">
+<!-- 🔀 ปุ่มสลับแดชบอร์ด (ดีไซน์ Modern Pill) -->
+                    <div class="d-flex justify-content-between align-items-center mb-4 position-relative">
+                        
+                        <!-- ตัวช่วยดันฝั่งซ้าย เพื่อให้ปุ่มสลับตรงกลางยังคงอยู่กึ่งกลางหน้าจอ -->
+                        <div class="d-none d-lg-block" style="width: 120px;"></div>
+
+                        <div class="btn-group shadow-sm p-1 bg-white border border-primary-subtle mx-auto" role="group" style="border-radius: 50px;">
                             <input type="radio" class="btn-check" name="dashToggle" id="btn-dash-sales" autocomplete="off" checked onchange="toggleDashboardView('sales')">
-                            <label class="btn btn-outline-primary border-0 rounded-pill px-4 fw-bold" for="btn-dash-sales"><i class="bi bi-graph-up-arrow me-2"></i>แดชบอร์ดงานขาย</label>
+                            <label class="btn btn-outline-primary border-0 rounded-pill px-3 fw-bold" for="btn-dash-sales"><i class="bi bi-graph-up-arrow me-1"></i>งานขาย</label>
 
                             <input type="radio" class="btn-check" name="dashToggle" id="btn-dash-rack" autocomplete="off" onchange="toggleDashboardView('rack')">
-                            <label class="btn btn-outline-primary border-0 rounded-pill px-4 fw-bold" for="btn-dash-rack"><i class="bi bi-inboxes-fill me-2"></i>สถานะ Rack (แพ็คกิ้ง)</label>
+                            <label class="btn btn-outline-primary border-0 rounded-pill px-3 fw-bold" for="btn-dash-rack"><i class="bi bi-inboxes-fill me-1"></i>สถานะ Rack</label>
+                            
                             <input type="radio" class="btn-check" name="dashToggle" id="btn-dash-vehicle" autocomplete="off" onchange="toggleDashboardView('vehicle')">
-                            <label class="btn btn-outline-primary border-0 rounded-pill px-4 fw-bold" for="btn-dash-vehicle"><i class="bi bi-truck-front-fill me-2"></i>สถานะรถขนส่ง (วันนี้)</label>
+                            <label class="btn btn-outline-primary border-0 rounded-pill px-3 fw-bold" for="btn-dash-vehicle"><i class="bi bi-truck-front-fill me-1"></i>รถขนส่ง</label>
                         </div>
+
+                        <!-- 🟢 ปุ่มขยายเต็มหน้าจอ (Full Screen) -->
+                        <button class="btn btn-dark shadow-sm rounded-pill px-3" onclick="toggleFullScreenDashboard()" title="ขยายเต็มหน้าจอ">
+                            <i class="bi bi-arrows-fullscreen"></i><span class="d-none d-md-inline ms-2 fw-bold">เต็มจอ</span>
+                        </button>
                     </div>
 
                     <!-- 📊 View 1: แดชบอร์ดงานขาย (ยอดขายเดิม) -->
@@ -4380,39 +4395,42 @@ if (mascotBubble) {
     window.mascotLoopTimer = setInterval(rotateSpeech, 5000);
 }
 function populateAll() {
-                    populateStockSummary();
-                    populateUserManagementTable();
-                    populateProductManagementTable();
-                    populateHistoryTable();
-                    populateAnnouncementsTable();
-                    displayActiveAnnouncements();
-                    populateStockCountMainView();
-                    window.app.populateDashboard(); 
-                    if (typeof renderRackSummaryTable === 'function') renderRackSummaryTable(); 
-                    if (typeof populateRackDashboard === 'function' && document.getElementById('btn-dash-rack') && document.getElementById('btn-dash-rack').checked) populateRackDashboard();
-                    
-                    // 🟢 -------------------------------------------------------------
-                    // 🟢 เพิ่มโค้ดชุดนี้: สั่งให้อัปเดตตาราง "แผนจัดส่ง" ทุกๆ 30 วินาทีด้วย!
-                    // ----------------------------------------------------------------
-                    const viewPlanDateInput = document.getElementById('view-plan-date');
-                    if (viewPlanDateInput) {
-                        // ถ้าช่องวันที่ยังว่างเปล่า (เพิ่งเปิดเว็บ) ให้ใส่วันที่ปัจจุบันเข้าไป
-                        if (!viewPlanDateInput.value) {
-                            const today = new Date();
-                            const y = today.getFullYear();
-                            const m = String(today.getMonth() + 1).padStart(2, '0');
-                            const d = String(today.getDate()).padStart(2, '0');
-                            viewPlanDateInput.value = `${y}-${m}-${d}`;
-                        }
-                        
-                        // สั่งวาดตารางแผนงานใหม่ ตามวันที่โชว์อยู่ในช่องปฏิทิน
-                        if (typeof renderDeliveryPlanTable === 'function') {
-                            renderDeliveryPlanTable(viewPlanDateInput.value);
-                        }
-                    }
-                    // 🟢 -------------------------------------------------------------
-                }
-
+    populateStockSummary();
+    populateUserManagementTable();
+    populateProductManagementTable();
+    populateHistoryTable();
+    populateAnnouncementsTable();
+    displayActiveAnnouncements();
+    populateStockCountMainView();
+    window.app.populateDashboard(); 
+    if (typeof renderRackSummaryTable === 'function') renderRackSummaryTable(); 
+    
+    // อัปเดตแดชบอร์ด Rack ถ้าเปิดดูอยู่
+    if (typeof populateRackDashboard === 'function' && document.getElementById('btn-dash-rack') && document.getElementById('btn-dash-rack').checked) {
+        populateRackDashboard();
+    }
+    
+    // 🟢 อัปเดตแดชบอร์ดรถขนส่ง ถ้าเปิดดูอยู่ (อัปเดตทุก 30 วิ)
+    if (typeof populateVehicleDashboard === 'function' && document.getElementById('btn-dash-vehicle') && document.getElementById('btn-dash-vehicle').checked) {
+        populateVehicleDashboard();
+    }
+    
+    // 🟢 สั่งให้อัปเดตตาราง "แผนจัดส่ง" ทุกๆ 30 วินาทีด้วย
+    const viewPlanDateInput = document.getElementById('view-plan-date');
+    if (viewPlanDateInput) {
+        if (!viewPlanDateInput.value) {
+            const today = new Date();
+            const y = today.getFullYear();
+            const m = String(today.getMonth() + 1).padStart(2, '0');
+            const d = String(today.getDate()).padStart(2, '0');
+            viewPlanDateInput.value = `${y}-${m}-${d}`;
+        }
+        
+        if (typeof renderDeliveryPlanTable === 'function') {
+            renderDeliveryPlanTable(viewPlanDateInput.value);
+        }
+    }
+}
                 // --- RENDER FUNCTIONS (for dynamic content) ---
                 function renderAllForms() {
                     renderImportForm();
@@ -5550,6 +5568,24 @@ window.populateVehicleDashboard = function() {
                             populateStockSummary();
                         }
                     });
+                    // 🟢 ดักจับเวลากดเปิดแท็บ "แผนการจัดส่ง" ให้สั่งโหลดข้อมูลทันที
+                        document.body.addEventListener('shown.bs.tab', function (e) {
+                            if (e.target.dataset.bsTarget === '#pills-delivery-plan') {
+                                const viewPlanDateInput = document.getElementById('view-plan-date');
+                                if (viewPlanDateInput && typeof renderDeliveryPlanTable === 'function') {
+                                    // ถ้าช่องวันที่ยังว่างอยู่ ให้ดึงวันที่ของวันนี้มาใส่
+                                    if (!viewPlanDateInput.value) {
+                                        const today = new Date();
+                                        const y = today.getFullYear();
+                                        const m = String(today.getMonth() + 1).padStart(2, '0');
+                                        const d = String(today.getDate()).padStart(2, '0');
+                                        viewPlanDateInput.value = `${y}-${m}-${d}`;
+                                    }
+                                    // บังคับวาดตารางใหม่ทันทีที่หน้าจอแสดงผล
+                                    renderDeliveryPlanTable(viewPlanDateInput.value);
+                                }
+                            }
+                        });
 			// ซิงค์ระบบแนะนำรหัสสินค้าในฟอร์มแผนจัดส่ง (Auto-complete)
 document.body.addEventListener('input', (e) => {
     if (e.target.id === 'plan-product-id') {
@@ -5659,19 +5695,39 @@ function formatTimeDisplay(timeStr) {
 
 // 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา)
 // 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา)
-function renderDeliveryPlanTable(targetDate) {
+// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (เพิ่มระบบค้นหา)
+window.renderDeliveryPlanTable = function(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
     if (!tableBody) return;
     
     db.deliveryPlans = db.deliveryPlans || [];
     const formattedTargetDate = formatDate(targetDate);
     
-    // ดึงแผนของวันนี้มาจัดเรียงเวลา
-    const dailyPlans = db.deliveryPlans.filter(p => formatDate(p.date) === formattedTargetDate)
-                                       .sort((a, b) => formatTimeDisplay(a.time).localeCompare(formatTimeDisplay(b.time)));
+    // 🟢 1. ดึงข้อความจากช่องค้นหา
+    const searchInput = document.getElementById('delivery-plan-search');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    
+    // 🟢 2. ดึงแผนของวันที่เลือก และ กรองด้วยคำค้นหา
+    let dailyPlans = db.deliveryPlans.filter(p => formatDate(p.date) === formattedTargetDate);
+    
+    if (searchTerm !== '') {
+        dailyPlans = dailyPlans.filter(p => {
+            const cust = (p.customer || '').toLowerCase();
+            const plate = (p.licensePlate || '').toLowerCase();
+            const timeStr = formatTimeDisplay(p.time).toLowerCase();
+            return cust.includes(searchTerm) || plate.includes(searchTerm) || timeStr.includes(searchTerm);
+        });
+    }
+    
+    // จัดเรียงเวลา
+    dailyPlans.sort((a, b) => formatTimeDisplay(a.time).localeCompare(formatTimeDisplay(b.time)));
     
     if (dailyPlans.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">ไม่มีแผนการจัดส่งสินค้าสำหรับวันที่ ${formattedTargetDate} ค่ะ</td></tr>`;
+        if (searchTerm !== '') {
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">ไม่พบข้อมูลที่ตรงกับ "${searchTerm}" ในวันที่ ${formattedTargetDate} ค่ะ</td></tr>`;
+        } else {
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">ไม่มีแผนการจัดส่งสินค้าสำหรับวันที่ ${formattedTargetDate} ค่ะ</td></tr>`;
+        }
         return;
     }
     
@@ -5709,7 +5765,7 @@ function renderDeliveryPlanTable(targetDate) {
         const planDateStr = formatDate(group.date);
         
         const safeCustomer = group.customer.replace(/'/g, "\\'"); 
-        const displayTime = group.displayTime; // 🟢 ตัวแปรเวลาสวยงามที่เราจะส่งให้ปุ่มกด
+        const displayTime = group.displayTime;
         
         let statusBadge = '';
         let actionButtons = '';
@@ -5788,7 +5844,7 @@ function renderDeliveryPlanTable(targetDate) {
     }
     
     tableBody.innerHTML = html;
-}
+};
 // 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม)
 // 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม)
 window.releaseGroupVehicle = async function(date, displayTime, customer) {
@@ -9256,6 +9312,48 @@ window.uploadDeliveryFile = function() {
     });
     fileInput.click();
 };
+// =========================================================
+// 🖥️ ระบบขยายเต็มหน้าจอ (Full Screen) เฉพาะหน้าแดชบอร์ด
+// =========================================================
+
+window.toggleFullScreenDashboard = function() {
+    const dashElement = document.getElementById('pills-dashboard');
+    
+    // ตรวจสอบว่าตอนนี้เต็มจออยู่หรือไม่
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        // 🟢 สั่งให้กล่อง Dashboard ขยายเต็มจอ
+        if (dashElement.requestFullscreen) {
+            dashElement.requestFullscreen();
+        } else if (dashElement.webkitRequestFullscreen) { /* รองรับ Safari */
+            dashElement.webkitRequestFullscreen();
+        }
+        
+        // 🟢 เติมสีพื้นหลังและกำหนดให้เลื่อน (Scroll) ได้ตอนเต็มจอ
+        dashElement.style.backgroundColor = '#f0f2f5'; 
+        dashElement.style.overflowY = 'auto';
+        dashElement.style.padding = '25px';
+        
+    } else {
+        // 🔴 สั่งให้ออกจากโหมดเต็มจอ
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) { /* รองรับ Safari */
+            document.webkitExitFullscreen();
+        }
+    }
+};
+
+// 🟢 ดักจับ Event ตอนผู้ใช้กดปุ่ม 'ESC' ออกจากโหมดเต็มจอ เพื่อล้างค่าพื้นหลังทิ้ง
+['fullscreenchange', 'webkitfullscreenchange'].forEach(evt => {
+    document.addEventListener(evt, () => {
+        const dashElement = document.getElementById('pills-dashboard');
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            dashElement.style.backgroundColor = '';
+            dashElement.style.overflowY = '';
+            dashElement.style.padding = '';
+        }
+    });
+});
         </script>
 
 <button class="btn shadow-lg d-flex align-items-center justify-content-center" id="calc-toggle-btn" 
