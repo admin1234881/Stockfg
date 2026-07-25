@@ -474,6 +474,21 @@
             color: var(--danger-color);
             font-weight: bold;
         }
+        /* --- เอฟเฟกต์รถกำลังวิ่ง (กระพริบและขยับดุ๊กดิ๊ก) --- */
+        @keyframes truck-traveling {
+            0% { transform: translateX(-3px); box-shadow: 0 0 10px rgba(255, 193, 7, 0.2); }
+            50% { transform: translateX(3px); box-shadow: 0 0 20px rgba(255, 193, 7, 0.8); }
+            100% { transform: translateX(-3px); box-shadow: 0 0 10px rgba(255, 193, 7, 0.2); }
+        }
+        .truck-active-blink {
+            animation: truck-traveling 1.5s infinite ease-in-out;
+            border: 2px dashed #ffc107 !important;
+        }
+        .truck-card-plate {
+            font-family: 'Mitr', sans-serif;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 0px rgba(255,255,255,0.8);
+        }
 /* --- โครงสร้างลูฟี่ด้วย Pure CSS --- */
 .cute-luffy-css {
     width: 70px;
@@ -1343,7 +1358,7 @@
                             
                             <li id="nav-history-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-history"><i class="bi bi-clock-fill me-3 fs-5 align-middle" style="color: #20c997;"></i><span data-lang-key="nav_history">ประวัติ</span></button></li>
                             
-                            <li id="nav-delivery-plan-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-delivery-plan"><i class="bi bi-calendar-check-fill me-3 text-danger fs-5 align-middle"></i><span data-lang-key="nav_delivery_plan">แผนการจัดส่ง</span></button></li>
+                            <li id="nav-delivery-plan-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-delivery-plan"><i class="bi bi-calendar-check-fill me-3 text-danger fs-5 align-middle"></i><span data-lang-key="nav_delivery_plan">แผนการจัดส่ง Delivery plan</span></button></li>
                             <li id="nav-forecast-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-forecast"><i class="bi bi-graph-up-arrow me-3 text-success fs-5 align-middle"></i><span data-lang-key="nav_forecast">อัปโหลด Forecast (ล่วงหน้า)</span></button></li>
                         </ul>
                     </li>
@@ -1415,86 +1430,107 @@
                     </div>
                 </div>
 <div class="tab-pane fade" id="pills-delivery-plan" role="tabpanel">
-    <div class="card mb-4">
-        <div class="card-header fw-bold">
-            <i class="bi bi-calendar-plus-fill me-2 text-primary"></i>ฟอร์มสร้างแผนการจัดส่งสินค้าประจำวัน
+    <!-- ฟอร์มสร้างแผนการจัดส่ง -->
+    <div class="card mb-4 border-0 shadow-sm" style="border-radius: 20px; overflow: visible; z-index: 20;">
+        <div class="card-header fw-bold bg-white border-0 pt-4 pb-2 px-4" style="border-radius: 20px 20px 0 0;">
+            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-calendar-plus-fill me-2"></i>สร้างแผนการจัดส่งสินค้าประจำวัน</h5>
         </div>
-        <div class="card-body">
+        <div class="card-body px-4 pb-4 pt-2">
             <form id="delivery-plan-form" class="row g-3">
                 <div class="col-md-3">
-                    <label for="plan-date" class="form-label">วันที่ต้องการจัดส่ง</label>
-                    <input type="date" id="plan-date" class="form-control" required>
+                    <label for="plan-date" class="form-label fw-bold text-secondary small">วันที่ต้องการจัดส่ง</label>
+                    <input type="date" id="plan-date" class="form-control bg-light border-0" required>
                 </div>
                 <div class="col-md-3">
-                    <label for="plan-customer" class="form-label">ลูกค้า</label>
-                    <input type="text" id="plan-customer" class="form-control" placeholder="ระบุชื่อลูกค้า เช่น LG, Hanon" required>
+                    <label for="plan-customer" class="form-label fw-bold text-secondary small">ลูกค้า</label>
+                    <!-- 🟢 เพิ่ม text-muted และ readonly เข้าไปเพื่อให้ทึบเหมือนช่องชื่อสินค้า -->
+                    <input type="text" id="plan-customer" class="form-control bg-light border-0 text-muted" placeholder="ดึงอัตโนมัติจากรหัสสินค้า..." readonly required>
                 </div>
                 <div class="col-md-3">
-                    <label for="plan-product-id" class="form-label">รหัสสินค้า</label>
+                    <label for="plan-product-id" class="form-label fw-bold text-secondary small">รหัสสินค้า</label>
                     <div class="position-relative">
-                        <input type="text" id="plan-product-id" class="form-control" placeholder="ค้นหารหัสสินค้า..." required autocomplete="off">
-                        <div id="plan-product-suggestions" class="list-group position-absolute w-100 suggestions-container"></div>
+                        <input type="text" id="plan-product-id" class="form-control bg-light border-0" placeholder="ค้นหารหัสสินค้า..." required autocomplete="off">
+                        <div id="plan-product-suggestions" class="list-group position-absolute w-100 suggestions-container shadow-lg" style="z-index: 1050; max-height: 250px; overflow-y: auto;"></div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <label for="plan-product-name" class="form-label">ชื่อสินค้า</label>
-                    <input type="text" id="plan-product-name" class="form-control" readonly style="background-color: #e9ecef;">
+                    <label for="plan-product-name" class="form-label fw-bold text-secondary small">ชื่อสินค้า</label>
+                    <input type="text" id="plan-product-name" class="form-control bg-light border-0 text-muted" readonly>
                 </div>
                 <div class="col-md-3">
-                    <label for="plan-quantity" class="form-label">จำนวนที่ต้องส่ง</label>
-                    <input type="number" id="plan-quantity" class="form-control" min="1" placeholder="จำนวนชิ้น" required>
+                    <label for="plan-quantity" class="form-label fw-bold text-secondary small">จำนวนที่ต้องส่ง</label>
+                    <input type="number" id="plan-quantity" class="form-control bg-light border-0 fw-bold text-success" min="1" placeholder="จำนวนชิ้น" required>
                 </div>
                 <div class="col-md-3">
-                    <label for="plan-time" class="form-label">เวลาจัดส่ง (รอบ/Time)</label>
-                    <input type="time" id="plan-time" class="form-control" required>
+                    <label for="plan-time" class="form-label fw-bold text-secondary small">เวลาจัดส่ง (รอบ/Time)</label>
+                    <input type="text" id="plan-time" class="form-control fw-bold text-primary bg-light border-0" placeholder="เช่น 08:30 หรือ 14:00" pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" title="กรุณาระบุเวลา 24 ชั่วโมง (เช่น 08:30)" required autocomplete="off">
                 </div>
-                <div class="col-md-6">
-                    <label for="plan-remarks" class="form-label">หมายเหตุ</label>
-                    <input type="text" id="plan-remarks" class="form-control" placeholder="เช่น ทะเบียนรถ หรือ รอบเร่งด่วน">
+                <div class="col-md-4">
+                    <label for="plan-remarks" class="form-label fw-bold text-secondary small">หมายเหตุ</label>
+                    <input type="text" id="plan-remarks" class="form-control bg-light border-0" placeholder="เช่น ทะเบียนรถ หรือ รอบเร่งด่วน">
                 </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle-fill me-2"></i>เพิ่มเข้าแผนงาน</button>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100 shadow-sm fw-bold"><i class="bi bi-plus-circle-fill me-2"></i>เพิ่มเข้าแผน</button>
+                </div>
+                <!-- 🟢 ส่วนเสริม: อัปโหลดด้วย Excel -->
+                <div class="col-12 mt-4 pt-3 border-top d-flex flex-wrap justify-content-between align-items-center bg-success-subtle p-3" style="border-radius: 12px;">
+                    <div>
+                        <div class="fw-bold text-success mb-1"><i class="bi bi-file-earmark-excel-fill fs-5 me-2"></i>สร้างแผนทีละหลายรายการ (Excel)</div>
+                        <small class="text-success-emphasis">ไม่ต้องพิมพ์ชื่อสินค้าและลูกค้า ระบบจะดึงให้อัตโนมัติจากรหัสสินค้า</small>
+                    </div>
+                    <div class="d-flex gap-2 mt-2 mt-md-0">
+                        <button type="button" class="btn btn-outline-success fw-bold bg-white" onclick="window.downloadDeliveryTemplate()">
+                            <i class="bi bi-download me-1"></i> โหลดเทมเพลต
+                        </button>
+                        <button type="button" class="btn btn-success fw-bold shadow-sm" onclick="window.uploadDeliveryFile()">
+                            <i class="bi bi-upload me-1"></i> อัปโหลดไฟล์
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-light">
-            <span><i class="bi bi-table me-2 text-success"></i>ตารางสรุปแผนการจัดส่งรวมประจำวัน</span>
-            <div class="d-flex align-items-center gap-2">
-                <label for="view-plan-date" class="form-label mb-0 small-text" style="white-space: nowrap;">ดูแผนงานวันที่:</label>
-                <input type="date" id="view-plan-date" class="form-control form-control-sm">
+    <!-- ตารางสรุปแผนการจัดส่ง -->
+    <div class="card border-0 shadow-sm" style="border-radius: 20px;">
+        <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-white border-0 pt-4 pb-2 px-4" style="border-radius: 20px 20px 0 0;">
+            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-table me-2"></i>ตารางสรุปแผนการจัดส่งรวมประจำวัน</h5>
+            
+            <div class="d-flex align-items-center gap-2 shadow-sm px-3 py-1 bg-light" style="border-radius: 8px; border: 1px solid #dee2e6;">
+                <label for="view-plan-date" class="form-label mb-0 small-text fw-bold text-primary" style="white-space: nowrap;"><i class="bi bi-calendar-event me-1"></i>ดูแผนงานวันที่:</label>
+                <input type="date" id="view-plan-date" class="form-control form-control-sm border-0 fw-bold text-dark bg-light" style="outline: none; box-shadow: none;">
             </div>
-		<div class="d-flex align-items-center gap-2">
-    <label for="view-plan-date" class="form-label mb-0 small-text" style="white-space: nowrap;">ดูแผนงานวันที่:</label>
-    <input type="date" id="view-plan-date" class="form-control form-control-sm">
-</div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle">
-                    <thead class="table-primary text-center">
+        
+        <div class="card-body pt-0 pb-4 px-4 mt-2">
+            <!-- 🟢 ล็อกความสูงตารางไว้ที่ไม่เกิน 450px และบังคับให้มี Scrollbar ภายในกล่องเท่านั้น -->
+            <div class="table-responsive shadow-sm" style="max-height: 450px; min-height: 300px; overflow-y: auto; border-radius: 10px; border: 1px solid #dee2e6; background-color: #ffffff;">
+                <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
+                    <!-- 🟢 ตรึงหัวตารางและกำหนดสีพื้นหลังให้ทึบ 100% ป้องกันตัวหนังสือทะลุ -->
+                    <thead class="text-center" style="position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 5px rgba(0,0,0,0.15);">
                         <tr>
-                            <th>เวลา</th>
-                            <th>ลูกค้า</th>
-                            <th>รหัสสินค้า</th>
-                            <th>ชื่อสินค้า</th>
-                            <th class="text-end">จำนวน (ชิ้น)</th>
-                            <th>หมายเหตุ</th>
-                            <th>การจัดการ</th>
+                            <th style="width: 50px; background-color: #cfe2ff; color: #052c65; border-bottom: none; border-radius: 10px 0 0 0;"></th>
+                            <th style="background-color: #cfe2ff; color: #052c65; border-bottom: none;">เวลา (รอบ)</th>
+                            <th style="background-color: #cfe2ff; color: #052c65; border-bottom: none;">ลูกค้า</th>
+                            <th style="background-color: #cfe2ff; color: #052c65; border-bottom: none;">รายการสินค้า</th>
+                            <th class="text-end" style="background-color: #cfe2ff; color: #052c65; border-bottom: none;">ยอดรวม (ชิ้น)</th>
+                            <th style="background-color: #cfe2ff; color: #052c65; border-bottom: none;">สถานะรถบรรทุก</th>
+                            <th style="background-color: #cfe2ff; color: #052c65; border-bottom: none; border-radius: 0 10px 0 0;">การจัดการรถ</th>
                         </tr>
                     </thead>
                     <tbody id="delivery-plan-table-body">
                         <tr>
-                            <td colspan="7" class="text-center text-muted p-4">กรุณาเลือกวันที่ต้องการดูแผนการจัดส่งค่ะ</td>
+                            <td colspan="7" class="text-center text-muted p-5">
+                                <i class="bi bi-calendar-x text-secondary opacity-50 d-block mb-3" style="font-size: 3rem;"></i>
+                                กรุณาเลือกวันที่ต้องการดูแผนการจัดส่งค่ะ
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-</div>                <!-- Dashboard Tab (NEW) -->
+</div>
 <!-- Dashboard Tab (Modern Redesign + Chart) -->
                 <div class="tab-pane fade" id="pills-dashboard" role="tabpanel">
                     
@@ -1506,6 +1542,8 @@
 
                             <input type="radio" class="btn-check" name="dashToggle" id="btn-dash-rack" autocomplete="off" onchange="toggleDashboardView('rack')">
                             <label class="btn btn-outline-primary border-0 rounded-pill px-4 fw-bold" for="btn-dash-rack"><i class="bi bi-inboxes-fill me-2"></i>สถานะ Rack (แพ็คกิ้ง)</label>
+                            <input type="radio" class="btn-check" name="dashToggle" id="btn-dash-vehicle" autocomplete="off" onchange="toggleDashboardView('vehicle')">
+                            <label class="btn btn-outline-primary border-0 rounded-pill px-4 fw-bold" for="btn-dash-vehicle"><i class="bi bi-truck-front-fill me-2"></i>สถานะรถขนส่ง (วันนี้)</label>
                         </div>
                     </div>
 
@@ -1739,6 +1777,49 @@
                             </div>
                         </div> <!-- ปิดแถว (row) -->
                     </div> <!-- ปิดหน้าแดชบอร์ด Rack (view-dash-rack) -->
+                    <!-- 🚚 View 3: แดชบอร์ดสถานะรถขนส่ง (Real-time Today) -->
+                    <div id="view-dash-vehicle" class="d-none">
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-0" style="border-radius: 15px;">
+                                    <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
+                                    <div>
+                                        <h6 class="fw-bold mb-0 text-dark">ระบบติดตามรถบรรทุกประจำวัน (Real-time)</h6>
+                                        <small class="text-muted">ระบบจะดึงทะเบียนรถที่ปล่อยคิวใน "วันนี้" มาแสดงผลอัตโนมัติ ถ้ารถกำลังเดินทางกล่องจะกระพริบครับ</small>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm ms-auto rounded-pill px-4 shadow-sm" onclick="populateVehicleDashboard()"><i class="bi bi-arrow-clockwise me-1"></i> อัปเดตเดี๋ยวนี้</button>
+                                </div>
+                            </div>
+
+                            <!-- 🔴 คอลัมน์ซ้าย: รถกำลังเดินทาง (อยู่กับลูกค้า) -->
+                            <div class="col-lg-7">
+                                <div class="card shadow-sm border-0 h-100" style="background-color: #fffaf0; border-radius: 20px;">
+                                    <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
+                                        <h5 class="fw-bold text-warning mb-0" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1);"><i class="bi bi-truck-flatbed me-2"></i>รถกำลังเดินทาง / อยู่ที่ลูกค้า</h5>
+                                    </div>
+                                    <div class="card-body p-4 pt-2">
+                                        <div id="vehicle-delivering-container" class="row g-3">
+                                            <!-- รถวิ่งจะมาโชว์ที่นี่ -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 🟢 คอลัมน์ขวา: รถจอดสแตนด์บาย (กลับถึง A-TECH แล้ว) -->
+                            <div class="col-lg-5">
+                                <div class="card shadow-sm border-0 h-100" style="background-color: #f0fdf4; border-radius: 20px;">
+                                    <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
+                                        <h5 class="fw-bold text-success mb-0"><i class="bi bi-building-check me-2"></i>กลับถึง A-TECH แล้ว (จบงาน)</h5>
+                                    </div>
+                                    <div class="card-body p-4 pt-2">
+                                        <div id="vehicle-completed-container" class="row g-3">
+                                            <!-- รถจอดจะมาโชว์ที่นี่ -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div> <!-- ปิดหน้าแดชบอร์ดรวมทั้งหมด (pills-dashboard) -->
                 <!-- Forecast Tab -->
                 <div class="tab-pane fade" id="pills-forecast" role="tabpanel">
@@ -2212,7 +2293,7 @@
                     nav_group_operations: "งานจัดการสินค้า",
                     nav_group_settings: "ตั้งค่าระบบ",
                     nav_announcements: "จัดการประกาศ",
-                    nav_delivery_plan: "แผนการจัดส่ง",
+                    nav_delivery_plan: "แผนการจัดส่ง Delivery plan",
                     nav_convert_part: "เปลี่ยนรหัสสินค้า (Convert)",
                     // NEW: Dashboard
                     nav_dashboard: "แดชบอร์ด",
@@ -2854,7 +2935,7 @@ function handleLogin(e) {
                 };
 
                 // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQoHwzdHSH427Yb9ZcVkUj-fNbmALDDXU_xPMPTuXE1R1gsKlH2xPTWEMyQg17MC-LEg/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzZFgswov_U_lDAq9uqS48Oje78INXk3p9ytU55EFKog0N1iPLt0VnjLBrHcn0Q8vZG_g/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [] };
@@ -4298,7 +4379,7 @@ if (mascotBubble) {
     // สั่งให้รันฟังก์ชันเปลี่ยนคำพูดอัตโนมัติทุกๆ 5000 มิลลิวินาที (5 วินาที)
     window.mascotLoopTimer = setInterval(rotateSpeech, 5000);
 }
-                function populateAll() {
+function populateAll() {
                     populateStockSummary();
                     populateUserManagementTable();
                     populateProductManagementTable();
@@ -4306,9 +4387,30 @@ if (mascotBubble) {
                     populateAnnouncementsTable();
                     displayActiveAnnouncements();
                     populateStockCountMainView();
-                    window.app.populateDashboard(); // NEW: Call dashboard population
-                    if (typeof renderRackSummaryTable === 'function') renderRackSummaryTable(); // ✅ สั่งอัปเดตตาราง Rack
+                    window.app.populateDashboard(); 
+                    if (typeof renderRackSummaryTable === 'function') renderRackSummaryTable(); 
                     if (typeof populateRackDashboard === 'function' && document.getElementById('btn-dash-rack') && document.getElementById('btn-dash-rack').checked) populateRackDashboard();
+                    
+                    // 🟢 -------------------------------------------------------------
+                    // 🟢 เพิ่มโค้ดชุดนี้: สั่งให้อัปเดตตาราง "แผนจัดส่ง" ทุกๆ 30 วินาทีด้วย!
+                    // ----------------------------------------------------------------
+                    const viewPlanDateInput = document.getElementById('view-plan-date');
+                    if (viewPlanDateInput) {
+                        // ถ้าช่องวันที่ยังว่างเปล่า (เพิ่งเปิดเว็บ) ให้ใส่วันที่ปัจจุบันเข้าไป
+                        if (!viewPlanDateInput.value) {
+                            const today = new Date();
+                            const y = today.getFullYear();
+                            const m = String(today.getMonth() + 1).padStart(2, '0');
+                            const d = String(today.getDate()).padStart(2, '0');
+                            viewPlanDateInput.value = `${y}-${m}-${d}`;
+                        }
+                        
+                        // สั่งวาดตารางแผนงานใหม่ ตามวันที่โชว์อยู่ในช่องปฏิทิน
+                        if (typeof renderDeliveryPlanTable === 'function') {
+                            renderDeliveryPlanTable(viewPlanDateInput.value);
+                        }
+                    }
+                    // 🟢 -------------------------------------------------------------
                 }
 
                 // --- RENDER FUNCTIONS (for dynamic content) ---
@@ -5037,21 +5139,108 @@ window.downloadStockSummaryPDF = function() {
         Toast.fire({ icon: 'success', title: 'ดาวน์โหลดรายงาน PDF เรียบร้อยครับ!' });
     });
 };
-                window.toggleDashboardView = function(view) {
+window.toggleDashboardView = function(view) {
                     const viewSales = document.getElementById('view-dash-sales');
                     const viewRack = document.getElementById('view-dash-rack');
+                    const viewVehicle = document.getElementById('view-dash-vehicle'); // 🟢 เพิ่มตัวแปร
                     
-                    if (view === 'sales') {
-                        if (viewSales) viewSales.classList.remove('d-none');
-                        if (viewRack) viewRack.classList.add('d-none');
-                    } else {
-                        if (viewSales) viewSales.classList.add('d-none');
-                        if (viewRack) viewRack.classList.remove('d-none');
-                        // ดึงข้อมูลมาคำนวณตอนกดดู
+                    if (viewSales) viewSales.classList.add('d-none');
+                    if (viewRack) viewRack.classList.add('d-none');
+                    if (viewVehicle) viewVehicle.classList.add('d-none'); // 🟢 ซ่อนไว้ก่อน
+
+                    if (view === 'sales' && viewSales) viewSales.classList.remove('d-none');
+                    else if (view === 'rack' && viewRack) {
+                        viewRack.classList.remove('d-none');
                         if (typeof populateRackDashboard === 'function') populateRackDashboard(); 
                     }
+                    else if (view === 'vehicle' && viewVehicle) { // 🟢 ถ้ากดปุ่มรถ ให้โชว์หน้ารถ
+                        viewVehicle.classList.remove('d-none');
+                        if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard(); 
+                    }
                 };
+// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง
+window.populateVehicleDashboard = function() {
+    const deliveringContainer = document.getElementById('vehicle-delivering-container');
+    const completedContainer = document.getElementById('vehicle-completed-container');
+    if (!deliveringContainer || !completedContainer) return;
 
+    db.deliveryPlans = db.deliveryPlans || [];
+    const todayStr = formatDate(new Date()); // ดึงรถเฉพาะของ "วันนี้"
+    
+    // ฟังก์ชันย่อย: สร้างสีพาสเทลจากทะเบียนรถ (ทะเบียนเดิม สีเดิมตลอด)
+    const getColorForPlate = (plate) => {
+        let hash = 0;
+        for (let i = 0; i < plate.length; i++) hash = plate.charCodeAt(i) + ((hash << 5) - hash);
+        return `hsl(${Math.abs(hash % 360)}, 85%, 85%)`; 
+    };
+
+    const activeVehicles = {};
+
+    // 1. กวาดข้อมูลรถทั้งหมดของวันนี้ที่มีการกรอกทะเบียนแล้ว
+    db.deliveryPlans.filter(p => p.licensePlate && formatDate(p.date) === todayStr).forEach(p => {
+        const plate = p.licensePlate.trim();
+        if (!activeVehicles[plate]) {
+            activeVehicles[plate] = {
+                plate: plate,
+                bgColor: getColorForPlate(plate),
+                customers: new Set(),
+                status: 'Completed', // สมมติว่าจบงานแล้วไว้ก่อน
+                partsCount: 0,
+                totalQty: 0
+            };
+        }
+        
+        activeVehicles[plate].customers.add(p.customer);
+        activeVehicles[plate].partsCount++;
+        activeVehicles[plate].totalQty += parseInt(p.quantity) || 0;
+
+        // ถ้ารถคันนี้มีพาร์ทไหนสักพาร์ทที่กำลัง 'Delivering' แปลว่ารถคันนี้ยังอยู่ข้างนอก!
+        if (p.status === 'Delivering') {
+            activeVehicles[plate].status = 'Delivering';
+        }
+    });
+
+    let deliveringHtml = '';
+    let completedHtml = '';
+
+    // 2. วาดกล่องรถบรรทุกทีละคัน
+    Object.values(activeVehicles).forEach(v => {
+        const customersStr = Array.from(v.customers).join(', ');
+        
+        // ถ้ารถกำลังเดินทาง -> ใส่คลาส truck-active-blink ให้มันกระพริบ
+        if (v.status === 'Delivering') {
+            deliveringHtml += `
+            <div class="col-md-6 col-12">
+                <div class="card border-0 truck-active-blink" style="background-color: ${v.bgColor}; border-radius: 15px;">
+                    <div class="card-body p-3 position-relative overflow-hidden">
+                        <i class="bi bi-truck position-absolute opacity-25 text-dark" style="font-size: 5rem; right: -10px; bottom: -20px;"></i>
+                        <h4 class="truck-card-plate text-dark fw-bolder mb-2">${v.plate}</h4>
+                        <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>ส่ง: ${customersStr}</div>
+                        <div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>พาร์ท: ${v.partsCount} รายการ (${v.totalQty.toLocaleString()} ชิ้น)</div>
+                    </div>
+                </div>
+            </div>`;
+        } 
+        // ถ้ารถกลับมาแล้ว (จบงานทุกพาร์ท) -> ไปอยู่ฝั่ง A-TECH นิ่งๆ
+        else {
+            completedHtml += `
+            <div class="col-md-6 col-12">
+                <div class="card border border-success-subtle shadow-sm" style="background-color: #ffffff; border-radius: 15px; opacity: 0.85;">
+                    <div class="card-body p-3">
+                        <h5 class="truck-card-plate text-success fw-bolder mb-2"><i class="bi bi-check-circle-fill me-2"></i>${v.plate}</h5>
+                        <div class="small text-muted"><i class="bi bi-clock-history me-1"></i>ส่งลูกค้า: ${customersStr} (เสร็จแล้ว)</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    });
+
+    if (deliveringHtml === '') deliveringHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-emoji-smile fs-3 d-block mb-2"></i>ไม่มีรถออกวิ่งข้างนอกเลยครับตอนนีั</div>`;
+    if (completedHtml === '') completedHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-cone-striped fs-3 d-block mb-2"></i>ยังไม่มีรถคันไหนกลับมาจอดที่บริษัทครับ</div>`;
+
+    deliveringContainer.innerHTML = deliveringHtml;
+    completedContainer.innerHTML = completedHtml;
+};
 // ฟังก์ชันคำนวณและวาดตาราง Rack
                 window.populateRackDashboard = function() {
                     const T = translations[currentLanguage] || translations['th'];
@@ -5403,6 +5592,7 @@ document.body.addEventListener('input', (e) => {
 });
 
 // จัดการการบันทึกฟอร์มแผนจัดส่งสินค้า
+// จัดการการบันทึกฟอร์มแผนจัดส่งสินค้า
 document.body.addEventListener('submit', function (e) {
     if (e.target.id === 'delivery-plan-form') {
         e.preventDefault();
@@ -5417,17 +5607,19 @@ document.body.addEventListener('submit', function (e) {
             quantity: parseInt(document.getElementById('plan-quantity').value, 10),
             time: document.getElementById('plan-time').value,
             remarks: document.getElementById('plan-remarks').value.trim(),
-            user: currentUser.username
+            user: currentUser.username,
+            status: 'Pending', 
+            licensePlate: '',
+            actualReleaseTime: '',
+            actualReturnTime: ''
         };
 
         db.deliveryPlans = db.deliveryPlans || [];
         db.deliveryPlans.push(newPlan);
         
-        // กำหนดให้ตารางแสดงผลตามวันที่เราพึ่งบันทึกเข้าไป
         document.getElementById('view-plan-date').value = planDate;
         renderDeliveryPlanTable(planDate);
         
-        // ล้างฟอร์มยกเว้นวันที่ เพื่อให้คีย์รายการต่อไปของวันนั้นได้ต่อเนื่อง
         document.getElementById('plan-customer').value = '';
         document.getElementById('plan-product-id').value = '';
         document.getElementById('plan-product-name').value = '';
@@ -5437,67 +5629,500 @@ document.body.addEventListener('submit', function (e) {
         
         Swal.fire({ icon: 'success', title: 'เพิ่มรายการลงแผนจัดส่งแล้วค่ะ', timer: 1500, showConfirmButton: false });
         
-        // หมายเหตุ: อนาคตสามารถเชื่อมโยงเขียนฟังก์ชันส่งไปบันทึกที่ Apps Script (Spreadsheet) เพิ่มเติมได้ครับ
+        // 🟢 เพิ่มคำสั่งยิงข้อมูลไปเซฟที่ Apps Script ตรงนี้ครับ!
+        try {
+            callAppsScript('addDeliveryPlan', newPlan);
+        } catch (error) {
+            console.error('Save Delivery Plan Error:', error);
+        }
     }
 });
 
-// ฟังก์ชันคำนวณและแสดงตารางแผนงานประจำวันรวมทุกเจ้า
+// 🟢 ฟังก์ชันช่วยแปลงเวลาจาก Google Sheet ให้เป็น 24 ชั่วโมง (HH:mm) แบบสวยๆ
+function formatTimeDisplay(timeStr) {
+    if (!timeStr) return '-';
+    // 1. กรณีมาจาก Google Sheet เป็นก้อนวันที่ (เช่น 1899-12-30T02:29:56.000Z)
+    if (typeof timeStr === 'string' && timeStr.includes('T')) {
+        const dateObj = new Date(timeStr);
+        if (!isNaN(dateObj.getTime())) {
+            // ดึงเฉพาะ ชั่วโมง:นาที แบบ 24 ชม.
+            return dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+    }
+    // 2. กรณีเป็น Text เวลาปกติอยู่แล้ว (เช่น 09:30 หรือ 14:00)
+    const timeMatch = String(timeStr).match(/^(\d{1,2}):(\d{2})/);
+    if (timeMatch) {
+        return String(timeMatch[1]).padStart(2, '0') + ':' + timeMatch[2];
+    }
+    return timeStr;
+}
+
+// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา)
+// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา)
 function renderDeliveryPlanTable(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
     if (!tableBody) return;
     
     db.deliveryPlans = db.deliveryPlans || [];
-    // กรองเอาเฉพาะข้อมูลแผนจัดส่งในวันที่เลือก และเรียงตามเวลา (FIFO/Timeline)
-    const dailyPlans = db.deliveryPlans.filter(p => p.date === targetDate)
-                                       .sort((a, b) => a.time.localeCompare(b.time));
+    const formattedTargetDate = formatDate(targetDate);
+    
+    // ดึงแผนของวันนี้มาจัดเรียงเวลา
+    const dailyPlans = db.deliveryPlans.filter(p => formatDate(p.date) === formattedTargetDate)
+                                       .sort((a, b) => formatTimeDisplay(a.time).localeCompare(formatTimeDisplay(b.time)));
     
     if (dailyPlans.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4">ไม่มีแผนการจัดส่งสินค้าสำหรับวันที่ ${targetDate} ค่ะ</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">ไม่มีแผนการจัดส่งสินค้าสำหรับวันที่ ${formattedTargetDate} ค่ะ</td></tr>`;
         return;
     }
     
-    tableBody.innerHTML = dailyPlans.map(p => `
-        <tr>
-            <td class="text-center fw-bold text-primary"><i class="bi bi-clock me-1"></i>${p.time} น.</td>
-            <td><b>${p.customer}</b></td>
-            <td><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">${p.productId}</span></td>
-            <td><small>${p.productName}</small></td>
-            <td class="text-end fw-bold text-success">${p.quantity.toLocaleString()}</td>
-            <td><span class="small-text">${p.remarks || '-'}</span></td>
-            <td class="text-center">
-                <button class="btn btn-danger btn-sm p-1" onclick="deletePlanItem('${p.id}', '${p.date}')" title="ลบรายการ"><i class="bi bi-trash-fill"></i></button>
+    // จัดกลุ่มข้อมูล (Group By: ลูกค้า + เวลา)
+    const groupedPlans = {};
+    dailyPlans.forEach(p => {
+        const displayTime = formatTimeDisplay(p.time);
+        const groupKey = displayTime + '_' + p.customer; 
+        
+        if (!groupedPlans[groupKey]) {
+            groupedPlans[groupKey] = {
+                date: p.date,
+                displayTime: displayTime,
+                customer: p.customer,
+                status: p.status || 'Pending',
+                licensePlate: p.licensePlate || '',
+                items: [], 
+                totalQuantity: 0
+            };
+        }
+        groupedPlans[groupKey].items.push(p);
+        groupedPlans[groupKey].totalQuantity += parseInt(p.quantity) || 0;
+        
+        if (p.status === 'Delivering') groupedPlans[groupKey].status = 'Delivering';
+        if (p.status === 'Completed') groupedPlans[groupKey].status = 'Completed';
+        if (p.licensePlate) groupedPlans[groupKey].licensePlate = p.licensePlate;
+    });
+
+    let html = '';
+    let groupIndex = 0;
+
+    for (const key in groupedPlans) {
+        const group = groupedPlans[key];
+        const groupId = 'group-collapse-' + groupIndex++;
+        const planDateStr = formatDate(group.date);
+        
+        const safeCustomer = group.customer.replace(/'/g, "\\'"); 
+        const displayTime = group.displayTime; // 🟢 ตัวแปรเวลาสวยงามที่เราจะส่งให้ปุ่มกด
+        
+        let statusBadge = '';
+        let actionButtons = '';
+        
+        if (group.status === 'Pending') {
+            statusBadge = `<span class="badge bg-secondary rounded-pill shadow-sm">รอจัดส่ง</span>`;
+            actionButtons = `
+                <button class="btn btn-primary btn-sm shadow-sm w-100" onclick="event.stopPropagation(); window.releaseGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-truck me-1"></i> ปล่อยรถ</button>
+            `;
+        } else if (group.status === 'Delivering') {
+            statusBadge = `<span class="badge bg-warning text-dark rounded-pill shadow-sm py-2 px-3"><i class="bi bi-truck me-1"></i> อยู่ระหว่างจัดส่ง<br><small class="text-muted mt-1 d-block">ทะเบียน: ${group.licensePlate}</small></span>`;
+            actionButtons = `
+                <button class="btn btn-success btn-sm shadow-sm w-100 mb-1" style="font-size: 0.75rem; padding: 6px;" onclick="event.stopPropagation(); window.returnGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-building-check me-1"></i> ถึงเอเทคแล้ว</button>
+                <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem; padding: 4px;" onclick="event.stopPropagation(); window.cancelGroupRelease('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-arrow-counterclockwise"></i> ยกเลิกปล่อยรถ</button>
+            `;
+        } else if (group.status === 'Completed') {
+            statusBadge = `<span class="badge bg-success rounded-pill shadow-sm">เสร็จสิ้น</span>`;
+            actionButtons = `<span class="text-success small fw-bold"><i class="bi bi-check2-all"></i> จบงาน</span>`;
+        }
+
+        const clickToExpand = `style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#${groupId}" title="คลิกเพื่อดูรายการพาร์ท"`;
+
+        html += `
+        <tr class="shadow-sm align-middle" style="background-color: #f8f9fa;">
+            <td class="text-center text-primary" ${clickToExpand}><i class="bi bi-chevron-down"></i></td>
+            <td class="text-center fw-bold text-primary" ${clickToExpand}><i class="bi bi-clock me-1"></i>${group.displayTime} น.</td>
+            <td class="fw-bold fs-6" ${clickToExpand}>${group.customer}</td>
+            <td class="fw-bold text-secondary" ${clickToExpand}>${group.items.length} พาร์ท <small class="text-muted fw-normal">(คลิกดู)</small></td>
+            <td class="text-end fw-bold text-success fs-6" ${clickToExpand}>${group.totalQuantity.toLocaleString()}</td>
+            <td class="text-center" ${clickToExpand}>${statusBadge}</td>
+            
+            <td class="text-center" style="width: 140px; cursor: default;">
+                ${actionButtons}
             </td>
         </tr>
-    `).join('');
+        `;
+        
+        html += `
+        <tr id="${groupId}" class="collapse">
+            <td colspan="7" class="p-0 border-0">
+                <div class="bg-white p-3 border-start border-3 border-primary shadow-sm rounded-end">
+                    <table class="table table-sm table-borderless mb-0">
+                        <thead class="text-muted" style="font-size: 0.8rem;">
+                            <tr>
+                                <th>รหัสสินค้า</th>
+                                <th>ชื่อสินค้า</th>
+                                <th class="text-end">จำนวน</th>
+                                <th>หมายเหตุ</th>
+                                <th class="text-center">ลบ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        
+        group.items.forEach(item => {
+            html += `
+                            <tr class="border-bottom">
+                                <td style="width: 20%;" class="fw-bold text-dark">${item.productId}</td>
+                                <td style="width: 35%;" class="text-muted"><small>${item.productName}</small></td>
+                                <td style="width: 15%;" class="text-end fw-bold text-success">${parseInt(item.quantity).toLocaleString()} ชิ้น</td>
+                                <td style="width: 20%;" class="text-muted"><small>${item.remarks || '-'}</small></td>
+                                <td style="width: 10%;" class="text-center">
+                                    ${(group.status === 'Pending') ? `<button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')"><i class="bi bi-trash"></i></button>` : '<i class="bi bi-lock text-muted"></i>'}
+                                </td>
+                            </tr>
+            `;
+        });
+        
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </td>
+        </tr>
+        `;
+    }
+    
+    tableBody.innerHTML = html;
 }
+// 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม)
+// 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม)
+window.releaseGroupVehicle = async function(date, displayTime, customer) {
+    // 🟢 ค้นหาโดยบังคับแปลงข้อมูลในชีตให้เป็นหน้าตาเดียวกันก่อนเทียบ
+    const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === date && formatTimeDisplay(p.time) === displayTime && p.customer === customer);
+    if (plansToUpdate.length === 0) return;
 
-// ฟังก์ชันสำหรับลบรายการแผนจัดส่งออกจากตารางชั่วคราว
-window.deletePlanItem = function(id, date) {
-    Swal.fire({
-        title: 'ยืนยันการลบรายการนี้?',
-        icon: 'warning',
+    const { value: licensePlate } = await Swal.fire({
+        title: '🚚 ปล่อยรถจัดส่ง',
+        html: `ลูกค้า: <b>${customer}</b><br>รอบเวลา: <b>${displayTime} น.</b><br>รวม: <b class="text-primary">${plansToUpdate.length} พาร์ท</b>`,
+        input: 'text',
+        inputPlaceholder: 'ตัวอย่าง: กท 1234',
         showCancelButton: true,
-        confirmButtonText: 'ลบรายการ',
+        confirmButtonText: 'ยืนยันปล่อยรถ',
         cancelButtonText: 'ยกเลิก',
-        confirmButtonColor: '#dc3545'
-    }).then((result) => {
+        confirmButtonColor: '#0d6efd',
+        inputValidator: (value) => { if (!value || value.trim() === '') return 'กรุณากรอกทะเบียนรถด้วยครับ!'; }
+    });
+
+    if (licensePlate) {
+        Swal.fire({ title: 'กำลังอัปเดตระบบ...', text: 'กำลังส่งข้อมูลรถทั้งคันไปที่ Sheet...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const releaseTime = new Date().toLocaleTimeString('th-TH');
+        
+        try {
+            // อัปเดตทีละรายการจนครบทั้งคันรถ
+            for (let plan of plansToUpdate) {
+                plan.status = 'Delivering';
+                plan.licensePlate = licensePlate;
+                plan.actualReleaseTime = releaseTime;
+                plan.time = formatTimeDisplay(plan.time); // ดัดหลัง Sheet
+                plan.date = formatDate(plan.date);        // ดัดหลัง Sheet
+                await callAppsScript('updateDeliveryPlan', plan);
+            }
+            if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date);
+            Swal.fire({ icon: 'success', title: 'ปล่อยรถเรียบร้อย!', text: `ทะเบียน: ${licensePlate}`, timer: 1500, showConfirmButton: false });
+        } catch (error) {
+            Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้ทั้งหมด: ' + error.message, 'error');
+            if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date); 
+        }
+    }
+};
+
+// 🟢 2. ฟังก์ชันรับรถกลับ (แบบกลุ่ม)
+window.returnGroupVehicle = function(date, displayTime, customer) {
+    const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === date && formatTimeDisplay(p.time) === displayTime && p.customer === customer);
+    if (plansToUpdate.length === 0) return;
+
+    Swal.fire({
+        title: '🏁 ยืนยันรับรถกลับ?',
+        text: `ยืนยันว่ารถคันนี้กลับถึงโรงงานเรียบร้อยแล้วใช่หรือไม่?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'ใช่, กลับมาแล้ว',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#198754'
+    }).then(async (result) => {
         if (result.isConfirmed) {
-            db.deliveryPlans = db.deliveryPlans.filter(p => p.id !== id);
-            renderDeliveryPlanTable(date);
+            Swal.fire({ title: 'กำลังจบงาน...', text: 'รอ Google Sheet สักครู่ครับ', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const returnTime = new Date().toLocaleTimeString('th-TH');
+            
+            try {
+                for (let plan of plansToUpdate) {
+                    plan.status = 'Completed';
+                    plan.actualReturnTime = returnTime;
+                    plan.time = formatTimeDisplay(plan.time);
+                    plan.date = formatDate(plan.date);
+                    await callAppsScript('updateDeliveryPlan', plan);
+                }
+                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date);
+                Swal.fire({ icon: 'success', title: 'ปิดงานสำเร็จ!', timer: 1500, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+            }
         }
     });
 };
-                    document.body.addEventListener('change', (e) => {
-                       if (e.target.id === 'import-product-id') {
-    const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
-    document.getElementById('import-product-name').value = product ? product.name : '';
-    document.getElementById('import-customer').value = product ? product.customer || '' : '';
-    document.getElementById('import-erp-code').value = product ? product.erpCode : '';
-    document.getElementById('import-fullbox').value = product ? product.fullBoxQuantity : '';
+
+// 🟢 3. ฟังก์ชันดึงรถกลับ (ยกเลิกแบบกลุ่ม)
+window.cancelGroupRelease = function(date, displayTime, customer) {
+    const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === date && formatTimeDisplay(p.time) === displayTime && p.customer === customer);
+    if (plansToUpdate.length === 0) return;
+
+    Swal.fire({
+        title: 'ยกเลิกการปล่อยรถ?',
+        text: 'ต้องการดึงรถคันนี้กลับมาเป็นสถานะ "รอจัดส่ง" ใช่หรือไม่?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ใช่, ดึงกลับ',
+        cancelButtonText: 'ปิด',
+        confirmButtonColor: '#dc3545'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'กำลังดึงรายการกลับ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                for (let plan of plansToUpdate) {
+                    plan.status = 'Pending';
+                    plan.licensePlate = '';
+                    plan.actualReleaseTime = '';
+                    plan.time = formatTimeDisplay(plan.time);
+                    plan.date = formatDate(plan.date);
+                    await callAppsScript('updateDeliveryPlan', plan);
+                }
+                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date);
+                Swal.fire({ icon: 'success', title: 'ดึงรายการกลับสำเร็จ!', timer: 1500, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+            }
+        }
+    });
+};
+
+// 🟢 4. ฟังก์ชันลบแผนงาน (รายพาร์ท)
+window.deletePlanItem = function(id, date) {
+    Swal.fire({
+        title: 'ยืนยันการลบ?',
+        text: "คุณต้องการลบแผนจัดส่งรายการนี้ใช่หรือไม่?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ใช่, ลบเลย!',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#dc3545'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                await callAppsScript('deleteDeliveryPlan', { id: id });
+                db.deliveryPlans = db.deliveryPlans.filter(p => p.id !== id); 
+                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date);
+                Swal.fire({ icon: 'success', title: 'ลบเรียบร้อย!', timer: 1500, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+            }
+        }
+    });
+};
+// =========================================================
+// 🚚 ระบบโหลด/อัปโหลด เทมเพลตแผนการจัดส่ง (ฉบับสมบูรณ์)
+// =========================================================
+
+// 🟢 1. โหลดเทมเพลต
+window.downloadDeliveryTemplate = function() {
+    try {
+        const ws_data = [
+            ["วันที่จัดส่ง (YYYY-MM-DD)", "รอบเวลา (เช่น 08:30)", "รหัสสินค้า (Part No.)", "จำนวนชิ้น", "หมายเหตุ (เว้นว่างได้)"],
+            ["2024-05-20", "09:30", "PART-001", 1500, "ส่งรอบเช้า"],
+            ["2024-05-20", "14:00", "PART-002", 500, ""],
+            ["* ลบข้อมูลตัวอย่างนี้ทิ้งก่อนใช้งาน *", "", "", "", ""]
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 25}, {wch: 15}, {wch: 35}];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "DeliveryPlan_Template");
+        XLSX.writeFile(wb, "Delivery_Plan_Template.xlsx");
+    } catch (error) {
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่พบระบบสร้างไฟล์ กรุณารีเฟรชหน้าเว็บอีกครั้ง', 'error');
+    }
+};
+
+// 🟢 2. อัปโหลดและประมวลผลแผนจัดส่ง
+window.uploadDeliveryFile = function() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx, .xls, .csv';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput); 
     
-    // --- เพิ่มบรรทัดนี้ เพื่อให้ QR รีเฟรชโค้ด ERP ทันทีที่เลือกพาร์ท ---
-    updateImportTotal(); 
-}
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            document.body.removeChild(fileInput);
+            return;
+        }
+
+        Swal.fire({ title: 'กำลังอ่านไฟล์ Excel...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                const newPlans = [];
+                let countFailed = 0;
+
+                // 🟢 ดักจับวันที่สารพัดรูปแบบ
+                const parseExcelDate = (val) => {
+                    if (!val) return null;
+                    if (typeof val === 'number') {
+                        const date = new Date((val - (25567 + 2)) * 86400 * 1000);
+                        return date.toISOString().split('T')[0];
+                    }
+                    
+                    let strVal = String(val).trim().replace(/\./g, '/').replace(/-/g, '/'); 
+                    if (strVal.includes('/')) {
+                        let parts = strVal.split('/');
+                        let d, m, y;
+                        if (parts[0].length === 4) { y = parseInt(parts[0], 10); m = parseInt(parts[1], 10); d = parseInt(parts[2], 10); } 
+                        else { d = parseInt(parts[0], 10); m = parseInt(parts[1], 10); y = parseInt(parts[2], 10); if (m > 12) { let temp = d; d = m; m = temp; } }
+                        
+                        if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+                        if (y > 2500) y -= 543; 
+                        if (y < 100) { if (y > 40) y = (y + 2500) - 543; else y += 2000; }
+                        return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    }
+                    
+                    let dateObj = new Date(val);
+                    if (!isNaN(dateObj.getTime())) return dateObj.toISOString().split('T')[0];
+                    return null;
+                };
+
+                // 🟢 ดักจับเวลา เผื่อพนักงานพิมพ์จุด (เช่น 8.30)
+                const parseExcelTime = (val) => {
+                    if (val === undefined || val === null || val === '') return null;
+                    if (typeof val === 'number') {
+                        if (val >= 1 && val < 24) { 
+                             let h = Math.floor(val); let m = Math.round((val - h) * 100);
+                             if (m >= 60) { h += 1; m -= 60; }
+                             return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                        }
+                        if (val >= 0 && val <= 1) {
+                            let totalSec = Math.round(val * 86400); let h = Math.floor(totalSec / 3600); let m = Math.floor((totalSec % 3600) / 60);
+                            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                        }
+                    }
+                    let strVal = String(val).trim().replace('น.', '').replace('น', '').trim().replace('.', ':'); 
+                    let timeParts = strVal.split(':');
+                    if (timeParts.length >= 2) {
+                        let h = parseInt(timeParts[0], 10); let m = parseInt(timeParts[1], 10);
+                        if (timeParts[1].length === 1) m = m * 10; 
+                        if (!isNaN(h) && !isNaN(m)) return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                    }
+                    return null;
+                };
+
+                // วนลูปอ่านข้อมูลบรรทัดที่ 2 เป็นต้นไป
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    if (!row || row.length === 0) continue; 
+                    
+                    const rawDate = parseExcelDate(row[0]);
+                    const rawTime = parseExcelTime(row[1]);
+                    const productId = String(row[2] || '').trim();
+                    const qty = parseInt(row[3]);
+                    const remarks = String(row[4] || '').trim();
+
+                    if (!rawDate || !rawTime || !productId || isNaN(qty) || productId.includes('*')) continue;
+
+                    const productInfo = db.products.find(p => String(p.id).trim().toUpperCase() === productId.toUpperCase());
+                    if (!productInfo) { countFailed++; continue; }
+
+                    newPlans.push({
+                        id: 'del-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                        date: rawDate,
+                        time: rawTime,
+                        customer: productInfo.customer || 'ไม่ระบุ',
+                        productId: productInfo.id,
+                        productName: productInfo.name,
+                        quantity: qty,
+                        remarks: remarks,
+                        user: currentUser.username,
+                        status: 'Pending', 
+                        licensePlate: '',
+                        actualReleaseTime: '',
+                        actualReturnTime: ''
+                    });
+                }
+
+                if (newPlans.length === 0) {
+                    Swal.fire('ไม่พบข้อมูลที่ใช้งานได้!', `อาจเกิดจาก: <br>1. วันที่/เวลาพิมพ์ผิดเพี้ยนเกินไป <br>2. รหัสสินค้า ${countFailed > 0 ? `(${countFailed} รายการ)` : ''} ไม่มีในระบบเลย`, 'warning');
+                    return;
+                }
+
+                db.deliveryPlans = db.deliveryPlans || [];
+
+                // 🟢 ยัดข้อมูลลงตารางให้คุณโจเห็นก่อนเลย ไม่ต้องรอหลังบ้าน!
+                for (let plan of newPlans) {
+                    db.deliveryPlans.push(plan);
+                }
+
+                const viewDateInput = document.getElementById('view-plan-date');
+                if (viewDateInput && newPlans[0].date) {
+                    viewDateInput.value = newPlans[0].date;
+                    renderDeliveryPlanTable(newPlans[0].date);
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'โหลดลงตารางสำเร็จ!',
+                    html: `เพิ่มแผนการจัดส่งเรียบร้อย <b>${newPlans.length}</b> รายการ <br><small class="text-danger">${countFailed > 0 ? `(ข้ามรหัสสินค้าที่ไม่มีในระบบ ${countFailed} รายการ)` : ''}</small>`,
+                    confirmButtonColor: '#198754'
+                });
+
+                // 🟢 ส่งข้อมูลไปเซฟที่ Apps Script หลังบ้านแบบเงียบๆ
+                for (let plan of newPlans) {
+                    try {
+                        await callAppsScript('addDeliveryPlan', plan);
+                    } catch (err) {
+                        console.warn("แอบเซฟหลังบ้านไม่สำเร็จสำหรับพาร์ท:", plan.productId, err.message);
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('เกิดข้อผิดพลาดในการประมวลผล', 'ข้อมูลในไฟล์อาจมีปัญหา โปรดตรวจสอบไฟล์อีกครั้ง<br><br><small class="text-muted">Error: ' + err.message + '</small>', 'error');
+            } finally { 
+                document.body.removeChild(fileInput); 
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
+    fileInput.click();
+};
+document.body.addEventListener('change', (e) => {
+                        
+                        // 1. ฟอร์มรับเข้า (Import)
+                        if (e.target.id === 'import-product-id') {
+                            const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
+                            document.getElementById('import-product-name').value = product ? product.name : '';
+                            document.getElementById('import-customer').value = product ? product.customer || '' : '';
+                            document.getElementById('import-erp-code').value = product ? product.erpCode : '';
+                            document.getElementById('import-fullbox').value = product ? product.fullBoxQuantity : '';
+                            updateImportTotal(); 
+                        }
+
+                        // 🟢 2. แผนการจัดส่ง (Delivery Plan) - แยกออกมาอยู่ระดับเดียวกันแล้ว!
+                        if (e.target.id === 'plan-product-id') {
+                            const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
+                            document.getElementById('plan-product-name').value = product ? product.name : '';
+                            document.getElementById('plan-customer').value = product ? (product.customer || '') : '';
+                        }
+
+                        // 3. ฟอร์มส่งออก (Export)
                         if (e.target.id === 'export-product-id') {
                             const product = db.products.find(p => String(p.id).trim() === e.target.value.trim());
                             document.getElementById('export-product-name').value = product ? product.name : '';
@@ -5505,8 +6130,9 @@ window.deletePlanItem = function(id, date) {
                             document.getElementById('export-erp-code').value = product ? product.erpCode : '';
                             document.getElementById('export-fullbox').value = product ? product.fullBoxQuantity : '';
                             populateExportLotsList(e.target.value);
-                            updateExportTotal(); // อัปเดต QR Code และยอดรวม
+                            updateExportTotal(); 
                         }
+
                         if (e.target.type === 'checkbox' && e.target.closest('.export-lot-row')) {
                             const row = e.target.closest('.export-lot-row');
                             const quantityInput = row.querySelector('.export-quantity');
@@ -5518,6 +6144,18 @@ window.deletePlanItem = function(id, date) {
                         }
                         if (e.target.id === 'show-old-stock-filter' || e.target.id === 'show-low-stock-filter') {
                             populateStockSummary();   
+                        }
+                        // ... โค้ดอื่นๆ ด้านบน (เช่น export-product-id) ...
+
+                        if (e.target.id === 'show-old-stock-filter' || e.target.id === 'show-low-stock-filter') {
+                            populateStockSummary();   
+                        }
+
+                        // 🟢 เพิ่มโค้ดดักจับช่องปฏิทิน: พอกดเปลี่ยนวันที่ปุ๊บ ให้ดึงข้อมูลวันนั้นมาโชว์ปั๊บ!
+                        if (e.target.id === 'view-plan-date') {
+                            if (typeof renderDeliveryPlanTable === 'function') {
+                                renderDeliveryPlanTable(e.target.value);
+                            }
                         }
                     });
 
@@ -8434,6 +9072,190 @@ function populateSalesDashboard(startDate, endDate) {
                 
                 // เริ่มจับเวลาทันทีเมื่อโหลดหน้าเว็บ
                 resetPawTimer();
+                // =========================================================
+// 🚚 ระบบโหลด/อัปโหลด เทมเพลตแผนการจัดส่ง
+// =========================================================
+
+// 🟢 1. โหลดเทมเพลต
+window.downloadDeliveryTemplate = function() {
+    try {
+        const ws_data = [
+            ["วันที่จัดส่ง (YYYY-MM-DD)", "รอบเวลา (เช่น 08:30)", "รหัสสินค้า (Part No.)", "จำนวนชิ้น", "หมายเหตุ (เว้นว่างได้)"],
+            ["2024-05-20", "09:30", "PART-001", 1500, "ส่งรอบเช้า"],
+            ["2024-05-20", "14:00", "PART-002", 500, ""],
+            ["* ลบข้อมูลตัวอย่างนี้ทิ้งก่อนใช้งาน *", "", "", "", ""]
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        // กำหนดความกว้างคอลัมน์ให้สวยงาม
+        ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 25}, {wch: 15}, {wch: 35}];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "DeliveryPlan_Template");
+        XLSX.writeFile(wb, "Delivery_Plan_Template.xlsx");
+    } catch (error) {
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่พบระบบสร้างไฟล์ กรุณารีเฟรชหน้าเว็บอีกครั้ง', 'error');
+    }
+};
+
+// 🟢 2. อัปโหลดและประมวลผล
+// 🟢 2. อัปโหลดและประมวลผลแผนจัดส่ง (อัปเกรดระบบ AI ดักจับวันที่และเวลาสารพัดรูปแบบ)
+// 🟢 2. อัปโหลดและประมวลผลแผนจัดส่ง (อัปเกรดระบบ ดักจับเวลา และแยกการเซฟหลังบ้านไม่ให้เว็บค้าง)
+window.uploadDeliveryFile = function() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx, .xls, .csv';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput); 
+    
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            document.body.removeChild(fileInput);
+            return;
+        }
+
+        Swal.fire({ title: 'กำลังอ่านไฟล์ Excel...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        const reader = new FileReader();
+        reader.onload = async function(event) {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                const newPlans = [];
+                let countFailed = 0;
+
+                // 🟢 โคตรฉลาด 1: ดักจับวันที่สารพัดรูปแบบ
+                const parseExcelDate = (val) => {
+                    if (!val) return null;
+                    if (typeof val === 'number') {
+                        const date = new Date((val - (25567 + 2)) * 86400 * 1000);
+                        return date.toISOString().split('T')[0];
+                    }
+                    
+                    let strVal = String(val).trim().replace(/\./g, '/').replace(/-/g, '/'); 
+                    if (strVal.includes('/')) {
+                        let parts = strVal.split('/');
+                        let d, m, y;
+                        if (parts[0].length === 4) { y = parseInt(parts[0], 10); m = parseInt(parts[1], 10); d = parseInt(parts[2], 10); } 
+                        else { d = parseInt(parts[0], 10); m = parseInt(parts[1], 10); y = parseInt(parts[2], 10); if (m > 12) { let temp = d; d = m; m = temp; } }
+                        
+                        if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+                        if (y > 2500) y -= 543; 
+                        if (y < 100) { if (y > 40) y = (y + 2500) - 543; else y += 2000; }
+                        return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    }
+                    
+                    let dateObj = new Date(val);
+                    if (!isNaN(dateObj.getTime())) return dateObj.toISOString().split('T')[0];
+                    return null;
+                };
+
+                // 🟢 โคตรฉลาด 2: ดักจับเวลา เผื่อพนักงานพิมพ์ 8.30 
+                const parseExcelTime = (val) => {
+                    if (val === undefined || val === null || val === '') return null;
+                    if (typeof val === 'number') {
+                        if (val >= 1 && val < 24) { 
+                             let h = Math.floor(val); let m = Math.round((val - h) * 100);
+                             if (m >= 60) { h += 1; m -= 60; }
+                             return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                        }
+                        if (val >= 0 && val <= 1) {
+                            let totalSec = Math.round(val * 86400); let h = Math.floor(totalSec / 3600); let m = Math.floor((totalSec % 3600) / 60);
+                            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                        }
+                    }
+                    let strVal = String(val).trim().replace('น.', '').replace('น', '').trim().replace('.', ':'); 
+                    let timeParts = strVal.split(':');
+                    if (timeParts.length >= 2) {
+                        let h = parseInt(timeParts[0], 10); let m = parseInt(timeParts[1], 10);
+                        if (timeParts[1].length === 1) m = m * 10; 
+                        if (!isNaN(h) && !isNaN(m)) return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                    }
+                    return null;
+                };
+
+                // วนลูปอ่านข้อมูลบรรทัดที่ 2 เป็นต้นไป
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    if (!row || row.length === 0) continue; 
+                    
+                    const rawDate = parseExcelDate(row[0]);
+                    const rawTime = parseExcelTime(row[1]);
+                    const productId = String(row[2] || '').trim();
+                    const qty = parseInt(row[3]);
+                    const remarks = String(row[4] || '').trim();
+
+                    if (!rawDate || !rawTime || !productId || isNaN(qty) || productId.includes('*')) continue;
+
+                    const productInfo = db.products.find(p => String(p.id).trim().toUpperCase() === productId.toUpperCase());
+                    if (!productInfo) { countFailed++; continue; }
+
+                    newPlans.push({
+                        id: 'del-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                        date: rawDate,
+                        time: rawTime,
+                        customer: productInfo.customer || 'ไม่ระบุ',
+                        productId: productInfo.id,
+                        productName: productInfo.name,
+                        quantity: qty,
+                        remarks: remarks,
+                        user: currentUser.username,
+                        status: 'Pending', 
+                        licensePlate: '',
+                        actualReleaseTime: '',
+                        actualReturnTime: ''
+                    });
+                }
+
+                if (newPlans.length === 0) {
+                    Swal.fire('ไม่พบข้อมูลที่ใช้งานได้!', `อาจเกิดจาก: <br>1. วันที่/เวลาพิมพ์ผิดเพี้ยนเกินไป <br>2. รหัสสินค้า ${countFailed > 0 ? `(${countFailed} รายการ)` : ''} ไม่มีในระบบเลย`, 'warning');
+                    return;
+                }
+
+                // 🟢 🛡️ ป้องกันบั๊กถ้ากล่องมันว่างเปล่า
+                db.deliveryPlans = db.deliveryPlans || [];
+
+                // 🟢 ยัดข้อมูลลงตารางให้คุณโจเห็นก่อนเลย ไม่ต้องรอหลังบ้าน!
+                for (let plan of newPlans) {
+                    db.deliveryPlans.push(plan);
+                }
+
+                // รีเฟรชตารางหน้าเว็บ
+                const viewDateInput = document.getElementById('view-plan-date');
+                if (viewDateInput && newPlans[0].date) {
+                    viewDateInput.value = newPlans[0].date;
+                    renderDeliveryPlanTable(newPlans[0].date);
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'โหลดลงตารางสำเร็จ!',
+                    html: `เพิ่มแผนการจัดส่งเรียบร้อย <b>${newPlans.length}</b> รายการ <br><small class="text-danger">${countFailed > 0 ? `(ข้ามรหัสสินค้าที่ไม่มีในระบบ ${countFailed} รายการ)` : ''}</small>`,
+                    confirmButtonColor: '#198754'
+                });
+
+                // 🟢 ส่งข้อมูลไปเซฟที่ Apps Script หลังบ้านแบบเงียบๆ (ถ้าพังหน้าเว็บก็ไม่ค้างแล้ว)
+                for (let plan of newPlans) {
+                    try {
+                        await callAppsScript('addDeliveryPlan', plan);
+                    } catch (err) {
+                        console.warn("แอบเซฟหลังบ้านไม่สำเร็จสำหรับพาร์ท:", plan.productId, err.message);
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('เกิดข้อผิดพลาดในการประมวลผล', 'ข้อมูลในไฟล์อาจมีปัญหา โปรดตรวจสอบไฟล์อีกครั้ง<br><br><small class="text-muted">Error: ' + err.message + '</small>', 'error');
+            } finally { 
+                document.body.removeChild(fileInput); 
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    });
+    fileInput.click();
+};
         </script>
 
 <button class="btn shadow-lg d-flex align-items-center justify-content-center" id="calc-toggle-btn" 
