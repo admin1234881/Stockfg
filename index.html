@@ -1806,11 +1806,25 @@
                                 </div>
                             </div>
 
-                            <!-- 🔴 คอลัมน์ซ้าย: รถกำลังเดินทาง (อยู่กับลูกค้า) -->
-                            <div class="col-lg-7">
+<!-- 🟠 คอลัมน์ 1: รอจัดส่ง (Pending / ยังไม่ระบุทะเบียน) -->
+                            <div class="col-xl-4 col-lg-4 mb-3">
+                                <div class="card shadow-sm border-0 h-100" style="background-color: #f8f9fa; border-radius: 20px;">
+                                    <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
+                                        <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-box-seam me-2"></i>รอจัดส่ง <span class="fs-6 fw-normal">(รอมารับ)</span></h5>
+                                    </div>
+                                    <div class="card-body p-4 pt-2">
+                                        <div id="vehicle-pending-container" class="row g-3">
+                                            <!-- รายการรอจัดส่งจะมาโชว์ที่นี่ -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 🔴 คอลัมน์ 2: รถกำลังเดินทาง (อยู่กับลูกค้า) -->
+                            <div class="col-xl-4 col-lg-4 mb-3">
                                 <div class="card shadow-sm border-0 h-100" style="background-color: #fffaf0; border-radius: 20px;">
                                     <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
-                                        <h5 class="fw-bold text-warning mb-0" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1);"><i class="bi bi-truck-flatbed me-2"></i>รถกำลังเดินทาง / อยู่ที่ลูกค้า</h5>
+                                        <h5 class="fw-bold text-warning mb-0" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1);"><i class="bi bi-truck-flatbed me-2"></i>กำลังวิ่งงาน <span class="fs-6 fw-normal">(ปล่อยรถแล้ว)</span></h5>
                                     </div>
                                     <div class="card-body p-4 pt-2">
                                         <div id="vehicle-delivering-container" class="row g-3">
@@ -1820,11 +1834,11 @@
                                 </div>
                             </div>
 
-                            <!-- 🟢 คอลัมน์ขวา: รถจอดสแตนด์บาย (กลับถึง A-TECH แล้ว) -->
-                            <div class="col-lg-5">
+                            <!-- 🟢 คอลัมน์ 3: กลับถึง A-TECH แล้ว (จบงาน) -->
+                            <div class="col-xl-4 col-lg-4 mb-3">
                                 <div class="card shadow-sm border-0 h-100" style="background-color: #f0fdf4; border-radius: 20px;">
                                     <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
-                                        <h5 class="fw-bold text-success mb-0"><i class="bi bi-building-check me-2"></i>กลับถึง A-TECH แล้ว (จบงาน)</h5>
+                                        <h5 class="fw-bold text-success mb-0"><i class="bi bi-building-check me-2"></i>ถึงเอเทค <span class="fs-6 fw-normal">(จบงาน)</span></h5>
                                     </div>
                                     <div class="card-body p-4 pt-2">
                                         <div id="vehicle-completed-container" class="row g-3">
@@ -1833,8 +1847,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
                 </div> <!-- ปิดหน้าแดชบอร์ดรวมทั้งหมด (pills-dashboard) -->
                 <!-- Forecast Tab -->
                 <div class="tab-pane fade" id="pills-forecast" role="tabpanel">
@@ -4310,37 +4322,37 @@ clearInterval(window.mascotLoopTimer);
         if (document.getElementById('backup-products-btn')) document.getElementById('backup-products-btn').style.display = canManageProducts ? '' : 'none';
         if (document.getElementById('backup-users-btn')) document.getElementById('backup-users-btn').style.display = canManageUsers ? '' : 'none';
 // 5. โชว์ตัวเลือก "เพิ่มแพ็คกิ้งใหม่" ให้เฉพาะ Admin เท่านั้น (แก้บั๊กมือถือมองเห็นตัวเลือกที่ซ่อน)
-        const selectLoc = document.getElementById('rack-to-loc');
-        let registerOpt = document.getElementById('opt-register-new');
-        
-        if (currentUser && selectLoc) { 
-            if (currentUser.role === 'admin' || currentUser.username === 'admin') {
-                // ถ้าเป็นแอดมิน และยังไม่มีตัวเลือกนี้ในระบบ ให้สร้างขึ้นมาใหม่
-                if (!registerOpt) {
-                    registerOpt = document.createElement('option');
-                    registerOpt.id = 'opt-register-new';
-                    registerOpt.value = 'REGISTER_NEW';
-                    registerOpt.className = 'text-primary fw-bold';
-                    registerOpt.textContent = '✨ เพิ่มแพ็คกิ้งใหม่เข้าระบบ (Register New)';
-                    // นำไปเสียบไว้ในตำแหน่งบรรทัดที่ 2 (ใต้ตัวเลือก Default)
-                    selectLoc.insertBefore(registerOpt, selectLoc.options[1]);
-                }
-                registerOpt.style.display = 'block';
-                registerOpt.hidden = false;
-                registerOpt.disabled = false;
-            } else {
-                // ถ้าเป็น User ทั่วไป ให้ "ถอนรากถอนโคน" ลบทิ้งจากระบบไปเลย (แก้บั๊กมือถือแอบโชว์)
-                if (registerOpt) {
-                    registerOpt.remove();
-                }
-            }
-        }
-                    // --- คำสั่งสำคัญ: แสดงแถบ Support ---
+       // --- คำสั่งสำคัญ: แสดงแถบ Support ---
                     const bar = document.getElementById('support-bar');
                     if (bar) {
                         bar.style.setProperty('display', 'flex', 'important');
                     }
 
+                    // 🟢 ระบบบังคับสลับหน้าแรกอัตโนมัติ (ดักจับคนไม่มีสิทธิ์ดูสต็อก)
+                    setTimeout(() => {
+                        if (!canViewStock) {
+                            // 1. ถอดคลาสที่ทำให้หน้าสต็อกโชว์ค้างอยู่ออก
+                            const stockPane = document.getElementById('pills-stock');
+                            const stockBtn = document.getElementById('pills-stock-tab');
+                            if (stockPane) stockPane.classList.remove('show', 'active');
+                            if (stockBtn) stockBtn.classList.remove('active');
+                            
+                            // 2. ให้ระบบกวาดสายตาหา "เมนูแรกสุด" ที่ผู้ใช้คนนี้มีสิทธิ์มองเห็น
+                            const visiblePills = Array.from(document.querySelectorAll('[data-bs-toggle="pill"]')).filter(btn => {
+                                const li = btn.closest('li');
+                                return li && li.style.display !== 'none' && !li.classList.contains('dropdown-divider');
+                            });
+                            
+                            // 3. จำลองการคลิกเมาส์ เพื่อสลับไปหน้านั้นทันที!
+                            if (visiblePills.length > 0) {
+                                visiblePills[0].click(); 
+                            }
+                        } else {
+                            // ถ้ามีสิทธิ์ดูสต็อก ก็สั่งคลิกโชว์หน้าสต็อกตามปกติ
+                            const stockBtn = document.getElementById('pills-stock-tab');
+                            if (stockBtn) stockBtn.click();
+                        }
+                    }, 50); // ใส่ดีเลย์ 50ms ให้ระบบวาดเมนูซ่อน/โชว์ให้เสร็จก่อน
 
                     calculateStockFromHistory();
                     populateAll();
@@ -4348,8 +4360,6 @@ clearInterval(window.mascotLoopTimer);
                     setupActivityListeners();
                     resetInactivityTimer();
                 }
-// ซ่อมแซมและวางไว้ท้ายสุดของฟังก์ชัน showDashboard() ก่อนปิดเครื่องหมาย }
-
 // 1. สั่งแสดงตัวละครพอล็อกอินสำเร็จ
 if (document.getElementById('floating-mascot-container')) {
     document.getElementById('floating-mascot-container').classList.remove('d-none');
@@ -5176,20 +5186,21 @@ window.toggleDashboardView = function(view) {
                         if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard(); 
                     }
                 };
-// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับดึงฟังก์ชันส่วนกลางมาแก้บั๊ก 17 นาที + จอว่าง)
+// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับ 3 คอลัมน์: รอจัดส่ง -> วิ่งงาน -> จบงาน)
 window.populateVehicleDashboard = function() {
     try {
+        const pendingContainer = document.getElementById('vehicle-pending-container');
         const deliveringContainer = document.getElementById('vehicle-delivering-container');
         const completedContainer = document.getElementById('vehicle-completed-container');
         if (!deliveringContainer || !completedContainer) return;
 
         if (typeof db === 'undefined' || !db.deliveryPlans) {
-            deliveringContainer.innerHTML = `<div class="col-12 text-center text-muted p-4"><div class="spinner-border text-primary" role="status"></div><div class="mt-2">กำลังซิงค์ข้อมูล...</div></div>`;
-            completedContainer.innerHTML = `<div class="col-12 text-center text-muted p-4"><div class="spinner-border text-success" role="status"></div><div class="mt-2">กำลังซิงค์ข้อมูล...</div></div>`;
+            if(pendingContainer) pendingContainer.innerHTML = `<div class="col-12 text-center text-muted p-4"><div class="spinner-border text-secondary spinner-border-sm" role="status"></div></div>`;
+            deliveringContainer.innerHTML = `<div class="col-12 text-center text-muted p-4"><div class="spinner-border text-warning spinner-border-sm" role="status"></div></div>`;
+            completedContainer.innerHTML = `<div class="col-12 text-center text-muted p-4"><div class="spinner-border text-success spinner-border-sm" role="status"></div></div>`;
             return;
         }
 
-        // ดักบั๊กกรณีหน้าเว็บไม่มีช่องปฏิทิน ให้ใช้วันนี้เสมอ
         const today = new Date();
         const defaultTodayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         let targetDateStr = defaultTodayStr;
@@ -5205,7 +5216,6 @@ window.populateVehicleDashboard = function() {
             formattedTargetDate = formatDate(targetDateStr);
         }
 
-        // คัดกรองแผนงานเฉพาะ "วันที่เป้าหมาย"
         const targetPlans = db.deliveryPlans.filter(p => {
             if (!p || !p.date) return false;
             let pDateFormatted = typeof formatDate === 'function' ? formatDate(p.date) : String(p.date).trim();
@@ -5214,19 +5224,59 @@ window.populateVehicleDashboard = function() {
             return pDateFormatted === formattedTargetDate || rawDate === targetDateStr;
         });
 
+        // ถ้าไม่มีงานเลยในวันนี้ ให้ขึ้นว่างเปล่าทั้ง 3 คอลัมน์
         if (targetPlans.length === 0) {
-            deliveringContainer.innerHTML = `<div class="col-12 text-center text-muted p-5"><i class="bi bi-calendar-x fs-1 d-block mb-3 text-secondary opacity-50"></i><h5 class="fw-bold">ไม่มีแผนจัดส่งสำหรับวันที่ ${targetDateStr}</h5><span class="small">สามารถสร้างแผนงานได้ที่แท็บ "แผนการจัดส่ง" ครับ</span></div>`;
-            completedContainer.innerHTML = `<div class="col-12 text-center text-muted p-5"><i class="bi bi-cone-striped fs-1 d-block mb-3 opacity-25"></i><h5 class="fw-bold opacity-50">ว่างเปล่า</h5></div>`;
+            const noDataHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-calendar-x fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">ไม่มีคิวงาน</span></div>`;
+            if(pendingContainer) pendingContainer.innerHTML = noDataHtml;
+            deliveringContainer.innerHTML = noDataHtml;
+            completedContainer.innerHTML = noDataHtml;
             return;
         }
 
+        // แยกงานที่ "ยังไม่มีทะเบียน" และ "มีทะเบียนแล้ว"
+        const pendingPlans = targetPlans.filter(p => !p.licensePlate || String(p.licensePlate).trim() === '');
         const releasedPlans = targetPlans.filter(p => p.licensePlate && String(p.licensePlate).trim() !== '');
-        if (releasedPlans.length === 0) {
-            deliveringContainer.innerHTML = `<div class="col-12 text-center p-5"><i class="bi bi-truck fs-1 d-block mb-3 text-warning opacity-75"></i><h5 class="fw-bold text-dark">มีคิวส่ง ${targetPlans.length} รายการ</h5><span class="badge bg-danger rounded-pill px-3 py-2 mt-2 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-1"></i> แต่ยังไม่มีการกด "ปล่อยรถ" เลยครับ</span></div>`;
-            completedContainer.innerHTML = `<div class="col-12 text-center text-muted p-5"><i class="bi bi-cone-striped fs-1 d-block mb-3 opacity-25"></i><h5 class="fw-bold opacity-50">รอรถออกวิ่ง...</h5></div>`;
-            return;
-        }
 
+        // 📦 1. ประมวลผลกลุ่ม "รอจัดส่ง" (จัดกลุ่มตาม รอบเวลา + ลูกค้า)
+        const pendingGroups = {};
+        pendingPlans.forEach(p => {
+            p.time = window.formatTimeDisplay(p.time);
+            const timeKey = p.time;
+            const custKey = p.customer || 'ไม่ระบุ';
+            const groupKey = timeKey + '_' + custKey;
+
+            if (!pendingGroups[groupKey]) {
+                pendingGroups[groupKey] = {
+                    time: timeKey,
+                    customer: custKey,
+                    partsCount: 0,
+                    totalQty: 0
+                };
+            }
+            pendingGroups[groupKey].partsCount++;
+            pendingGroups[groupKey].totalQty += parseInt(p.quantity) || 0;
+        });
+
+        let pendingHtml = '';
+        Object.values(pendingGroups).sort((a, b) => a.time.localeCompare(b.time)).forEach(g => {
+            pendingHtml += `
+            <div class="col-12">
+                <div class="card border border-secondary-subtle shadow-sm" style="border-radius: 12px; background: #ffffff;">
+                    <div class="card-body p-3 position-relative">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="fw-bolder text-dark mb-0"><i class="bi bi-clock-history text-secondary me-1"></i>รอบ ${g.time} น.</h6>
+                            <span class="badge bg-light text-secondary border border-secondary-subtle shadow-sm" style="font-size: 0.7rem;">รอรถมารับ</span>
+                        </div>
+                        <div class="small fw-bold text-primary mb-1"><i class="bi bi-building me-1"></i>ส่ง: ${g.customer}</div>
+                        <div class="small text-muted"><i class="bi bi-box-seam me-1"></i>${g.partsCount} รายการ <span class="text-success fw-bold">(${g.totalQty.toLocaleString()} ชิ้น)</span></div>
+                    </div>
+                </div>
+            </div>`;
+        });
+        if (pendingHtml === '') pendingHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-check2-circle fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">เคลียร์งานรอส่งหมดแล้ว</span></div>`;
+
+
+        // 🚚 2. ประมวลผลกลุ่ม "ปล่อยรถแล้ว" (กำลังวิ่ง / กลับถึงแล้ว)
         const getColorForPlate = (plate) => {
             let hash = 0; let strPlate = String(plate);
             for (let i = 0; i < strPlate.length; i++) hash = strPlate.charCodeAt(i) + ((hash << 5) - hash);
@@ -5234,10 +5284,8 @@ window.populateVehicleDashboard = function() {
         };
 
         const activeVehicles = {};
-
         releasedPlans.forEach(p => {
             const safePlate = String(p.licensePlate).trim();
-            // 💡 โยนเข้าเครื่องกรองเวลาส่วนกลาง (ที่แก้บั๊ก 17 นาทีแล้ว)
             p.time = window.formatTimeDisplay(p.time); 
             const timeKey = p.time;
             const groupKey = safePlate + '_' + timeKey; 
@@ -5265,7 +5313,6 @@ window.populateVehicleDashboard = function() {
                 activeVehicles[groupKey].status = 'Delivering';
             }
             
-            // 💡 โยนเวลากลับเข้าเครื่องกรองส่วนกลางด้วย
             if (p.actualReturnTime && currentStatus === 'completed') {
                 activeVehicles[groupKey].actualReturnTime = window.formatTimeDisplay(p.actualReturnTime);
             }
@@ -5277,38 +5324,40 @@ window.populateVehicleDashboard = function() {
             const customersStr = Array.from(v.customers).join(', ');
             
             if (v.status === 'Delivering') {
+                // ปรับเป็น col-12 เพื่อให้เรียงแนวตั้งสวยๆ
                 deliveringHtml += `
-                <div class="col-md-6 col-12">
-                    <div class="card border-0 truck-active-blink shadow-sm" style="background-color: ${v.bgColor}; border-radius: 15px;">
+                <div class="col-12">
+                    <div class="card border-0 truck-active-blink shadow-sm" style="background-color: ${v.bgColor}; border-radius: 12px;">
                         <div class="card-body p-3 position-relative overflow-hidden">
-                            <i class="bi bi-truck position-absolute opacity-25 text-dark" style="font-size: 5rem; right: -10px; bottom: -20px;"></i>
-                            <h4 class="truck-card-plate text-dark fw-bolder mb-1">${v.plate}</h4>
-                            <div class="small fw-bold text-primary mb-1"><i class="bi bi-clock-fill me-1"></i>กำลังส่งรอบเวลา: ${v.time} น.</div>
-                            <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>ลูกค้า: ${customersStr}</div>
-                            <div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>พาร์ท: ${v.partsCount} รายการ (${v.totalQty.toLocaleString()} ชิ้น)</div>
+                            <i class="bi bi-truck position-absolute opacity-25 text-dark" style="font-size: 4rem; right: -10px; bottom: -15px;"></i>
+                            <h5 class="truck-card-plate text-dark fw-bolder mb-2">${v.plate}</h5>
+                            <div class="small fw-bold text-primary mb-1"><i class="bi bi-clock-fill me-1"></i>รอบ: ${v.time} น.</div>
+                            <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>ส่ง: ${customersStr}</div>
+                            <div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>รวม: ${v.totalQty.toLocaleString()} ชิ้น</div>
                         </div>
                     </div>
                 </div>`;
             } else {
                 completedHtml += `
-                <div class="col-md-6 col-12">
-                    <div class="card border border-success-subtle shadow-sm" style="background-color: #ffffff; border-radius: 15px; opacity: 0.85;">
+                <div class="col-12">
+                    <div class="card border border-success-subtle shadow-sm" style="background-color: #ffffff; border-radius: 12px; opacity: 0.9;">
                         <div class="card-body p-3">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="truck-card-plate text-success fw-bolder mb-0"><i class="bi bi-check-circle-fill me-2"></i>${v.plate}</h5>
-                                <span class="badge bg-light text-dark border shadow-sm"><i class="bi bi-clock me-1"></i>รอบ ${v.time} น.</span>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="truck-card-plate text-success fw-bolder mb-0"><i class="bi bi-check-circle-fill me-1"></i>${v.plate}</h6>
+                                <span class="badge bg-light text-dark border shadow-sm" style="font-size: 0.7rem;">รอบ ${v.time} น.</span>
                             </div>
-                            <div class="small text-muted mb-1"><i class="bi bi-geo-alt-fill me-1"></i>ส่งลูกค้า: ${customersStr}</div>
-                            <div class="small fw-bold text-success"><i class="bi bi-building-check me-1"></i>ถึง A-TECH: ${v.actualReturnTime ? v.actualReturnTime + ' น.' : 'ไม่ระบุเวลา'}</div>
+                            <div class="small text-muted mb-1"><i class="bi bi-geo-alt-fill me-1"></i>ส่ง: ${customersStr}</div>
+                            <div class="small fw-bold text-success"><i class="bi bi-building-check me-1"></i>ถึง: ${v.actualReturnTime ? v.actualReturnTime + ' น.' : 'ไม่ระบุเวลา'}</div>
                         </div>
                     </div>
                 </div>`;
             }
         });
 
-        if (deliveringHtml === '') deliveringHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-emoji-smile fs-3 d-block mb-2"></i>ไม่มีรถออกวิ่งข้างนอกเลยครับตอนนี้</div>`;
-        if (completedHtml === '') completedHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-cone-striped fs-3 d-block mb-2"></i>ยังไม่มีรถคันไหนกลับมาจอดที่บริษัทครับ</div>`;
+        if (deliveringHtml === '') deliveringHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-emoji-smile fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">ไม่มีรถวิ่งข้างนอก</span></div>`;
+        if (completedHtml === '') completedHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-cone-striped fs-1 d-block mb-2 opacity-25"></i><span class="small fw-bold">ยังไม่มีรถกลับมา</span></div>`;
 
+        if(pendingContainer) pendingContainer.innerHTML = pendingHtml;
         deliveringContainer.innerHTML = deliveringHtml;
         completedContainer.innerHTML = completedHtml;
         
