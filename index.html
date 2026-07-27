@@ -5972,10 +5972,10 @@ window.renderDeliveryPlanTable = function(targetDate) {
     tableBody.innerHTML = html;
 };
 // 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม)
-// 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม)
+// 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม) + ระบบป้องกันทะเบียนซ้ำขณะวิ่งงาน
 window.releaseGroupVehicle = async function(date, displayTime, customer) {
-    // 🟢 ค้นหาโดยบังคับแปลงข้อมูลในชีตให้เป็นหน้าตาเดียวกันก่อนเทียบ
-    const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === date && formatTimeDisplay(p.time) === displayTime && p.customer === customer);
+    // ค้นหาโดยบังคับแปลงข้อมูลในชีตให้เป็นหน้าตาเดียวกันก่อนเทียบ
+    const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === date && window.formatTimeDisplay(p.time) === displayTime && p.customer === customer);
     if (plansToUpdate.length === 0) return;
 
     const { value: licensePlate } = await Swal.fire({
@@ -5987,7 +5987,21 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
         confirmButtonText: 'ยืนยันปล่อยรถ',
         cancelButtonText: 'ยกเลิก',
         confirmButtonColor: '#0d6efd',
-        inputValidator: (value) => { if (!value || value.trim() === '') return 'กรุณากรอกทะเบียนรถด้วยครับ!'; }
+        inputValidator: (value) => { 
+            if (!value || value.trim() === '') return 'กรุณากรอกทะเบียนรถด้วยครับ!'; 
+            
+            // 🛡️ ป้องกันคีย์ทะเบียนซ้ำ ถ้ารถคันนั้นยังไม่กด "ถึงเอเทคแล้ว"
+            const inputPlate = value.trim().toLowerCase();
+            const isDelivering = db.deliveryPlans.some(p => 
+                p.licensePlate && 
+                p.licensePlate.trim().toLowerCase() === inputPlate && 
+                (p.status === 'Delivering' || String(p.status).trim().toLowerCase() === 'delivering')
+            );
+            
+            if (isDelivering) {
+                return '🚫 รถคันนี้กำลังวิ่งงานอยู่! ต้องกดปุ่ม "ถึงเอเทคแล้ว" ในรอบก่อนหน้า ถึงจะรับงานรอบใหม่ได้ครับ';
+            }
+        }
     });
 
     if (licensePlate) {
@@ -5998,14 +6012,14 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
             // อัปเดตทีละรายการจนครบทั้งคันรถ
             for (let plan of plansToUpdate) {
                 plan.status = 'Delivering';
-                plan.licensePlate = licensePlate;
+                plan.licensePlate = licensePlate.trim(); // ลบเว้นวรรคส่วนเกิน
                 plan.actualReleaseTime = releaseTime;
-                plan.time = formatTimeDisplay(plan.time); // ดัดหลัง Sheet
-                plan.date = formatDate(plan.date);        // ดัดหลัง Sheet
+                plan.time = window.formatTimeDisplay(plan.time); // ใช้เครื่องกรองเวลา
+                plan.date = formatDate(plan.date);        
                 await callAppsScript('updateDeliveryPlan', plan);
             }
             if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date);
-            Swal.fire({ icon: 'success', title: 'ปล่อยรถเรียบร้อย!', text: `ทะเบียน: ${licensePlate}`, timer: 1500, showConfirmButton: false });
+            Swal.fire({ icon: 'success', title: 'ปล่อยรถเรียบร้อย!', text: `ทะเบียน: ${licensePlate.trim()}`, timer: 1500, showConfirmButton: false });
         } catch (error) {
             Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้ทั้งหมด: ' + error.message, 'error');
             if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date); 
