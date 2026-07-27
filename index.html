@@ -1792,17 +1792,19 @@
                             </div>
                         </div> <!-- ปิดแถว (row) -->
                     </div> <!-- ปิดหน้าแดชบอร์ด Rack (view-dash-rack) -->
-                    <!-- 🚚 View 3: แดชบอร์ดสถานะรถขนส่ง (Real-time Today) -->
+ <!-- 🚚 View 3: แดชบอร์ดสถานะรถขนส่ง (Real-time Today) -->
                     <div id="view-dash-vehicle" class="d-none">
                         <div class="row g-4">
                             <div class="col-12">
                                 <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-0" style="border-radius: 15px;">
                                     <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
                                     <div>
-                                        <h6 class="fw-bold mb-0 text-dark">ระบบติดตามรถบรรทุกประจำวัน (Real-time)</h6>
-                                        <small class="text-muted">ระบบจะดึงทะเบียนรถที่ปล่อยคิวใน "วันนี้" มาแสดงผลอัตโนมัติ ถ้ารถกำลังเดินทางกล่องจะกระพริบครับ</small>
+                                        <h6 class="fw-bold mb-0 text-dark" data-lang-key="dash_vehicle_tracking_title">ระบบติดตามรถบรรทุกประจำวัน (Real-time)</h6>
+                                        <small class="text-muted" data-lang-key="dash_vehicle_tracking_desc">ระบบจะดึงทะเบียนรถที่ปล่อยคิวใน "วันนี้" มาแสดงผลอัตโนมัติ ถ้ารถกำลังเดินทางกล่องจะกระพริบครับ</small>
                                     </div>
-                                    <button class="btn btn-primary btn-sm ms-auto rounded-pill px-4 shadow-sm" onclick="populateVehicleDashboard()"><i class="bi bi-arrow-clockwise me-1"></i> อัปเดตเดี๋ยวนี้</button>
+                                    <button class="btn btn-primary btn-sm ms-auto rounded-pill px-4 shadow-sm" onclick="populateVehicleDashboard()">
+                                        <i class="bi bi-arrow-clockwise me-1"></i> <span data-lang-key="dash_vehicle_update_btn">อัปเดตเดี๋ยวนี้</span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -1810,7 +1812,7 @@
                             <div class="col-xl-4 col-lg-4 mb-3">
                                 <div class="card shadow-sm border-0 h-100" style="background-color: #f8f9fa; border-radius: 20px;">
                                     <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
-                                        <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-box-seam me-2"></i>รอจัดส่ง <span class="fs-6 fw-normal">(รอมารับ)</span></h5>
+                                        <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-box-seam me-2"></i><span data-lang-key="dash_vehicle_pending_title">รอจัดส่ง</span> <span class="fs-6 fw-normal" data-lang-key="dash_vehicle_pending_sub">(รอมารับ)</span></h5>
                                     </div>
                                     <div class="card-body p-4 pt-2">
                                         <div id="vehicle-pending-container" class="row g-3">
@@ -1824,7 +1826,7 @@
                             <div class="col-xl-4 col-lg-4 mb-3">
                                 <div class="card shadow-sm border-0 h-100" style="background-color: #fffaf0; border-radius: 20px;">
                                     <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
-                                        <h5 class="fw-bold text-warning mb-0" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1);"><i class="bi bi-truck-flatbed me-2"></i>กำลังวิ่งงาน <span class="fs-6 fw-normal">(ปล่อยรถแล้ว)</span></h5>
+                                        <h5 class="fw-bold text-warning mb-0" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1);"><i class="bi bi-truck-flatbed me-2"></i><span data-lang-key="dash_vehicle_delivering_title">กำลังวิ่งงาน</span> <span class="fs-6 fw-normal" data-lang-key="dash_vehicle_delivering_sub">(ปล่อยรถแล้ว)</span></h5>
                                     </div>
                                     <div class="card-body p-4 pt-2">
                                         <div id="vehicle-delivering-container" class="row g-3">
@@ -1838,7 +1840,7 @@
                             <div class="col-xl-4 col-lg-4 mb-3">
                                 <div class="card shadow-sm border-0 h-100" style="background-color: #f0fdf4; border-radius: 20px;">
                                     <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
-                                        <h5 class="fw-bold text-success mb-0"><i class="bi bi-building-check me-2"></i>ถึงเอเทค <span class="fs-6 fw-normal">(จบงาน)</span></h5>
+                                        <h5 class="fw-bold text-success mb-0"><i class="bi bi-building-check me-2"></i><span data-lang-key="dash_vehicle_completed_title">ถึงเอเทค</span> <span class="fs-6 fw-normal" data-lang-key="dash_vehicle_completed_sub">(จบงาน)</span></h5>
                                     </div>
                                     <div class="card-body p-4 pt-2">
                                         <div id="vehicle-completed-container" class="row g-3">
@@ -2347,6 +2349,27 @@
                     dashboard_type_autopart: "Autopart",
                     dashboard_type_electronic: "Electronic",
                     dashboard_type_other: "อื่นๆ",
+                    dash_vehicle_pending_title: "รอจัดส่ง",
+                    dash_vehicle_pending_sub: "(รอมารับ)",
+                    dash_vehicle_delivering_title: "กำลังวิ่งงาน",
+                    dash_vehicle_delivering_sub: "(ปล่อยรถแล้ว)",
+                    dash_vehicle_completed_title: "ถึงเอเทค",
+                    dash_vehicle_completed_sub: "(จบงาน)",
+                    dash_vehicle_round: "รอบ",
+                    dash_vehicle_waiting_pickup: "รอรถมารับ",
+                    dash_vehicle_send_to: "ส่ง:",
+                    dash_vehicle_items: "รายการ",
+                    dash_vehicle_pieces: "ชิ้น",
+                    dash_vehicle_total: "รวม:",
+                    dash_vehicle_arrived_time: "ถึง:",
+                    dash_vehicle_all_cleared: "เคลียร์งานรอส่งหมดแล้ว",
+                    dash_vehicle_no_delivering: "ไม่มีรถวิ่งข้างนอก",
+                    dash_vehicle_no_completed: "ยังไม่มีรถกลับมา",
+                    dash_vehicle_no_queue: "ไม่มีคิวงาน",
+                    dash_vehicle_not_specified: "ไม่ระบุเวลา",
+                    dash_vehicle_tracking_title: "ระบบติดตามรถบรรทุกประจำวัน (Real-time)",
+                    dash_vehicle_tracking_desc: "ระบบจะดึงทะเบียนรถที่ปล่อยคิวใน \"วันนี้\" มาแสดงผลอัตโนมัติ ถ้ารถกำลังเดินทางกล่องจะกระพริบครับ",
+                    dash_vehicle_update_btn: "อัปเดตเดี๋ยวนี้",
                     // Stock Tab
                     backup_title: "สำรองข้อมูล",
                     backup_desc: "ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV",
@@ -2625,6 +2648,27 @@
                     dashboard_type_autopart: "Autopart",
                     dashboard_type_electronic: "Electronic",
                     dashboard_type_other: "Other",
+                    dash_vehicle_pending_title: "Pending",
+                    dash_vehicle_pending_sub: "(Waiting)",
+                    dash_vehicle_delivering_title: "Delivering",
+                    dash_vehicle_delivering_sub: "(Released)",
+                    dash_vehicle_completed_title: "Arrived",
+                    dash_vehicle_completed_sub: "(Completed)",
+                    dash_vehicle_round: "Round",
+                    dash_vehicle_waiting_pickup: "Waiting for pickup",
+                    dash_vehicle_send_to: "To:",
+                    dash_vehicle_items: "Items",
+                    dash_vehicle_pieces: "pcs",
+                    dash_vehicle_total: "Total:",
+                    dash_vehicle_arrived_time: "Arrived:",
+                    dash_vehicle_all_cleared: "All pending jobs cleared",
+                    dash_vehicle_no_delivering: "No active deliveries",
+                    dash_vehicle_no_completed: "No vehicles returned yet",
+                    dash_vehicle_no_queue: "No delivery plans",
+                    dash_vehicle_not_specified: "Not specified",
+                    dash_vehicle_tracking_title: "Daily Vehicle Tracking System (Real-time)",
+                    dash_vehicle_tracking_desc: "The system automatically fetches dispatched vehicles for 'today'. Delivering vehicles will blink.",
+                    dash_vehicle_update_btn: "Update Now",
                     // Stock Tab
                     backup_title: "Backup Data",
                     backup_desc: "Download various data as CSV files.",
@@ -5201,9 +5245,10 @@ window.toggleDashboardView = function(view) {
                         if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard(); 
                     }
                 };
-// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับ 3 คอลัมน์ + เรียงเวลาผลัดกะ 07:00 - 06:59)
+// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (รองรับ 2 ภาษา ไทย/อังกฤษ)
 window.populateVehicleDashboard = function() {
     try {
+        const T = translations[currentLanguage] || translations['th']; // ⬅️ ดึงคำแปลภาษา
         const pendingContainer = document.getElementById('vehicle-pending-container');
         const deliveringContainer = document.getElementById('vehicle-delivering-container');
         const completedContainer = document.getElementById('vehicle-completed-container');
@@ -5216,7 +5261,6 @@ window.populateVehicleDashboard = function() {
             return;
         }
 
-        // 🟢 0. สูตรคำนวณเวลาผลัดกะ (07:00 เป็นจุดเริ่มต้น)
         const getShiftedMinutes = (timeStr) => {
             const str = window.formatTimeDisplay(timeStr);
             const parts = str.split(':');
@@ -5250,20 +5294,18 @@ window.populateVehicleDashboard = function() {
             return pDateFormatted === formattedTargetDate || rawDate === targetDateStr;
         });
 
-        // ถ้าไม่มีงานเลยในวันนี้ ให้ขึ้นว่างเปล่าทั้ง 3 คอลัมน์
+        // 🌟 ดึงคำแปล: ไม่มีคิวงาน
         if (targetPlans.length === 0) {
-            const noDataHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-calendar-x fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">ไม่มีคิวงาน</span></div>`;
+            const noDataHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-calendar-x fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_no_queue || 'ไม่มีคิวงาน'}</span></div>`;
             if(pendingContainer) pendingContainer.innerHTML = noDataHtml;
             deliveringContainer.innerHTML = noDataHtml;
             completedContainer.innerHTML = noDataHtml;
             return;
         }
 
-        // แยกงานที่ "ยังไม่มีทะเบียน" และ "มีทะเบียนแล้ว"
         const pendingPlans = targetPlans.filter(p => !p.licensePlate || String(p.licensePlate).trim() === '');
         const releasedPlans = targetPlans.filter(p => p.licensePlate && String(p.licensePlate).trim() !== '');
 
-        // 📦 1. ประมวลผลกลุ่ม "รอจัดส่ง" (จัดกลุ่มตาม รอบเวลา + ลูกค้า)
         const pendingGroups = {};
         pendingPlans.forEach(p => {
             p.time = window.formatTimeDisplay(p.time);
@@ -5284,31 +5326,30 @@ window.populateVehicleDashboard = function() {
         });
 
         let pendingHtml = '';
-        // 🟢 สั่งเรียงลำดับเวลาด้วยสมการ "ผลัดกะ"
         Object.values(pendingGroups).sort((a, b) => {
             const valA = getShiftedMinutes(a.time);
             const valB = getShiftedMinutes(b.time);
             if (valA !== valB) return valA - valB;
             return a.customer.localeCompare(b.customer);
         }).forEach(g => {
+            // 🌟 ดึงคำแปล: รอรถมารับ, ส่ง, รายการ, ชิ้น
             pendingHtml += `
             <div class="col-12">
                 <div class="card border border-secondary-subtle shadow-sm" style="border-radius: 12px; background: #ffffff;">
                     <div class="card-body p-3 position-relative">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h6 class="fw-bolder text-dark mb-0"><i class="bi bi-clock-history text-secondary me-1"></i>รอบ ${g.time} น.</h6>
-                            <span class="badge bg-light text-secondary border border-secondary-subtle shadow-sm" style="font-size: 0.7rem;">รอรถมารับ</span>
+                            <h6 class="fw-bolder text-dark mb-0"><i class="bi bi-clock-history text-secondary me-1"></i>${T.dash_vehicle_round || 'รอบ'} ${g.time} น.</h6>
+                            <span class="badge bg-light text-secondary border border-secondary-subtle shadow-sm" style="font-size: 0.7rem;">${T.dash_vehicle_waiting_pickup || 'รอรถมารับ'}</span>
                         </div>
-                        <div class="small fw-bold text-primary mb-1"><i class="bi bi-building me-1"></i>ส่ง: ${g.customer}</div>
-                        <div class="small text-muted"><i class="bi bi-box-seam me-1"></i>${g.partsCount} รายการ <span class="text-success fw-bold">(${g.totalQty.toLocaleString()} ชิ้น)</span></div>
+                        <div class="small fw-bold text-primary mb-1"><i class="bi bi-building me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${g.customer}</div>
+                        <div class="small text-muted"><i class="bi bi-box-seam me-1"></i>${g.partsCount} ${T.dash_vehicle_items || 'รายการ'} <span class="text-success fw-bold">(${g.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'})</span></div>
                     </div>
                 </div>
             </div>`;
         });
-        if (pendingHtml === '') pendingHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-check2-circle fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">เคลียร์งานรอส่งหมดแล้ว</span></div>`;
+        // 🌟 ดึงคำแปล: เคลียร์งานรอส่งหมดแล้ว
+        if (pendingHtml === '') pendingHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-check2-circle fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_all_cleared || 'เคลียร์งานรอส่งหมดแล้ว'}</span></div>`;
 
-
-        // 🚚 2. ประมวลผลกลุ่ม "ปล่อยรถแล้ว" (กำลังวิ่ง / กลับถึงแล้ว)
         const getColorForPlate = (plate) => {
             let hash = 0; let strPlate = String(plate);
             for (let i = 0; i < strPlate.length; i++) hash = strPlate.charCodeAt(i) + ((hash << 5) - hash);
@@ -5352,7 +5393,6 @@ window.populateVehicleDashboard = function() {
 
         let deliveringHtml = ''; let completedHtml = '';
 
-        // 🟢 สั่งเรียงลำดับรถที่วิ่ง/จบงาน ด้วยสมการ "ผลัดกะ" ด้วยเช่นกัน
         Object.values(activeVehicles).sort((a, b) => {
             const valA = getShiftedMinutes(a.time);
             const valB = getShiftedMinutes(b.time);
@@ -5362,37 +5402,40 @@ window.populateVehicleDashboard = function() {
             const customersStr = Array.from(v.customers).join(', ');
             
             if (v.status === 'Delivering') {
+                // 🌟 ดึงคำแปล: รอบ, ส่ง:, รวม, ชิ้น
                 deliveringHtml += `
                 <div class="col-12">
                     <div class="card border-0 truck-active-blink shadow-sm" style="background-color: ${v.bgColor}; border-radius: 12px;">
                         <div class="card-body p-3 position-relative overflow-hidden">
                             <i class="bi bi-truck position-absolute opacity-25 text-dark" style="font-size: 4rem; right: -10px; bottom: -15px;"></i>
                             <h5 class="truck-card-plate text-dark fw-bolder mb-2">${v.plate}</h5>
-                            <div class="small fw-bold text-primary mb-1"><i class="bi bi-clock-fill me-1"></i>รอบ: ${v.time} น.</div>
-                            <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>ส่ง: ${customersStr}</div>
-                            <div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>รวม: ${v.totalQty.toLocaleString()} ชิ้น</div>
+                            <div class="small fw-bold text-primary mb-1"><i class="bi bi-clock-fill me-1"></i>${T.dash_vehicle_round || 'รอบ'}: ${v.time} น.</div>
+                            <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
+                            <div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>${T.dash_vehicle_total || 'รวม:'} ${v.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'}</div>
                         </div>
                     </div>
                 </div>`;
             } else {
+                // 🌟 ดึงคำแปล: รอบ, ส่ง:, ถึง:
                 completedHtml += `
                 <div class="col-12">
                     <div class="card border border-success-subtle shadow-sm" style="background-color: #ffffff; border-radius: 12px; opacity: 0.9;">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h6 class="truck-card-plate text-success fw-bolder mb-0"><i class="bi bi-check-circle-fill me-1"></i>${v.plate}</h6>
-                                <span class="badge bg-light text-dark border shadow-sm" style="font-size: 0.7rem;">รอบ ${v.time} น.</span>
+                                <span class="badge bg-light text-dark border shadow-sm" style="font-size: 0.7rem;">${T.dash_vehicle_round || 'รอบ'} ${v.time} น.</span>
                             </div>
-                            <div class="small text-muted mb-1"><i class="bi bi-geo-alt-fill me-1"></i>ส่ง: ${customersStr}</div>
-                            <div class="small fw-bold text-success"><i class="bi bi-building-check me-1"></i>ถึง: ${v.actualReturnTime ? v.actualReturnTime + ' น.' : 'ไม่ระบุเวลา'}</div>
+                            <div class="small text-muted mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
+                            <div class="small fw-bold text-success"><i class="bi bi-building-check me-1"></i>${T.dash_vehicle_arrived_time || 'ถึง:'} ${v.actualReturnTime ? v.actualReturnTime + ' น.' : (T.dash_vehicle_not_specified || 'ไม่ระบุเวลา')}</div>
                         </div>
                     </div>
                 </div>`;
             }
         });
 
-        if (deliveringHtml === '') deliveringHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-emoji-smile fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">ไม่มีรถวิ่งข้างนอก</span></div>`;
-        if (completedHtml === '') completedHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-cone-striped fs-1 d-block mb-2 opacity-25"></i><span class="small fw-bold">ยังไม่มีรถกลับมา</span></div>`;
+        // 🌟 ดึงคำแปล: ไม่มีรถวิ่งข้างนอก, ยังไม่มีรถกลับมา
+        if (deliveringHtml === '') deliveringHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-emoji-smile fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_no_delivering || 'ไม่มีรถวิ่งข้างนอก'}</span></div>`;
+        if (completedHtml === '') completedHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-cone-striped fs-1 d-block mb-2 opacity-25"></i><span class="small fw-bold">${T.dash_vehicle_no_completed || 'ยังไม่มีรถกลับมา'}</span></div>`;
 
         if(pendingContainer) pendingContainer.innerHTML = pendingHtml;
         deliveringContainer.innerHTML = deliveringHtml;
