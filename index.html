@@ -5201,7 +5201,7 @@ window.toggleDashboardView = function(view) {
                         if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard(); 
                     }
                 };
-// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับ 3 คอลัมน์: รอจัดส่ง -> วิ่งงาน -> จบงาน)
+// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับ 3 คอลัมน์ + เรียงเวลาผลัดกะ 07:00 - 06:59)
 window.populateVehicleDashboard = function() {
     try {
         const pendingContainer = document.getElementById('vehicle-pending-container');
@@ -5215,6 +5215,17 @@ window.populateVehicleDashboard = function() {
             completedContainer.innerHTML = `<div class="col-12 text-center text-muted p-4"><div class="spinner-border text-success spinner-border-sm" role="status"></div></div>`;
             return;
         }
+
+        // 🟢 0. สูตรคำนวณเวลาผลัดกะ (07:00 เป็นจุดเริ่มต้น)
+        const getShiftedMinutes = (timeStr) => {
+            const str = window.formatTimeDisplay(timeStr);
+            const parts = str.split(':');
+            if (parts.length !== 2) return 0;
+            let h = parseInt(parts[0], 10);
+            let m = parseInt(parts[1], 10);
+            let shiftedHour = h >= 7 ? h - 7 : h + 17;
+            return (shiftedHour * 60) + m;
+        };
 
         const today = new Date();
         const defaultTodayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -5273,7 +5284,13 @@ window.populateVehicleDashboard = function() {
         });
 
         let pendingHtml = '';
-        Object.values(pendingGroups).sort((a, b) => a.time.localeCompare(b.time)).forEach(g => {
+        // 🟢 สั่งเรียงลำดับเวลาด้วยสมการ "ผลัดกะ"
+        Object.values(pendingGroups).sort((a, b) => {
+            const valA = getShiftedMinutes(a.time);
+            const valB = getShiftedMinutes(b.time);
+            if (valA !== valB) return valA - valB;
+            return a.customer.localeCompare(b.customer);
+        }).forEach(g => {
             pendingHtml += `
             <div class="col-12">
                 <div class="card border border-secondary-subtle shadow-sm" style="border-radius: 12px; background: #ffffff;">
@@ -5335,11 +5352,16 @@ window.populateVehicleDashboard = function() {
 
         let deliveringHtml = ''; let completedHtml = '';
 
-        Object.values(activeVehicles).forEach(v => {
+        // 🟢 สั่งเรียงลำดับรถที่วิ่ง/จบงาน ด้วยสมการ "ผลัดกะ" ด้วยเช่นกัน
+        Object.values(activeVehicles).sort((a, b) => {
+            const valA = getShiftedMinutes(a.time);
+            const valB = getShiftedMinutes(b.time);
+            if (valA !== valB) return valA - valB;
+            return Array.from(a.customers).join(',').localeCompare(Array.from(b.customers).join(','));
+        }).forEach(v => {
             const customersStr = Array.from(v.customers).join(', ');
             
             if (v.status === 'Delivering') {
-                // ปรับเป็น col-12 เพื่อให้เรียงแนวตั้งสวยๆ
                 deliveringHtml += `
                 <div class="col-12">
                     <div class="card border-0 truck-active-blink shadow-sm" style="background-color: ${v.bgColor}; border-radius: 12px;">
@@ -5832,9 +5854,7 @@ window.formatTimeDisplay = function(timeStr) {
     return str;
 };
 
-// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา)
-// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา)
-// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (เพิ่มระบบค้นหา)
+// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (อัปเกรด: เรียงเวลาจาก 07:00 ถึง 06:59 ของอีกวัน)
 window.renderDeliveryPlanTable = function(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
     if (!tableBody) return;
@@ -5842,24 +5862,43 @@ window.renderDeliveryPlanTable = function(targetDate) {
     db.deliveryPlans = db.deliveryPlans || [];
     const formattedTargetDate = formatDate(targetDate);
     
-    // 🟢 1. ดึงข้อความจากช่องค้นหา
+    // 1. ดึงข้อความจากช่องค้นหา
     const searchInput = document.getElementById('delivery-plan-search');
     const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
     
-    // 🟢 2. ดึงแผนของวันที่เลือก และ กรองด้วยคำค้นหา
+    // 2. ดึงแผนของวันที่เลือก และ กรองด้วยคำค้นหา
     let dailyPlans = db.deliveryPlans.filter(p => formatDate(p.date) === formattedTargetDate);
     
     if (searchTerm !== '') {
         dailyPlans = dailyPlans.filter(p => {
             const cust = (p.customer || '').toLowerCase();
             const plate = (p.licensePlate || '').toLowerCase();
-            const timeStr = formatTimeDisplay(p.time).toLowerCase();
+            const timeStr = window.formatTimeDisplay(p.time).toLowerCase();
             return cust.includes(searchTerm) || plate.includes(searchTerm) || timeStr.includes(searchTerm);
         });
     }
-    
-    // จัดเรียงเวลา
-    dailyPlans.sort((a, b) => formatTimeDisplay(a.time).localeCompare(formatTimeDisplay(b.time)));
+
+    // 🟢 3. สูตรคำนวณเวลาผลัดกะ (07:00 เป็นจุดเริ่มต้น)
+    const getShiftedMinutes = (timeStr) => {
+        const str = window.formatTimeDisplay(timeStr);
+        const parts = str.split(':');
+        if (parts.length !== 2) return 0;
+        let h = parseInt(parts[0], 10);
+        let m = parseInt(parts[1], 10);
+        
+        // ดันเวลา 07:00 ให้มีค่าเท่ากับชั่วโมงที่ 0 (เช้าสุด)
+        // และดันเวลา 00:00 - 06:59 ให้บวกไป 17 ชั่วโมง (กลายเป็นดึกสุด)
+        let shiftedHour = h >= 7 ? h - 7 : h + 17;
+        return (shiftedHour * 60) + m;
+    };
+
+    // 🟢 4. จัดเรียงเวลาใหม่ตามสมการผลัดกะ
+    dailyPlans.sort((a, b) => {
+        const valA = getShiftedMinutes(a.time);
+        const valB = getShiftedMinutes(b.time);
+        if (valA !== valB) return valA - valB; // เรียงตามเวลา
+        return (a.customer || '').localeCompare(b.customer || ''); // ถ้าเวลาชนกัน ให้เรียงตามชื่อลูกค้า
+    });
     
     if (dailyPlans.length === 0) {
         if (searchTerm !== '') {
@@ -5873,7 +5912,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
     // จัดกลุ่มข้อมูล (Group By: ลูกค้า + เวลา)
     const groupedPlans = {};
     dailyPlans.forEach(p => {
-        const displayTime = formatTimeDisplay(p.time);
+        const displayTime = window.formatTimeDisplay(p.time);
         const groupKey = displayTime + '_' + p.customer; 
         
         if (!groupedPlans[groupKey]) {
@@ -5895,10 +5934,18 @@ window.renderDeliveryPlanTable = function(targetDate) {
         if (p.licensePlate) groupedPlans[groupKey].licensePlate = p.licensePlate;
     });
 
+    // 🟢 5. สั่งเรียง Object อีกรอบเพื่อความชัวร์ว่า HTML จะวาดตามลำดับที่เราตั้งไว้ 100%
+    const sortedKeys = Object.keys(groupedPlans).sort((keyA, keyB) => {
+        const valA = getShiftedMinutes(groupedPlans[keyA].displayTime);
+        const valB = getShiftedMinutes(groupedPlans[keyB].displayTime);
+        if (valA !== valB) return valA - valB;
+        return groupedPlans[keyA].customer.localeCompare(groupedPlans[keyB].customer);
+    });
+
     let html = '';
     let groupIndex = 0;
 
-    for (const key in groupedPlans) {
+    sortedKeys.forEach(key => {
         const group = groupedPlans[key];
         const groupId = 'group-collapse-' + groupIndex++;
         const planDateStr = formatDate(group.date);
@@ -5980,7 +6027,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
             </td>
         </tr>
         `;
-    }
+    });
     
     tableBody.innerHTML = html;
 };
