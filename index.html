@@ -1325,14 +1325,16 @@
             <div class="modern-nav-container">
                 <ul class="nav nav-pills nav-fill" id="pills-tab" role="tablist" style="row-gap: 8px;">
     
-                    <li class="nav-item mx-1" role="presentation" id="nav-stock-item">
-                        <button class="nav-link modern-nav-link active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab">
+                    <li class="nav-item mx-1" role="presentation">
+                        <button class="nav-link modern-nav-link active" id="pills-stock-tab" data-bs-toggle="pill"
+                            data-bs-target="#pills-stock" type="button" role="tab">
                             <i class="bi bi-house-heart-fill me-2"></i>
                             <span data-lang-key="nav_stock">สต็อกคงเหลือ</span>
                         </button>
                     </li>
-                    <li class="nav-item mx-1" role="presentation" id="nav-dashboard-item">
-                        <button class="nav-link modern-nav-link" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard" type="button" role="tab">
+                    <li class="nav-item mx-1" role="presentation">
+                        <button class="nav-link modern-nav-link" id="pills-dashboard-tab" data-bs-toggle="pill"
+                            data-bs-target="#pills-dashboard" type="button" role="tab">
                             <i class="bi bi-speedometer2 me-2"></i>
                             <span data-lang-key="nav_dashboard">แดชบอร์ด</span>
                         </button>
@@ -2432,8 +2434,6 @@
                     permission_canManageAnnouncements: "จัดการประกาศ",
                     user_save_button: "บันทึกข้อมูลผู้ใช้",
                     user_table_title: "รายการผู้ใช้ทั้งหมด",
-                    permission_canViewStock: "ดูหน้าสต็อกคงเหลือ",
-                    permission_canViewDashboard: "ดูแดชบอร์ด (กราฟ/รถขนส่ง)",
                     // Announcement Management
                     announcement_form_title: "สร้าง/แก้ไขประกาศ",
                     announcement_title: "หัวข้อประกาศ",
@@ -2966,15 +2966,6 @@ function handleLogin(e) {
                 }
 
                 function logoutDueToInactivity() {
-                    // 🟢 ไอเดียที่ 2: เช็คก่อนว่าตอนนี้ผู้ใช้กำลังเปิดแท็บ "แดชบอร์ด" อยู่หรือไม่?
-                    const dashboardTab = document.getElementById('pills-dashboard');
-                    if (dashboardTab && dashboardTab.classList.contains('active')) {
-                        // ถ้าอยู่หน้าแดชบอร์ด (หรือเปิดเต็มจอไว้) ให้แอบต่ออายุไปอีก 30 นาทีเงียบๆ (ไม่เตะออก)
-                        resetInactivityTimer();
-                        return; 
-                    }
-
-                    // 🔴 แต่ถ้าเปิดหน้าอื่นๆ ทิ้งไว้ (เช่น รับเข้า, ส่งออก, ประวัติ) ให้เตะออกตามปกติเพื่อความปลอดภัย
                     stopDataSync();
                     Swal.fire({
                         title: translations[currentLanguage].session_expired_title,
@@ -4289,8 +4280,6 @@ clearInterval(window.mascotLoopTimer);
         const canManageUsers = isMasterAdmin || currentUser.canManageUsers;
         const canManageAnn = isMasterAdmin || currentUser.canManageAnnouncements;
         const canForecast = isMasterAdmin || currentUser.canForecast;
-        const canViewStock = isMasterAdmin || currentUser.canViewStock;
-        const canViewDashboard = isMasterAdmin || currentUser.canViewDashboard;
 
         // 1. หมวดหมู่ "ตั้งค่าระบบ" 
         // (แก้ไขใหม่: โชว์เมื่อมีสิทธิ์จัดการอย่างใดอย่างหนึ่ง ไม่จำเป็นต้องเป็น Admin ก็เห็นได้)
@@ -4311,8 +4300,6 @@ clearInterval(window.mascotLoopTimer);
         if (document.getElementById('nav-users-item')) document.getElementById('nav-users-item').style.display = canManageUsers ? '' : 'none';
         if (document.getElementById('nav-announcements-item')) document.getElementById('nav-announcements-item').style.display = canManageAnn ? '' : 'none';
         if (document.getElementById('nav-forecast-item')) {document.getElementById('nav-forecast-item').style.display = canForecast ? '' : 'none';
-        if (document.getElementById('nav-stock-item')) document.getElementById('nav-stock-item').style.display = canViewStock ? '' : 'none';
-        if (document.getElementById('nav-dashboard-item')) document.getElementById('nav-dashboard-item').style.display = canViewDashboard ? '' : 'none';
         }
 
  // 3. จัดการปุ่มดาวน์โหลดสำรองข้อมูลแบบใหม่ (Dropdown)
@@ -4354,31 +4341,7 @@ clearInterval(window.mascotLoopTimer);
                         bar.style.setProperty('display', 'flex', 'important');
                     }
 
-                    // 🟢 เพิ่มโค้ดระบบบังคับสลับหน้าแรกอัตโนมัติ (ดักจับคนไม่มีสิทธิ์ดูสต็อก)
-            setTimeout(() => {
-                if (!canViewStock) {
-                    // 1. ถอดคลาสที่ทำให้หน้าสต็อกโชว์ค้างอยู่ออก
-                    const stockPane = document.getElementById('pills-stock');
-                    const stockBtn = document.getElementById('pills-stock-tab');
-                    if (stockPane) stockPane.classList.remove('show', 'active');
-                    if (stockBtn) stockBtn.classList.remove('active');
-                    
-                    // 2. ให้ระบบกวาดสายตาหา "เมนูแรกสุด" ที่ผู้ใช้คนนี้มีสิทธิ์มองเห็น
-                    const visiblePills = Array.from(document.querySelectorAll('[data-bs-toggle="pill"]')).filter(btn => {
-                        const li = btn.closest('li');
-                        return li && li.style.display !== 'none' && !li.classList.contains('dropdown-divider');
-                    });
-                    
-                    // 3. จำลองการคลิกเมาส์ เพื่อสลับไปหน้านั้นทันที!
-                    if (visiblePills.length > 0) {
-                        visiblePills[0].click(); 
-                    }
-                } else {
-                    // ถ้ามีสิทธิ์ดูสต็อก ก็สั่งคลิกโชว์หน้าสต็อกตามปกติ
-                    const stockBtn = document.getElementById('pills-stock-tab');
-                    if (stockBtn) stockBtn.click();
-                }
-            }, 50); // ใส่ดีเลย์ 50ms ให้ระบบวาดเมนูซ่อน/โชว์ให้เสร็จก่อน
+
                     calculateStockFromHistory();
                     populateAll();
                     startDataSync();
@@ -5213,8 +5176,7 @@ window.toggleDashboardView = function(view) {
                         if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard(); 
                     }
                 };
-// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับสมบูรณ์: แสดงรอบเวลา + ป้องกันจอขาว)
-// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับแก้บั๊กจอว่าง 100% + ป้องกันรูปแบบวันที่เพี้ยน)
+// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับดึงฟังก์ชันส่วนกลางมาแก้บั๊ก 17 นาที + จอว่าง)
 window.populateVehicleDashboard = function() {
     try {
         const deliveringContainer = document.getElementById('vehicle-delivering-container');
@@ -5227,7 +5189,7 @@ window.populateVehicleDashboard = function() {
             return;
         }
 
-        // 🟢 1. จัดการวันที่ (ดักบั๊กกรณีหน้าเว็บไม่มีช่องปฏิทิน ให้ใช้วันนี้เสมอ)
+        // ดักบั๊กกรณีหน้าเว็บไม่มีช่องปฏิทิน ให้ใช้วันนี้เสมอ
         const today = new Date();
         const defaultTodayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         let targetDateStr = defaultTodayStr;
@@ -5238,23 +5200,17 @@ window.populateVehicleDashboard = function() {
             targetDateStr = dateInput.value;
         }
 
-        // 🟢 2. สร้างเป้าหมายวันที่สำหรับใช้คัดกรอง (ดักจับ Format วันที่ให้ตรงกัน)
         let formattedTargetDate = targetDateStr;
         if (typeof formatDate === 'function') {
             formattedTargetDate = formatDate(targetDateStr);
         }
 
-        // 🟢 3. คัดกรองแผนงานเฉพาะ "วันที่เป้าหมาย"
+        // คัดกรองแผนงานเฉพาะ "วันที่เป้าหมาย"
         const targetPlans = db.deliveryPlans.filter(p => {
             if (!p || !p.date) return false;
-            
-            // เทียบวันที่แบบ Format (เช่น 27/07/2026)
             let pDateFormatted = typeof formatDate === 'function' ? formatDate(p.date) : String(p.date).trim();
-            
-            // เทียบวันที่แบบดิบ (เช่น 2026-07-27)
             let rawDate = String(p.date).trim();
             if (rawDate.includes('T')) rawDate = rawDate.split('T')[0];
-            
             return pDateFormatted === formattedTargetDate || rawDate === targetDateStr;
         });
 
@@ -5264,7 +5220,6 @@ window.populateVehicleDashboard = function() {
             return;
         }
 
-        // คัดเฉพาะรถที่ "มีทะเบียนแล้ว"
         const releasedPlans = targetPlans.filter(p => p.licensePlate && String(p.licensePlate).trim() !== '');
         if (releasedPlans.length === 0) {
             deliveringContainer.innerHTML = `<div class="col-12 text-center p-5"><i class="bi bi-truck fs-1 d-block mb-3 text-warning opacity-75"></i><h5 class="fw-bold text-dark">มีคิวส่ง ${targetPlans.length} รายการ</h5><span class="badge bg-danger rounded-pill px-3 py-2 mt-2 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-1"></i> แต่ยังไม่มีการกด "ปล่อยรถ" เลยครับ</span></div>`;
@@ -5278,29 +5233,12 @@ window.populateVehicleDashboard = function() {
             return `hsl(${Math.abs(hash % 360)}, 85%, 85%)`; 
         };
 
-        const getSafeTime = (timeStr) => {
-            if (!timeStr) return '-';
-            let str = String(timeStr).trim();
-            if (str.includes('T')) {
-                let fakeYearStr = str.replace(/^1899/, '2000').replace(/^1900/, '2000');
-                const d = new Date(fakeYearStr);
-                if (!isNaN(d.getTime())) {
-                    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
-                }
-            }
-            str = str.replace('น.', '').replace('น', '').trim().replace('.', ':');
-            const match = str.match(/(\d{1,2}):(\d{2})/);
-            if (match) {
-                return String(match[1]).padStart(2, '0') + ':' + match[2];
-            }
-            return str;
-        };
-
         const activeVehicles = {};
 
         releasedPlans.forEach(p => {
             const safePlate = String(p.licensePlate).trim();
-            p.time = getSafeTime(p.time); 
+            // 💡 โยนเข้าเครื่องกรองเวลาส่วนกลาง (ที่แก้บั๊ก 17 นาทีแล้ว)
+            p.time = window.formatTimeDisplay(p.time); 
             const timeKey = p.time;
             const groupKey = safePlate + '_' + timeKey; 
             
@@ -5327,8 +5265,9 @@ window.populateVehicleDashboard = function() {
                 activeVehicles[groupKey].status = 'Delivering';
             }
             
+            // 💡 โยนเวลากลับเข้าเครื่องกรองส่วนกลางด้วย
             if (p.actualReturnTime && currentStatus === 'completed') {
-                activeVehicles[groupKey].actualReturnTime = getSafeTime(p.actualReturnTime);
+                activeVehicles[groupKey].actualReturnTime = window.formatTimeDisplay(p.actualReturnTime);
             }
         });
 
@@ -5790,20 +5729,37 @@ document.body.addEventListener('submit', function (e) {
     }
 });
 
-// 🟢 ฟังก์ชันช่วยแปลงเวลาจาก Google Sheet ให้เป็น 24 ชั่วโมง (HH:mm) แบบสวยๆ (แก้บั๊กปี 1899)
+// 🟢 ฟังก์ชันช่วยแปลงเวลาจาก Google Sheet ให้เป็น 24 ชั่วโมง (HH:mm) แบบสวยๆ
+// 🟢 ฟังก์ชันช่วยแปลงเวลาจาก Google Sheet ให้เป็น 24 ชั่วโมง (HH:mm) (แก้บั๊ก 17 นาทีของปี 1899)
 window.formatTimeDisplay = function(timeStr) {
     if (!timeStr) return '-';
     let str = String(timeStr).trim();
     
-    if (str.includes('T')) {
-        // หลอกเบราว์เซอร์ให้คิดว่าเป็นปี 2000 ป้องกันบั๊ก Invalid Date ของปี 1899
-        let fakeYearStr = str.replace(/^1899/, '2000').replace(/^1900/, '2000');
-        const dateObj = new Date(fakeYearStr);
-        if (!isNaN(dateObj.getTime())) {
-            return dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+    // 🟢 ดักจับขยะเวลาปี 1899 ที่ Google Sheet ส่งมา
+    if (str.startsWith('1899-')) {
+        let fakeYearStr = str.replace(/^1899/, '2000'); // หลอกเป็นปี 2000 เพื่อกันพัง
+        const d = new Date(fakeYearStr);
+        if (!isNaN(d.getTime())) {
+            // Google Sheet หักลบเวลาด้วย Timezone โบราณของไทย (+06:42:04) เราจึงต้องบวกกลับให้ตรงเป๊ะ!
+            let h = d.getUTCHours() + 6;
+            let m = d.getUTCMinutes() + 42;
+            let s = d.getUTCSeconds() + 4;
+            
+            // ปัดเศษวินาที/นาที
+            if (s >= 60) { m += Math.floor(s / 60); s %= 60; }
+            if (m >= 60) { h += Math.floor(m / 60); m %= 60; }
+            h %= 24;
+            
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        }
+    } else if (str.includes('T')) {
+        const d = new Date(str);
+        if (!isNaN(d.getTime())) {
+            return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
         }
     }
     
+    // กรณีที่พิมพ์มาเป็นข้อความปกติ เช่น 09.00 น. หรือ 09:00
     str = str.replace('น.', '').replace('น', '').trim().replace('.', ':');
     const timeMatch = str.match(/(\d{1,2}):(\d{2})/);
     if (timeMatch) {
@@ -5811,6 +5767,9 @@ window.formatTimeDisplay = function(timeStr) {
     }
     return str;
 };
+
+// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา)
+// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา)
 // 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (เพิ่มระบบค้นหา)
 window.renderDeliveryPlanTable = function(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
@@ -5962,8 +5921,9 @@ window.renderDeliveryPlanTable = function(targetDate) {
     tableBody.innerHTML = html;
 };
 // 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม)
-// 🟢 ฟังก์ชันปล่อยรถ (เพิ่มระบบสกัดกั้น ไม่ให้ปล่อยรถที่กำลังวิ่งอยู่ซ้ำ)
+// 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม)
 window.releaseGroupVehicle = async function(date, displayTime, customer) {
+    // 🟢 ค้นหาโดยบังคับแปลงข้อมูลในชีตให้เป็นหน้าตาเดียวกันก่อนเทียบ
     const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === date && formatTimeDisplay(p.time) === displayTime && p.customer === customer);
     if (plansToUpdate.length === 0) return;
 
@@ -5976,21 +5936,7 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
         confirmButtonText: 'ยืนยันปล่อยรถ',
         cancelButtonText: 'ยกเลิก',
         confirmButtonColor: '#0d6efd',
-        inputValidator: (value) => { 
-            if (!value || value.trim() === '') return 'กรุณากรอกทะเบียนรถด้วยครับ!'; 
-            
-            // 🛡️ ป้องกันคีย์ทะเบียนซ้ำ ถ้ารถคันนั้นยังไม่กด "ถึงเอเทคแล้ว"
-            const inputPlate = value.trim().toLowerCase();
-            const isDelivering = db.deliveryPlans.some(p => 
-                p.licensePlate && 
-                p.licensePlate.trim().toLowerCase() === inputPlate && 
-                p.status === 'Delivering'
-            );
-            
-            if (isDelivering) {
-                return '🚫 รถทะเบียนนี้กำลังวิ่งอยู่! กรุณากดปุ่ม "ถึงเอเทคแล้ว" ของรอบก่อนหน้า ถึงจะนำมารับงานรอบใหม่ได้ครับ';
-            }
-        }
+        inputValidator: (value) => { if (!value || value.trim() === '') return 'กรุณากรอกทะเบียนรถด้วยครับ!'; }
     });
 
     if (licensePlate) {
@@ -5998,12 +5944,13 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
         const releaseTime = new Date().toLocaleTimeString('th-TH');
         
         try {
+            // อัปเดตทีละรายการจนครบทั้งคันรถ
             for (let plan of plansToUpdate) {
                 plan.status = 'Delivering';
-                plan.licensePlate = licensePlate.trim(); // ลบเว้นวรรคส่วนเกิน
+                plan.licensePlate = licensePlate;
                 plan.actualReleaseTime = releaseTime;
-                plan.time = formatTimeDisplay(plan.time); 
-                plan.date = formatDate(plan.date);        
+                plan.time = formatTimeDisplay(plan.time); // ดัดหลัง Sheet
+                plan.date = formatDate(plan.date);        // ดัดหลัง Sheet
                 await callAppsScript('updateDeliveryPlan', plan);
             }
             if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date);
@@ -7361,9 +7308,7 @@ const permissions = [
                         { key: 'canManageDeliveryPlan', label: 'จัดการแผนการจัดส่ง' },
                         { key: 'canConvertPart', label: 'เปลี่ยนรหัสสินค้า (Convert)' },
                         { key: 'canManageRack', label: 'ระบบจัดการ Rack (แพ็คกิ้ง)' },
-                        { key: 'canForecast', label: 'อัปโหลด Forecast' },
-                        { key: 'canViewStock', label: 'สต็อค FG' },
-                        { key: 'canViewDashboard', label: 'Dashboard' }
+                        { key: 'canForecast', label: 'อัปโหลด Forecast' }
                     ];
                     let permissionsHtml = permissions.map(p => `
                 <div class="form-check form-switch">
@@ -8874,20 +8819,17 @@ function populateSalesDashboard(startDate, endDate) {
                         fullname: document.getElementById('user-fullname').value.trim(),
                         avatarUrl: document.getElementById('user-avatar').value.trim(),
                         role: document.getElementById('user-role-select').value,
-                        canImport: document.getElementById('user-canImport')?.checked || false,
-                        canExport: document.getElementById('user-canExport')?.checked || false,
-                        canViewHistory: document.getElementById('user-canViewHistory')?.checked || false,
-                        canCountStock: document.getElementById('user-canCountStock')?.checked || false,
-                        canManageProducts: document.getElementById('user-canManageProducts')?.checked || false,
-                        canManageUsers: document.getElementById('user-canManageUsers')?.checked || false,
-                        canManageAnnouncements: document.getElementById('user-canManageAnnouncements')?.checked || false,
-                        canManageDeliveryPlan: document.getElementById('user-canManageDeliveryPlan')?.checked || false,
-                        canManageRack: document.getElementById('user-canManageRack')?.checked || false,
-                        canConvertPart: document.getElementById('user-canConvertPart')?.checked || false,
-                        canForecast: document.getElementById('user-canForecast')?.checked || false,
-                        // 🟢 2 สิทธิ์ใหม่ที่เราเพิ่งเพิ่มไป
-                        canViewStock: document.getElementById('user-canViewStock')?.checked || false,
-                        canViewDashboard: document.getElementById('user-canViewDashboard')?.checked || false,
+                        canImport: document.getElementById('permission-canImport').checked,
+                        canExport: document.getElementById('permission-canExport').checked,
+                        canViewHistory: document.getElementById('permission-canViewHistory').checked,
+                        canCountStock: document.getElementById('permission-canCountStock').checked,
+                        canManageProducts: document.getElementById('permission-canManageProducts').checked,
+                        canManageUsers: document.getElementById('permission-canManageUsers').checked,
+                        canManageAnnouncements: document.getElementById('permission-canManageAnnouncements').checked,
+                        canManageDeliveryPlan: document.getElementById('permission-canManageDeliveryPlan').checked, // 👈 สิทธิ์จัดส่ง
+                        canConvertPart: document.getElementById('permission-canConvertPart').checked, // 👈 สิทธิ์ Convert
+                        canManageRack: document.getElementById('permission-canManageRack').checked,
+                        canForecast: document.getElementById('user-canForecast').checked
                     };
 
                         Swal.fire({
