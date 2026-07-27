@@ -5176,88 +5176,148 @@ window.toggleDashboardView = function(view) {
                         if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard(); 
                     }
                 };
-// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง
+// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับสมบูรณ์: แสดงรอบเวลา + ป้องกันจอขาว)
+// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับสมบูรณ์: แก้บั๊กเวลาขยะ 1899 จาก Google Sheet)
 window.populateVehicleDashboard = function() {
-    const deliveringContainer = document.getElementById('vehicle-delivering-container');
-    const completedContainer = document.getElementById('vehicle-completed-container');
-    if (!deliveringContainer || !completedContainer) return;
+    try {
+        const deliveringContainer = document.getElementById('vehicle-delivering-container');
+        const completedContainer = document.getElementById('vehicle-completed-container');
+        if (!deliveringContainer || !completedContainer) return;
 
-    db.deliveryPlans = db.deliveryPlans || [];
-    const todayStr = formatDate(new Date()); // ดึงรถเฉพาะของ "วันนี้"
-    
-    // ฟังก์ชันย่อย: สร้างสีพาสเทลจากทะเบียนรถ (ทะเบียนเดิม สีเดิมตลอด)
-    const getColorForPlate = (plate) => {
-        let hash = 0;
-        for (let i = 0; i < plate.length; i++) hash = plate.charCodeAt(i) + ((hash << 5) - hash);
-        return `hsl(${Math.abs(hash % 360)}, 85%, 85%)`; 
-    };
-
-    const activeVehicles = {};
-
-    // 1. กวาดข้อมูลรถทั้งหมดของวันนี้ที่มีการกรอกทะเบียนแล้ว
-    db.deliveryPlans.filter(p => p.licensePlate && formatDate(p.date) === todayStr).forEach(p => {
-        const plate = p.licensePlate.trim();
-        if (!activeVehicles[plate]) {
-            activeVehicles[plate] = {
-                plate: plate,
-                bgColor: getColorForPlate(plate),
-                customers: new Set(),
-                status: 'Completed', // สมมติว่าจบงานแล้วไว้ก่อน
-                partsCount: 0,
-                totalQty: 0
-            };
+        if (typeof db === 'undefined' || !db.deliveryPlans) {
+            deliveringContainer.innerHTML = `<div class="col-12 text-center text-muted p-4"><div class="spinner-border text-primary" role="status"></div><div class="mt-2">กำลังซิงค์ข้อมูล...</div></div>`;
+            completedContainer.innerHTML = `<div class="col-12 text-center text-muted p-4"><div class="spinner-border text-success" role="status"></div><div class="mt-2">กำลังซิงค์ข้อมูล...</div></div>`;
+            return;
         }
+
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         
-        activeVehicles[plate].customers.add(p.customer);
-        activeVehicles[plate].partsCount++;
-        activeVehicles[plate].totalQty += parseInt(p.quantity) || 0;
+        const todayPlans = db.deliveryPlans.filter(p => p && formatDate(p.date) === todayStr);
 
-        // ถ้ารถคันนี้มีพาร์ทไหนสักพาร์ทที่กำลัง 'Delivering' แปลว่ารถคันนี้ยังอยู่ข้างนอก!
-        if (p.status === 'Delivering') {
-            activeVehicles[plate].status = 'Delivering';
+        if (todayPlans.length === 0) {
+            deliveringContainer.innerHTML = `<div class="col-12 text-center text-muted p-5"><i class="bi bi-calendar-x fs-1 d-block mb-3 text-secondary opacity-50"></i><h5 class="fw-bold">ไม่มีแผนจัดส่งสำหรับวันนี้</h5><span class="small">สามารถสร้างแผนงานได้ที่แท็บ "แผนการจัดส่ง" ครับ</span></div>`;
+            completedContainer.innerHTML = `<div class="col-12 text-center text-muted p-5"><i class="bi bi-cone-striped fs-1 d-block mb-3 opacity-25"></i><h5 class="fw-bold opacity-50">ว่างเปล่า</h5></div>`;
+            return;
         }
-    });
 
-    let deliveringHtml = '';
-    let completedHtml = '';
+        const releasedPlans = todayPlans.filter(p => p.licensePlate && String(p.licensePlate).trim() !== '');
+        if (releasedPlans.length === 0) {
+            deliveringContainer.innerHTML = `<div class="col-12 text-center p-5"><i class="bi bi-truck fs-1 d-block mb-3 text-warning opacity-75"></i><h5 class="fw-bold text-dark">วันนี้มีคิวส่ง ${todayPlans.length} รายการ</h5><span class="badge bg-danger rounded-pill px-3 py-2 mt-2 shadow-sm"><i class="bi bi-exclamation-triangle-fill me-1"></i> แต่ยังไม่มีการกด "ปล่อยรถ" เลยครับ</span></div>`;
+            completedContainer.innerHTML = `<div class="col-12 text-center text-muted p-5"><i class="bi bi-cone-striped fs-1 d-block mb-3 opacity-25"></i><h5 class="fw-bold opacity-50">รอรถออกวิ่ง...</h5></div>`;
+            return;
+        }
 
-    // 2. วาดกล่องรถบรรทุกทีละคัน
-    Object.values(activeVehicles).forEach(v => {
-        const customersStr = Array.from(v.customers).join(', ');
+        const getColorForPlate = (plate) => {
+            let hash = 0;
+            let strPlate = String(plate);
+            for (let i = 0; i < strPlate.length; i++) hash = strPlate.charCodeAt(i) + ((hash << 5) - hash);
+            return `hsl(${Math.abs(hash % 360)}, 85%, 85%)`; 
+        };
+
+        // 🟢 เครื่องกรองเวลาอัจฉริยะ (สลายขยะ 1899)
+        const getSafeTime = (timeStr) => {
+            if (!timeStr) return '-';
+            let str = String(timeStr).trim();
+            
+            // กรณีเจอขยะก้อนวันที่จาก Google Sheet
+            if (str.includes('T')) {
+                const d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    // ดึงออกมาเฉพาะ ชั่วโมง:นาที
+                    return d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+                }
+            }
+            
+            // กรณีเป็น Text ปกติ (เช่น 08:30)
+            const match = str.match(/(\d{1,2}):(\d{2})/);
+            if (match) {
+                return String(match[1]).padStart(2, '0') + ':' + match[2];
+            }
+            
+            return str;
+        };
+
+        const activeVehicles = {};
+
+        releasedPlans.forEach(p => {
+            const safePlate = String(p.licensePlate).trim();
+            // 💡 เรียกใช้เครื่องกรองเวลาตรงนี้
+            const timeKey = getSafeTime(p.time); 
+            const groupKey = safePlate + '_' + timeKey; 
+
+            if (!activeVehicles[groupKey]) {
+                activeVehicles[groupKey] = {
+                    plate: safePlate,
+                    time: timeKey, // เก็บเวลาที่กรองแล้วลงไปโชว์
+                    bgColor: getColorForPlate(safePlate),
+                    customers: new Set(),
+                    status: 'Completed', 
+                    partsCount: 0,
+                    totalQty: 0,
+                    actualReturnTime: '' 
+                };
+            }
+            
+            activeVehicles[groupKey].customers.add(p.customer || 'ไม่ระบุ');
+            activeVehicles[groupKey].partsCount++;
+            activeVehicles[groupKey].totalQty += parseInt(p.quantity) || 0;
+
+            if (p.status === 'Delivering') {
+                activeVehicles[groupKey].status = 'Delivering';
+            }
+
+            if (p.actualReturnTime && p.status === 'Completed') {
+                activeVehicles[groupKey].actualReturnTime = p.actualReturnTime;
+            }
+        });
+
+        let deliveringHtml = '';
+        let completedHtml = '';
+
+        // วาดกล่องรถบรรทุกทีละคัน
+        Object.values(activeVehicles).forEach(v => {
+            const customersStr = Array.from(v.customers).join(', ');
+            
+            if (v.status === 'Delivering') {
+                deliveringHtml += `
+                <div class="col-md-6 col-12">
+                    <div class="card border-0 truck-active-blink shadow-sm" style="background-color: ${v.bgColor}; border-radius: 15px;">
+                        <div class="card-body p-3 position-relative overflow-hidden">
+                            <i class="bi bi-truck position-absolute opacity-25 text-dark" style="font-size: 5rem; right: -10px; bottom: -20px;"></i>
+                            <h4 class="truck-card-plate text-dark fw-bolder mb-1">${v.plate}</h4>
+                            <div class="small fw-bold text-primary mb-1"><i class="bi bi-clock-fill me-1"></i>ส่งรอบเวลา: ${v.time} น.</div>
+                            <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>ลูกค้า: ${customersStr}</div>
+                            <div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>พาร์ท: ${v.partsCount} รายการ (${v.totalQty.toLocaleString()} ชิ้น)</div>
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                completedHtml += `
+                <div class="col-md-6 col-12">
+                    <div class="card border border-success-subtle shadow-sm" style="background-color: #ffffff; border-radius: 15px; opacity: 0.85;">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="truck-card-plate text-success fw-bolder mb-0"><i class="bi bi-check-circle-fill me-2"></i>${v.plate}</h5>
+                                <span class="badge bg-light text-dark border shadow-sm"><i class="bi bi-clock me-1"></i>รอบ ${v.time} น.</span>
+                            </div>
+                            <div class="small text-muted mb-1"><i class="bi bi-geo-alt-fill me-1"></i>ส่งลูกค้า: ${customersStr}</div>
+                            <div class="small fw-bold text-success"><i class="bi bi-building-check me-1"></i>ถึง A-TECH: ${v.actualReturnTime || 'ไม่ระบุเวลา'}</div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+        });
+
+        if (deliveringHtml === '') deliveringHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-emoji-smile fs-3 d-block mb-2"></i>ไม่มีรถออกวิ่งข้างนอกเลยครับตอนนี้</div>`;
+        if (completedHtml === '') completedHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-cone-striped fs-3 d-block mb-2"></i>ยังไม่มีรถคันไหนกลับมาจอดที่บริษัทครับ</div>`;
+
+        deliveringContainer.innerHTML = deliveringHtml;
+        completedContainer.innerHTML = completedHtml;
         
-        // ถ้ารถกำลังเดินทาง -> ใส่คลาส truck-active-blink ให้มันกระพริบ
-        if (v.status === 'Delivering') {
-            deliveringHtml += `
-            <div class="col-md-6 col-12">
-                <div class="card border-0 truck-active-blink" style="background-color: ${v.bgColor}; border-radius: 15px;">
-                    <div class="card-body p-3 position-relative overflow-hidden">
-                        <i class="bi bi-truck position-absolute opacity-25 text-dark" style="font-size: 5rem; right: -10px; bottom: -20px;"></i>
-                        <h4 class="truck-card-plate text-dark fw-bolder mb-2">${v.plate}</h4>
-                        <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>ส่ง: ${customersStr}</div>
-                        <div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>พาร์ท: ${v.partsCount} รายการ (${v.totalQty.toLocaleString()} ชิ้น)</div>
-                    </div>
-                </div>
-            </div>`;
-        } 
-        // ถ้ารถกลับมาแล้ว (จบงานทุกพาร์ท) -> ไปอยู่ฝั่ง A-TECH นิ่งๆ
-        else {
-            completedHtml += `
-            <div class="col-md-6 col-12">
-                <div class="card border border-success-subtle shadow-sm" style="background-color: #ffffff; border-radius: 15px; opacity: 0.85;">
-                    <div class="card-body p-3">
-                        <h5 class="truck-card-plate text-success fw-bolder mb-2"><i class="bi bi-check-circle-fill me-2"></i>${v.plate}</h5>
-                        <div class="small text-muted"><i class="bi bi-clock-history me-1"></i>ส่งลูกค้า: ${customersStr} (เสร็จแล้ว)</div>
-                    </div>
-                </div>
-            </div>`;
-        }
-    });
-
-    if (deliveringHtml === '') deliveringHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-emoji-smile fs-3 d-block mb-2"></i>ไม่มีรถออกวิ่งข้างนอกเลยครับตอนนีั</div>`;
-    if (completedHtml === '') completedHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-cone-striped fs-3 d-block mb-2"></i>ยังไม่มีรถคันไหนกลับมาจอดที่บริษัทครับ</div>`;
-
-    deliveringContainer.innerHTML = deliveringHtml;
-    completedContainer.innerHTML = completedHtml;
+    } catch (error) {
+        console.error("Dashboard Vehicle Error: ", error);
+    }
 };
 // ฟังก์ชันคำนวณและวาดตาราง Rack
                 window.populateRackDashboard = function() {
@@ -5674,27 +5734,27 @@ document.body.addEventListener('submit', function (e) {
     }
 });
 
-// 🟢 ฟังก์ชันช่วยแปลงเวลาจาก Google Sheet ให้เป็น 24 ชั่วโมง (HH:mm) แบบสวยๆ
-function formatTimeDisplay(timeStr) {
+// 🟢 ฟังก์ชันช่วยแปลงเวลาจาก Google Sheet ให้เป็น 24 ชั่วโมง (HH:mm) แบบสวยๆ (แก้บั๊กปี 1899)
+window.formatTimeDisplay = function(timeStr) {
     if (!timeStr) return '-';
-    // 1. กรณีมาจาก Google Sheet เป็นก้อนวันที่ (เช่น 1899-12-30T02:29:56.000Z)
-    if (typeof timeStr === 'string' && timeStr.includes('T')) {
-        const dateObj = new Date(timeStr);
+    let str = String(timeStr).trim();
+    
+    if (str.includes('T')) {
+        // หลอกเบราว์เซอร์ให้คิดว่าเป็นปี 2000 ป้องกันบั๊ก Invalid Date ของปี 1899
+        let fakeYearStr = str.replace(/^1899/, '2000').replace(/^1900/, '2000');
+        const dateObj = new Date(fakeYearStr);
         if (!isNaN(dateObj.getTime())) {
-            // ดึงเฉพาะ ชั่วโมง:นาที แบบ 24 ชม.
             return dateObj.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
         }
     }
-    // 2. กรณีเป็น Text เวลาปกติอยู่แล้ว (เช่น 09:30 หรือ 14:00)
-    const timeMatch = String(timeStr).match(/^(\d{1,2}):(\d{2})/);
+    
+    str = str.replace('น.', '').replace('น', '').trim().replace('.', ':');
+    const timeMatch = str.match(/(\d{1,2}):(\d{2})/);
     if (timeMatch) {
         return String(timeMatch[1]).padStart(2, '0') + ':' + timeMatch[2];
     }
-    return timeStr;
-}
-
-// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา)
-// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา)
+    return str;
+};
 // 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (เพิ่มระบบค้นหา)
 window.renderDeliveryPlanTable = function(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
@@ -5846,9 +5906,8 @@ window.renderDeliveryPlanTable = function(targetDate) {
     tableBody.innerHTML = html;
 };
 // 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม)
-// 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม)
+// 🟢 ฟังก์ชันปล่อยรถ (เพิ่มระบบสกัดกั้น ไม่ให้ปล่อยรถที่กำลังวิ่งอยู่ซ้ำ)
 window.releaseGroupVehicle = async function(date, displayTime, customer) {
-    // 🟢 ค้นหาโดยบังคับแปลงข้อมูลในชีตให้เป็นหน้าตาเดียวกันก่อนเทียบ
     const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === date && formatTimeDisplay(p.time) === displayTime && p.customer === customer);
     if (plansToUpdate.length === 0) return;
 
@@ -5861,7 +5920,21 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
         confirmButtonText: 'ยืนยันปล่อยรถ',
         cancelButtonText: 'ยกเลิก',
         confirmButtonColor: '#0d6efd',
-        inputValidator: (value) => { if (!value || value.trim() === '') return 'กรุณากรอกทะเบียนรถด้วยครับ!'; }
+        inputValidator: (value) => { 
+            if (!value || value.trim() === '') return 'กรุณากรอกทะเบียนรถด้วยครับ!'; 
+            
+            // 🛡️ ป้องกันคีย์ทะเบียนซ้ำ ถ้ารถคันนั้นยังไม่กด "ถึงเอเทคแล้ว"
+            const inputPlate = value.trim().toLowerCase();
+            const isDelivering = db.deliveryPlans.some(p => 
+                p.licensePlate && 
+                p.licensePlate.trim().toLowerCase() === inputPlate && 
+                p.status === 'Delivering'
+            );
+            
+            if (isDelivering) {
+                return '🚫 รถทะเบียนนี้กำลังวิ่งอยู่! กรุณากดปุ่ม "ถึงเอเทคแล้ว" ของรอบก่อนหน้า ถึงจะนำมารับงานรอบใหม่ได้ครับ';
+            }
+        }
     });
 
     if (licensePlate) {
@@ -5869,13 +5942,12 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
         const releaseTime = new Date().toLocaleTimeString('th-TH');
         
         try {
-            // อัปเดตทีละรายการจนครบทั้งคันรถ
             for (let plan of plansToUpdate) {
                 plan.status = 'Delivering';
-                plan.licensePlate = licensePlate;
+                plan.licensePlate = licensePlate.trim(); // ลบเว้นวรรคส่วนเกิน
                 plan.actualReleaseTime = releaseTime;
-                plan.time = formatTimeDisplay(plan.time); // ดัดหลัง Sheet
-                plan.date = formatDate(plan.date);        // ดัดหลัง Sheet
+                plan.time = formatTimeDisplay(plan.time); 
+                plan.date = formatDate(plan.date);        
                 await callAppsScript('updateDeliveryPlan', plan);
             }
             if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date);
