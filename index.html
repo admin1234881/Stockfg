@@ -2973,13 +2973,26 @@ function handleLogin(e) {
                 let inactivityTimer = null;
                 let editingAnnouncementId = null;
 
-                // --- INACTIVITY & SYNC FUNCTIONS ---
+// --- INACTIVITY & SYNC FUNCTIONS ---
                 function resetInactivityTimer() {
                     clearTimeout(inactivityTimer);
-                    inactivityTimer = setTimeout(logoutDueToInactivity, 30 * 60 * 1000); // 30 minutes
+                    inactivityTimer = setTimeout(logoutDueToInactivity, 30 * 60 * 1000); // 30 นาที
                 }
 
                 function logoutDueToInactivity() {
+                    // 🟢 เช็คว่าตอนนี้ผู้ใช้กำลังเปิดแท็บ "แดชบอร์ด" อยู่หรือไม่?
+                    const dashboardTab = document.getElementById('pills-dashboard');
+                    const dashboardBtn = document.getElementById('pills-dashboard-tab');
+                    
+                    // ดักจับทั้งคลาสของหน้าต่าง (tab-pane) และคลาสของปุ่ม (nav-link) กันพลาด
+                    if ((dashboardTab && dashboardTab.classList.contains('active')) || 
+                        (dashboardBtn && dashboardBtn.classList.contains('active'))) {
+                        // ถ้าเปิดหน้าแดชบอร์ดค้างไว้ ให้แอบต่ออายุไปอีก 30 นาทีเงียบๆ (ไม่เตะออก)
+                        resetInactivityTimer();
+                        return; 
+                    }
+
+                    // 🔴 แต่ถ้าเปิดหน้าอื่นๆ ทิ้งไว้ (เช่น รับเข้า, ส่งออก) ให้เตะออกตามปกติเพื่อความปลอดภัย
                     stopDataSync();
                     Swal.fire({
                         title: translations[currentLanguage].session_expired_title,
