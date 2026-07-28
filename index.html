@@ -3040,7 +3040,7 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyx8z8zO9IPf8yPAif_qsRAF3Tnq728PAE3ABrg0E9Jrvyk0ZRnCqCYNrjgRpjyS6dKkw/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqhPY7ySM-wVRVLA5f0DSYFKecZ8NY9qTUSuaTBBi3JpBXoE3yfxodGtnf0w6kS3ovyQ/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [] };
@@ -5958,7 +5958,59 @@ document.body.addEventListener('submit', function (e) {
         }
     }
 });
+// 🟢 4. ฟังก์ชันแก้ไขจำนวนส่งงาน (ดักจับบั๊ก 100% วางถูกที่แล้ว!)
+window.editPlanItemQuantity = async function(itemId, dateStr) {
+    try {
+        const planIndex = db.deliveryPlans.findIndex(p => String(p.id).trim() === String(itemId).trim());
+        
+        if (planIndex === -1) {
+            Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลรายการนี้ กรุณารีเฟรชหน้าเว็บครับ', 'error');
+            return;
+        }
+        
+        const plan = db.deliveryPlans[planIndex];
+        
+        const { value: newQty } = await Swal.fire({
+            title: 'แก้ไขจำนวนจัดส่ง',
+            html: `รหัสสินค้า: <b class="text-primary">${plan.productId}</b><br>
+                   ลูกค้า: <b>${plan.customer}</b><br>
+                   จำนวนเดิม: <b class="text-danger">${plan.quantity}</b> ชิ้น`,
+            input: 'number',
+            inputValue: plan.quantity,
+            inputAttributes: { min: 1, step: 1 },
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-save me-1"></i> บันทึกยอดใหม่',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#0d6efd',
+            inputValidator: (value) => {
+                if (!value || value <= 0) return 'กรุณาระบุจำนวนที่มากกว่า 0';
+            }
+        });
 
+        if (newQty) {
+            Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            plan.quantity = parseInt(newQty, 10);
+            
+            // ป้องกันบั๊กเวลา 1899 ของ Google Sheets
+            if (plan.time && !String(plan.time).startsWith("'")) plan.time = "'" + window.formatTimeDisplay(plan.time);
+            if (plan.actualReleaseTime && !String(plan.actualReleaseTime).startsWith("'")) plan.actualReleaseTime = "'" + window.formatTimeDisplay(plan.actualReleaseTime);
+            if (plan.actualReturnTime && !String(plan.actualReturnTime).startsWith("'")) plan.actualReturnTime = "'" + window.formatTimeDisplay(plan.actualReturnTime);
+            if (typeof formatDate === 'function' && plan.date) plan.date = formatDate(plan.date);
+
+            // เซฟลง Google Sheet
+            await callAppsScript('updateDeliveryPlan', plan);
+            
+            // รีเฟรชตารางใหม่
+            if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(dateStr);
+            
+            Swal.fire({ icon: 'success', title: 'แก้ไขยอดสำเร็จ', timer: 1500, showConfirmButton: false });
+        }
+    } catch (error) {
+        console.error("Edit Error:", error);
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
+    }
+};
 // 🟢 ฟังก์ชันช่วยแปลงเวลาจาก Google Sheet ให้เป็น 24 ชั่วโมง (HH:mm) แบบสวยๆ
 // 🟢 ฟังก์ชันช่วยแปลงเวลาจาก Google Sheet ให้เป็น 24 ชั่วโมง (HH:mm) (แก้บั๊ก 17 นาทีของปี 1899)
 window.formatTimeDisplay = function(timeStr) {
@@ -6135,7 +6187,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
         </tr>
         `;
         
-        html += `
+html += `
         <tr id="${groupId}" class="collapse">
             <td colspan="7" class="p-0 border-0">
                 <div class="bg-white p-3 border-start border-3 border-primary shadow-sm rounded-end">
@@ -6146,7 +6198,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
                                 <th>ชื่อสินค้า</th>
                                 <th class="text-end">จำนวน</th>
                                 <th>หมายเหตุ</th>
-                                <th class="text-center">ลบ</th>
+                                <th class="text-center">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -6156,11 +6208,14 @@ window.renderDeliveryPlanTable = function(targetDate) {
             html += `
                             <tr class="border-bottom">
                                 <td style="width: 20%;" class="fw-bold text-dark">${item.productId}</td>
-                                <td style="width: 35%;" class="text-muted"><small>${item.productName}</small></td>
+                                <td style="width: 30%;" class="text-muted"><small>${item.productName}</small></td>
                                 <td style="width: 15%;" class="text-end fw-bold text-success">${parseInt(item.quantity).toLocaleString()} ชิ้น</td>
                                 <td style="width: 20%;" class="text-muted"><small>${item.remarks || '-'}</small></td>
-                                <td style="width: 10%;" class="text-center">
-                                    ${(group.status === 'Pending') ? `<button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')"><i class="bi bi-trash"></i></button>` : '<i class="bi bi-lock text-muted"></i>'}
+                                <td style="width: 15%;" class="text-center">
+                                    ${(group.status === 'Pending') ? `
+                                        <button type="button" class="btn btn-sm btn-outline-warning py-0 px-2 me-1" title="แก้ไขยอด" onclick="event.stopPropagation(); window.editPlanItemQuantity('${item.id}', document.getElementById('view-plan-date').value)"><i class="bi bi-pencil-fill"></i></button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" title="ลบรายการ" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')"><i class="bi bi-trash"></i></button>
+                                    ` : '<i class="bi bi-lock text-muted"></i>'}
                                 </td>
                             </tr>
             `;
