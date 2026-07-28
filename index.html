@@ -6332,178 +6332,136 @@ window.deletePlanItem = function(id, date) {
 // =========================================================
 
 // 🟢 1. โหลดเทมเพลต
+// ========================================================
+// 🚚 ระบบโหลดและอัปโหลด Excel แผนการจัดส่ง (Delivery Plan)
+// ========================================================
 window.downloadDeliveryTemplate = function() {
     try {
         const ws_data = [
-            ["วันที่จัดส่ง (YYYY-MM-DD)", "รอบเวลา (เช่น 08:30)", "รหัสสินค้า (Part No.)", "จำนวนชิ้น", "หมายเหตุ (เว้นว่างได้)"],
-            ["2024-05-20", "09:30", "PART-001", 1500, "ส่งรอบเช้า"],
-            ["2024-05-20", "14:00", "PART-002", 500, ""],
-            ["* ลบข้อมูลตัวอย่างนี้ทิ้งก่อนใช้งาน *", "", "", "", ""]
+            ["Date (YYYY-MM-DD)", "Job Type", "Customer", "Part No.", "Quantity", "Time (HH:mm)", "Remarks"],
+            ["2026-07-28", "Delivery", "", "PART-001", 500, "08:30", "ใส่ Delivery ระบบจะดึงชื่อลูกค้าจาก Part No. เอง"],
+            ["2026-07-28", "Pickup", "LG", "-", 0, "13:00", "ใส่ Pickup แล้วใส่ชื่อลูกค้า ช่อง Part ใส่เป็น -"]
         ];
         const ws = XLSX.utils.aoa_to_sheet(ws_data);
-        ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 25}, {wch: 15}, {wch: 35}];
+        ws['!cols'] = [{wch: 18}, {wch: 15}, {wch: 20}, {wch: 20}, {wch: 10}, {wch: 15}, {wch: 40}];
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "DeliveryPlan_Template");
+        XLSX.utils.book_append_sheet(wb, ws, "Delivery_Template");
         XLSX.writeFile(wb, "Delivery_Plan_Template.xlsx");
     } catch (error) {
-        Swal.fire('เกิดข้อผิดพลาด', 'ไม่พบระบบสร้างไฟล์ กรุณารีเฟรชหน้าเว็บอีกครั้ง', 'error');
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่พบไลบรารี XLSX กรุณารีเฟรชหน้าเว็บอีกครั้ง', 'error');
     }
 };
 
-// 🟢 2. อัปโหลดและประมวลผลแผนจัดส่ง
 window.uploadDeliveryFile = function() {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = '.xlsx, .xls, .csv';
-    fileInput.style.display = 'none';
-    document.body.appendChild(fileInput); 
-    
-    fileInput.addEventListener('change', async (e) => {
+    fileInput.onchange = e => {
         const file = e.target.files[0];
-        if (!file) {
-            document.body.removeChild(fileInput);
-            return;
-        }
-
-        Swal.fire({ title: 'กำลังอ่านไฟล์ Excel...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
+        if (!file) return; 
+        
+        Swal.fire({ title: 'กำลังอ่านไฟล์ Excel...', didOpen: () => Swal.showLoading() });
         const reader = new FileReader();
-        reader.onload = async function(event) {
+        
+        reader.onload = async function(event) { 
             try {
                 const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
 
+                let successCount = 0;
                 const newPlans = [];
-                let countFailed = 0;
 
-                // 🟢 ดักจับวันที่สารพัดรูปแบบ
-                const parseExcelDate = (val) => {
-                    if (!val) return null;
-                    if (typeof val === 'number') {
-                        const date = new Date((val - (25567 + 2)) * 86400 * 1000);
-                        return date.toISOString().split('T')[0];
+                for(let i = 1; i < jsonData.length; i++) {
+                    let row = jsonData[i];
+                    if(!row || !row[0]) continue; 
+                    
+                    let dateVal = String(row[0]).trim();
+                    let jobTypeStr = String(row[1] || '').trim().toLowerCase();
+                    // ตรวจจับคำว่า pickup หรือ รับ
+                    let jobType = (jobTypeStr === 'pickup' || jobTypeStr.includes('รับ')) ? 'Pickup' : 'Delivery';
+                    
+                    let customer = String(row[2] || '').trim();
+                    let partNo = String(row[3] || '').trim();
+                    let qty = parseInt(row[4]) || 0;
+                    let timeVal = row[5] || '08:00';
+                    
+                    // 🟢 จัดการกรณี Excel ดันแปลงเวลาเป็นตัวเลขทศนิยม
+                    let timeStr = timeVal;
+                    if (!isNaN(timeVal) && timeVal < 1) { 
+                        let totalSeconds = Math.round(timeVal * 86400);
+                        let hours = Math.floor(totalSeconds / 3600);
+                        let minutes = Math.floor((totalSeconds % 3600) / 60);
+                        timeStr = String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
+                    } else {
+                        timeStr = String(timeVal).trim();
                     }
                     
-                    let strVal = String(val).trim().replace(/\./g, '/').replace(/-/g, '/'); 
-                    if (strVal.includes('/')) {
-                        let parts = strVal.split('/');
-                        let d, m, y;
-                        if (parts[0].length === 4) { y = parseInt(parts[0], 10); m = parseInt(parts[1], 10); d = parseInt(parts[2], 10); } 
-                        else { d = parseInt(parts[0], 10); m = parseInt(parts[1], 10); y = parseInt(parts[2], 10); if (m > 12) { let temp = d; d = m; m = temp; } }
-                        
-                        if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
-                        if (y > 2500) y -= 543; 
-                        if (y < 100) { if (y > 40) y = (y + 2500) - 543; else y += 2000; }
-                        return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                    }
+                    let remarks = String(row[6] || '').trim();
+                    let productName = '';
                     
-                    let dateObj = new Date(val);
-                    if (!isNaN(dateObj.getTime())) return dateObj.toISOString().split('T')[0];
-                    return null;
-                };
-
-                // 🟢 ดักจับเวลา เผื่อพนักงานพิมพ์จุด (เช่น 8.30)
-                const parseExcelTime = (val) => {
-                    if (val === undefined || val === null || val === '') return null;
-                    if (typeof val === 'number') {
-                        if (val >= 1 && val < 24) { 
-                             let h = Math.floor(val); let m = Math.round((val - h) * 100);
-                             if (m >= 60) { h += 1; m -= 60; }
-                             return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+                    // 🟢 ถ้าเป็นการส่งของ ให้วิ่งไปดึงข้อมูลสินค้าจากระบบ
+                    if (jobType === 'Delivery') {
+                        const product = db.products.find(p => String(p.id).trim().toUpperCase() === partNo.toUpperCase());
+                        if (product) {
+                            customer = product.customer;
+                            productName = product.name;
+                        } else {
+                            productName = 'ไม่พบข้อมูลสินค้า';
                         }
-                        if (val >= 0 && val <= 1) {
-                            let totalSec = Math.round(val * 86400); let h = Math.floor(totalSec / 3600); let m = Math.floor((totalSec % 3600) / 60);
-                            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-                        }
+                    } else {
+                        // 🟢 ถ้าเป็นการไปรับแร็ค
+                        partNo = '-';
+                        productName = '♻️ รับแพ็คกิ้งเปล่ากลับบริษัท';
                     }
-                    let strVal = String(val).trim().replace('น.', '').replace('น', '').trim().replace('.', ':'); 
-                    let timeParts = strVal.split(':');
-                    if (timeParts.length >= 2) {
-                        let h = parseInt(timeParts[0], 10); let m = parseInt(timeParts[1], 10);
-                        if (timeParts[1].length === 1) m = m * 10; 
-                        if (!isNaN(h) && !isNaN(m)) return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-                    }
-                    return null;
-                };
 
-                // วนลูปอ่านข้อมูลบรรทัดที่ 2 เป็นต้นไป
-                for (let i = 1; i < jsonData.length; i++) {
-                    const row = jsonData[i];
-                    if (!row || row.length === 0) continue; 
-                    
-                    const rawDate = parseExcelDate(row[0]);
-                    const rawTime = parseExcelTime(row[1]);
-                    const productId = String(row[2] || '').trim();
-                    const qty = parseInt(row[3]);
-                    const remarks = String(row[4] || '').trim();
-
-                    if (!rawDate || !rawTime || !productId || isNaN(qty) || productId.includes('*')) continue;
-
-                    const productInfo = db.products.find(p => String(p.id).trim().toUpperCase() === productId.toUpperCase());
-                    if (!productInfo) { countFailed++; continue; }
-
-                    newPlans.push({
-                        id: 'del-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-                        date: rawDate,
-                        time: rawTime,
-                        customer: productInfo.customer || 'ไม่ระบุ',
-                        productId: productInfo.id,
-                        productName: productInfo.name,
+                    const newPlan = {
+                        id: 'del-xls-' + Date.now() + '-' + i,
+                        date: dateVal,
+                        jobType: jobType,
+                        customer: customer,
+                        productId: partNo,
+                        productName: productName,
                         quantity: qty,
+                        // 🟢 แก้บั๊กเวลา 1899 โดยเติม Single Quote หน้าเวลา
+                        time: "'" + window.formatTimeDisplay(timeStr), 
                         remarks: remarks,
                         user: currentUser.username,
                         status: 'Pending', 
                         licensePlate: '',
                         actualReleaseTime: '',
                         actualReturnTime: ''
-                    });
+                    };
+                    newPlans.push(newPlan);
+                    successCount++;
                 }
 
-                if (newPlans.length === 0) {
-                    Swal.fire('ไม่พบข้อมูลที่ใช้งานได้!', `อาจเกิดจาก: <br>1. วันที่/เวลาพิมพ์ผิดเพี้ยนเกินไป <br>2. รหัสสินค้า ${countFailed > 0 ? `(${countFailed} รายการ)` : ''} ไม่มีในระบบเลย`, 'warning');
-                    return;
-                }
-
-                db.deliveryPlans = db.deliveryPlans || [];
-
-                // 🟢 ยัดข้อมูลลงตารางให้คุณโจเห็นก่อนเลย ไม่ต้องรอหลังบ้าน!
-                for (let plan of newPlans) {
-                    db.deliveryPlans.push(plan);
-                }
-
-                const viewDateInput = document.getElementById('view-plan-date');
-                if (viewDateInput && newPlans[0].date) {
-                    viewDateInput.value = newPlans[0].date;
-                    renderDeliveryPlanTable(newPlans[0].date);
-                }
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'โหลดลงตารางสำเร็จ!',
-                    html: `เพิ่มแผนการจัดส่งเรียบร้อย <b>${newPlans.length}</b> รายการ <br><small class="text-danger">${countFailed > 0 ? `(ข้ามรหัสสินค้าที่ไม่มีในระบบ ${countFailed} รายการ)` : ''}</small>`,
-                    confirmButtonColor: '#198754'
-                });
-
-                // 🟢 ส่งข้อมูลไปเซฟที่ Apps Script หลังบ้านแบบเงียบๆ
-                for (let plan of newPlans) {
-                    try {
+                if (newPlans.length > 0) {
+                    Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    
+                    // ยิงข้อมูลไปเซฟ
+                    for(let plan of newPlans) {
+                        db.deliveryPlans.push(plan);
                         await callAppsScript('addDeliveryPlan', plan);
-                    } catch (err) {
-                        console.warn("แอบเซฟหลังบ้านไม่สำเร็จสำหรับพาร์ท:", plan.productId, err.message);
                     }
+                    
+                    // อัปเดตตารางหน้าจอ
+                    const viewPlanDateInput = document.getElementById('view-plan-date');
+                    if(viewPlanDateInput) {
+                        viewPlanDateInput.value = newPlans[0].date;
+                        renderDeliveryPlanTable(newPlans[0].date);
+                    }
+                    Swal.fire('สำเร็จ!', `อัปโหลดแผนจัดส่งเรียบร้อย ${successCount} รายการ`, 'success');
+                } else {
+                    Swal.fire('ไม่พบข้อมูล', 'โปรดตรวจสอบไฟล์ Excel อีกครั้ง', 'warning');
                 }
-
             } catch (err) {
-                console.error(err);
-                Swal.fire('เกิดข้อผิดพลาดในการประมวลผล', 'ข้อมูลในไฟล์อาจมีปัญหา โปรดตรวจสอบไฟล์อีกครั้ง<br><br><small class="text-muted">Error: ' + err.message + '</small>', 'error');
-            } finally { 
-                document.body.removeChild(fileInput); 
+                console.error("Upload Error:", err);
+                Swal.fire('เกิดข้อผิดพลาด', 'รูปแบบไฟล์ Excel อาจจะไม่ถูกต้องครับ', 'error');
             }
         };
         reader.readAsArrayBuffer(file);
-    });
+    };
     fileInput.click();
 };
 document.body.addEventListener('change', (e) => {
