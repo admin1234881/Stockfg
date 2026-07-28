@@ -3040,7 +3040,7 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqhPY7ySM-wVRVLA5f0DSYFKecZ8NY9qTUSuaTBBi3JpBXoE3yfxodGtnf0w6kS3ovyQ/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyijlnkrfNYhk3ypCB3kV0GwPIyrp1Drm4zfFYBuD0uh4IvSwoR8pemQt2HfrukSG3cBA/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [] };
@@ -3091,10 +3091,19 @@ function handleLogin(e) {
                     events.forEach(event => window.removeEventListener(event, resetInactivityTimer, true));
                 }
 
-                function startDataSync() {
-                    if (dataSyncInterval) clearInterval(dataSyncInterval);
-                    dataSyncInterval = setInterval(() => loadDataFromSheet(false), 30000); // Sync every 30 seconds
-                }
+                    function startDataSync() {
+                        if (dataSyncInterval) clearInterval(dataSyncInterval);
+                        dataSyncInterval = setInterval(() => {
+                            // เช็คว่ามีหน้าต่างป๊อปอัป (SweetAlert) หรือ Modal ใดๆ เปิดค้างอยู่หรือไม่
+                            // ถ้าเปิดอยู่ ให้ข้ามรอบการอัพเดต 30 วินาทีนี้ไปก่อน เพื่อไม่ให้หน้าต่างหาย
+                            if (Swal.isVisible() || document.body.classList.contains('modal-open')) {
+                                console.log('หยุดอัพเดตชั่วคราว: กำลังคีย์ข้อมูลหรือเปิดฟอร์มอยู่');
+                                return; 
+                            }
+                            
+                            loadDataFromSheet(false);
+                        }, 30000); // Sync every 30 seconds
+                    }
 
                 function stopDataSync() {
                     if (dataSyncInterval) {
@@ -6013,21 +6022,19 @@ window.editPlanItemQuantity = async function(itemId, dateStr) {
 };
 // 🟢 ฟังก์ชันช่วยแปลงเวลาจาก Google Sheet ให้เป็น 24 ชั่วโมง (HH:mm) แบบสวยๆ
 // 🟢 ฟังก์ชันช่วยแปลงเวลาจาก Google Sheet ให้เป็น 24 ชั่วโมง (HH:mm) (แก้บั๊ก 17 นาทีของปี 1899)
+// 🟢 ฟังก์ชันช่วยแปลงเวลาจาก Google Sheet ให้เป็น 24 ชั่วโมง (HH:mm)
 window.formatTimeDisplay = function(timeStr) {
     if (!timeStr) return '-';
     let str = String(timeStr).trim();
     
-    // 🟢 ดักจับขยะเวลาปี 1899 ที่ Google Sheet ส่งมา
     if (str.startsWith('1899-')) {
-        let fakeYearStr = str.replace(/^1899/, '2000'); // หลอกเป็นปี 2000 เพื่อกันพัง
+        let fakeYearStr = str.replace(/^1899/, '2000'); 
         const d = new Date(fakeYearStr);
         if (!isNaN(d.getTime())) {
-            // Google Sheet หักลบเวลาด้วย Timezone โบราณของไทย (+06:42:04) เราจึงต้องบวกกลับให้ตรงเป๊ะ!
             let h = d.getUTCHours() + 6;
             let m = d.getUTCMinutes() + 42;
             let s = d.getUTCSeconds() + 4;
             
-            // ปัดเศษวินาที/นาที
             if (s >= 60) { m += Math.floor(s / 60); s %= 60; }
             if (m >= 60) { h += Math.floor(m / 60); m %= 60; }
             h %= 24;
@@ -6041,7 +6048,6 @@ window.formatTimeDisplay = function(timeStr) {
         }
     }
     
-    // กรณีที่พิมพ์มาเป็นข้อความปกติ เช่น 09.00 น. หรือ 09:00
     str = str.replace('น.', '').replace('น', '').trim().replace('.', ':');
     const timeMatch = str.match(/(\d{1,2}):(\d{2})/);
     if (timeMatch) {
@@ -6231,6 +6237,307 @@ html += `
     });
     
     tableBody.innerHTML = html;
+};
+// ==========================================
+// 🚚 1. ฟังก์ชันปล่อยรถ (ดึงเวลา 24 ชั่วโมงจากระบบอัตโนมัติ)
+// ==========================================
+window.releaseVehicle = async function(planId) {
+    try {
+        const planIndex = db.deliveryPlans.findIndex(p => String(p.id) === String(planId));
+        if (planIndex === -1) return Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลคิวงานนี้ในระบบ', 'error');
+
+        const plan = db.deliveryPlans[planIndex];
+
+        const { value: licensePlate } = await Swal.fire({
+            title: 'ปล่อยรถ / เริ่มจัดส่ง',
+            html: `
+                <div class="text-start mb-3" style="font-size: 0.95rem;">
+                    <div><i class="bi bi-building text-secondary me-1"></i><b>ลูกค้า:</b> <span class="text-primary">${plan.customer}</span></div>
+                    <div><i class="bi bi-tag-fill text-secondary me-1"></i><b>ประเภทงาน:</b> ${plan.jobType === 'Pickup' ? '<span class="badge bg-info text-dark">รับแพ็คกิ้ง</span>' : '<span class="badge bg-primary">ส่งสินค้า</span>'}</div>
+                </div>
+                <div class="form-group text-start">
+                    <label class="fw-bold small text-muted">กรอกทะเบียนรถ <span class="text-danger">*</span></label>
+                    <input id="swal-license-plate" class="form-control form-control-lg text-center fw-bold" placeholder="เช่น 1กข 1234..." required autocomplete="off">
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-truck me-1"></i> ยืนยันปล่อยรถ',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#198754',
+            preConfirm: () => {
+                const plate = document.getElementById('swal-license-plate').value.trim();
+                if (!plate) Swal.showValidationMessage('กรุณากรอกทะเบียนรถด้วยค่ะ');
+                return plate;
+            }
+        });
+
+        if (licensePlate) {
+            Swal.fire({ title: 'กำลังบันทึกเวลา...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            // ดึงเวลาปัจจุบันในรูปแบบ 24 ชั่วโมง (เช่น 16:35) โดยบังคับใช้ padStart เสมอ
+            const now = new Date();
+            const hours24 = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const currentSystemTime = `${hours24}:${minutes}`;
+
+            plan.status = 'Delivering';
+            plan.licensePlate = licensePlate;
+            plan.actualReleaseTime = "'" + currentSystemTime; 
+            
+            if (plan.time && !String(plan.time).startsWith("'")) plan.time = "'" + window.formatTimeDisplay(plan.time);
+            plan.quantity = parseInt(plan.quantity, 10) ? parseInt(plan.quantity, 10) : 0;
+            plan.productId = plan.productId ? plan.productId : '-';
+            plan.productName = plan.productName ? plan.productName : '-';
+            plan.date = window.formatDate(plan.date);
+
+            await callAppsScript('updateDeliveryPlan', plan);
+            
+            const viewPlanDateInput = document.getElementById('view-plan-date');
+            if (viewPlanDateInput) window.renderDeliveryPlanTable(viewPlanDateInput.value);
+            if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
+
+            Swal.fire({ icon: 'success', title: `รถออกเดินทางแล้ว (${currentSystemTime} น.)`, timer: 1500, showConfirmButton: false });
+        }
+    } catch (error) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+    }
+};
+
+// ==========================================
+// 🚚 2. ฟังก์ชัน รถถึงเอเทคแล้ว (ดึงเวลา 24 ชั่วโมงจากระบบอัตโนมัติ)
+// ==========================================
+window.returnVehicle = async function(planId) {
+    try {
+        const planIndex = db.deliveryPlans.findIndex(p => String(p.id) === String(planId));
+        if (planIndex === -1) return Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลคิวงานนี้ในระบบ', 'error');
+
+        const plan = db.deliveryPlans[planIndex];
+
+        const result = await Swal.fire({
+            title: 'ยืนยันรถถึง A-TECH แล้ว?',
+            html: `ทะเบียนรถ: <b class="text-primary">${plan.licensePlate || 'ไม่ระบุ'}</b><br>ลูกค้า: <b>${plan.customer}</b>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-building-check me-1"></i> ยืนยัน (บันทึกเวลาทันที)',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#198754'
+        });
+
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'กำลังบันทึกเวลา...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            // ดึงเวลาปัจจุบันในรูปแบบ 24 ชั่วโมง (เช่น 16:35) โดยบังคับใช้ padStart เสมอ
+            const now = new Date();
+            const hours24 = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const currentSystemTime = `${hours24}:${minutes}`;
+
+            plan.status = 'Completed';
+            plan.actualReturnTime = "'" + currentSystemTime; 
+            
+            if (plan.time && !String(plan.time).startsWith("'")) plan.time = "'" + window.formatTimeDisplay(plan.time);
+            if (plan.actualReleaseTime && !String(plan.actualReleaseTime).startsWith("'")) plan.actualReleaseTime = "'" + window.formatTimeDisplay(plan.actualReleaseTime);
+            
+            plan.quantity = parseInt(plan.quantity, 10) ? parseInt(plan.quantity, 10) : 0;
+            plan.productId = plan.productId ? plan.productId : '-';
+            plan.productName = plan.productName ? plan.productName : '-';
+            plan.date = window.formatDate(plan.date);
+
+            await callAppsScript('updateDeliveryPlan', plan);
+            
+            const viewPlanDateInput = document.getElementById('view-plan-date');
+            if (viewPlanDateInput) window.renderDeliveryPlanTable(viewPlanDateInput.value);
+            if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
+
+            Swal.fire({ icon: 'success', title: `บันทึกจบงานสำเร็จ! (${currentSystemTime} น.)`, timer: 1500, showConfirmButton: false });
+        }
+    } catch (error) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+    }
+};
+
+// ==========================================
+// ==========================================
+// 🚚 ฟังก์ชัน รถถึงเอเทคแล้ว (มีช่องเลือกเวลา 24 ชั่วโมง และแก้ปุ่มยกเลิกไม่ให้รวน)
+// ==========================================
+window.returnVehicle = async function(planId) {
+    try {
+        const planIndex = db.deliveryPlans.findIndex(p => String(p.id) === String(planId));
+        if (planIndex === -1) return Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลคิวงานนี้ในระบบ', 'error');
+
+        const plan = db.deliveryPlans[planIndex];
+
+        // ดึงเวลาปัจจุบันในเครื่องมาเป็นค่าตั้งต้น (รูปแบบ 24 ชั่วโมง HH:mm)
+        const now = new Date();
+        const currentHours = String(now.getHours()).padStart(2, '0');
+        const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+        const defaultTime24 = `${currentHours}:${currentMinutes}`;
+
+        // เด้งหน้าต่างให้เลือกเวลาแบบ 24 ชั่วโมง
+        const { value: returnTime, dismiss } = await Swal.fire({
+            title: 'รถกลับถึง A-TECH',
+            html: `
+                <div class="text-start mb-3" style="font-size: 0.95rem;">
+                    <div><i class="bi bi-truck text-secondary me-1"></i><b>ทะเบียนรถ:</b> <span class="text-primary">${plan.licensePlate || 'ไม่ระบุ'}</span></div>
+                    <div><i class="bi bi-building text-secondary me-1"></i><b>กลับจากลูกค้า:</b> ${plan.customer}</div>
+                </div>
+                <div class="form-group text-start">
+                    <label class="fw-bold small text-muted">เลือกเวลาที่รถกลับถึงโรงงาน (24 ชม.) <span class="text-danger">*</span></label>
+                    <input id="swal-actual-return" type="time" class="form-control form-control-lg text-center fw-bold" required value="${defaultTime24}">
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-building-check me-1"></i> ยืนยันจบงาน',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#198754',
+            preConfirm: () => {
+                const time = document.getElementById('swal-actual-return').value;
+                if (!time) {
+                    Swal.showValidationMessage('กรุณาระบุเวลาที่รถกลับถึงโรงงานด้วยค่ะ');
+                }
+                return time;
+            }
+        });
+
+        // 🟢 ถ้าผู้ใช้กดยกเลิก (Dismiss) ให้จบการทำงานทันที (ไม่ไปสั่งรันฟังก์ชันอื่น)
+        if (dismiss === Swal.DismissReason.cancel || dismiss === Swal.DismissReason.close || !returnTime) {
+            return;
+        }
+
+        // ถ้ายืนยันเวลา
+        Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        plan.status = 'Completed';
+        plan.actualReturnTime = "'" + returnTime; // บันทึกเวลาที่เลือกในรูปแบบ 24 ชม.
+        
+        if (plan.time && !String(plan.time).startsWith("'")) plan.time = "'" + window.formatTimeDisplay(plan.time);
+        if (plan.actualReleaseTime && !String(plan.actualReleaseTime).startsWith("'")) plan.actualReleaseTime = "'" + window.formatTimeDisplay(plan.actualReleaseTime);
+        
+        plan.quantity = parseInt(plan.quantity, 10) ? parseInt(plan.quantity, 10) : 0;
+        plan.productId = plan.productId ? plan.productId : '-';
+        plan.productName = plan.productName ? plan.productName : '-';
+        plan.date = window.formatDate(plan.date);
+
+        await callAppsScript('updateDeliveryPlan', plan);
+        
+        const viewPlanDateInput = document.getElementById('view-plan-date');
+        if (viewPlanDateInput) window.renderDeliveryPlanTable(viewPlanDateInput.value);
+        if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
+
+        Swal.fire({ icon: 'success', title: `บันทึกรถถึงโรงงานสำเร็จ! (${returnTime} น.)`, timer: 1500, showConfirmButton: false });
+
+    } catch (error) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+    }
+};
+
+// ==========================================
+// ฟังก์ชันสำหรับ รถกลับถึงโรงงาน (จบงาน)
+// ==========================================
+window.returnVehicle = async function(planId) {
+    try {
+        const planIndex = db.deliveryPlans.findIndex(p => String(p.id) === String(planId));
+        if (planIndex === -1) {
+            Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลคิวงานนี้ในระบบ', 'error');
+            return;
+        }
+
+        const plan = db.deliveryPlans[planIndex];
+
+        const now = new Date();
+        const currentTimeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+        const { value: returnTime } = await Swal.fire({
+            title: 'รถกลับถึง A-TECH',
+            html: `
+                <div class="text-start mb-3" style="font-size: 0.95rem;">
+                    <div><i class="bi bi-truck text-secondary me-1"></i><b>ทะเบียนรถ:</b> <span class="text-primary">${plan.licensePlate || 'ไม่ระบุ'}</span></div>
+                    <div><i class="bi bi-building text-secondary me-1"></i><b>กลับจากลูกค้า:</b> ${plan.customer}</div>
+                </div>
+                <div class="form-group text-start">
+                    <label class="fw-bold small text-muted">เวลาที่รถกลับถึงโรงงาน <span class="text-danger">*</span></label>
+                    <input id="swal-actual-return" type="time" class="form-control" required value="${currentTimeStr}">
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-building-check me-1"></i> ยืนยันจบงาน',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#198754',
+            preConfirm: () => {
+                const time = document.getElementById('swal-actual-return').value;
+                if (!time) {
+                    Swal.showValidationMessage('กรุณาระบุเวลาที่รถกลับถึงโรงงานด้วยค่ะ');
+                }
+                return time;
+            }
+        });
+
+        if (returnTime) {
+            Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            plan.status = 'Completed';
+            plan.actualReturnTime = "'" + returnTime; 
+            
+            if (plan.time && !String(plan.time).startsWith("'")) plan.time = "'" + window.formatTimeDisplay(plan.time);
+            if (plan.actualReleaseTime && !String(plan.actualReleaseTime).startsWith("'")) plan.actualReleaseTime = "'" + window.formatTimeDisplay(plan.actualReleaseTime);
+            if (typeof formatDate === 'function' && plan.date) plan.date = formatDate(plan.date);
+
+            plan.quantity = parseInt(plan.quantity, 10) ? parseInt(plan.quantity, 10) : 0;
+            plan.productId = plan.productId ? plan.productId : '-';
+            plan.productName = plan.productName ? plan.productName : '-';
+
+            await callAppsScript('updateDeliveryPlan', plan);
+            
+            const viewPlanDateInput = document.getElementById('view-plan-date');
+            if (viewPlanDateInput && typeof renderDeliveryPlanTable === 'function') {
+                renderDeliveryPlanTable(viewPlanDateInput.value);
+            }
+            if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
+
+            Swal.fire({ icon: 'success', title: 'บันทึกรถถึงโรงงานสำเร็จ!', text: 'จบงานเรียบร้อยครับ', timer: 1500, showConfirmButton: false });
+        }
+    } catch (error) {
+        console.error(error);
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+    }
+};
+
+// ==========================================
+// ฟังก์ชันลบคิวงาน (Delivery Plan)
+// ==========================================
+window.deletePlanItem = function(itemId, dateStr) {
+    if (!currentUser || currentUser.role !== 'admin') {
+        Swal.fire('ปฏิเสธการเข้าถึง', 'เฉพาะผู้ดูแลระบบเท่านั้นที่ลบรายการได้', 'error');
+        return;
+    }
+
+    Swal.fire({
+        title: 'ยืนยันการลบคิวงาน?',
+        text: "คุณต้องการลบรายการจัดส่งนี้ออกจากแผนใช่หรือไม่? (ลบแล้วกู้คืนไม่ได้)",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        confirmButtonText: '<i class="bi bi-trash-fill"></i> ใช่, ลบเลย',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'กำลังลบข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            callAppsScript('deleteDeliveryPlan', { id: itemId })
+                .then(() => {
+                    db.deliveryPlans = db.deliveryPlans.filter(p => p.id !== itemId);
+                    if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(dateStr);
+                    Swal.fire({ icon: 'success', title: 'ลบรายการสำเร็จ!', timer: 1500, showConfirmButton: false });
+                })
+                .catch(error => {
+                    console.error("Delete Error:", error);
+                    Swal.fire('เกิดข้อผิดพลาด', 'ลบไม่สำเร็จ: ' + error.message, 'error');
+                });
+        }
+    });
 };
 // 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม) + ระบบ Auto-Deduct หักสต็อก FIFO อัตโนมัติ
 window.releaseGroupVehicle = async function(date, displayTime, customer) {
@@ -6452,7 +6759,23 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
     }
 };
 // 🟢 3. ฟังก์ชันยกเลิกการปล่อยรถ (ดึงกลับมาเป็นสถานะ รอจัดส่ง + คืนสต็อกอัตโนมัติ)
-window.cancelGroupRelease = function(date, displayTime, customer) {
+window.returnGroupVehicle = async function(date, displayTime, customer) {
+
+    const plans = db.deliveryPlans.filter(p =>
+        formatDate(p.date) === date &&
+        window.formatTimeDisplay(p.time) === displayTime &&
+        p.customer === customer &&
+        (p.status === 'Delivering' || String(p.status).toLowerCase() === 'delivering')
+    );
+
+    if (plans.length === 0) {
+        Swal.fire('ไม่พบข้อมูล', 'ไม่พบคิวรถที่กำลังวิ่งอยู่', 'warning');
+        return;
+    }
+
+    for (const plan of plans) {
+        await window.returnVehicle(plan.id);
+    }
     // หาข้อมูลแผนที่กำลังวิ่งอยู่ (Delivering)
     const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === date && window.formatTimeDisplay(p.time) === displayTime && p.customer === customer && (p.status === 'Delivering' || String(p.status).toLowerCase() === 'delivering'));
     
@@ -9906,6 +10229,7 @@ window.toggleFullScreenDashboard = function() {
         }
     });
 });
+
         </script>
 
 <button class="btn shadow-lg d-flex align-items-center justify-content-center" id="calc-toggle-btn" 
