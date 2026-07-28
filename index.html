@@ -1437,38 +1437,50 @@
         </div>
         <div class="card-body px-4 pb-4 pt-2">
             <form id="delivery-plan-form" class="row g-3">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="plan-date" class="form-label fw-bold text-secondary small">วันที่ต้องการจัดส่ง</label>
                     <input type="date" id="plan-date" class="form-control bg-light border-0" required>
                 </div>
-                <div class="col-md-3">
-                    <label for="plan-customer" class="form-label fw-bold text-secondary small">ลูกค้า</label>
-                    <input type="text" id="plan-customer" class="form-control bg-light border-0 text-muted" placeholder="ดึงอัตโนมัติจากรหัสสินค้า..." readonly required>
+                <!-- 🟢 1. เพิ่มช่องเลือกประเภทงาน (ส่งของ/รับแร็ค) -->
+                <div class="col-md-2">
+                    <label for="plan-job-type" class="form-label fw-bold text-secondary small">ประเภทงาน</label>
+                    <select id="plan-job-type" class="form-select bg-light border-0 fw-bold text-primary" onchange="window.toggleJobType()" required>
+                        <option value="Delivery" selected>📦 ส่งสินค้า</option>
+                        <option value="Pickup">♻️ รับแพ็คกิ้ง</option>
+                    </select>
                 </div>
                 <div class="col-md-3">
+                    <label for="plan-customer" class="form-label fw-bold text-secondary small">ลูกค้า</label>
+                    <div class="position-relative">
+                        <input type="text" id="plan-customer" class="form-control bg-light border-0 text-dark" placeholder="ดึงอัตโนมัติจากรหัสสินค้า..." readonly required autocomplete="off">
+                        <div id="plan-customer-suggestions" class="list-group position-absolute w-100 suggestions-container shadow-lg" style="z-index: 1050; max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+                <div class="col-md-2">
                     <label for="plan-product-id" class="form-label fw-bold text-secondary small">รหัสสินค้า</label>
                     <div class="position-relative">
-                        <input type="text" id="plan-product-id" class="form-control bg-light border-0" placeholder="ค้นหารหัสสินค้า..." required autocomplete="off">
+                        <input type="text" id="plan-product-id" class="form-control bg-light border-0" placeholder="ค้นหารหัส..." required autocomplete="off">
                         <div id="plan-product-suggestions" class="list-group position-absolute w-100 suggestions-container shadow-lg" style="z-index: 1050; max-height: 250px; overflow-y: auto;"></div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <label for="plan-product-name" class="form-label fw-bold text-secondary small">ชื่อสินค้า</label>
+                    <label for="plan-product-name" class="form-label fw-bold text-secondary small">ชื่อสินค้า / รายละเอียด</label>
                     <input type="text" id="plan-product-name" class="form-control bg-light border-0 text-muted" readonly>
                 </div>
-                <div class="col-md-3">
-                    <label for="plan-quantity" class="form-label fw-bold text-secondary small">จำนวนที่ต้องส่ง</label>
-                    <input type="number" id="plan-quantity" class="form-control bg-light border-0 fw-bold text-success" min="1" placeholder="จำนวนชิ้น" required>
+                
+                <div class="col-md-2">
+                    <label for="plan-quantity" class="form-label fw-bold text-secondary small">จำนวน (ชิ้น/ใบ)</label>
+                    <input type="number" id="plan-quantity" class="form-control bg-light border-0 fw-bold text-success" min="0" placeholder="จำนวนชิ้น" required>
                 </div>
-                <div class="col-md-3">
-                    <label for="plan-time" class="form-label fw-bold text-secondary small">เวลาจัดส่ง (รอบ/Time)</label>
-                    <input type="text" id="plan-time" class="form-control fw-bold text-primary bg-light border-0" placeholder="เช่น 08:30 หรือ 14:00" pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" title="กรุณาระบุเวลา 24 ชั่วโมง (เช่น 08:30)" required autocomplete="off">
+                <div class="col-md-2">
+                    <label for="plan-time" class="form-label fw-bold text-secondary small">เวลา (รอบ/Time)</label>
+                    <input type="text" id="plan-time" class="form-control fw-bold text-primary bg-light border-0" placeholder="เช่น 08:30" pattern="^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" required autocomplete="off">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-5">
                     <label for="plan-remarks" class="form-label fw-bold text-secondary small">หมายเหตุ</label>
                     <input type="text" id="plan-remarks" class="form-control bg-light border-0" placeholder="เช่น ทะเบียนรถ หรือ รอบเร่งด่วน">
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
+                <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100 shadow-sm fw-bold"><i class="bi bi-plus-circle-fill me-2"></i>เพิ่มเข้าแผน</button>
                 </div>
                 <!-- 🟢 ส่วนเสริม: อัปโหลดด้วย Excel -->
@@ -1560,18 +1572,18 @@
 
                         <div class="btn-group shadow-sm p-1 bg-white border border-primary-subtle mx-auto" role="group" style="border-radius: 50px;">
                             <input type="radio" class="btn-check" name="dashToggle" id="btn-dash-sales" autocomplete="off" checked onchange="toggleDashboardView('sales')">
-                            <label class="btn btn-outline-primary border-0 rounded-pill px-3 fw-bold" for="btn-dash-sales"><i class="bi bi-graph-up-arrow me-1"></i>งานขาย</label>
+                            <label class="btn btn-outline-primary border-0 rounded-pill px-3 fw-bold" for="btn-dash-sales"><i class="bi bi-graph-up-arrow me-1"></i><span data-lang-key="dash_tab_sales">งานขาย</span></label>
 
                             <input type="radio" class="btn-check" name="dashToggle" id="btn-dash-rack" autocomplete="off" onchange="toggleDashboardView('rack')">
-                            <label class="btn btn-outline-primary border-0 rounded-pill px-3 fw-bold" for="btn-dash-rack"><i class="bi bi-inboxes-fill me-1"></i>สถานะ Rack</label>
+                            <label class="btn btn-outline-primary border-0 rounded-pill px-3 fw-bold" for="btn-dash-rack"><i class="bi bi-inboxes-fill me-1"></i><span data-lang-key="dash_tab_rack">สถานะ Rack</span></label>
                             
                             <input type="radio" class="btn-check" name="dashToggle" id="btn-dash-vehicle" autocomplete="off" onchange="toggleDashboardView('vehicle')">
-                            <label class="btn btn-outline-primary border-0 rounded-pill px-3 fw-bold" for="btn-dash-vehicle"><i class="bi bi-truck-front-fill me-1"></i>รถขนส่ง</label>
+                            <label class="btn btn-outline-primary border-0 rounded-pill px-3 fw-bold" for="btn-dash-vehicle"><i class="bi bi-truck-front-fill me-1"></i><span data-lang-key="dash_tab_vehicle">รถขนส่ง</span></label>
                         </div>
 
                         <!-- 🟢 ปุ่มขยายเต็มหน้าจอ (Full Screen) -->
                         <button class="btn btn-dark shadow-sm rounded-pill px-3" onclick="toggleFullScreenDashboard()" title="ขยายเต็มหน้าจอ">
-                            <i class="bi bi-arrows-fullscreen"></i><span class="d-none d-md-inline ms-2 fw-bold">เต็มจอ</span>
+                            <i class="bi bi-arrows-fullscreen"></i><span class="d-none d-md-inline ms-2 fw-bold" data-lang-key="dash_fullscreen">เต็มจอ</span>
                         </button>
                     </div>
 
@@ -2383,6 +2395,10 @@
                     dash_vehicle_tracking_title: "ระบบติดตามรถบรรทุกประจำวัน (Real-time)",
                     dash_vehicle_tracking_desc: "ระบบจะดึงทะเบียนรถที่ปล่อยคิวใน \"วันนี้\" มาแสดงผลอัตโนมัติ ถ้ารถกำลังเดินทางกล่องจะกระพริบครับ",
                     dash_vehicle_update_btn: "อัปเดตเดี๋ยวนี้",
+                    dash_tab_sales: "งานขาย",
+                    dash_tab_rack: "สถานะ Rack",
+                    dash_tab_vehicle: "รถขนส่ง",
+                    dash_fullscreen: "เต็มจอ",
                     // Stock Tab
                     backup_title: "สำรองข้อมูล",
                     backup_desc: "ดาวน์โหลดข้อมูลต่างๆ เป็นไฟล์ CSV",
@@ -2682,6 +2698,10 @@
                     dash_vehicle_tracking_title: "Daily Vehicle Tracking System (Real-time)",
                     dash_vehicle_tracking_desc: "The system automatically fetches dispatched vehicles for 'today'. Delivering vehicles will blink.",
                     dash_vehicle_update_btn: "Update Now",
+                    dash_tab_sales: "Sales",
+                    dash_tab_rack: "Rack Status",
+                    dash_tab_vehicle: "Vehicles",
+                    dash_fullscreen: "Full Screen",
                     // Stock Tab
                     backup_title: "Backup Data",
                     backup_desc: "Download various data as CSV files.",
@@ -3019,9 +3039,8 @@ function handleLogin(e) {
                         populateAll();
                     }
                 };
-
-                // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzZFgswov_U_lDAq9uqS48Oje78INXk3p9ytU55EFKog0N1iPLt0VnjLBrHcn0Q8vZG_g/exec';
+                    // --- GOOGLE APPS SCRIPT CONFIGURATION ---
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyx8z8zO9IPf8yPAif_qsRAF3Tnq728PAE3ABrg0E9Jrvyk0ZRnCqCYNrjgRpjyS6dKkw/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [] };
@@ -5258,10 +5277,10 @@ window.toggleDashboardView = function(view) {
                         if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard(); 
                     }
                 };
-// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (รองรับ 2 ภาษา ไทย/อังกฤษ)
+// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับสมบูรณ์: 2 ภาษา + เรียงเวลา 07:00 + แยกป้ายรับ/ส่ง)
 window.populateVehicleDashboard = function() {
     try {
-        const T = translations[currentLanguage] || translations['th']; // ⬅️ ดึงคำแปลภาษา
+        const T = translations[currentLanguage] || translations['th']; 
         const pendingContainer = document.getElementById('vehicle-pending-container');
         const deliveringContainer = document.getElementById('vehicle-delivering-container');
         const completedContainer = document.getElementById('vehicle-completed-container');
@@ -5294,10 +5313,7 @@ window.populateVehicleDashboard = function() {
             targetDateStr = dateInput.value;
         }
 
-        let formattedTargetDate = targetDateStr;
-        if (typeof formatDate === 'function') {
-            formattedTargetDate = formatDate(targetDateStr);
-        }
+        let formattedTargetDate = typeof formatDate === 'function' ? formatDate(targetDateStr) : targetDateStr;
 
         const targetPlans = db.deliveryPlans.filter(p => {
             if (!p || !p.date) return false;
@@ -5307,7 +5323,6 @@ window.populateVehicleDashboard = function() {
             return pDateFormatted === formattedTargetDate || rawDate === targetDateStr;
         });
 
-        // 🌟 ดึงคำแปล: ไม่มีคิวงาน
         if (targetPlans.length === 0) {
             const noDataHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-calendar-x fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_no_queue || 'ไม่มีคิวงาน'}</span></div>`;
             if(pendingContainer) pendingContainer.innerHTML = noDataHtml;
@@ -5319,6 +5334,7 @@ window.populateVehicleDashboard = function() {
         const pendingPlans = targetPlans.filter(p => !p.licensePlate || String(p.licensePlate).trim() === '');
         const releasedPlans = targetPlans.filter(p => p.licensePlate && String(p.licensePlate).trim() !== '');
 
+        // 📦 1. ประมวลผลกลุ่ม "รอจัดส่ง"
         const pendingGroups = {};
         pendingPlans.forEach(p => {
             p.time = window.formatTimeDisplay(p.time);
@@ -5331,11 +5347,19 @@ window.populateVehicleDashboard = function() {
                     time: timeKey,
                     customer: custKey,
                     partsCount: 0,
-                    totalQty: 0
+                    totalQty: 0,
+                    hasDelivery: false,
+                    hasPickup: false
                 };
             }
-            pendingGroups[groupKey].partsCount++;
-            pendingGroups[groupKey].totalQty += parseInt(p.quantity) || 0;
+            // 🟢 เพิ่มระบบเช็คประเภทงาน (ส่ง/รับ)
+            if (p.jobType === 'Pickup') {
+                pendingGroups[groupKey].hasPickup = true;
+            } else {
+                pendingGroups[groupKey].hasDelivery = true;
+                pendingGroups[groupKey].partsCount++;
+                pendingGroups[groupKey].totalQty += parseInt(p.quantity) || 0;
+            }
         });
 
         let pendingHtml = '';
@@ -5345,24 +5369,32 @@ window.populateVehicleDashboard = function() {
             if (valA !== valB) return valA - valB;
             return a.customer.localeCompare(b.customer);
         }).forEach(g => {
-            // 🌟 ดึงคำแปล: รอรถมารับ, ส่ง, รายการ, ชิ้น
+            // 🟢 สร้างป้ายสถานะประเภทงาน
+            let jobBadge = '';
+            if (g.hasDelivery && g.hasPickup) jobBadge = `<span class="badge bg-primary px-2 shadow-sm">📦 ส่ง+รับ</span>`;
+            else if (g.hasPickup) jobBadge = `<span class="badge bg-secondary px-2 shadow-sm">♻️ ไปรับแพ็คกิ้ง</span>`;
+            else jobBadge = `<span class="badge bg-info text-dark px-2 shadow-sm">📦 ส่งของ</span>`;
+
             pendingHtml += `
             <div class="col-12">
                 <div class="card border border-secondary-subtle shadow-sm" style="border-radius: 12px; background: #ffffff;">
                     <div class="card-body p-3 position-relative">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <h6 class="fw-bolder text-dark mb-0"><i class="bi bi-clock-history text-secondary me-1"></i>${T.dash_vehicle_round || 'รอบ'} ${g.time} น.</h6>
-                            <span class="badge bg-light text-secondary border border-secondary-subtle shadow-sm" style="font-size: 0.7rem;">${T.dash_vehicle_waiting_pickup || 'รอรถมารับ'}</span>
+                            <div>
+                                ${jobBadge}
+                                <span class="badge bg-light text-secondary border border-secondary-subtle shadow-sm ms-1" style="font-size: 0.7rem;">${T.dash_vehicle_waiting_pickup || 'รอรถมารับ'}</span>
+                            </div>
                         </div>
                         <div class="small fw-bold text-primary mb-1"><i class="bi bi-building me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${g.customer}</div>
-                        <div class="small text-muted"><i class="bi bi-box-seam me-1"></i>${g.partsCount} ${T.dash_vehicle_items || 'รายการ'} <span class="text-success fw-bold">(${g.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'})</span></div>
+                        ${g.hasDelivery ? `<div class="small text-muted"><i class="bi bi-box-seam me-1"></i>${g.partsCount} ${T.dash_vehicle_items || 'รายการ'} <span class="text-success fw-bold">(${g.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'})</span></div>` : ''}
                     </div>
                 </div>
             </div>`;
         });
-        // 🌟 ดึงคำแปล: เคลียร์งานรอส่งหมดแล้ว
         if (pendingHtml === '') pendingHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-check2-circle fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_all_cleared || 'เคลียร์งานรอส่งหมดแล้ว'}</span></div>`;
 
+        // 🚚 2. ประมวลผลกลุ่ม "วิ่งงาน / กลับถึงแล้ว"
         const getColorForPlate = (plate) => {
             let hash = 0; let strPlate = String(plate);
             for (let i = 0; i < strPlate.length; i++) hash = strPlate.charCodeAt(i) + ((hash << 5) - hash);
@@ -5387,13 +5419,22 @@ window.populateVehicleDashboard = function() {
                     status: currentStatus === 'completed' ? 'Completed' : 'Delivering', 
                     partsCount: 0, 
                     totalQty: 0, 
+                    hasDelivery: false,
+                    hasPickup: false,
                     actualReturnTime: '' 
                 };
             }
             
             activeVehicles[groupKey].customers.add(p.customer || 'ไม่ระบุ');
-            activeVehicles[groupKey].partsCount++;
-            activeVehicles[groupKey].totalQty += parseInt(p.quantity) || 0;
+            
+            // 🟢 เพิ่มระบบเช็คประเภทงาน (ส่ง/รับ)
+            if (p.jobType === 'Pickup') {
+                activeVehicles[groupKey].hasPickup = true;
+            } else {
+                activeVehicles[groupKey].hasDelivery = true;
+                activeVehicles[groupKey].partsCount++;
+                activeVehicles[groupKey].totalQty += parseInt(p.quantity) || 0;
+            }
 
             if (currentStatus === 'delivering') {
                 activeVehicles[groupKey].status = 'Delivering';
@@ -5414,29 +5455,36 @@ window.populateVehicleDashboard = function() {
         }).forEach(v => {
             const customersStr = Array.from(v.customers).join(', ');
             
+            // 🟢 สร้างป้ายสถานะประเภทงาน
+            let jobTags = '';
+            if (v.hasDelivery && v.hasPickup) jobTags = `<span class="badge bg-primary shadow-sm mb-1 px-2" style="font-size: 0.65rem;">📦 ส่ง+รับ</span>`;
+            else if (v.hasPickup) jobTags = `<span class="badge bg-secondary shadow-sm mb-1 px-2" style="font-size: 0.65rem;">♻️ ไปรับแร็ค</span>`;
+            else jobTags = `<span class="badge bg-info text-dark shadow-sm mb-1 px-2" style="font-size: 0.65rem;">📦 ส่งของ</span>`;
+            
             if (v.status === 'Delivering') {
-                // 🌟 ดึงคำแปล: รอบ, ส่ง:, รวม, ชิ้น
                 deliveringHtml += `
                 <div class="col-12">
                     <div class="card border-0 truck-active-blink shadow-sm" style="background-color: ${v.bgColor}; border-radius: 12px;">
                         <div class="card-body p-3 position-relative overflow-hidden">
                             <i class="bi bi-truck position-absolute opacity-25 text-dark" style="font-size: 4rem; right: -10px; bottom: -15px;"></i>
-                            <h5 class="truck-card-plate text-dark fw-bolder mb-2">${v.plate}</h5>
+                            <h5 class="truck-card-plate text-dark fw-bolder mb-2">${v.plate} ${jobTags}</h5>
                             <div class="small fw-bold text-primary mb-1"><i class="bi bi-clock-fill me-1"></i>${T.dash_vehicle_round || 'รอบ'}: ${v.time} น.</div>
                             <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
-                            <div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>${T.dash_vehicle_total || 'รวม:'} ${v.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'}</div>
+                            ${v.hasDelivery ? `<div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>${T.dash_vehicle_total || 'รวม:'} ${v.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'}</div>` : ''}
                         </div>
                     </div>
                 </div>`;
             } else {
-                // 🌟 ดึงคำแปล: รอบ, ส่ง:, ถึง:
                 completedHtml += `
                 <div class="col-12">
                     <div class="card border border-success-subtle shadow-sm" style="background-color: #ffffff; border-radius: 12px; opacity: 0.9;">
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h6 class="truck-card-plate text-success fw-bolder mb-0"><i class="bi bi-check-circle-fill me-1"></i>${v.plate}</h6>
-                                <span class="badge bg-light text-dark border shadow-sm" style="font-size: 0.7rem;">${T.dash_vehicle_round || 'รอบ'} ${v.time} น.</span>
+                                <div>
+                                    ${jobTags}
+                                    <span class="badge bg-light text-dark border shadow-sm ms-1" style="font-size: 0.7rem;">${T.dash_vehicle_round || 'รอบ'} ${v.time} น.</span>
+                                </div>
                             </div>
                             <div class="small text-muted mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
                             <div class="small fw-bold text-success"><i class="bi bi-building-check me-1"></i>${T.dash_vehicle_arrived_time || 'ถึง:'} ${v.actualReturnTime ? v.actualReturnTime + ' น.' : (T.dash_vehicle_not_specified || 'ไม่ระบุเวลา')}</div>
@@ -5446,7 +5494,6 @@ window.populateVehicleDashboard = function() {
             }
         });
 
-        // 🌟 ดึงคำแปล: ไม่มีรถวิ่งข้างนอก, ยังไม่มีรถกลับมา
         if (deliveringHtml === '') deliveringHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-emoji-smile fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_no_delivering || 'ไม่มีรถวิ่งข้างนอก'}</span></div>`;
         if (completedHtml === '') completedHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-cone-striped fs-1 d-block mb-2 opacity-25"></i><span class="small fw-bold">${T.dash_vehicle_no_completed || 'ยังไม่มีรถกลับมา'}</span></div>`;
 
@@ -5765,6 +5812,20 @@ window.populateVehicleDashboard = function() {
                             populateStockSummary();
                         }
                     });
+                    // 🟢 ทำให้แค่ "คลิก" ที่ช่องลูกค้า ก็เด้งโชว์รายชื่อทั้งหมดทันที (ไม่ต้องรอให้พิมพ์ก่อน)
+                    document.body.addEventListener('focusin', (e) => {
+                        if (e.target.id === 'plan-customer' && !e.target.readOnly) {
+                            e.target.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    });
+
+                    // 🟢 หากเอาเมาส์ไปคลิกที่อื่น (นอกช่องลูกค้า) ให้ปิดกล่องรายชื่อทิ้ง
+                    document.addEventListener('click', (e) => {
+                        if (e.target.id !== 'plan-customer') {
+                            const suggestionsContainer = document.getElementById('plan-customer-suggestions');
+                            if (suggestionsContainer) suggestionsContainer.innerHTML = '';
+                        }
+                    });
                     // 🟢 ดักจับเวลากดเปิดแท็บ "แผนการจัดส่ง" ให้สั่งโหลดข้อมูลทันที
                         document.body.addEventListener('shown.bs.tab', function (e) {
                             if (e.target.dataset.bsTarget === '#pills-delivery-plan') {
@@ -5791,53 +5852,81 @@ document.body.addEventListener('input', (e) => {
         showSuggestions(e.target, suggestionsContainer, db.products, searchTerm);
     }
     
-    // === [เพิ่มใหม่] ซิงค์ระบบดึงรายชื่อลูกค้าจาก db.products มากรองทำ Auto-complete ===
-    if (e.target.id === 'plan-customer') {
+// === [แก้ไขใหม่] ซิงค์ระบบดึงรายชื่อลูกค้าจาก db.products มากรองทำ Auto-complete ===
+    if (e.target.id === 'plan-customer' && !e.target.readOnly) {
         const searchTerm = e.target.value.toLowerCase();
         const suggestionsContainer = document.getElementById('plan-customer-suggestions');
         
-        if (!searchTerm) {
-            suggestionsContainer.innerHTML = '';
-            return;
-        }
-
-        // ดึงรายชื่อลูกค้าทั้งหมดจากข้อมูลสินค้าขึ้นมาแบบไม่ให้ชื่อซ้ำกัน (Unique Names)
-        const uniqueCustomers = Array.from(new Set(db.products.map(p => p.customer).filter(Boolean)))
-                                     .map(custName => ({ id: custName, name: custName })); // แปลงโครงสร้างวัตถุเพื่อใช้ร่วมกับฟังก์ชันดึงคำแนะนำเดิม
+        // ดึงรายชื่อลูกค้าที่ไม่ซ้ำกันจากฐานข้อมูลทั้งหมดมาเรียงลำดับ
+        const uniqueCustomers = Array.from(new Set(db.products.map(p => p.customer).filter(Boolean))).sort((a, b) => a.localeCompare(b));
         
-        // คัดกรองรายชื่อที่ตรงกับคำค้นหา
-        const filteredCustomers = uniqueCustomers.filter(c => c.name.toLowerCase().includes(searchTerm));
+        // กรองตามคำค้นหา (ถ้าไม่ได้พิมพ์อะไรเลย ก็จะโชว์รายชื่อทั้งหมด)
+        const filteredCustomers = uniqueCustomers.filter(c => c.toLowerCase().includes(searchTerm));
         
         suggestionsContainer.innerHTML = '';
-        filteredCustomers.slice(0, 5).forEach(item => {
+        filteredCustomers.forEach(custName => {
             const suggestionEl = document.createElement('a');
             suggestionEl.href = '#';
-            suggestionEl.classList.add('list-group-item', 'list-group-item-action');
-            suggestionEl.textContent = item.name;
+            suggestionEl.classList.add('list-group-item', 'list-group-item-action', 'fw-bold', 'text-primary');
+            suggestionEl.innerHTML = `<i class="bi bi-building me-2 text-secondary"></i>${custName}`;
             suggestionEl.addEventListener('click', (ev) => {
                 ev.preventDefault();
-                document.getElementById('plan-customer').value = item.name;
-                suggestionsContainer.innerHTML = '';
+                document.getElementById('plan-customer').value = custName;
+                suggestionsContainer.innerHTML = ''; // ปิดกล่องหลังเลือกเสร็จ
             });
             suggestionsContainer.appendChild(suggestionEl);
         });
     }
 });
 
-// จัดการการบันทึกฟอร์มแผนจัดส่งสินค้า
-// จัดการการบันทึกฟอร์มแผนจัดส่งสินค้า
+// 🟢 1. ฟังก์ชันลูกเล่นเปิด-ปิดช่อง (เมื่อกดเปลี่ยน ส่งของ <-> รับแร็ค)
+window.toggleJobType = function() {
+    const jobType = document.getElementById('plan-job-type').value;
+    const prodIdInput = document.getElementById('plan-product-id');
+    const prodNameInput = document.getElementById('plan-product-name');
+    const customerInput = document.getElementById('plan-customer');
+    const qtyInput = document.getElementById('plan-quantity');
+
+    if (jobType === 'Pickup') {
+        prodIdInput.value = '-';
+        prodIdInput.disabled = true; // ล็อคช่องรหัสสินค้า
+        prodNameInput.value = '♻️ รับแพ็คกิ้งเปล่ากลับบริษัท';
+        customerInput.readOnly = false; // ปลดล็อคให้พิมพ์ชื่อลูกค้าเองได้
+        customerInput.placeholder = "พิมพ์ชื่อลูกค้าที่ไปรับ...";
+        customerInput.value = '';
+        qtyInput.placeholder = "จำนวนใบ (ถ้ามี)";
+        qtyInput.required = false; 
+        qtyInput.value = 0;
+    } else {
+        prodIdInput.value = '';
+        prodIdInput.disabled = false; // ปลดล็อคช่องรหัสสินค้า
+        prodNameInput.value = '';
+        customerInput.readOnly = true; // ล็อคช่องลูกค้าให้ดึงออโต้เหมือนเดิม
+        customerInput.placeholder = "ดึงอัตโนมัติจากรหัสสินค้า...";
+        customerInput.value = '';
+        qtyInput.placeholder = "จำนวนชิ้น";
+        qtyInput.required = true;
+        qtyInput.value = '';
+    }
+};
+
+// 🟢 2. จัดการการบันทึกฟอร์มแผนจัดส่งสินค้า (เพิ่มการบันทึก JobType)
 document.body.addEventListener('submit', function (e) {
     if (e.target.id === 'delivery-plan-form') {
         e.preventDefault();
         
         const planDate = document.getElementById('plan-date').value;
+        const jobTypeEl = document.getElementById('plan-job-type');
+        const jobTypeVal = jobTypeEl ? jobTypeEl.value : 'Delivery'; // ดึงประเภทงาน
+
         const newPlan = {
             id: 'del-' + Date.now(),
             date: planDate,
+            jobType: jobTypeVal, // 👈 ส่งประเภทงานไปเซฟด้วย
             customer: document.getElementById('plan-customer').value.trim(),
-            productId: document.getElementById('plan-product-id').value.trim(),
+            productId: document.getElementById('plan-product-id').disabled ? '-' : document.getElementById('plan-product-id').value.trim(),
             productName: document.getElementById('plan-product-name').value,
-            quantity: parseInt(document.getElementById('plan-quantity').value, 10),
+            quantity: parseInt(document.getElementById('plan-quantity').value, 10) || 0,
             time: document.getElementById('plan-time').value,
             remarks: document.getElementById('plan-remarks').value.trim(),
             user: currentUser.username,
@@ -5859,10 +5948,11 @@ document.body.addEventListener('submit', function (e) {
         document.getElementById('plan-quantity').value = '';
         document.getElementById('plan-time').value = '';
         document.getElementById('plan-remarks').value = '';
+        if (jobTypeEl) jobTypeEl.value = 'Delivery'; // คืนค่ากลับไปที่ส่งสินค้า
+        window.toggleJobType(); // รีเซ็ตหน้าตาฟอร์ม
         
         Swal.fire({ icon: 'success', title: 'เพิ่มรายการลงแผนจัดส่งแล้วค่ะ', timer: 1500, showConfirmButton: false });
         
-        // 🟢 เพิ่มคำสั่งยิงข้อมูลไปเซฟที่ Apps Script ตรงนี้ครับ!
         try {
             callAppsScript('addDeliveryPlan', newPlan);
         } catch (error) {
