@@ -1496,7 +1496,20 @@
         <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-white border-0 pt-4 pb-2 px-4 flex-wrap gap-2" style="border-radius: 20px 20px 0 0;">
             <h5 class="fw-bold text-primary mb-0"><i class="bi bi-table me-2"></i>ตารางสรุปแผนการจัดส่งรวมประจำวัน</h5>
             
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3"><!-- 🟢 ส่วนที่เพิ่ม: ปุ่มกรองสถานะ -->
+                <div class="btn-group shadow-sm" role="group" style="border-radius: 8px;">
+                    <input type="radio" class="btn-check" name="planStatusFilter" id="filter-all" value="all" checked onchange="renderDeliveryPlanTable(document.getElementById('view-plan-date').value)">
+                    <label class="btn btn-outline-secondary btn-sm fw-bold px-3 py-1" for="filter-all">ทั้งหมด</label>
+
+                    <input type="radio" class="btn-check" name="planStatusFilter" id="filter-pending" value="Pending" onchange="renderDeliveryPlanTable(document.getElementById('view-plan-date').value)">
+                    <label class="btn btn-outline-secondary btn-sm fw-bold px-3 py-1" for="filter-pending">รอจัดส่ง</label>
+
+                    <input type="radio" class="btn-check" name="planStatusFilter" id="filter-delivering" value="Delivering" onchange="renderDeliveryPlanTable(document.getElementById('view-plan-date').value)">
+                    <label class="btn btn-outline-warning btn-sm fw-bold px-3 py-1" for="filter-delivering" style="color: #856404;">กำลังวิ่ง</label>
+                    
+                    <input type="radio" class="btn-check" name="planStatusFilter" id="filter-completed" value="Completed" onchange="renderDeliveryPlanTable(document.getElementById('view-plan-date').value)">
+                    <label class="btn btn-outline-success btn-sm fw-bold px-3 py-1" for="filter-completed">จบงาน</label>
+                </div>
                 <div class="input-group shadow-sm" style="width: 260px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6;">
                     <span class="input-group-text bg-white border-0 py-1"><i class="bi bi-search text-muted small"></i></span>
                     <input type="text" id="delivery-plan-search" class="form-control border-0 bg-white py-1 small" placeholder="ค้นหา ลูกค้า, ทะเบียน, เวลา..." onkeyup="renderDeliveryPlanTable(document.getElementById('view-plan-date').value)">
@@ -5897,7 +5910,7 @@ window.formatTimeDisplay = function(timeStr) {
     return str;
 };
 
-// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (อัปเกรด: เรียงเวลาจาก 07:00 ถึง 06:59 ของอีกวัน)
+// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (เพิ่มระบบกรองสถานะ + ค้นหา)
 window.renderDeliveryPlanTable = function(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
     if (!tableBody) return;
@@ -5905,13 +5918,22 @@ window.renderDeliveryPlanTable = function(targetDate) {
     db.deliveryPlans = db.deliveryPlans || [];
     const formattedTargetDate = formatDate(targetDate);
     
-    // 1. ดึงข้อความจากช่องค้นหา
+    // 1. ดึงข้อความจากช่องค้นหา และ สถานะจากตัวกรอง
     const searchInput = document.getElementById('delivery-plan-search');
     const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
     
-    // 2. ดึงแผนของวันที่เลือก และ กรองด้วยคำค้นหา
+    const statusFilterEl = document.querySelector('input[name="planStatusFilter"]:checked');
+    const statusFilter = statusFilterEl ? statusFilterEl.value : 'all';
+    
+    // 2. ดึงแผนของวันที่เลือก
     let dailyPlans = db.deliveryPlans.filter(p => formatDate(p.date) === formattedTargetDate);
     
+    // 3. กรองตามสถานะ
+    if (statusFilter !== 'all') {
+        dailyPlans = dailyPlans.filter(p => p.status === statusFilter || (!p.status && statusFilter === 'Pending'));
+    }
+
+    // 4. กรองด้วยคำค้นหา
     if (searchTerm !== '') {
         dailyPlans = dailyPlans.filter(p => {
             const cust = (p.customer || '').toLowerCase();
@@ -5921,38 +5943,32 @@ window.renderDeliveryPlanTable = function(targetDate) {
         });
     }
 
-    // 🟢 3. สูตรคำนวณเวลาผลัดกะ (07:00 เป็นจุดเริ่มต้น)
     const getShiftedMinutes = (timeStr) => {
         const str = window.formatTimeDisplay(timeStr);
         const parts = str.split(':');
         if (parts.length !== 2) return 0;
         let h = parseInt(parts[0], 10);
         let m = parseInt(parts[1], 10);
-        
-        // ดันเวลา 07:00 ให้มีค่าเท่ากับชั่วโมงที่ 0 (เช้าสุด)
-        // และดันเวลา 00:00 - 06:59 ให้บวกไป 17 ชั่วโมง (กลายเป็นดึกสุด)
         let shiftedHour = h >= 7 ? h - 7 : h + 17;
         return (shiftedHour * 60) + m;
     };
 
-    // 🟢 4. จัดเรียงเวลาใหม่ตามสมการผลัดกะ
     dailyPlans.sort((a, b) => {
         const valA = getShiftedMinutes(a.time);
         const valB = getShiftedMinutes(b.time);
-        if (valA !== valB) return valA - valB; // เรียงตามเวลา
-        return (a.customer || '').localeCompare(b.customer || ''); // ถ้าเวลาชนกัน ให้เรียงตามชื่อลูกค้า
+        if (valA !== valB) return valA - valB; 
+        return (a.customer || '').localeCompare(b.customer || ''); 
     });
     
     if (dailyPlans.length === 0) {
-        if (searchTerm !== '') {
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">ไม่พบข้อมูลที่ตรงกับ "${searchTerm}" ในวันที่ ${formattedTargetDate} ค่ะ</td></tr>`;
+        if (searchTerm !== '' || statusFilter !== 'all') {
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">ไม่พบข้อมูลที่ตรงกับเงื่อนไขที่ค้นหาค่ะ</td></tr>`;
         } else {
             tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">ไม่มีแผนการจัดส่งสินค้าสำหรับวันที่ ${formattedTargetDate} ค่ะ</td></tr>`;
         }
         return;
     }
     
-    // จัดกลุ่มข้อมูล (Group By: ลูกค้า + เวลา)
     const groupedPlans = {};
     dailyPlans.forEach(p => {
         const displayTime = window.formatTimeDisplay(p.time);
@@ -5977,7 +5993,6 @@ window.renderDeliveryPlanTable = function(targetDate) {
         if (p.licensePlate) groupedPlans[groupKey].licensePlate = p.licensePlate;
     });
 
-    // 🟢 5. สั่งเรียง Object อีกรอบเพื่อความชัวร์ว่า HTML จะวาดตามลำดับที่เราตั้งไว้ 100%
     const sortedKeys = Object.keys(groupedPlans).sort((keyA, keyB) => {
         const valA = getShiftedMinutes(groupedPlans[keyA].displayTime);
         const valB = getShiftedMinutes(groupedPlans[keyB].displayTime);
