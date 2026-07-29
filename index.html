@@ -1447,6 +1447,7 @@
                     <select id="plan-job-type" class="form-select bg-light border-0 fw-bold text-primary" onchange="window.toggleJobType()" required>
                         <option value="Delivery" selected>📦 ส่งสินค้า</option>
                         <option value="Pickup">♻️ รับแพ็คกิ้ง</option>
+                        <option value="Other">📝 อื่นๆ</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -1478,7 +1479,7 @@
                 </div>
                 <div class="col-md-5">
                     <label for="plan-remarks" class="form-label fw-bold text-secondary small">หมายเหตุ</label>
-                    <input type="text" id="plan-remarks" class="form-control bg-light border-0" placeholder="เช่น ทะเบียนรถ หรือ รอบเร่งด่วน">
+                    <input type="text" id="plan-remarks" class="form-control bg-light border-0" placeholder="เช่น รอบเร่งด่วน">
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100 shadow-sm fw-bold"><i class="bi bi-plus-circle-fill me-2"></i>เพิ่มเข้าแผน</button>
@@ -1825,15 +1826,20 @@
                     <div id="view-dash-vehicle" class="d-none">
                         <div class="row g-4">
                             <div class="col-12">
-                                <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-0" style="border-radius: 15px;">
-                                    <i class="bi bi-info-circle-fill fs-4 me-3 text-info"></i>
-                                    <div>
+<div class="alert alert-info border-0 shadow-sm d-flex flex-wrap align-items-center mb-0 gap-2" style="border-radius: 15px;">
+                                    <i class="bi bi-info-circle-fill fs-4 me-2 text-info d-none d-md-block"></i>
+                                    <div class="flex-grow-1">
                                         <h6 class="fw-bold mb-0 text-dark" data-lang-key="dash_vehicle_tracking_title">ระบบติดตามรถบรรทุกประจำวัน (Real-time)</h6>
                                         <small class="text-muted" data-lang-key="dash_vehicle_tracking_desc">ระบบจะดึงทะเบียนรถที่ปล่อยคิวใน "วันนี้" มาแสดงผลอัตโนมัติ ถ้ารถกำลังเดินทางกล่องจะกระพริบครับ</small>
                                     </div>
-                                    <button class="btn btn-primary btn-sm ms-auto rounded-pill px-4 shadow-sm" onclick="populateVehicleDashboard()">
-                                        <i class="bi bi-arrow-clockwise me-1"></i> <span data-lang-key="dash_vehicle_update_btn">อัปเดตเดี๋ยวนี้</span>
-                                    </button>
+                                    <div class="d-flex gap-2 w-100 w-md-auto mt-2 mt-md-0 justify-content-end">
+                                        <button class="btn btn-warning btn-sm rounded-pill px-3 shadow-sm fw-bold text-dark" onclick="window.openVehicleReportModal()">
+                                            <i class="bi bi-file-earmark-bar-graph-fill me-1"></i> โหลดรายงาน
+                                        </button>
+                                        <button class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm" onclick="populateVehicleDashboard()">
+                                            <i class="bi bi-arrow-clockwise me-1"></i> <span data-lang-key="dash_vehicle_update_btn">อัปเดตเดี๋ยวนี้</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -2313,6 +2319,34 @@
         <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+        <!-- Vehicle Report Modal (เลือกวันที่โหลดรายงาน) -->
+        <div class="modal fade" id="vehicleReportModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow-lg" style="border-radius: 20px;">
+                    <div class="modal-header bg-warning border-0" style="border-radius: 20px 20px 0 0;">
+                        <h5 class="modal-title fw-bold text-dark"><i class="bi bi-printer-fill me-2"></i>รายงานสรุปการวิ่งรถขนส่ง</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4 bg-light">
+                        <p class="text-muted small fw-bold mb-3"><i class="bi bi-info-circle me-1"></i>กรุณาเลือกระยะเวลาที่ต้องการดึงข้อมูลรายงาน (ระบบจะนับเฉพาะคิวงานที่ระบุทะเบียนรถแล้วเท่านั้น)</p>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label fw-bold text-secondary small">ตั้งแต่ (Start Date)</label>
+                                <input type="date" id="vehicle-report-start" class="form-control border-warning shadow-sm">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-bold text-secondary small">ถึง (End Date)</label>
+                                <input type="date" id="vehicle-report-end" class="form-control border-warning shadow-sm">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 bg-white" style="border-radius: 0 0 20px 20px;">
+                        <button type="button" class="btn btn-outline-success fw-bold px-3 shadow-sm" onclick="window.generateVehicleReport('csv')"><i class="bi bi-filetype-csv me-1"></i>โหลด CSV</button>
+                        <button type="button" class="btn btn-danger fw-bold px-4 shadow-sm" onclick="window.generateVehicleReport('pdf')"><i class="bi bi-file-earmark-pdf-fill me-1"></i>โหลด PDF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <script>
             // --- TRANSLATION OBJECT ---
             const translations = {
@@ -5712,6 +5746,230 @@ window.populateVehicleDashboard = function() {
 }
                     if(damagedTbody) damagedTbody.innerHTML = damagedHtml;
                 };
+                // 🟢 ฟังก์ชันเปิดป๊อปอัปโหลดรายงานรถขนส่ง
+window.openVehicleReportModal = function() {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    // ดึงตั้งแต่วันที่ 1 ของเดือนปัจจุบัน ถึง วันนี้
+    const firstDayStr = `${y}-${m}-01`;
+    const todayStr = `${y}-${m}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    document.getElementById('vehicle-report-start').value = firstDayStr;
+    document.getElementById('vehicle-report-end').value = todayStr;
+    
+    new bootstrap.Modal(document.getElementById('vehicleReportModal')).show();
+};
+
+// 🟢 ฟังก์ชันประมวลผลข้อมูลและสร้างไฟล์ (CSV / PDF) แบบจัดกลุ่มตาม "วันที่" (เปลี่ยนโชว์จำนวนชิ้น เป็น ประเภทงาน)
+window.generateVehicleReport = function(fileType) {
+    const startDateStr = document.getElementById('vehicle-report-start').value;
+    const endDateStr = document.getElementById('vehicle-report-end').value;
+
+    if (!startDateStr || !endDateStr) {
+        Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือกช่วงวันที่ให้ครบถ้วนครับ', 'warning');
+        return;
+    }
+
+    if (startDateStr > endDateStr) {
+        Swal.fire('ข้อผิดพลาด', 'วันที่เริ่มต้น ต้องน้อยกว่าหรือเท่ากับวันที่สิ้นสุดครับ', 'error');
+        return;
+    }
+
+    Swal.fire({ title: 'กำลังรวบรวมข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    let reportDataMap = {};
+    let totalTrips = 0;
+
+    const getStrictDateStr = (dateVal) => {
+        if (!dateVal) return '';
+        let dStr = typeof formatDate === 'function' ? formatDate(dateVal) : String(dateVal).split('T')[0];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dStr)) return dStr;
+        let dObj = new Date(dStr);
+        if (!isNaN(dObj.getTime())) {
+            const y = dObj.getFullYear();
+            const m = String(dObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        return dStr;
+    };
+
+    db.deliveryPlans.forEach(p => {
+        // ต้องระบุทะเบียน และไม่ใช่บิลที่โดนยกเลิก
+        if (!p.licensePlate || String(p.licensePlate).trim() === '' || p.status === 'Cancelled') return;
+        
+        let pDateStr = getStrictDateStr(p.date);
+
+        if (pDateStr >= startDateStr && pDateStr <= endDateStr) {
+            let plate = String(p.licensePlate).trim();
+            let cust = String(p.customer).trim() || 'ไม่ระบุ';
+            let timeStr = p.time ? String(p.time).trim() : '00:00';
+            
+            // 🟢 แปลง JobType เป็นข้อความภาษาไทย
+            let jobTypeTh = 'ส่งสินค้า';
+            if (p.jobType === 'Pickup') jobTypeTh = 'รับแพ็คกิ้ง';
+            else if (p.jobType === 'Other') jobTypeTh = 'อื่นๆ';
+            
+            let key = pDateStr + '_' + plate + '_' + cust;
+            
+            if (!reportDataMap[key]) {
+                let thDateText = pDateStr;
+                let tmpDate = new Date(pDateStr);
+                if (!isNaN(tmpDate.getTime())) {
+                    thDateText = tmpDate.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' });
+                }
+
+                reportDataMap[key] = { 
+                    dateValue: pDateStr,
+                    dateText: thDateText,
+                    plate: plate, 
+                    customer: cust, 
+                    timeSet: new Set(), 
+                    jobTypes: new Set() // 🟢 สร้าง Set เก็บประเภทงานแทนจำนวนชิ้น (กันข้อมูลซ้ำ)
+                };
+            }
+            
+            reportDataMap[key].timeSet.add(timeStr);
+            reportDataMap[key].jobTypes.add(jobTypeTh); // ยัดประเภทงานเข้าไป
+        }
+    });
+
+    const reportRows = Object.values(reportDataMap).map(data => {
+        return {
+            dateValue: data.dateValue,
+            dateText: data.dateText,
+            plate: data.plate,
+            customer: data.customer,
+            tripCount: data.timeSet.size, 
+            jobTypesText: Array.from(data.jobTypes).join(', ') // 🟢 รวมข้อความ (เช่น "ส่งสินค้า, รับแพ็คกิ้ง")
+        };
+    }).sort((a, b) => {
+        if (a.dateValue !== b.dateValue) return a.dateValue.localeCompare(b.dateValue);
+        if (a.plate !== b.plate) return a.plate.localeCompare(b.plate);
+        return a.customer.localeCompare(b.customer);
+    });
+
+    if (reportRows.length === 0) {
+        Swal.fire('ไม่พบข้อมูล', 'ไม่มีการวิ่งรถในช่วงวันที่คุณเลือกเลยครับ', 'info');
+        return;
+    }
+
+    reportRows.forEach(r => totalTrips += r.tripCount);
+
+    // ==========================================
+    // 💾 สร้างไฟล์ CSV
+    // ==========================================
+    if (fileType === 'csv') {
+        let csvContent = '\ufeff'; 
+        csvContent += '"วันที่","ทะเบียนรถ","ชื่อลูกค้า / ปลายทาง","จำนวนการส่ง (ครั้ง)","ประเภทการส่งงาน"\n'; // 🟢 เปลี่ยนหัวตาราง
+        
+        reportRows.forEach(r => {
+            let sPlate = r.plate.replace(/"/g, '""');
+            let sCust = r.customer.replace(/"/g, '""');
+            csvContent += `"${r.dateText}","${sPlate}","${sCust}","${r.tripCount}","${r.jobTypesText}"\n`; // 🟢 ใส่ข้อมูลประเภทงาน
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Vehicle_Report_${startDateStr}_to_${endDateStr}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        Swal.close();
+    } 
+    // ==========================================
+    // 📄 สร้างไฟล์ PDF
+    // ==========================================
+    else if (fileType === 'pdf') {
+        if (typeof html2pdf === 'undefined') {
+            Swal.fire('ข้อผิดพลาด', 'เครื่องมือสร้าง PDF ยังโหลดไม่เสร็จ กรุณาลองใหม่', 'warning');
+            return;
+        }
+
+        let trContent = '';
+        reportRows.forEach((r, idx) => {
+            trContent += `
+                <tr style="page-break-inside: avoid;"> 
+                    <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 14px; text-align: center;">${idx + 1}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 14px; text-align: center;">${r.dateText}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 15px; font-weight: bold; color: #0d6efd; text-align: center;">${r.plate}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 14px; font-weight: bold;">${r.customer}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 14px; text-align: center; font-weight: bold; color: #198754;">${r.tripCount} ครั้ง</td>
+                    <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 14px; text-align: center; color: #6c757d; font-weight: 500;">${r.jobTypesText}</td> <!-- 🟢 จัดข้อความไว้ตรงกลาง -->
+                </tr>
+            `;
+        });
+
+        const pdfContainer = document.createElement('div');
+        pdfContainer.style.padding = '0px'; 
+        pdfContainer.style.paddingBottom = '20px';
+        pdfContainer.style.fontFamily = "'Sarabun', 'Mitr', sans-serif";
+        pdfContainer.style.color = '#333';
+        pdfContainer.style.width = '1000px'; 
+        pdfContainer.style.backgroundColor = '#fff';
+        
+        const currentDate = new Date().toLocaleString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+        pdfContainer.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #ffc107; padding-bottom: 8px; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center;">
+                    <img src="https://i.ibb.co/KxttMHxc/291315-logo-20230216140112-5.jpg" style="width: 55px; height: auto; margin-right: 15px;" crossorigin="anonymous">
+                    <div>
+                        <h2 style="margin: 0; color: #000; font-weight: 800; font-size: 22px;">VEHICLE DELIVERY REPORT</h2>
+                        <div style="color: #6c757d; font-size: 14px; font-weight: bold; margin-top: 2px;">รายงานสรุปการส่งมอบสินค้า (แยกตามวันที่และทะเบียนรถ)</div>
+                    </div>
+                </div>
+                <div style="text-align: right; font-size: 12px; color: #555; line-height: 1.4;">
+                    <b style="color: #dc3545;">สรุปข้อมูลตั้งแต่วันที่:</b> ${new Date(startDateStr).toLocaleDateString('th-TH')} ถึง ${new Date(endDateStr).toLocaleDateString('th-TH')}<br>
+                    <b>พิมพ์เมื่อ:</b> ${currentDate} น.<br>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 10px; text-align: right; font-size: 14px;">
+                <b>จำนวนรอบที่ออกวิ่งรวม:</b> <span style="color: #198754; font-size: 16px;">${totalTrips}</span> ครั้ง
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6; margin-bottom: 15px;">
+                <thead>
+                    <tr style="background-color: #f8f9fa; color: #333; border-bottom: 2px solid #ccc;">
+                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 5%;">ลำดับ</th>
+                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 15%;">วันที่จัดส่ง</th>
+                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 15%;">ทะเบียนรถ</th>
+                        <th style="padding: 10px; text-align: left; font-size: 14px; border: 1px solid #dee2e6; width: 25%;">ชื่อลูกค้า / ปลายทาง</th>
+                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 15%;">จำนวนรอบ (ครั้ง)</th>
+                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 25%;">ประเภทการส่งงาน</th> <!-- 🟢 แก้ไขหัวตาราง -->
+                    </tr>
+                </thead>
+                <tbody>${trContent}</tbody>
+            </table>
+
+            <table style="width: 100%; border-top: 1px dashed #ccc; padding-top: 8px; font-size: 11px; color: #888; page-break-inside: avoid;">
+                <tr>
+                    <td style="text-align: left;">เอกสารรายงานอัตโนมัติจากระบบ ATECH STOCK IN-OUT FG SYSTEM</td>
+                    <td style="text-align: right;">พิมพ์โดย: ${currentUser ? (currentUser.fullname || currentUser.username) : 'ไม่ระบุ'}</td>
+                </tr>
+            </table>
+        `;
+
+        const opt = {
+            margin:       [0.2, 0.2, 0.4, 0.2], 
+            filename:     `Vehicle_Report_${startDateStr}_to_${endDateStr}.pdf`,
+            image:        { type: 'jpeg', quality: 1 },
+            html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, 
+            jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
+            pagebreak:    { mode: ['css', 'legacy'] }
+        };
+
+        html2pdf().set(opt).from(pdfContainer).save().then(() => {
+            Swal.close();
+            const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
+            Toast.fire({ icon: 'success', title: 'ดาวน์โหลดรายงาน PDF เรียบร้อยครับ!' });
+        });
+    }
+};
                 // --- ADD EVENT LISTENERS ---
                 function addEventListeners() {
                     loginForm.addEventListener('submit', handleLogin);
@@ -5914,12 +6172,14 @@ document.body.addEventListener('input', (e) => {
 });
 
 // 🟢 1. ฟังก์ชันลูกเล่นเปิด-ปิดช่อง (เมื่อกดเปลี่ยน ส่งของ <-> รับแร็ค)
+// 🟢 1. ฟังก์ชันลูกเล่นเปิด-ปิดช่อง (เมื่อกดเปลี่ยน ส่งของ <-> รับแร็ค <-> อื่นๆ)
 window.toggleJobType = function() {
     const jobType = document.getElementById('plan-job-type').value;
     const prodIdInput = document.getElementById('plan-product-id');
     const prodNameInput = document.getElementById('plan-product-name');
     const customerInput = document.getElementById('plan-customer');
     const qtyInput = document.getElementById('plan-quantity');
+    const remarksInput = document.getElementById('plan-remarks'); // ดึงช่องหมายเหตุมาควบคุมด้วย
 
     if (jobType === 'Pickup') {
         prodIdInput.value = '-';
@@ -5928,19 +6188,43 @@ window.toggleJobType = function() {
         customerInput.readOnly = false; // ปลดล็อคให้พิมพ์ชื่อลูกค้าเองได้
         customerInput.placeholder = "พิมพ์ชื่อลูกค้าที่ไปรับ...";
         customerInput.value = '';
+        qtyInput.readOnly = false;
         qtyInput.placeholder = "จำนวนใบ (ถ้ามี)";
         qtyInput.required = false; 
         qtyInput.value = 0;
+        remarksInput.placeholder = "เช่น ทะเบียนรถ หรือ รอบเร่งด่วน";
+        remarksInput.required = false;
+        
+    } else if (jobType === 'Other') {
+        // 🟢 งานอื่นๆ (ล็อกช่องทั้งหมด บังคับกรอกแค่หมายเหตุ)
+        prodIdInput.value = '-';
+        prodIdInput.disabled = true; 
+        prodNameInput.value = '📝 งานอื่นๆ (ดูรายละเอียดที่หมายเหตุ)';
+        customerInput.readOnly = true; 
+        customerInput.placeholder = "-";
+        customerInput.value = 'ทั่วไป / ไม่ระบุ';
+        qtyInput.readOnly = true; // ล็อกจำนวน
+        qtyInput.placeholder = "-";
+        qtyInput.required = false; 
+        qtyInput.value = 0;
+        remarksInput.placeholder = "ระบุรายละเอียดงานที่นี่... (จำเป็นต้องกรอก)";
+        remarksInput.required = true; // บังคับให้ต้องกรอกหมายเหตุ
+        remarksInput.focus(); // สั่งให้ Cursor เมาส์ไปกระพริบรอที่ช่องหมายเหตุทันที
+        
     } else {
+        // 📦 งานส่งของ (ปกติ)
         prodIdInput.value = '';
         prodIdInput.disabled = false; // ปลดล็อคช่องรหัสสินค้า
         prodNameInput.value = '';
         customerInput.readOnly = true; // ล็อคช่องลูกค้าให้ดึงออโต้เหมือนเดิม
         customerInput.placeholder = "ดึงอัตโนมัติจากรหัสสินค้า...";
         customerInput.value = '';
+        qtyInput.readOnly = false;
         qtyInput.placeholder = "จำนวนชิ้น";
         qtyInput.required = true;
         qtyInput.value = '';
+        remarksInput.placeholder = "เช่น ทะเบียนรถ หรือ รอบเร่งด่วน";
+        remarksInput.required = false;
     }
 };
 
@@ -5994,7 +6278,7 @@ document.body.addEventListener('submit', function (e) {
         }
     }
 });
-// 🟢 1. ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา + รองรับสถานะยกเลิก)
+// 🟢 0. ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา + รองรับสถานะยกเลิก)
 function renderDeliveryPlanTable(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
     if (!tableBody) return;
@@ -6002,6 +6286,13 @@ function renderDeliveryPlanTable(targetDate) {
     db.deliveryPlans = db.deliveryPlans || [];
     const formattedTargetDate = formatDate(targetDate);
     
+    // 🛠️ FIX BUG: ซ่อมแซมสถานะว่างเปล่า (ดักบั๊กอัปเดต 30 วิแล้วปุ่มยกเลิกหาย)
+    db.deliveryPlans.forEach(p => {
+        if (!p.status || String(p.status).trim() === '') {
+            p.status = 'Pending';
+        }
+    });
+
     const activeFilterEl = document.querySelector('input[name="planStatusFilter"]:checked');
     const activeFilter = activeFilterEl ? activeFilterEl.value : 'all';
 
@@ -6027,7 +6318,7 @@ function renderDeliveryPlanTable(targetDate) {
                 date: p.date,
                 displayTime: displayTime,
                 customer: p.customer,
-                status: p.status || 'Pending',
+                status: p.status, // 👈 ใช้ p.status ที่ซ่อมแซมแล้ว
                 licensePlate: p.licensePlate || '',
                 items: [], 
                 totalQuantity: 0
@@ -6050,6 +6341,7 @@ function renderDeliveryPlanTable(targetDate) {
         let statusBadge = '';
         let actionButtons = '';
         
+        // 🟢 เช็คเงื่อนไขและวาดปุ่มกดให้ครบทุกสถานะ
         if (group.status === 'Pending') {
             statusBadge = `<span class="badge bg-secondary rounded-pill shadow-sm">รอจัดส่ง</span>`;
             actionButtons = `
@@ -6728,76 +7020,77 @@ window.formatTimeDisplay = function(timeStr) {
     return str;
 };
 
-// 🟢 ฟังก์ชันคำนวณและแสดงตารางแผนงาน (เพิ่มระบบกรองสถานะ + ค้นหา)
+// 🟢 0. ฟังก์ชันคำนวณและแสดงตารางแผนงาน (เพิ่มระบบค้นหา + แก้ปุ่มโดน Scrollbar บัง)
 window.renderDeliveryPlanTable = function(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
     if (!tableBody) return;
     
     db.deliveryPlans = db.deliveryPlans || [];
-    const formattedTargetDate = formatDate(targetDate);
+    const formattedTargetDate = typeof formatDate === 'function' ? formatDate(targetDate) : targetDate;
     
-    // 1. ดึงข้อความจากช่องค้นหา และ สถานะจากตัวกรอง
-    const searchInput = document.getElementById('delivery-plan-search');
-    const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
-    
-    const statusFilterEl = document.querySelector('input[name="planStatusFilter"]:checked');
-    const statusFilter = statusFilterEl ? statusFilterEl.value : 'all';
-    
-    // 2. ดึงแผนของวันที่เลือก
-    let dailyPlans = db.deliveryPlans.filter(p => formatDate(p.date) === formattedTargetDate);
-    
-    // 3. กรองตามสถานะ
-    if (statusFilter !== 'all') {
-        dailyPlans = dailyPlans.filter(p => p.status === statusFilter || (!p.status && statusFilter === 'Pending'));
-    }
+    // 🛠️ ซ่อมแซมสถานะว่างเปล่า ให้เป็นรอจัดส่งเสมอ
+    db.deliveryPlans.forEach(p => {
+        if (!p.status || String(p.status).trim() === '') {
+            p.status = 'Pending';
+        }
+    });
 
-    // 4. กรองด้วยคำค้นหา
+    const activeFilterEl = document.querySelector('input[name="planStatusFilter"]:checked');
+    const activeFilter = activeFilterEl ? activeFilterEl.value : 'all';
+
+    // 🟢 ดึงคำค้นหาจากช่อง Search
+    const searchInput = document.getElementById('delivery-plan-search');
+    const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
+
+    let dailyPlans = db.deliveryPlans.filter(p => {
+        let pDate = typeof formatDate === 'function' ? formatDate(p.date) : p.date;
+        return pDate === formattedTargetDate;
+    });
+
+    // 🟢 1. กรองตามปุ่มสถานะ (ทั้งหมด/รอจัดส่ง/กำลังวิ่ง/จบงาน/ยกเลิก)
+    if (activeFilter !== 'all') {
+        dailyPlans = dailyPlans.filter(p => p.status === activeFilter);
+    }
+    
+    // 🟢 2. กรองตามคำค้นหาในช่อง Search
     if (searchTerm !== '') {
         dailyPlans = dailyPlans.filter(p => {
-            const cust = (p.customer || '').toLowerCase();
-            const plate = (p.licensePlate || '').toLowerCase();
-            const timeStr = window.formatTimeDisplay(p.time).toLowerCase();
-            return cust.includes(searchTerm) || plate.includes(searchTerm) || timeStr.includes(searchTerm);
+            const timeStr = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(p.time) : String(p.time);
+            return (
+                (p.customer && p.customer.toLowerCase().includes(searchTerm)) ||
+                (p.licensePlate && p.licensePlate.toLowerCase().includes(searchTerm)) ||
+                (timeStr && timeStr.toLowerCase().includes(searchTerm)) ||
+                (p.productId && p.productId.toLowerCase().includes(searchTerm)) ||
+                (p.productName && p.productName.toLowerCase().includes(searchTerm)) ||
+                (p.remarks && p.remarks.toLowerCase().includes(searchTerm))
+            );
         });
     }
-
-    const getShiftedMinutes = (timeStr) => {
-        const str = window.formatTimeDisplay(timeStr);
-        const parts = str.split(':');
-        if (parts.length !== 2) return 0;
-        let h = parseInt(parts[0], 10);
-        let m = parseInt(parts[1], 10);
-        let shiftedHour = h >= 7 ? h - 7 : h + 17;
-        return (shiftedHour * 60) + m;
-    };
-
-    dailyPlans.sort((a, b) => {
-        const valA = getShiftedMinutes(a.time);
-        const valB = getShiftedMinutes(b.time);
-        if (valA !== valB) return valA - valB; 
-        return (a.customer || '').localeCompare(b.customer || ''); 
+    
+    // เรียงตามเวลา
+    dailyPlans = dailyPlans.sort((a, b) => {
+        let timeA = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(a.time) : a.time;
+        let timeB = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(b.time) : b.time;
+        return String(timeA).localeCompare(String(timeB));
     });
     
     if (dailyPlans.length === 0) {
-        if (searchTerm !== '' || statusFilter !== 'all') {
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">ไม่พบข้อมูลที่ตรงกับเงื่อนไขที่ค้นหาค่ะ</td></tr>`;
-        } else {
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">ไม่มีแผนการจัดส่งสินค้าสำหรับวันที่ ${formattedTargetDate} ค่ะ</td></tr>`;
-        }
+        const emptyMsg = searchTerm !== '' ? 'ไม่พบข้อมูลที่ตรงกับคำค้นหาค่ะ' : 'ไม่มีแผนการจัดส่งสินค้าค่ะ';
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">${emptyMsg}</td></tr>`;
         return;
     }
     
     const groupedPlans = {};
     dailyPlans.forEach(p => {
-        const displayTime = window.formatTimeDisplay(p.time);
-        const groupKey = displayTime + '_' + p.customer; 
+        const displayTime = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(p.time) : p.time;
+        const groupKey = displayTime + '_' + p.customer + '_' + p.status; 
         
         if (!groupedPlans[groupKey]) {
             groupedPlans[groupKey] = {
                 date: p.date,
                 displayTime: displayTime,
                 customer: p.customer,
-                status: p.status || 'Pending',
+                status: p.status, 
                 licensePlate: p.licensePlate || '',
                 items: [], 
                 totalQuantity: 0
@@ -6805,29 +7098,17 @@ window.renderDeliveryPlanTable = function(targetDate) {
         }
         groupedPlans[groupKey].items.push(p);
         groupedPlans[groupKey].totalQuantity += parseInt(p.quantity) || 0;
-        
-        if (p.status === 'Delivering') groupedPlans[groupKey].status = 'Delivering';
-        if (p.status === 'Completed') groupedPlans[groupKey].status = 'Completed';
-        if (p.licensePlate) groupedPlans[groupKey].licensePlate = p.licensePlate;
-    });
-
-    const sortedKeys = Object.keys(groupedPlans).sort((keyA, keyB) => {
-        const valA = getShiftedMinutes(groupedPlans[keyA].displayTime);
-        const valB = getShiftedMinutes(groupedPlans[keyB].displayTime);
-        if (valA !== valB) return valA - valB;
-        return groupedPlans[keyA].customer.localeCompare(groupedPlans[keyB].customer);
     });
 
     let html = '';
     let groupIndex = 0;
 
-    sortedKeys.forEach(key => {
+    for (const key in groupedPlans) {
         const group = groupedPlans[key];
         const groupId = 'group-collapse-' + groupIndex++;
-        const planDateStr = formatDate(group.date);
-        
+        const planDateStr = typeof formatDate === 'function' ? formatDate(group.date) : group.date;
         const safeCustomer = group.customer.replace(/'/g, "\\'"); 
-        const displayTime = group.displayTime;
+        const displayTime = group.displayTime; 
         
         let statusBadge = '';
         let actionButtons = '';
@@ -6835,37 +7116,50 @@ window.renderDeliveryPlanTable = function(targetDate) {
         if (group.status === 'Pending') {
             statusBadge = `<span class="badge bg-secondary rounded-pill shadow-sm">รอจัดส่ง</span>`;
             actionButtons = `
-                <button class="btn btn-primary btn-sm shadow-sm w-100" onclick="event.stopPropagation(); window.releaseGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-truck me-1"></i> ปล่อยรถ</button>
+                <div class="d-flex flex-column gap-1">
+                    <button class="btn btn-primary btn-sm shadow-sm w-100" onclick="event.stopPropagation(); window.releaseGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-truck me-1"></i> ปล่อยรถ</button>
+                    <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
+                </div>
             `;
         } else if (group.status === 'Delivering') {
             statusBadge = `<span class="badge bg-warning text-dark rounded-pill shadow-sm py-2 px-3"><i class="bi bi-truck me-1"></i> อยู่ระหว่างจัดส่ง<br><small class="text-muted mt-1 d-block">ทะเบียน: ${group.licensePlate}</small></span>`;
             actionButtons = `
-                <button class="btn btn-success btn-sm shadow-sm w-100 mb-1" style="font-size: 0.75rem; padding: 6px;" onclick="event.stopPropagation(); window.returnGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-building-check me-1"></i> ถึงเอเทคแล้ว</button>
-                <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem; padding: 4px;" onclick="event.stopPropagation(); window.cancelGroupRelease('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-arrow-counterclockwise"></i> ยกเลิกปล่อยรถ</button>
+                <div class="d-flex flex-column gap-1">
+                    <button class="btn btn-success btn-sm shadow-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.returnGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-building-check me-1"></i> ถึงเอเทคแล้ว</button>
+                    <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
+                </div>
             `;
         } else if (group.status === 'Completed') {
             statusBadge = `<span class="badge bg-success rounded-pill shadow-sm">เสร็จสิ้น</span>`;
-            actionButtons = `<span class="text-success small fw-bold"><i class="bi bi-check2-all"></i> จบงาน</span>`;
+            actionButtons = `
+                <div class="d-flex flex-column gap-1 align-items-center">
+                    <span class="text-success small fw-bold d-block"><i class="bi bi-check2-all"></i> จบงาน</span>
+                    <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.7rem;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
+                </div>
+            `;
+        } else if (group.status === 'Cancelled') {
+            statusBadge = `<span class="badge bg-danger rounded-pill shadow-sm">ยกเลิกแล้ว</span>`;
+            actionButtons = `<span class="text-danger small fw-bold"><i class="bi bi-x-circle"></i> ถอดจากคิวแล้ว</span>`;
         }
 
         const clickToExpand = `style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#${groupId}" title="คลิกเพื่อดูรายการพาร์ท"`;
+        const rowOpacity = group.status === 'Cancelled' ? 'opacity: 0.6;' : '';
 
         html += `
-        <tr class="shadow-sm align-middle" style="background-color: #f8f9fa;">
+        <tr class="shadow-sm align-middle" style="background-color: #f8f9fa; ${rowOpacity}">
             <td class="text-center text-primary" ${clickToExpand}><i class="bi bi-chevron-down"></i></td>
             <td class="text-center fw-bold text-primary" ${clickToExpand}><i class="bi bi-clock me-1"></i>${group.displayTime} น.</td>
             <td class="fw-bold fs-6" ${clickToExpand}>${group.customer}</td>
             <td class="fw-bold text-secondary" ${clickToExpand}>${group.items.length} พาร์ท <small class="text-muted fw-normal">(คลิกดู)</small></td>
-            <td class="text-end fw-bold text-success fs-6" ${clickToExpand}>${group.totalQuantity.toLocaleString()}</td>
+            <td class="text-end fw-bold ${group.status === 'Cancelled' ? 'text-secondary text-decoration-line-through' : 'text-success'} fs-6" ${clickToExpand}>${group.totalQuantity.toLocaleString()}</td>
             <td class="text-center" ${clickToExpand}>${statusBadge}</td>
-            
-            <td class="text-center" style="width: 140px; cursor: default;">
+            <td class="text-center p-2" style="width: 140px; cursor: default;">
                 ${actionButtons}
             </td>
         </tr>
         `;
         
-html += `
+        html += `
         <tr id="${groupId}" class="collapse">
             <td colspan="7" class="p-0 border-0">
                 <div class="bg-white p-3 border-start border-3 border-primary shadow-sm rounded-end">
@@ -6876,7 +7170,7 @@ html += `
                                 <th>ชื่อสินค้า</th>
                                 <th class="text-end">จำนวน</th>
                                 <th>หมายเหตุ</th>
-                                <th class="text-center">จัดการ</th>
+                                <th class="text-center">ลบ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -6886,14 +7180,11 @@ html += `
             html += `
                             <tr class="border-bottom">
                                 <td style="width: 20%;" class="fw-bold text-dark">${item.productId}</td>
-                                <td style="width: 30%;" class="text-muted"><small>${item.productName}</small></td>
+                                <td style="width: 35%;" class="text-muted"><small>${item.productName}</small></td>
                                 <td style="width: 15%;" class="text-end fw-bold text-success">${parseInt(item.quantity).toLocaleString()} ชิ้น</td>
                                 <td style="width: 20%;" class="text-muted"><small>${item.remarks || '-'}</small></td>
-                                <td style="width: 15%;" class="text-center">
-                                    ${(group.status === 'Pending') ? `
-                                        <button type="button" class="btn btn-sm btn-outline-warning py-0 px-2 me-1" title="แก้ไขยอด" onclick="event.stopPropagation(); window.editPlanItemQuantity('${item.id}', document.getElementById('view-plan-date').value)"><i class="bi bi-pencil-fill"></i></button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" title="ลบรายการ" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')"><i class="bi bi-trash"></i></button>
-                                    ` : '<i class="bi bi-lock text-muted"></i>'}
+                                <td style="width: 10%;" class="text-center">
+                                    ${(group.status === 'Pending') ? `<button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')"><i class="bi bi-trash"></i></button>` : '<i class="bi bi-lock text-muted"></i>'}
                                 </td>
                             </tr>
             `;
@@ -6906,10 +7197,17 @@ html += `
             </td>
         </tr>
         `;
-    });
+    }
+
+    // 🟢 FIX DISPLAY BUG: ดันแถวสุดท้ายให้พ้น Scrollbar แนวนอน
+    html += `
+    <tr style="border: none; background: transparent;">
+        <td colspan="7" style="height: 50px; border: none;"></td>
+    </tr>
+    `;
     
     tableBody.innerHTML = html;
-};
+}
 // ==========================================
 // 🚚 1. ฟังก์ชันปล่อยรถ (ดึงเวลา 24 ชั่วโมงจากระบบอัตโนมัติ)
 // ==========================================
