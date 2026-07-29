@@ -1817,7 +1817,7 @@
                             </div>
                         </div> <!-- ปิดแถว (row) -->
                     </div> <!-- ปิดหน้าแดชบอร์ด Rack (view-dash-rack) -->
- <!-- 🚚 View 3: แดชบอร์ดสถานะรถขนส่ง (Real-time Today) -->
+<!-- 🚚 View 3: แดชบอร์ดสถานะรถขนส่ง (Real-time Today) -->
                     <div id="view-dash-vehicle" class="d-none">
                         <div class="row g-4">
                             <div class="col-12">
@@ -1833,13 +1833,15 @@
                                 </div>
                             </div>
 
-<!-- 🟠 คอลัมน์ 1: รอจัดส่ง (Pending / ยังไม่ระบุทะเบียน) -->
+                            <!-- 🟠 คอลัมน์ 1: รอจัดส่ง (Pending / ยังไม่ระบุทะเบียน) -->
                             <div class="col-xl-4 col-lg-4 mb-3">
-                                <div class="card shadow-sm border-0 h-100" style="background-color: #f8f9fa; border-radius: 20px;">
+                                <!-- 🟢 เพิ่มการล็อกความสูง (max-height) และทำให้กล่องยืดหยุ่น (d-flex flex-column) -->
+                                <div class="card shadow-sm border-0 h-100 d-flex flex-column" style="background-color: #f8f9fa; border-radius: 20px; max-height: calc(100vh - 240px);">
                                     <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
                                         <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-box-seam me-2"></i><span data-lang-key="dash_vehicle_pending_title">รอจัดส่ง</span> <span class="fs-6 fw-normal" data-lang-key="dash_vehicle_pending_sub">(รอมารับ)</span></h5>
                                     </div>
-                                    <div class="card-body p-4 pt-2">
+                                    <!-- 🟢 เพิ่ม overflow-y: auto เพื่อให้มี Scrollbar ซ่อนอยู่ข้างใน -->
+                                    <div class="card-body p-3 pt-2 flex-grow-1" style="overflow-y: auto;">
                                         <div id="vehicle-pending-container" class="row g-3">
                                             <!-- รายการรอจัดส่งจะมาโชว์ที่นี่ -->
                                         </div>
@@ -1849,11 +1851,11 @@
 
                             <!-- 🔴 คอลัมน์ 2: รถกำลังเดินทาง (อยู่กับลูกค้า) -->
                             <div class="col-xl-4 col-lg-4 mb-3">
-                                <div class="card shadow-sm border-0 h-100" style="background-color: #fffaf0; border-radius: 20px;">
+                                <div class="card shadow-sm border-0 h-100 d-flex flex-column" style="background-color: #fffaf0; border-radius: 20px; max-height: calc(100vh - 240px);">
                                     <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
                                         <h5 class="fw-bold text-warning mb-0" style="text-shadow: 0 1px 2px rgba(0,0,0,0.1);"><i class="bi bi-truck-flatbed me-2"></i><span data-lang-key="dash_vehicle_delivering_title">กำลังวิ่งงาน</span> <span class="fs-6 fw-normal" data-lang-key="dash_vehicle_delivering_sub">(ปล่อยรถแล้ว)</span></h5>
                                     </div>
-                                    <div class="card-body p-4 pt-2">
+                                    <div class="card-body p-3 pt-2 flex-grow-1" style="overflow-y: auto;">
                                         <div id="vehicle-delivering-container" class="row g-3">
                                             <!-- รถวิ่งจะมาโชว์ที่นี่ -->
                                         </div>
@@ -1863,11 +1865,11 @@
 
                             <!-- 🟢 คอลัมน์ 3: กลับถึง A-TECH แล้ว (จบงาน) -->
                             <div class="col-xl-4 col-lg-4 mb-3">
-                                <div class="card shadow-sm border-0 h-100" style="background-color: #f0fdf4; border-radius: 20px;">
+                                <div class="card shadow-sm border-0 h-100 d-flex flex-column" style="background-color: #f0fdf4; border-radius: 20px; max-height: calc(100vh - 240px);">
                                     <div class="card-header bg-transparent border-0 pt-4 pb-2 px-4">
                                         <h5 class="fw-bold text-success mb-0"><i class="bi bi-building-check me-2"></i><span data-lang-key="dash_vehicle_completed_title">ถึงเอเทค</span> <span class="fs-6 fw-normal" data-lang-key="dash_vehicle_completed_sub">(จบงาน)</span></h5>
                                     </div>
-                                    <div class="card-body p-4 pt-2">
+                                    <div class="card-body p-3 pt-2 flex-grow-1" style="overflow-y: auto;">
                                         <div id="vehicle-completed-container" class="row g-3">
                                             <!-- รถจอดจะมาโชว์ที่นี่ -->
                                         </div>
