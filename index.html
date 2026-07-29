@@ -6922,116 +6922,237 @@ window.downloadDeliveryTemplate = function() {
     }
 };
 
+// 🟢 ฟังก์ชันอัปโหลดไฟล์ Excel แผนจัดส่ง (ฉบับรองรับ 7 คอลัมน์ และแก้บั๊กวันที่ Excel)
 window.uploadDeliveryFile = function() {
+    if (!currentUser) {
+        Swal.fire('ปฏิเสธการเข้าถึง', 'กรุณาเข้าสู่ระบบก่อนครับ', 'error');
+        return;
+    }
+
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = '.xlsx, .xls, .csv';
-    fileInput.onchange = e => {
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput); 
+    
+    fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
-        if (!file) return; 
-        
-        Swal.fire({ title: 'กำลังอ่านไฟล์ Excel...', didOpen: () => Swal.showLoading() });
+        if (!file) {
+            document.body.removeChild(fileInput);
+            return;
+        }
+
+        Swal.fire({ title: 'กำลังอ่านไฟล์ Excel...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
         const reader = new FileReader();
-        
-        reader.onload = async function(event) { 
+        reader.onload = async function(event) {
+            let jsonData;
             try {
                 const data = new Uint8Array(event.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
-                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                
+                // ใช้ raw: true เพื่อเก็บค่าดิบ (ทำให้แปลงวันที่ Excel ได้แม่นยำ 100%)
+                jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1, raw: true});
+            } catch (err) {
+                console.error("File Read Error:", err);
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถอ่านไฟล์ Excel ได้ ตรวจสอบว่าไฟล์ไม่ได้ถูกเข้ารหัสผ่าน', 'error');
+                document.body.removeChild(fileInput);
+                return;
+            }
 
-                let successCount = 0;
-                const newPlans = [];
+            try {
+                const countItems = [];
+                let countUpdated = 0;
+                let countNotFound = 0;
+                const notFoundList = [];
 
-                for(let i = 1; i < jsonData.length; i++) {
-                    let row = jsonData[i];
-                    if(!row || !row[0]) continue; 
-                    
-                    let dateVal = String(row[0]).trim();
-                    let jobTypeStr = String(row[1] || '').trim().toLowerCase();
-                    // ตรวจจับคำว่า pickup หรือ รับ
-                    let jobType = (jobTypeStr === 'pickup' || jobTypeStr.includes('รับ')) ? 'Pickup' : 'Delivery';
-                    
-                    let customer = String(row[2] || '').trim();
-                    let partNo = String(row[3] || '').trim();
-                    let qty = parseInt(row[4]) || 0;
-                    let timeVal = row[5] || '08:00';
-                    
-                    // 🟢 จัดการกรณี Excel ดันแปลงเวลาเป็นตัวเลขทศนิยม
-                    let timeStr = timeVal;
-                    if (!isNaN(timeVal) && timeVal < 1) { 
-                        let totalSeconds = Math.round(timeVal * 86400);
+                // 🟢 1. ฟังก์ชันสุดยอดนักแปลงวันที่จาก Excel (Bulletproof)
+                const parseExcelDate = (val) => {
+                    if (!val) return '';
+                    let str = String(val).trim();
+                    // ถ้ามาเป็น YYYY-MM-DD หรือ YYYY/MM/DD
+                    if (str.match(/^\d{4}[\-\/]\d{2}[\-\/]\d{2}/)) return str.replace(/\//g, '-').substring(0, 10);
+                    // ถ้ามาเป็นตัวเลข Serial Number ของ Excel
+                    if (!isNaN(val) && Number(val) > 20000) {
+                        const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+                        const y = date.getUTCFullYear();
+                        const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+                        const d = String(date.getUTCDate()).padStart(2, '0');
+                        return `${y}-${m}-${d}`;
+                    }
+                    // ถ้ามาเป็น MM/DD/YY หรือ DD/MM/YY (เช่น 7/28/26 หรือ 28/7/2026)
+                    if (str.includes('/')) {
+                        let parts = str.split('/');
+                        if (parts.length === 3) {
+                            let y = parts[2]; 
+                            if (y.length === 2) y = "20" + y; // แปลง 26 เป็น 2026
+                            let m, d;
+                            if (parseInt(parts[0]) > 12) { d = parts[0]; m = parts[1]; } 
+                            else { m = parts[0]; d = parts[1]; }
+                            return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                        }
+                    }
+                    return str;
+                };
+
+                // 🟢 2. ฟังก์ชันสุดยอดนักแปลงเวลา
+                const parseExcelTime = (val) => {
+                    if (val === undefined || val === null || val === '') return '08:00';
+                    // ถ้าเวลาถูก Excel แปลงเป็นจุดทศนิยม
+                    if (!isNaN(val) && Number(val) < 1 && Number(val) >= 0) {
+                        let totalSeconds = Math.round(val * 86400);
                         let hours = Math.floor(totalSeconds / 3600);
                         let minutes = Math.floor((totalSeconds % 3600) / 60);
-                        timeStr = String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
-                    } else {
-                        timeStr = String(timeVal).trim();
+                        return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0');
                     }
+                    // ถ้ามาเป็น Text ธรรมดา
+                    let timeStr = String(val).trim().replace('.', ':').replace(/[^0-9:]/g, ''); 
+                    if (timeStr.indexOf(':') === -1 && timeStr.length >= 3) {
+                         timeStr = timeStr.substring(0, timeStr.length - 2) + ':' + timeStr.substring(timeStr.length - 2);
+                    }
+                    if (timeStr.length < 4) timeStr = '0' + timeStr;
+                    if (!timeStr.includes(':')) timeStr = '08:00';
+                    return timeStr;
+                };
+
+                // ข้ามแถวที่ 0 (หัวคอลัมน์) เริ่มอ่านที่แถว 1
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    if (!row || row.length < 2) continue; 
                     
-                    let remarks = String(row[6] || '').trim();
+                    // 🟢 แมปปิ้งตามเทมเพลต 7 คอลัมน์ของคุณ Jo เป๊ะๆ
+                    const rawDate = row[0];       // A: Date
+                    const rawJobType = String(row[1] || '').trim().toLowerCase(); // B: Job Type
+                    let rawCustomer = String(row[2] || '').trim(); // C: Customer
+                    const rawPartNo = String(row[3] || '').trim(); // D: Part No
+                    const rawQty = parseFloat(row[4]); // E: Quantity
+                    const rawTime = row[5];       // F: Time
+                    const rawRemarks = String(row[6] || '').trim(); // G: Remarks
+
+                    if (!rawDate) continue; 
+
+                    let finalDate = parseExcelDate(rawDate);
+                    let finalTime = parseExcelTime(rawTime);
+                    let jobType = (rawJobType === 'pickup' || rawJobType.includes('รับ')) ? 'Pickup' : 'Delivery';
+                    let productId = rawPartNo;
+                    let customerName = rawCustomer;
                     let productName = '';
-                    
-                    // 🟢 ถ้าเป็นการส่งของ ให้วิ่งไปดึงข้อมูลสินค้าจากระบบ
-                    if (jobType === 'Delivery') {
-                        const product = db.products.find(p => String(p.id).trim().toUpperCase() === partNo.toUpperCase());
-                        if (product) {
-                            customer = product.customer;
-                            productName = product.name;
-                        } else {
-                            productName = 'ไม่พบข้อมูลสินค้า';
-                        }
-                    } else {
-                        // 🟢 ถ้าเป็นการไปรับแร็ค
-                        partNo = '-';
+                    let finalQty = isNaN(rawQty) ? 0 : rawQty;
+
+                    // 🟢 เช็คว่าถ้าเป็น "รับแพ็คกิ้ง"
+                    if (jobType === 'Pickup' || productId === '-' || productId === 'ไม่มี') {
+                        jobType = 'Pickup';
+                        productId = '-';
                         productName = '♻️ รับแพ็คกิ้งเปล่ากลับบริษัท';
+                        if (!customerName) continue; // รับแพ็คกิ้งต้องมีชื่อลูกค้า
+                    } else {
+                        // 🟢 ถ้าเป็นงานส่งของปกติ ค้นหาจากรหัส
+                        const product = db.products.find(p => String(p.id).trim().toUpperCase() === productId.toUpperCase());
+                        if (!product) {
+                            countNotFound++;
+                            if (!notFoundList.includes(productId)) notFoundList.push(productId);
+                            continue; 
+                        }
+                        customerName = product.customer || customerName;
+                        productName = product.name;
                     }
 
                     const newPlan = {
                         id: 'del-xls-' + Date.now() + '-' + i,
-                        date: dateVal,
+                        date: finalDate,
                         jobType: jobType,
-                        customer: customer,
-                        productId: partNo,
+                        customer: customerName,
+                        productId: productId,
                         productName: productName,
-                        quantity: qty,
-                        // 🟢 แก้บั๊กเวลา 1899 โดยเติม Single Quote หน้าเวลา
-                        time: "'" + window.formatTimeDisplay(timeStr), 
-                        remarks: remarks,
+                        quantity: finalQty,
+                        time: "'" + finalTime, 
+                        remarks: rawRemarks,
                         user: currentUser.username,
                         status: 'Pending', 
                         licensePlate: '',
                         actualReleaseTime: '',
                         actualReturnTime: ''
                     };
-                    newPlans.push(newPlan);
-                    successCount++;
+
+                    countItems.push(newPlan);
+                    countUpdated++;
                 }
 
-                if (newPlans.length > 0) {
-                    Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                Swal.close();
+
+                // 3. เซฟและอัปเดตหน้าจอ
+                if (countItems.length > 0) {
+                    db.deliveryPlans = db.deliveryPlans || [];
+                    countItems.forEach(item => db.deliveryPlans.push(item));
                     
-                    // ยิงข้อมูลไปเซฟ
-                    for(let plan of newPlans) {
-                        db.deliveryPlans.push(plan);
-                        await callAppsScript('addDeliveryPlan', plan);
-                    }
+                    // ดึงวันที่แรกสุดที่อัปโหลดมาบังคับเปิดโชว์บนหน้าตาราง
+                    const firstDate = countItems[0].date;
+                    try {
+                        const dateInput = document.getElementById('view-plan-date');
+                        if (dateInput) dateInput.value = firstDate;
+                        if (typeof renderDeliveryPlanTable === 'function') {
+                            renderDeliveryPlanTable(firstDate);
+                        }
+                    } catch (uiError) { console.error('UI Error:', uiError); }
                     
-                    // อัปเดตตารางหน้าจอ
-                    const viewPlanDateInput = document.getElementById('view-plan-date');
-                    if(viewPlanDateInput) {
-                        viewPlanDateInput.value = newPlans[0].date;
-                        renderDeliveryPlanTable(newPlans[0].date);
+                    // ทยอยส่งไปเซฟที่ Google Sheet แบบ Asynchronous
+                    for (const item of countItems) {
+                         callAppsScript('addDeliveryPlan', item).catch(err => console.error(err));
                     }
-                    Swal.fire('สำเร็จ!', `อัปโหลดแผนจัดส่งเรียบร้อย ${successCount} รายการ`, 'success');
+
+                    // จัดรูปแบบวันที่ให้สวยงามเพื่อโชว์ในป๊อปอัป
+                    let displayDate = firstDate;
+                    try {
+                        const [y, m, d] = firstDate.split('-');
+                        displayDate = `${d}/${m}/${y}`;
+                    } catch (e) {}
+
+                    let notFoundHtml = '';
+                    if (countNotFound > 0) {
+                        notFoundHtml = `
+                        <div class="mt-3 text-start border border-danger p-2 rounded" style="background-color: #fff5f5;">
+                            <span class="text-danger fw-bold"><i class="bi bi-x-circle-fill me-1"></i>รหัสสินค้าไม่มีในระบบ: <b>${countNotFound}</b> รายการ (ถูกข้าม)</span>
+                            <div class="mt-1 small" style="max-height: 80px; overflow-y: auto; line-height: 2;">
+                                ${notFoundList.map(id => `<span class="badge bg-danger me-1">${id}</span>`).join('')}
+                            </div>
+                        </div>`;
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'อัปโหลดแผนจัดส่งสำเร็จ!',
+                        html: `<div class="text-start">
+                               <span class="text-primary"><i class="bi bi-calendar-check"></i> ดึงคิวงานของวันที่: <b>${displayDate}</b></span><br>
+                               <span class="text-success"><i class="bi bi-check-circle"></i> บันทึกสำเร็จ: <b>${countUpdated}</b> รายการ</span><br>
+                               ${notFoundHtml}
+                               </div>`,
+                        confirmButtonColor: '#0d6efd'
+                    });
+
                 } else {
-                    Swal.fire('ไม่พบข้อมูล', 'โปรดตรวจสอบไฟล์ Excel อีกครั้ง', 'warning');
+                    if (countNotFound > 0) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'ไม่พบสินค้าใดๆ ในระบบเลย!',
+                            html: `<div class="text-start">รหัสสินค้าที่อยู่ใน Excel ไม่มีในฐานข้อมูลทั้งหมดเลยครับ:<br><br>
+                                   <div class="small" style="max-height: 120px; overflow-y: auto; line-height: 2;">
+                                       ${notFoundList.map(id => `<span class="badge bg-danger me-1">${id}</span>`).join('')}
+                                   </div></div>`
+                        });
+                    } else {
+                        Swal.fire('ไม่พบข้อมูล!', 'ไม่มีข้อมูลรายการจัดส่งในไฟล์ หรือรูปแบบแถวผิดพลาดครับ', 'warning');
+                    }
                 }
             } catch (err) {
-                console.error("Upload Error:", err);
-                Swal.fire('เกิดข้อผิดพลาด', 'รูปแบบไฟล์ Excel อาจจะไม่ถูกต้องครับ', 'error');
+                console.error("Upload Logic Error:", err);
+                Swal.fire('เกิดข้อผิดพลาด', `เกิดบั๊กในการอ่านข้อมูล: ${err.message}`, 'error');
+            } finally { 
+                document.body.removeChild(fileInput); 
             }
         };
         reader.readAsArrayBuffer(file);
-    };
+    });
     fileInput.click();
 };
 document.body.addEventListener('change', (e) => {
@@ -10229,7 +10350,169 @@ window.toggleFullScreenDashboard = function() {
         }
     });
 });
+// ==========================================
+// 🚚 1. ฟังก์ชัน รถถึงเอเทคแล้ว (รายการเดี่ยว)
+// ==========================================
+window.returnVehicle = async function(planId) {
+    try {
+        const planIndex = db.deliveryPlans.findIndex(p => String(p.id) === String(planId));
+        if (planIndex === -1) return Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลคิวงานนี้ในระบบ', 'error');
 
+        const plan = db.deliveryPlans[planIndex];
+        const now = new Date();
+        const currentHours = String(now.getHours()).padStart(2, '0');
+        const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+        const defaultTime24 = `${currentHours}:${currentMinutes}`;
+
+        const { value: returnTime, dismiss } = await Swal.fire({
+            title: 'รถกลับถึง A-TECH',
+            html: `
+                <div class="text-start mb-3" style="font-size: 0.95rem;">
+                    <div><i class="bi bi-truck text-secondary me-1"></i><b>ทะเบียนรถ:</b> <span class="text-primary">${plan.licensePlate || 'ไม่ระบุ'}</span></div>
+                    <div><i class="bi bi-building text-secondary me-1"></i><b>กลับจากลูกค้า:</b> ${plan.customer}</div>
+                </div>
+                <div class="form-group text-start">
+                    <label class="fw-bold small text-muted">เลือกเวลาที่รถกลับถึงโรงงาน (24 ชม.) <span class="text-danger">*</span></label>
+                    <input id="swal-actual-return" type="time" class="form-control form-control-lg text-center fw-bold" required value="${defaultTime24}">
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-building-check me-1"></i> ยืนยันจบงาน',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#198754',
+            preConfirm: () => {
+                const time = document.getElementById('swal-actual-return').value;
+                if (!time) Swal.showValidationMessage('กรุณาระบุเวลาที่รถกลับถึงโรงงานด้วยค่ะ');
+                return time;
+            }
+        });
+
+        // 🛑 ถ้ากดยกเลิก หรือคลิกพื้นที่ว่างทิ้ง ให้หยุดทำงานทันที (ไม่เด้งไปรวนกับโค้ดอื่น)
+        if (dismiss === Swal.DismissReason.cancel || dismiss === Swal.DismissReason.backdrop || !returnTime) return;
+
+        Swal.fire({ title: 'กำลังบันทึกข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        plan.status = 'Completed';
+        plan.actualReturnTime = "'" + returnTime; 
+        if (plan.time && !String(plan.time).startsWith("'")) plan.time = "'" + window.formatTimeDisplay(plan.time);
+        if (plan.actualReleaseTime && !String(plan.actualReleaseTime).startsWith("'")) plan.actualReleaseTime = "'" + window.formatTimeDisplay(plan.actualReleaseTime);
+        
+        plan.quantity = parseInt(plan.quantity, 10) ? parseInt(plan.quantity, 10) : 0;
+        plan.productId = plan.productId ? plan.productId : '-';
+        plan.productName = plan.productName ? plan.productName : '-';
+        plan.date = window.formatDate(plan.date);
+
+        await callAppsScript('updateDeliveryPlan', plan);
+        
+        const viewPlanDateInput = document.getElementById('view-plan-date');
+        if (viewPlanDateInput && typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(viewPlanDateInput.value);
+        if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
+
+        Swal.fire({ icon: 'success', title: `บันทึกจบงานสำเร็จ! (${returnTime} น.)`, timer: 1500, showConfirmButton: false });
+    } catch (error) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+    }
+};
+// ==========================================
+// 🚚 3. ฟังก์ชันยกเลิกการปล่อยรถ (Cancel Group Release)
+// ==========================================
+window.cancelGroupRelease = async function(date, displayTime, customer) {
+    const plansToUpdate = db.deliveryPlans.filter(p => window.formatDate(p.date) === date && window.formatTimeDisplay(p.time) === displayTime && p.customer === customer && (p.status === 'Delivering' || String(p.status).toLowerCase() === 'delivering'));
+    
+    if (plansToUpdate.length === 0) return;
+    const licensePlate = plansToUpdate[0].licensePlate; // ดึงทะเบียนรถเก็บไว้ใช้ค้นหา
+
+    const result = await Swal.fire({
+        title: '⚠️ ยืนยันยกเลิกการปล่อยรถ?',
+        html: `คุณกำลังจะยกเลิกคิวรถของ <b>${customer}</b> รอบ <b>${displayTime} น.</b> กลับมาเป็นสถานะรอจัดส่ง<br><br>
+               <div class="text-start mt-2 p-2 bg-warning-subtle border border-warning rounded" style="font-size: 0.85rem;">
+                   <span class="text-dark fw-bold"><i class="bi bi-info-circle-fill me-1 text-primary"></i> การคืนสต็อก (Auto-Reversal):</span><br>
+                   ระบบจะทำการ <b>ดึงสต็อกกลับเข้าคลังให้โดยอัตโนมัติ</b> ทันทีที่คุณกดยืนยันครับ
+               </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="bi bi-arrow-counterclockwise"></i> ใช่, ยกเลิกคิวรถ',
+        cancelButtonText: 'ปิดหน้าต่าง'
+    });
+
+    if (result.isConfirmed) {
+        Swal.fire({ title: 'กำลังยกเลิก...', text: 'คืนสถานะและปรับสต็อก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        try {
+            // 📦 1. ค้นหาประวัติการตัดสต็อกของรถคันนี้ (ค้นหาจากหมายเหตุที่มีทะเบียนรถ)
+            const alreadyReversedIds = db.history.filter(h => h.type === 'reversal').map(h => {
+                const match = h.remarks ? h.remarks.match(/Reversal of transaction ID: (exp-[\w-]+)/) : null;
+                return match ? match[1] : null;
+            }).filter(Boolean);
+
+            const exportsToReverse = db.history.filter(h => 
+                h.type === 'export' && 
+                h.customer === customer && 
+                h.remarks && h.remarks.includes('Auto-Deduct แผนจัดส่ง') &&
+                h.remarks.includes(licensePlate) &&
+                !alreadyReversedIds.includes(h.id)
+            );
+
+            let reversalEntries = [];
+            const timestampIso = new Date().toISOString();
+
+            // สร้างรายการคืนสต็อก
+            exportsToReverse.forEach(exp => {
+                reversalEntries.push({
+                    id: 'rev-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                    date: timestampIso,
+                    type: 'reversal',
+                    productId: exp.productId,
+                    productName: exp.productName,
+                    customer: exp.customer,
+                    erpCode: exp.erpCode,
+                    quantity: -parseFloat(exp.quantity), 
+                    productionDate: exp.productionDate,
+                    user: currentUser.username,
+                    invoiceNumber: exp.invoiceNumber,
+                    remarks: `Reversal of transaction ID: ${exp.id}. ยกเลิกปล่อยรถอัตโนมัติ (ทะเบียน: ${licensePlate})`,
+                    packagingType: exp.packagingType
+                });
+            });
+
+            // 💾 บันทึกการคืนสต็อกลง Google Sheets ก่อน
+            if (reversalEntries.length > 0) {
+                await callAppsScript('appendBatchHistory', reversalEntries);
+                reversalEntries.forEach(entry => db.history.unshift(entry));
+            }
+
+            // 🚚 2. อัปเดตสถานะรถกลับเป็น Pending เหมือนเดิม
+            for (let plan of plansToUpdate) {
+                plan.status = 'Pending';
+                plan.licensePlate = '';
+                plan.actualReleaseTime = '';
+                if (plan.time && !String(plan.time).startsWith("'")) plan.time = "'" + window.formatTimeDisplay(plan.time);
+                plan.date = window.formatDate(plan.date);
+                await callAppsScript('updateDeliveryPlan', plan);
+            }
+            
+            // 🔄 3. คำนวณสต็อกใหม่ และรีเฟรชหน้าจอ
+            calculateStockFromHistory();
+            populateAll();
+            if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date);
+            
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'ยกเลิกและคืนสต็อกสำเร็จ', 
+                text: reversalEntries.length > 0 ? `ดึงสต็อกกลับเข้าคลังเรียบร้อย ${reversalEntries.length} รายการ` : 'คิวรถกลับไปอยู่สถานะ "รอจัดส่ง" แล้วครับ', 
+                timer: 3000, 
+                showConfirmButton: false 
+            });
+            
+        } catch (error) {
+            console.error(error);
+            Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+        }
+    }
+};
         </script>
 
 <button class="btn shadow-lg d-flex align-items-center justify-content-center" id="calc-toggle-btn" 
