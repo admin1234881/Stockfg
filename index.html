@@ -1509,7 +1509,7 @@
             <h5 class="fw-bold text-primary mb-0"><i class="bi bi-table me-2"></i>ตารางสรุปแผนการจัดส่งรวมประจำวัน</h5>
             
             <div class="d-flex align-items-center gap-3"><!-- 🟢 ส่วนที่เพิ่ม: ปุ่มกรองสถานะ -->
-                <div class="btn-group shadow-sm" role="group" style="border-radius: 8px;">
+<div class="btn-group shadow-sm" role="group" style="border-radius: 8px;">
                     <input type="radio" class="btn-check" name="planStatusFilter" id="filter-all" value="all" checked onchange="renderDeliveryPlanTable(document.getElementById('view-plan-date').value)">
                     <label class="btn btn-outline-secondary btn-sm fw-bold px-3 py-1" for="filter-all">ทั้งหมด</label>
 
@@ -1521,6 +1521,10 @@
                     
                     <input type="radio" class="btn-check" name="planStatusFilter" id="filter-completed" value="Completed" onchange="renderDeliveryPlanTable(document.getElementById('view-plan-date').value)">
                     <label class="btn btn-outline-success btn-sm fw-bold px-3 py-1" for="filter-completed">จบงาน</label>
+
+                    <!-- 🟢 ปุ่มที่เพิ่มใหม่ -->
+                    <input type="radio" class="btn-check" name="planStatusFilter" id="filter-cancelled" value="Cancelled" onchange="renderDeliveryPlanTable(document.getElementById('view-plan-date').value)">
+                    <label class="btn btn-outline-danger btn-sm fw-bold px-3 py-1" for="filter-cancelled">ยกเลิก</label>
                 </div>
                 <div class="input-group shadow-sm" style="width: 260px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6;">
                     <span class="input-group-text bg-white border-0 py-1"><i class="bi bi-search text-muted small"></i></span>
@@ -5990,6 +5994,651 @@ document.body.addEventListener('submit', function (e) {
         }
     }
 });
+// 🟢 1. ฟังก์ชันคำนวณและแสดงตารางแผนงาน (จัดกลุ่มตาม ลูกค้า + เวลา + รองรับสถานะยกเลิก)
+function renderDeliveryPlanTable(targetDate) {
+    const tableBody = document.getElementById('delivery-plan-table-body');
+    if (!tableBody) return;
+    
+    db.deliveryPlans = db.deliveryPlans || [];
+    const formattedTargetDate = formatDate(targetDate);
+    
+    const activeFilterEl = document.querySelector('input[name="planStatusFilter"]:checked');
+    const activeFilter = activeFilterEl ? activeFilterEl.value : 'all';
+
+    let dailyPlans = db.deliveryPlans.filter(p => formatDate(p.date) === formattedTargetDate);
+    if (activeFilter !== 'all') {
+        dailyPlans = dailyPlans.filter(p => p.status === activeFilter);
+    }
+    dailyPlans = dailyPlans.sort((a, b) => window.formatTimeDisplay(a.time).localeCompare(window.formatTimeDisplay(b.time)));
+    
+    if (dailyPlans.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-5">ไม่มีแผนการจัดส่งสินค้าค่ะ</td></tr>`;
+        return;
+    }
+    
+    const groupedPlans = {};
+    dailyPlans.forEach(p => {
+        const displayTime = window.formatTimeDisplay(p.time);
+        // แยกกลุ่มตาม สถานะ ด้วย ป้องกันบิลยกเลิกไปรวมกับบิลรอกรณีรอบเดียวกัน
+        const groupKey = displayTime + '_' + p.customer + '_' + p.status; 
+        
+        if (!groupedPlans[groupKey]) {
+            groupedPlans[groupKey] = {
+                date: p.date,
+                displayTime: displayTime,
+                customer: p.customer,
+                status: p.status || 'Pending',
+                licensePlate: p.licensePlate || '',
+                items: [], 
+                totalQuantity: 0
+            };
+        }
+        groupedPlans[groupKey].items.push(p);
+        groupedPlans[groupKey].totalQuantity += parseInt(p.quantity) || 0;
+    });
+
+    let html = '';
+    let groupIndex = 0;
+
+    for (const key in groupedPlans) {
+        const group = groupedPlans[key];
+        const groupId = 'group-collapse-' + groupIndex++;
+        const planDateStr = formatDate(group.date);
+        const safeCustomer = group.customer.replace(/'/g, "\\'"); 
+        const displayTime = group.displayTime; 
+        
+        let statusBadge = '';
+        let actionButtons = '';
+        
+        if (group.status === 'Pending') {
+            statusBadge = `<span class="badge bg-secondary rounded-pill shadow-sm">รอจัดส่ง</span>`;
+            actionButtons = `
+                <button class="btn btn-primary btn-sm shadow-sm w-100 mb-1" onclick="event.stopPropagation(); window.releaseGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-truck me-1"></i> ปล่อยรถ</button>
+                <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
+            `;
+        } else if (group.status === 'Delivering') {
+            statusBadge = `<span class="badge bg-warning text-dark rounded-pill shadow-sm py-2 px-3"><i class="bi bi-truck me-1"></i> อยู่ระหว่างจัดส่ง<br><small class="text-muted mt-1 d-block">ทะเบียน: ${group.licensePlate}</small></span>`;
+            actionButtons = `
+                <button class="btn btn-success btn-sm shadow-sm w-100 mb-1" style="font-size: 0.75rem; padding: 6px;" onclick="event.stopPropagation(); window.returnGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-building-check me-1"></i> ถึงเอเทคแล้ว</button>
+                <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem; padding: 4px;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
+            `;
+        } else if (group.status === 'Completed') {
+            statusBadge = `<span class="badge bg-success rounded-pill shadow-sm">เสร็จสิ้น</span>`;
+            actionButtons = `
+                <span class="text-success small fw-bold d-block mb-1"><i class="bi bi-check2-all"></i> จบงาน</span>
+                <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.7rem; padding: 2px;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
+            `;
+        } else if (group.status === 'Cancelled') {
+            statusBadge = `<span class="badge bg-danger rounded-pill shadow-sm">ยกเลิกแล้ว</span>`;
+            actionButtons = `<span class="text-danger small fw-bold"><i class="bi bi-x-circle"></i> ถอดจากคิวแล้ว</span>`;
+        }
+
+        const clickToExpand = `style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#${groupId}" title="คลิกเพื่อดูรายการพาร์ท"`;
+        const rowOpacity = group.status === 'Cancelled' ? 'opacity: 0.6;' : '';
+
+        html += `
+        <tr class="shadow-sm align-middle" style="background-color: #f8f9fa; ${rowOpacity}">
+            <td class="text-center text-primary" ${clickToExpand}><i class="bi bi-chevron-down"></i></td>
+            <td class="text-center fw-bold text-primary" ${clickToExpand}><i class="bi bi-clock me-1"></i>${group.displayTime} น.</td>
+            <td class="fw-bold fs-6" ${clickToExpand}>${group.customer}</td>
+            <td class="fw-bold text-secondary" ${clickToExpand}>${group.items.length} พาร์ท <small class="text-muted fw-normal">(คลิกดู)</small></td>
+            <td class="text-end fw-bold ${group.status === 'Cancelled' ? 'text-secondary text-decoration-line-through' : 'text-success'} fs-6" ${clickToExpand}>${group.totalQuantity.toLocaleString()}</td>
+            <td class="text-center" ${clickToExpand}>${statusBadge}</td>
+            <td class="text-center" style="width: 140px; cursor: default;">
+                ${actionButtons}
+            </td>
+        </tr>
+        `;
+        
+        html += `
+        <tr id="${groupId}" class="collapse">
+            <td colspan="7" class="p-0 border-0">
+                <div class="bg-white p-3 border-start border-3 border-primary shadow-sm rounded-end">
+                    <table class="table table-sm table-borderless mb-0">
+                        <thead class="text-muted" style="font-size: 0.8rem;">
+                            <tr>
+                                <th>รหัสสินค้า</th>
+                                <th>ชื่อสินค้า</th>
+                                <th class="text-end">จำนวน</th>
+                                <th>หมายเหตุ</th>
+                                <th class="text-center">ลบ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        
+        group.items.forEach(item => {
+            html += `
+                            <tr class="border-bottom">
+                                <td style="width: 20%;" class="fw-bold text-dark">${item.productId}</td>
+                                <td style="width: 35%;" class="text-muted"><small>${item.productName}</small></td>
+                                <td style="width: 15%;" class="text-end fw-bold text-success">${parseInt(item.quantity).toLocaleString()} ชิ้น</td>
+                                <td style="width: 20%;" class="text-muted"><small>${item.remarks || '-'}</small></td>
+                                <td style="width: 10%;" class="text-center">
+                                    ${(group.status === 'Pending') ? `<button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')"><i class="bi bi-trash"></i></button>` : '<i class="bi bi-lock text-muted"></i>'}
+                                </td>
+                            </tr>
+            `;
+        });
+        
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </td>
+        </tr>
+        `;
+    }
+    
+    tableBody.innerHTML = html;
+}
+
+// 🟢 2. ฟังก์ชันปล่อยรถ (แบบกลุ่ม)
+window.releaseGroupVehicle = async function(date, displayTime, customer) {
+    const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === date && window.formatTimeDisplay(p.time) === displayTime && p.customer === customer && p.status === 'Pending');
+    if (plansToUpdate.length === 0) return;
+
+    const { value: licensePlate } = await Swal.fire({
+        title: '🚚 ปล่อยรถจัดส่ง',
+        html: `ลูกค้า: <b>${customer}</b><br>รอบเวลา: <b>${displayTime} น.</b><br>รวม: <b class="text-primary">${plansToUpdate.length} พาร์ท</b>`,
+        input: 'text',
+        inputPlaceholder: 'ตัวอย่าง: กท 1234',
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยันปล่อยรถ',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#0d6efd',
+        inputValidator: (value) => { if (!value || value.trim() === '') return 'กรุณากรอกทะเบียนรถด้วยครับ!'; }
+    });
+
+    if (licensePlate) {
+        Swal.fire({ title: 'กำลังอัปเดตระบบ...', text: 'กำลังส่งข้อมูลรถทั้งคันไปที่ Sheet...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const releaseTime = new Date().toLocaleTimeString('th-TH');
+        
+        try {
+            for (let plan of plansToUpdate) {
+                plan.status = 'Delivering';
+                plan.licensePlate = licensePlate;
+                plan.actualReleaseTime = "'" + releaseTime;
+                plan.time = "'" + window.formatTimeDisplay(plan.time); 
+                plan.date = formatDate(plan.date);        
+                await callAppsScript('updateDeliveryPlan', plan);
+            }
+            if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date);
+            if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
+            Swal.fire({ icon: 'success', title: 'ปล่อยรถเรียบร้อย!', text: `ทะเบียน: ${licensePlate}`, timer: 1500, showConfirmButton: false });
+        } catch (error) {
+            Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้ทั้งหมด: ' + error.message, 'error');
+        }
+    }
+};
+
+// 🟢 3. ฟังก์ชันรับรถกลับ (ตัดสต็อกออโต้ + แท็กประวัติ)
+window.returnGroupVehicle = function(date, displayTime, customer) {
+    const safeDate = formatDate(date);
+    const safeTime = window.formatTimeDisplay(displayTime);
+    const safeCustomer = String(customer).trim();
+
+    const plansToUpdate = db.deliveryPlans.filter(p => {
+        return formatDate(p.date) === safeDate && window.formatTimeDisplay(p.time) === safeTime && String(p.customer).trim() === safeCustomer && p.status === 'Delivering';
+    });
+
+    if (plansToUpdate.length === 0) return;
+
+    Swal.fire({
+        title: '🏁 ยืนยันรับรถกลับและตัดสต็อก?',
+        html: `รับรถกลับของลูกค้า <b>${safeCustomer}</b><br>รอบเวลา: <b>${safeTime} น.</b><br><br>
+               <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> ระบบจะทำการเปลี่ยนสถานะจบงาน และ <b>ตัดยอดสต็อกสินค้าอัตโนมัติ</b> ทันที</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยันจบงานและตัดสต็อก',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#198754'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'กำลังประมวลผล...', text: 'ระบบกำลังทยอยตัดสต็อกแบบ FIFO กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            const returnTime = new Date().toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'}); 
+            const autoExportEntries = [];
+            let tempStock = JSON.parse(JSON.stringify(calculatedStock));
+
+            for (let plan of plansToUpdate) {
+                plan.status = 'Completed';
+                plan.actualReturnTime = "'" + returnTime;
+                plan.time = "'" + window.formatTimeDisplay(plan.time);
+                plan.date = formatDate(plan.date);
+                if (plan.actualReleaseTime && !String(plan.actualReleaseTime).startsWith("'")) plan.actualReleaseTime = "'" + window.formatTimeDisplay(plan.actualReleaseTime);
+
+                if (plan.jobType !== 'Pickup' && plan.quantity > 0 && plan.productId && plan.productId !== '-') {
+                    let qtyToDeduct = parseInt(plan.quantity);
+                    const product = db.products.find(p => String(p.id).trim() === String(plan.productId).trim());
+                    const stockInfo = tempStock.find(s => String(s.productId).trim() === String(plan.productId).trim());
+
+                    if (stockInfo && stockInfo.lots) {
+                        let availableLots = stockInfo.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate));
+                        for (let lot of availableLots) {
+                            if (qtyToDeduct <= 0) break;
+                            let deductAmount = Math.min(lot.quantity, qtyToDeduct);
+                            
+                            autoExportEntries.push({
+                                id: 'exp-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                                date: new Date().toISOString(),
+                                type: 'export',
+                                exportType: 'Sale',
+                                productId: plan.productId,
+                                productName: plan.productName,
+                                customer: plan.customer,
+                                erpCode: product ? product.erpCode : '',
+                                quantity: deductAmount,
+                                productionDate: lot.productionDate,
+                                user: currentUser.username,
+                                invoiceNumber: plan.licensePlate ? 'AUTO-' + plan.licensePlate : 'AUTO-DELIVERY',
+                                remarks: `DELIVERY_PLAN:${plan.id}|AUTO ตัดสต็อกอัตโนมัติ รอบ ${safeTime} น. (ทะเบียน ${plan.licensePlate || '-'})`,
+                                packagingType: lot.packagingType || 'standard',
+                                priceAtTimeOfSale: product ? (parseFloat(product.unitPrice) || 0) : 0
+                            });
+                            qtyToDeduct -= deductAmount;
+                            lot.quantity -= deductAmount; 
+                        }
+                    }
+
+                    if (qtyToDeduct > 0) {
+                        autoExportEntries.push({
+                            id: 'exp-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                            date: new Date().toISOString(),
+                            type: 'export',
+                            exportType: 'Sale',
+                            productId: plan.productId,
+                            productName: plan.productName,
+                            customer: plan.customer,
+                            erpCode: product ? product.erpCode : '',
+                            quantity: qtyToDeduct,
+                            productionDate: formatDate(new Date()), 
+                            user: currentUser.username,
+                            invoiceNumber: plan.licensePlate ? 'AUTO-' + plan.licensePlate : 'AUTO-DELIVERY',
+                            remarks: `DELIVERY_PLAN:${plan.id}|AUTO ตัดสต็อกออโต้ รอบ ${safeTime} น. (บังคับหัก/สต็อกไม่พอ)`,
+                            packagingType: 'standard',
+                            priceAtTimeOfSale: product ? (parseFloat(product.unitPrice) || 0) : 0
+                        });
+                    }
+                }
+            }
+            
+            try {
+                for (let plan of plansToUpdate) await callAppsScript('updateDeliveryPlan', plan);
+                if (autoExportEntries.length > 0) {
+                    await callAppsScript('appendBatchHistory', autoExportEntries);
+                    autoExportEntries.forEach(entry => db.history.unshift(entry));
+                }
+                calculateStockFromHistory();
+                populateAll();
+                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
+                
+                Swal.fire({ icon: 'success', title: 'ปิดงานสำเร็จ!', text: 'รถเข้าคลังและตัดสต็อกออโต้เรียบร้อย', timer: 2000, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+            }
+        }
+    });
+};
+
+// 🟢 4. ฟังก์ชันยกเลิกรอบรถ (คืนสต็อกอัตโนมัติ + ปล่อยทะเบียนว่าง)
+window.cancelDeliveryGroup = function(date, displayTime, customer) {
+    const safeDate = formatDate(date);
+    const safeTime = window.formatTimeDisplay(displayTime);
+    const safeCustomer = String(customer).trim();
+
+    const plansToUpdate = db.deliveryPlans.filter(p => {
+        return formatDate(p.date) === safeDate && 
+               window.formatTimeDisplay(p.time) === safeTime && 
+               String(p.customer).trim() === safeCustomer && 
+               p.status !== 'Cancelled';
+    });
+
+    if (plansToUpdate.length === 0) return;
+
+    Swal.fire({
+        title: 'ยกเลิกรอบจัดส่งนี้?',
+        html: `คุณกำลังจะยกเลิกรถของ <b>${safeCustomer}</b> รอบ <b>${safeTime} น.</b><br>
+               <small class="text-danger fw-bold">หากมีการตัดสต็อกไปแล้ว ระบบจะคืนสต็อกให้อัตโนมัติ และทะเบียนรถจะกลับมาว่างเพื่อรับงานอื่น</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยันยกเลิก',
+        cancelButtonText: 'ปิด',
+        confirmButtonColor: '#dc3545'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'กำลังยกเลิก...', text: 'กำลังคืนสต็อกและอัปเดตระบบ', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            const reversalEntries = [];
+            const planIds = plansToUpdate.map(p => p.id);
+
+            // ค้นหาประวัติ Export เพื่อทำ Reversal คืนสต็อก
+            db.history.forEach(h => {
+                if (h.type === 'export') {
+                    const isTagged = planIds.some(id => h.remarks && h.remarks.includes(`DELIVERY_PLAN:${id}`));
+                    const isLegacyMatch = h.remarks && h.remarks.includes(`AUTO ตัดสต็อก`) && h.remarks.includes(`รอบ ${safeTime} น.`) && h.customer === safeCustomer && formatDate(h.date) === safeDate;
+                    
+                    if (isTagged || isLegacyMatch) {
+                        const alreadyReversed = db.history.some(rev => rev.type === 'reversal' && rev.remarks.includes(h.id));
+                        if (!alreadyReversed) {
+                            reversalEntries.push({
+                                id: 'rev-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                                date: new Date().toISOString(),
+                                type: 'reversal',
+                                productId: h.productId,
+                                productName: h.productName,
+                                customer: h.customer,
+                                erpCode: h.erpCode,
+                                productionDate: h.productionDate,
+                                quantity: -parseFloat(h.quantity), // 🔴 ติดลบ เพื่อเป็นการคืนสต็อก
+                                user: currentUser.username,
+                                remarks: `Reversal of transaction ID: ${h.id}. คืนยอดจากการยกเลิกรอบรถ ${safeTime} น.`,
+                                packagingType: h.packagingType
+                            });
+                        }
+                    }
+                }
+            });
+
+            try {
+                // เปลี่ยนสถานะเป็น Cancelled ทิ้งไว้ให้ดูเป็นหลักฐาน
+                for (let plan of plansToUpdate) {
+                    plan.status = 'Cancelled';
+                    plan.time = "'" + window.formatTimeDisplay(plan.time);
+                    plan.date = formatDate(plan.date);
+                    if (plan.actualReleaseTime && !String(plan.actualReleaseTime).startsWith("'")) plan.actualReleaseTime = "'" + window.formatTimeDisplay(plan.actualReleaseTime);
+                    if (plan.actualReturnTime && !String(plan.actualReturnTime).startsWith("'")) plan.actualReturnTime = "'" + window.formatTimeDisplay(plan.actualReturnTime);
+                    
+                    await callAppsScript('updateDeliveryPlan', plan);
+                }
+
+                // บันทึกรายการคืนสต็อกลงชีต
+                if (reversalEntries.length > 0) {
+                    await callAppsScript('appendBatchHistory', reversalEntries);
+                    reversalEntries.forEach(entry => db.history.unshift(entry));
+                    calculateStockFromHistory(); 
+                    populateStockSummary(); 
+                }
+
+                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
+                if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
+                
+                Swal.fire({ icon: 'success', title: 'ยกเลิกสำเร็จ!', text: 'คืนสต็อกและคืนป้ายทะเบียนรถเรียบร้อย', timer: 2000, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
+            }
+        }
+    });
+};
+
+// 🟢 5. ฟังก์ชันลบแผนงาน (รายพาร์ท - เฉพาะตอนรอจัดส่ง)
+window.deletePlanItem = function(id, date) {
+    Swal.fire({
+        title: 'ยืนยันการลบ?',
+        text: "คุณต้องการลบแผนจัดส่งรายการนี้ใช่หรือไม่?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ใช่, ลบเลย!',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#dc3545'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'กำลังลบ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                await callAppsScript('deleteDeliveryPlan', { id: id });
+                db.deliveryPlans = db.deliveryPlans.filter(p => p.id !== id); 
+                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date);
+                Swal.fire({ icon: 'success', title: 'ลบเรียบร้อย!', timer: 1500, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+            }
+        }
+    });
+};
+
+// 🟢 6. ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ซ่อนรายการ Cancelled ออกไปจากจอ)
+window.populateVehicleDashboard = function() {
+    try {
+        const T = translations[currentLanguage] || translations['th']; 
+        const pendingContainer = document.getElementById('vehicle-pending-container');
+        const deliveringContainer = document.getElementById('vehicle-delivering-container');
+        const completedContainer = document.getElementById('vehicle-completed-container');
+        if (!deliveringContainer || !completedContainer) return;
+
+        if (typeof db === 'undefined' || !db.deliveryPlans) {
+            if(pendingContainer) pendingContainer.innerHTML = `<div class="col-12 text-center text-muted p-4"><div class="spinner-border text-secondary spinner-border-sm" role="status"></div></div>`;
+            deliveringContainer.innerHTML = `<div class="col-12 text-center text-muted p-4"><div class="spinner-border text-warning spinner-border-sm" role="status"></div></div>`;
+            completedContainer.innerHTML = `<div class="col-12 text-center text-muted p-4"><div class="spinner-border text-success spinner-border-sm" role="status"></div></div>`;
+            return;
+        }
+
+        const getShiftedMinutes = (timeStr) => {
+            const str = window.formatTimeDisplay ? window.formatTimeDisplay(timeStr) : timeStr;
+            const parts = String(str).split(':');
+            if (parts.length !== 2) return 0;
+            let h = parseInt(parts[0], 10);
+            let m = parseInt(parts[1], 10);
+            let shiftedHour = h >= 7 ? h - 7 : h + 17;
+            return (shiftedHour * 60) + m;
+        };
+
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        const d = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${y}-${m}-${d}`;
+
+        // 🔴 กรองเอาเฉพาะข้อมูลวันนี้ + ต้องไม่ใช่สถานะ 'Cancelled'
+        const targetPlans = db.deliveryPlans.filter(p => {
+            if (!p || !p.date) return false;
+            if (p.status === 'Cancelled') return false; 
+            
+            let planDate = '';
+            if (typeof formatDate === 'function') {
+                planDate = formatDate(p.date);
+            } else {
+                planDate = String(p.date).split('T')[0];
+            }
+            return planDate === todayStr;
+        });
+
+        if (targetPlans.length === 0) {
+            const noDataHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-calendar-x fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_no_queue || 'ไม่มีคิวงานของวันนี้'}</span></div>`;
+            if(pendingContainer) pendingContainer.innerHTML = noDataHtml;
+            deliveringContainer.innerHTML = noDataHtml;
+            completedContainer.innerHTML = noDataHtml;
+            return;
+        }
+
+        const pendingPlans = targetPlans.filter(p => p.status === 'Pending' || (!p.licensePlate || String(p.licensePlate).trim() === ''));
+        const releasedPlans = targetPlans.filter(p => p.status !== 'Pending' && p.licensePlate && String(p.licensePlate).trim() !== '');
+
+        // 📦 ประมวลผลกลุ่ม "รอจัดส่ง"
+        const pendingGroups = {};
+        pendingPlans.forEach(p => {
+            const timeKey = window.formatTimeDisplay ? window.formatTimeDisplay(p.time) : p.time;
+            const custKey = p.customer || 'ไม่ระบุ';
+            const groupKey = timeKey + '_' + custKey;
+
+            if (!pendingGroups[groupKey]) {
+                pendingGroups[groupKey] = {
+                    time: timeKey,
+                    customer: custKey,
+                    partsCount: 0,
+                    totalQty: 0,
+                    hasDelivery: false,
+                    hasPickup: false,
+                    remarks: new Set() 
+                };
+            }
+            
+            if (p.remarks && String(p.remarks).trim() !== '') {
+                pendingGroups[groupKey].remarks.add(String(p.remarks).trim());
+            }
+
+            if (p.jobType === 'Pickup') {
+                pendingGroups[groupKey].hasPickup = true;
+            } else {
+                pendingGroups[groupKey].hasDelivery = true;
+                pendingGroups[groupKey].partsCount++;
+                pendingGroups[groupKey].totalQty += parseInt(p.quantity) || 0;
+            }
+        });
+
+        let pendingHtml = '';
+        Object.values(pendingGroups).sort((a, b) => {
+            const valA = getShiftedMinutes(a.time);
+            const valB = getShiftedMinutes(b.time);
+            if (valA !== valB) return valA - valB;
+            return a.customer.localeCompare(b.customer);
+        }).forEach(g => {
+            let jobBadge = '';
+            if (g.hasDelivery && g.hasPickup) jobBadge = `<span class="badge bg-primary px-2 shadow-sm">📦 ส่ง+รับ</span>`;
+            else if (g.hasPickup) jobBadge = `<span class="badge shadow-sm px-2" style="background-color: #f3e8ff; color: #5b21b6; border: 1px solid #d8b4fe;">♻️ ไปรับแพ็คกิ้ง</span>`;
+            else jobBadge = `<span class="badge bg-info text-dark px-2 shadow-sm">📦 ส่งของ</span>`;
+
+            const remarksArr = Array.from(g.remarks);
+            const remarksHtml = remarksArr.length > 0 
+                ? `<div class="small text-danger fw-bold mt-1" style="font-size: 0.75rem;"><i class="bi bi-chat-dots-fill me-1"></i>หมายเหตุ: ${remarksArr.join(', ')}</div>` 
+                : '';
+
+            pendingHtml += `
+            <div class="col-12">
+                <div class="card border border-secondary-subtle shadow-sm" style="border-radius: 12px; background: #ffffff;">
+                    <div class="card-body p-3 position-relative">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="fw-bolder text-dark mb-0"><i class="bi bi-clock-history text-secondary me-1"></i>${T.dash_vehicle_round || 'รอบ'} ${g.time} น.</h6>
+                            <div>
+                                ${jobBadge}
+                                <span class="badge bg-light text-secondary border border-secondary-subtle shadow-sm ms-1" style="font-size: 0.7rem;">${T.dash_vehicle_waiting_pickup || 'รอรถมารับ'}</span>
+                            </div>
+                        </div>
+                        <div class="small fw-bold text-primary mb-1"><i class="bi bi-building me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${g.customer}</div>
+                        ${g.hasDelivery ? `<div class="small text-muted"><i class="bi bi-box-seam me-1"></i>${g.partsCount} ${T.dash_vehicle_items || 'รายการ'} <span class="text-success fw-bold">(${g.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'})</span></div>` : ''}
+                        ${remarksHtml}
+                    </div>
+                </div>
+            </div>`;
+        });
+        if (pendingHtml === '') pendingHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-check2-circle fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_all_cleared || 'ไม่มีงานรอจัดส่ง'}</span></div>`;
+
+        // 🚚 ประมวลผลกลุ่ม "วิ่งงาน / กลับถึงแล้ว"
+        const getColorForPlate = (plate) => {
+            let hash = 0; let strPlate = String(plate);
+            for (let i = 0; i < strPlate.length; i++) hash = strPlate.charCodeAt(i) + ((hash << 5) - hash);
+            return `hsl(${Math.abs(hash % 360)}, 85%, 85%)`; 
+        };
+
+        const activeVehicles = {};
+        releasedPlans.forEach(p => {
+            const safePlate = String(p.licensePlate).trim();
+            const timeKey = window.formatTimeDisplay ? window.formatTimeDisplay(p.time) : p.time;
+            const groupKey = safePlate + '_' + timeKey; 
+            const currentStatus = String(p.status || '').trim().toLowerCase();
+
+            if (!activeVehicles[groupKey]) {
+                activeVehicles[groupKey] = {
+                    plate: safePlate, 
+                    time: timeKey, 
+                    bgColor: getColorForPlate(safePlate), 
+                    customers: new Set(),
+                    status: currentStatus === 'completed' ? 'Completed' : 'Delivering', 
+                    partsCount: 0, 
+                    totalQty: 0, 
+                    hasDelivery: false,
+                    hasPickup: false,
+                    actualReturnTime: '',
+                    remarks: new Set() 
+                };
+            }
+            
+            activeVehicles[groupKey].customers.add(p.customer || 'ไม่ระบุ');
+            
+            if (p.remarks && String(p.remarks).trim() !== '') {
+                activeVehicles[groupKey].remarks.add(String(p.remarks).trim());
+            }
+
+            if (p.jobType === 'Pickup') {
+                activeVehicles[groupKey].hasPickup = true;
+            } else {
+                activeVehicles[groupKey].hasDelivery = true;
+                activeVehicles[groupKey].partsCount++;
+                activeVehicles[groupKey].totalQty += parseInt(p.quantity) || 0;
+            }
+
+            if (currentStatus === 'delivering') {
+                activeVehicles[groupKey].status = 'Delivering';
+            }
+            
+            if (p.actualReturnTime && currentStatus === 'completed') {
+                activeVehicles[groupKey].actualReturnTime = window.formatTimeDisplay ? window.formatTimeDisplay(p.actualReturnTime) : p.actualReturnTime;
+            }
+        });
+
+        let deliveringHtml = ''; let completedHtml = '';
+
+        Object.values(activeVehicles).sort((a, b) => {
+            const valA = getShiftedMinutes(a.time);
+            const valB = getShiftedMinutes(b.time);
+            if (valA !== valB) return valA - valB;
+            return Array.from(a.customers).join(',').localeCompare(Array.from(b.customers).join(','));
+        }).forEach(v => {
+            const customersStr = Array.from(v.customers).join(', ');
+            
+            let jobTags = '';
+            if (v.hasDelivery && v.hasPickup) jobTags = `<span class="badge bg-primary shadow-sm mb-1 px-2" style="font-size: 0.65rem;">📦 ส่ง+รับ</span>`;
+            else if (v.hasPickup) jobTags = `<span class="badge shadow-sm mb-1 px-2" style="background-color: #f3e8ff; color: #5b21b6; border: 1px solid #d8b4fe; font-size: 0.65rem;">♻️ ไปรับแพ็คกิ้ง</span>`;
+            else jobTags = `<span class="badge bg-info text-dark shadow-sm mb-1 px-2" style="font-size: 0.65rem;">📦 ส่งของ</span>`;
+            
+            const remarksArr = Array.from(v.remarks);
+            const remarksHtml = remarksArr.length > 0 
+                ? `<div class="small text-danger fw-bold mt-2 pt-1 border-top" style="font-size: 0.75rem; border-color: rgba(0,0,0,0.1) !important;"><i class="bi bi-chat-dots-fill me-1"></i>หมายเหตุ: ${remarksArr.join(', ')}</div>` 
+                : '';
+
+            if (v.status === 'Delivering') {
+                deliveringHtml += `
+                <div class="col-12">
+                    <div class="card border-0 truck-active-blink shadow-sm" style="background-color: ${v.bgColor}; border-radius: 12px;">
+                        <div class="card-body p-3 position-relative overflow-hidden">
+                            <i class="bi bi-truck position-absolute opacity-25 text-dark" style="font-size: 4rem; right: -10px; bottom: -15px;"></i>
+                            <h5 class="truck-card-plate text-dark fw-bolder mb-2">${v.plate} ${jobTags}</h5>
+                            <div class="small fw-bold text-primary mb-1"><i class="bi bi-clock-fill me-1"></i>${T.dash_vehicle_round || 'รอบ'}: ${v.time} น.</div>
+                            <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
+                            ${v.hasDelivery ? `<div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>${T.dash_vehicle_total || 'รวม:'} ${v.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'}</div>` : ''}
+                            ${remarksHtml} 
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                completedHtml += `
+                <div class="col-12">
+                    <div class="card border border-success-subtle shadow-sm" style="background-color: #ffffff; border-radius: 12px; opacity: 0.9;">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="truck-card-plate text-success fw-bolder mb-0"><i class="bi bi-check-circle-fill me-1"></i>${v.plate}</h6>
+                                <div>
+                                    ${jobTags}
+                                    <span class="badge bg-light text-dark border shadow-sm ms-1" style="font-size: 0.7rem;">${T.dash_vehicle_round || 'รอบ'} ${v.time} น.</span>
+                                </div>
+                            </div>
+                            <div class="small text-muted mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
+                            <div class="small fw-bold text-success"><i class="bi bi-building-check me-1"></i>${T.dash_vehicle_arrived_time || 'ถึง:'} ${v.actualReturnTime ? v.actualReturnTime + ' น.' : (T.dash_vehicle_not_specified || 'ไม่ระบุเวลา')}</div>
+                            ${remarksHtml} 
+                        </div>
+                    </div>
+                </div>`;
+            }
+        });
+
+        if (deliveringHtml === '') deliveringHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-emoji-smile fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_no_delivering || 'ไม่มีรถวิ่งข้างนอก'}</span></div>`;
+        if (completedHtml === '') completedHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-cone-striped fs-1 d-block mb-2 opacity-25"></i><span class="small fw-bold">${T.dash_vehicle_no_completed || 'ยังไม่มีรถกลับมา'}</span></div>`;
+
+        if(pendingContainer) pendingContainer.innerHTML = pendingHtml;
+        deliveringContainer.innerHTML = deliveringHtml;
+        completedContainer.innerHTML = completedHtml;
+        
+    } catch (error) { console.error("Dashboard Vehicle Error:", error); }
+};
 // 🟢 4. ฟังก์ชันแก้ไขจำนวนส่งงาน (ดักจับบั๊ก 100% วางถูกที่แล้ว!)
 window.editPlanItemQuantity = async function(itemId, dateStr) {
     try {
