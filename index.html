@@ -6452,7 +6452,6 @@ function renderDeliveryPlanTable(targetDate) {
             statusBadge = `<span class="badge bg-success rounded-pill shadow-sm">เสร็จสิ้น</span>`;
             actionButtons = `
                 <span class="text-success small fw-bold d-block mb-1"><i class="bi bi-check2-all"></i> จบงาน</span>
-                <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.7rem; padding: 2px;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
             `;
         } else if (group.status === 'Cancelled') {
             statusBadge = `<span class="badge bg-danger rounded-pill shadow-sm">ยกเลิกแล้ว</span>`;
@@ -7260,7 +7259,6 @@ window.renderDeliveryPlanTable = function(targetDate) {
             actionButtons = `
                 <div class="d-flex flex-column gap-1">
                     <button class="btn btn-success btn-sm shadow-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.returnGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-building-check me-1"></i> ถึงเอเทคแล้ว</button>
-                    <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
                 </div>
             `;
         } else if (group.status === 'Completed') {
@@ -7268,7 +7266,6 @@ window.renderDeliveryPlanTable = function(targetDate) {
             actionButtons = `
                 <div class="d-flex flex-column gap-1 align-items-center">
                     <span class="text-success small fw-bold d-block"><i class="bi bi-check2-all"></i> จบงาน</span>
-                    <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.7rem;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
                 </div>
             `;
         } else if (group.status === 'Cancelled') {
