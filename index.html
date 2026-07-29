@@ -5286,7 +5286,7 @@ window.toggleDashboardView = function(view) {
                         if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard(); 
                     }
                 };
-// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับสมบูรณ์: 2 ภาษา + เรียงเวลา 07:00 + แยกป้ายรับ/ส่ง สีโดดเด่น)
+// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (เพิ่มระบบแสดงผล "หมายเหตุ")
 window.populateVehicleDashboard = function() {
     try {
         const T = translations[currentLanguage] || translations['th']; 
@@ -5303,8 +5303,8 @@ window.populateVehicleDashboard = function() {
         }
 
         const getShiftedMinutes = (timeStr) => {
-            const str = window.formatTimeDisplay(timeStr);
-            const parts = str.split(':');
+            const str = window.formatTimeDisplay ? window.formatTimeDisplay(timeStr) : timeStr;
+            const parts = String(str).split(':');
             if (parts.length !== 2) return 0;
             let h = parseInt(parts[0], 10);
             let m = parseInt(parts[1], 10);
@@ -5313,27 +5313,24 @@ window.populateVehicleDashboard = function() {
         };
 
         const today = new Date();
-        const defaultTodayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        let targetDateStr = defaultTodayStr;
-
-        const dateInput = document.getElementById('dash-vehicle-date');
-        if (dateInput) {
-            if (!dateInput.value) dateInput.value = defaultTodayStr;
-            targetDateStr = dateInput.value;
-        }
-
-        let formattedTargetDate = typeof formatDate === 'function' ? formatDate(targetDateStr) : targetDateStr;
+        const y = today.getFullYear();
+        const m = String(today.getMonth() + 1).padStart(2, '0');
+        const d = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${y}-${m}-${d}`;
 
         const targetPlans = db.deliveryPlans.filter(p => {
             if (!p || !p.date) return false;
-            let pDateFormatted = typeof formatDate === 'function' ? formatDate(p.date) : String(p.date).trim();
-            let rawDate = String(p.date).trim();
-            if (rawDate.includes('T')) rawDate = rawDate.split('T')[0];
-            return pDateFormatted === formattedTargetDate || rawDate === targetDateStr;
+            let planDate = '';
+            if (typeof formatDate === 'function') {
+                planDate = formatDate(p.date);
+            } else {
+                planDate = String(p.date).split('T')[0];
+            }
+            return planDate === todayStr;
         });
 
         if (targetPlans.length === 0) {
-            const noDataHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-calendar-x fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_no_queue || 'ไม่มีคิวงาน'}</span></div>`;
+            const noDataHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-calendar-x fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_no_queue || 'ไม่มีคิวงานของวันนี้'}</span></div>`;
             if(pendingContainer) pendingContainer.innerHTML = noDataHtml;
             deliveringContainer.innerHTML = noDataHtml;
             completedContainer.innerHTML = noDataHtml;
@@ -5346,8 +5343,7 @@ window.populateVehicleDashboard = function() {
         // 📦 1. ประมวลผลกลุ่ม "รอจัดส่ง"
         const pendingGroups = {};
         pendingPlans.forEach(p => {
-            p.time = window.formatTimeDisplay(p.time);
-            const timeKey = p.time;
+            const timeKey = window.formatTimeDisplay ? window.formatTimeDisplay(p.time) : p.time;
             const custKey = p.customer || 'ไม่ระบุ';
             const groupKey = timeKey + '_' + custKey;
 
@@ -5358,9 +5354,16 @@ window.populateVehicleDashboard = function() {
                     partsCount: 0,
                     totalQty: 0,
                     hasDelivery: false,
-                    hasPickup: false
+                    hasPickup: false,
+                    remarks: new Set() // 🟢 เพิ่มตัวแปรเก็บหมายเหตุ
                 };
             }
+            
+            // 🟢 เก็บหมายเหตุที่ไม่ซ้ำกัน
+            if (p.remarks && String(p.remarks).trim() !== '') {
+                pendingGroups[groupKey].remarks.add(String(p.remarks).trim());
+            }
+
             if (p.jobType === 'Pickup') {
                 pendingGroups[groupKey].hasPickup = true;
             } else {
@@ -5377,11 +5380,16 @@ window.populateVehicleDashboard = function() {
             if (valA !== valB) return valA - valB;
             return a.customer.localeCompare(b.customer);
         }).forEach(g => {
-            // 🟢 สร้างป้ายสถานะประเภทงาน (ปรับสีใหม่)
             let jobBadge = '';
             if (g.hasDelivery && g.hasPickup) jobBadge = `<span class="badge bg-primary px-2 shadow-sm">📦 ส่ง+รับ</span>`;
             else if (g.hasPickup) jobBadge = `<span class="badge shadow-sm px-2" style="background-color: #f3e8ff; color: #5b21b6; border: 1px solid #d8b4fe;">♻️ ไปรับแพ็คกิ้ง</span>`;
             else jobBadge = `<span class="badge bg-info text-dark px-2 shadow-sm">📦 ส่งของ</span>`;
+
+            // 🟢 วาด HTML สำหรับหมายเหตุ (ถ้ามี)
+            const remarksArr = Array.from(g.remarks);
+            const remarksHtml = remarksArr.length > 0 
+                ? `<div class="small text-danger fw-bold mt-1" style="font-size: 0.75rem;"><i class="bi bi-chat-dots-fill me-1"></i>หมายเหตุ: ${remarksArr.join(', ')}</div>` 
+                : '';
 
             pendingHtml += `
             <div class="col-12">
@@ -5396,11 +5404,12 @@ window.populateVehicleDashboard = function() {
                         </div>
                         <div class="small fw-bold text-primary mb-1"><i class="bi bi-building me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${g.customer}</div>
                         ${g.hasDelivery ? `<div class="small text-muted"><i class="bi bi-box-seam me-1"></i>${g.partsCount} ${T.dash_vehicle_items || 'รายการ'} <span class="text-success fw-bold">(${g.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'})</span></div>` : ''}
+                        ${remarksHtml} <!-- 🟢 แสดงหมายเหตุตรงนี้ -->
                     </div>
                 </div>
             </div>`;
         });
-        if (pendingHtml === '') pendingHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-check2-circle fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_all_cleared || 'เคลียร์งานรอส่งหมดแล้ว'}</span></div>`;
+        if (pendingHtml === '') pendingHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-check2-circle fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_all_cleared || 'ไม่มีงานรอจัดส่ง'}</span></div>`;
 
         // 🚚 2. ประมวลผลกลุ่ม "วิ่งงาน / กลับถึงแล้ว"
         const getColorForPlate = (plate) => {
@@ -5412,8 +5421,7 @@ window.populateVehicleDashboard = function() {
         const activeVehicles = {};
         releasedPlans.forEach(p => {
             const safePlate = String(p.licensePlate).trim();
-            p.time = window.formatTimeDisplay(p.time); 
-            const timeKey = p.time;
+            const timeKey = window.formatTimeDisplay ? window.formatTimeDisplay(p.time) : p.time;
             const groupKey = safePlate + '_' + timeKey; 
             
             const currentStatus = String(p.status || '').trim().toLowerCase();
@@ -5429,12 +5437,18 @@ window.populateVehicleDashboard = function() {
                     totalQty: 0, 
                     hasDelivery: false,
                     hasPickup: false,
-                    actualReturnTime: '' 
+                    actualReturnTime: '',
+                    remarks: new Set() // 🟢 เพิ่มตัวแปรเก็บหมายเหตุ
                 };
             }
             
             activeVehicles[groupKey].customers.add(p.customer || 'ไม่ระบุ');
             
+            // 🟢 เก็บหมายเหตุที่ไม่ซ้ำกัน
+            if (p.remarks && String(p.remarks).trim() !== '') {
+                activeVehicles[groupKey].remarks.add(String(p.remarks).trim());
+            }
+
             if (p.jobType === 'Pickup') {
                 activeVehicles[groupKey].hasPickup = true;
             } else {
@@ -5448,7 +5462,7 @@ window.populateVehicleDashboard = function() {
             }
             
             if (p.actualReturnTime && currentStatus === 'completed') {
-                activeVehicles[groupKey].actualReturnTime = window.formatTimeDisplay(p.actualReturnTime);
+                activeVehicles[groupKey].actualReturnTime = window.formatTimeDisplay ? window.formatTimeDisplay(p.actualReturnTime) : p.actualReturnTime;
             }
         });
 
@@ -5462,12 +5476,17 @@ window.populateVehicleDashboard = function() {
         }).forEach(v => {
             const customersStr = Array.from(v.customers).join(', ');
             
-            // 🟢 สร้างป้ายสถานะประเภทงาน (ปรับสีใหม่)
             let jobTags = '';
             if (v.hasDelivery && v.hasPickup) jobTags = `<span class="badge bg-primary shadow-sm mb-1 px-2" style="font-size: 0.65rem;">📦 ส่ง+รับ</span>`;
             else if (v.hasPickup) jobTags = `<span class="badge shadow-sm mb-1 px-2" style="background-color: #f3e8ff; color: #5b21b6; border: 1px solid #d8b4fe; font-size: 0.65rem;">♻️ ไปรับแพ็คกิ้ง</span>`;
             else jobTags = `<span class="badge bg-info text-dark shadow-sm mb-1 px-2" style="font-size: 0.65rem;">📦 ส่งของ</span>`;
             
+            // 🟢 วาด HTML สำหรับหมายเหตุ (ถ้ามี)
+            const remarksArr = Array.from(v.remarks);
+            const remarksHtml = remarksArr.length > 0 
+                ? `<div class="small text-danger fw-bold mt-2 pt-1 border-top" style="font-size: 0.75rem; border-color: rgba(0,0,0,0.1) !important;"><i class="bi bi-chat-dots-fill me-1"></i>หมายเหตุ: ${remarksArr.join(', ')}</div>` 
+                : '';
+
             if (v.status === 'Delivering') {
                 deliveringHtml += `
                 <div class="col-12">
@@ -5478,6 +5497,7 @@ window.populateVehicleDashboard = function() {
                             <div class="small fw-bold text-primary mb-1"><i class="bi bi-clock-fill me-1"></i>${T.dash_vehicle_round || 'รอบ'}: ${v.time} น.</div>
                             <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
                             ${v.hasDelivery ? `<div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>${T.dash_vehicle_total || 'รวม:'} ${v.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'}</div>` : ''}
+                            ${remarksHtml} <!-- 🟢 แสดงหมายเหตุตรงนี้ -->
                         </div>
                     </div>
                 </div>`;
@@ -5495,6 +5515,7 @@ window.populateVehicleDashboard = function() {
                             </div>
                             <div class="small text-muted mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
                             <div class="small fw-bold text-success"><i class="bi bi-building-check me-1"></i>${T.dash_vehicle_arrived_time || 'ถึง:'} ${v.actualReturnTime ? v.actualReturnTime + ' น.' : (T.dash_vehicle_not_specified || 'ไม่ระบุเวลา')}</div>
+                            ${remarksHtml} <!-- 🟢 แสดงหมายเหตุตรงนี้ -->
                         </div>
                     </div>
                 </div>`;
