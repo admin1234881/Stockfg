@@ -5286,7 +5286,7 @@ window.toggleDashboardView = function(view) {
                         if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard(); 
                     }
                 };
-// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับสมบูรณ์: แสดงเฉพาะวันปัจจุบัน หรือวันที่เลือก)
+// 🟢 ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ฉบับสมบูรณ์: 2 ภาษา + เรียงเวลา 07:00 + แยกป้ายรับ/ส่ง สีโดดเด่น)
 window.populateVehicleDashboard = function() {
     try {
         const T = translations[currentLanguage] || translations['th']; 
@@ -5312,43 +5312,25 @@ window.populateVehicleDashboard = function() {
             return (shiftedHour * 60) + m;
         };
 
-        // 1. หาวันที่ที่ต้องการตรวจสอบ (ถ้ามีการสร้าง input สำหรับเลือกวัน ให้ดึงค่านั้นมา ถ้าไม่มีใช้วันปัจจุบัน)
-        let targetDateStr;
-        const dateInput = document.getElementById('view-plan-date'); // ดึงวันที่จากแถบตาราง (หรือสร้าง input ใหม่)
-        
-        if (dateInput && dateInput.value) {
-             targetDateStr = dateInput.value;
-        } else {
-             // ใช้วันที่ปัจจุบัน
-             const today = new Date();
-             const y = today.getFullYear();
-             const m = String(today.getMonth() + 1).padStart(2, '0');
-             const d = String(today.getDate()).padStart(2, '0');
-             targetDateStr = `${y}-${m}-${d}`;
-        }
-        
-        // 2. จัดรูปแบบวันที่ให้เป็นมาตรฐานเพื่อเปรียบเทียบ
-        const formattedTargetDate = typeof window.formatDate === 'function' ? window.formatDate(targetDateStr) : targetDateStr;
+        const today = new Date();
+        const defaultTodayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        let targetDateStr = defaultTodayStr;
 
-        // 3. กรองแผนจัดส่งให้เหลือเฉพาะ "วันที่เป้าหมาย"
+        const dateInput = document.getElementById('dash-vehicle-date');
+        if (dateInput) {
+            if (!dateInput.value) dateInput.value = defaultTodayStr;
+            targetDateStr = dateInput.value;
+        }
+
+        let formattedTargetDate = typeof formatDate === 'function' ? formatDate(targetDateStr) : targetDateStr;
+
         const targetPlans = db.deliveryPlans.filter(p => {
             if (!p || !p.date) return false;
-            let pDateFormatted = typeof window.formatDate === 'function' ? window.formatDate(p.date) : String(p.date).trim();
-            // รองรับกรณีวันที่มาเป็น String ธรรมดาและไม่มี T
+            let pDateFormatted = typeof formatDate === 'function' ? formatDate(p.date) : String(p.date).trim();
             let rawDate = String(p.date).trim();
-            if (rawDate.includes('T')) {
-                rawDate = rawDate.split('T')[0];
-            }
-            // เปรียบเทียบทั้งแบบที่ format แล้ว และแบบดิบๆ
+            if (rawDate.includes('T')) rawDate = rawDate.split('T')[0];
             return pDateFormatted === formattedTargetDate || rawDate === targetDateStr;
         });
-
-        // 4. อัพเดตหัวข้อให้รู้ว่ากำลังดูของวันที่เท่าไหร่ (ถ้าต้องการเพิ่มลูกเล่น)
-        const trackingTitleEl = document.querySelector('[data-lang-key="dash_vehicle_tracking_title"]');
-        if (trackingTitleEl) {
-            trackingTitleEl.innerHTML = `ระบบติดตามรถบรรทุกประจำวัน (วันที่: ${formattedTargetDate})`;
-        }
-
 
         if (targetPlans.length === 0) {
             const noDataHtml = `<div class="col-12 text-center text-muted p-4"><i class="bi bi-calendar-x fs-1 d-block mb-2 opacity-50"></i><span class="small fw-bold">${T.dash_vehicle_no_queue || 'ไม่มีคิวงาน'}</span></div>`;
@@ -5358,8 +5340,8 @@ window.populateVehicleDashboard = function() {
             return;
         }
 
-        const pendingPlans = targetPlans.filter(p => !p.licensePlate || String(p.licensePlate).trim() === '' || p.status === 'Pending');
-        const releasedPlans = targetPlans.filter(p => p.licensePlate && String(p.licensePlate).trim() !== '' && p.status !== 'Pending');
+        const pendingPlans = targetPlans.filter(p => !p.licensePlate || String(p.licensePlate).trim() === '');
+        const releasedPlans = targetPlans.filter(p => p.licensePlate && String(p.licensePlate).trim() !== '');
 
         // 📦 1. ประมวลผลกลุ่ม "รอจัดส่ง"
         const pendingGroups = {};
@@ -5395,6 +5377,7 @@ window.populateVehicleDashboard = function() {
             if (valA !== valB) return valA - valB;
             return a.customer.localeCompare(b.customer);
         }).forEach(g => {
+            // 🟢 สร้างป้ายสถานะประเภทงาน (ปรับสีใหม่)
             let jobBadge = '';
             if (g.hasDelivery && g.hasPickup) jobBadge = `<span class="badge bg-primary px-2 shadow-sm">📦 ส่ง+รับ</span>`;
             else if (g.hasPickup) jobBadge = `<span class="badge shadow-sm px-2" style="background-color: #f3e8ff; color: #5b21b6; border: 1px solid #d8b4fe;">♻️ ไปรับแพ็คกิ้ง</span>`;
@@ -5479,6 +5462,7 @@ window.populateVehicleDashboard = function() {
         }).forEach(v => {
             const customersStr = Array.from(v.customers).join(', ');
             
+            // 🟢 สร้างป้ายสถานะประเภทงาน (ปรับสีใหม่)
             let jobTags = '';
             if (v.hasDelivery && v.hasPickup) jobTags = `<span class="badge bg-primary shadow-sm mb-1 px-2" style="font-size: 0.65rem;">📦 ส่ง+รับ</span>`;
             else if (v.hasPickup) jobTags = `<span class="badge shadow-sm mb-1 px-2" style="background-color: #f3e8ff; color: #5b21b6; border: 1px solid #d8b4fe; font-size: 0.65rem;">♻️ ไปรับแพ็คกิ้ง</span>`;
