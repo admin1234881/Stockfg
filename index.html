@@ -6492,15 +6492,20 @@ function renderDeliveryPlanTable(targetDate) {
                         <tbody>
         `;
         
-        group.items.forEach(item => {
+group.items.forEach(item => {
             html += `
                             <tr class="border-bottom">
                                 <td style="width: 20%;" class="fw-bold text-dark">${item.productId}</td>
-                                <td style="width: 35%;" class="text-muted"><small>${item.productName}</small></td>
+                                <td style="width: 30%;" class="text-muted"><small>${item.productName}</small></td>
                                 <td style="width: 15%;" class="text-end fw-bold text-success">${parseInt(item.quantity).toLocaleString()} ชิ้น</td>
                                 <td style="width: 20%;" class="text-muted"><small>${item.remarks || '-'}</small></td>
-                                <td style="width: 10%;" class="text-center">
-                                    ${(group.status === 'Pending') ? `<button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')"><i class="bi bi-trash"></i></button>` : '<i class="bi bi-lock text-muted"></i>'}
+                                <td style="width: 15%;" class="text-center">
+                                    ${(group.status === 'Pending') ? `
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <button type="button" class="btn btn-sm btn-warning text-dark py-0 px-2 shadow-sm" style="border-radius: 6px;" onclick="event.stopPropagation(); window.editPlanItemQuantity('${item.id}', '${planDateStr}')" title="แก้ไขจำนวน"><i class="bi bi-pencil-square"></i></button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 shadow-sm" style="border-radius: 6px;" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')" title="ลบรายการนี้"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    ` : '<i class="bi bi-lock text-muted"></i>'}
                                 </td>
                             </tr>
             `;
@@ -7153,7 +7158,7 @@ window.formatTimeDisplay = function(timeStr) {
     return str;
 };
 
-// 🟢 0. ฟังก์ชันคำนวณและแสดงตารางแผนงาน (เพิ่มระบบค้นหา + แก้ปุ่มโดน Scrollbar บัง)
+// 🟢 0. ฟังก์ชันคำนวณและแสดงตารางแผนงาน (เพิ่มปุ่มแก้ไขจำนวนข้างปุ่มลบ)
 window.renderDeliveryPlanTable = function(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
     if (!tableBody) return;
@@ -7161,7 +7166,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
     db.deliveryPlans = db.deliveryPlans || [];
     const formattedTargetDate = typeof formatDate === 'function' ? formatDate(targetDate) : targetDate;
     
-    // 🛠️ ซ่อมแซมสถานะว่างเปล่า ให้เป็นรอจัดส่งเสมอ
+    // ซ่อมแซมสถานะว่างเปล่า ให้เป็นรอจัดส่งเสมอ
     db.deliveryPlans.forEach(p => {
         if (!p.status || String(p.status).trim() === '') {
             p.status = 'Pending';
@@ -7170,8 +7175,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
 
     const activeFilterEl = document.querySelector('input[name="planStatusFilter"]:checked');
     const activeFilter = activeFilterEl ? activeFilterEl.value : 'all';
-
-    // 🟢 ดึงคำค้นหาจากช่อง Search
+    
     const searchInput = document.getElementById('delivery-plan-search');
     const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
@@ -7180,12 +7184,10 @@ window.renderDeliveryPlanTable = function(targetDate) {
         return pDate === formattedTargetDate;
     });
 
-    // 🟢 1. กรองตามปุ่มสถานะ (ทั้งหมด/รอจัดส่ง/กำลังวิ่ง/จบงาน/ยกเลิก)
     if (activeFilter !== 'all') {
         dailyPlans = dailyPlans.filter(p => p.status === activeFilter);
     }
     
-    // 🟢 2. กรองตามคำค้นหาในช่อง Search
     if (searchTerm !== '') {
         dailyPlans = dailyPlans.filter(p => {
             const timeStr = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(p.time) : String(p.time);
@@ -7200,7 +7202,6 @@ window.renderDeliveryPlanTable = function(targetDate) {
         });
     }
     
-    // เรียงตามเวลา
     dailyPlans = dailyPlans.sort((a, b) => {
         let timeA = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(a.time) : a.time;
         let timeB = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(b.time) : b.time;
@@ -7259,6 +7260,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
             actionButtons = `
                 <div class="d-flex flex-column gap-1">
                     <button class="btn btn-success btn-sm shadow-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.returnGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-building-check me-1"></i> ถึงเอเทคแล้ว</button>
+                    <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
                 </div>
             `;
         } else if (group.status === 'Completed') {
@@ -7266,6 +7268,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
             actionButtons = `
                 <div class="d-flex flex-column gap-1 align-items-center">
                     <span class="text-success small fw-bold d-block"><i class="bi bi-check2-all"></i> จบงาน</span>
+                    <button class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.7rem;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
                 </div>
             `;
         } else if (group.status === 'Cancelled') {
@@ -7301,21 +7304,27 @@ window.renderDeliveryPlanTable = function(targetDate) {
                                 <th>ชื่อสินค้า</th>
                                 <th class="text-end">จำนวน</th>
                                 <th>หมายเหตุ</th>
-                                <th class="text-center">ลบ</th>
+                                <th class="text-center">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
         `;
         
         group.items.forEach(item => {
+            // 🟢 🛠️ เพิ่มปุ่มแก้ไขจำนวน (สีเหลือง) เข้าไปคู่กับปุ่มลบ (สีแดง)
             html += `
                             <tr class="border-bottom">
                                 <td style="width: 20%;" class="fw-bold text-dark">${item.productId}</td>
-                                <td style="width: 35%;" class="text-muted"><small>${item.productName}</small></td>
+                                <td style="width: 30%;" class="text-muted"><small>${item.productName}</small></td>
                                 <td style="width: 15%;" class="text-end fw-bold text-success">${parseInt(item.quantity).toLocaleString()} ชิ้น</td>
                                 <td style="width: 20%;" class="text-muted"><small>${item.remarks || '-'}</small></td>
-                                <td style="width: 10%;" class="text-center">
-                                    ${(group.status === 'Pending') ? `<button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')"><i class="bi bi-trash"></i></button>` : '<i class="bi bi-lock text-muted"></i>'}
+                                <td style="width: 15%;" class="text-center">
+                                    ${(group.status === 'Pending') ? `
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <button class="btn btn-sm btn-outline-warning py-0 px-2 shadow-sm" onclick="event.stopPropagation(); window.editPlanItemQuantity('${item.id}', '${planDateStr}')" title="แก้ไขจำนวน"><i class="bi bi-pencil-square"></i></button>
+                                            <button class="btn btn-sm btn-outline-danger py-0 px-2 shadow-sm" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')" title="ลบรายการนี้"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    ` : '<i class="bi bi-lock text-muted"></i>'}
                                 </td>
                             </tr>
             `;
@@ -7330,7 +7339,6 @@ window.renderDeliveryPlanTable = function(targetDate) {
         `;
     }
 
-    // 🟢 FIX DISPLAY BUG: ดันแถวสุดท้ายให้พ้น Scrollbar แนวนอน
     html += `
     <tr style="border: none; background: transparent;">
         <td colspan="7" style="height: 50px; border: none;"></td>
@@ -7973,6 +7981,57 @@ window.returnGroupVehicle = async function(date, displayTime, customer) {
             }
         }
     });
+};
+// 🟢 ฟังก์ชันแก้ไขจำนวนส่งงาน (ดึง Popup ให้กรอกตัวเลขใหม่)
+window.editPlanItemQuantity = async function(itemId, dateStr) {
+    try {
+        const planIndex = db.deliveryPlans.findIndex(p => String(p.id).trim() === String(itemId).trim());
+        
+        if (planIndex === -1) {
+            Swal.fire('ข้อผิดพลาด', 'ไม่พบข้อมูลรายการนี้ กรุณารีเฟรชหน้าเว็บครับ', 'error');
+            return;
+        }
+        
+        const plan = db.deliveryPlans[planIndex];
+        
+        const { value: newQty } = await Swal.fire({
+            title: 'แก้ไขจำนวนจัดส่ง',
+            html: `รหัสสินค้า: <b class="text-primary">${plan.productId}</b><br>
+                   ลูกค้า: <b>${plan.customer}</b><br>
+                   จำนวนเดิม: <b class="text-danger">${plan.quantity}</b> ชิ้น`,
+            input: 'number',
+            inputValue: plan.quantity,
+            inputAttributes: { min: 1, step: 1 },
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-save me-1"></i> บันทึกยอดใหม่',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#0d6efd',
+            inputValidator: (value) => {
+                if (!value || value <= 0) return 'กรุณาระบุจำนวนที่มากกว่า 0';
+            }
+        });
+
+        if (newQty && parseInt(newQty, 10) !== parseInt(plan.quantity, 10)) {
+            Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            plan.quantity = parseInt(newQty, 10);
+            
+            // ป้องกันรูปแบบเวลา/วันที่พังตอนยิงเข้า Google Sheets
+            if (plan.time && !String(plan.time).startsWith("'")) plan.time = "'" + window.formatTimeDisplay(plan.time);
+            if (plan.date) plan.date = formatDate(plan.date);
+            
+            try {
+                await callAppsScript('updateDeliveryPlan', plan);
+                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(dateStr);
+                if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
+                Swal.fire({ icon: 'success', title: 'อัปเดตจำนวนเรียบร้อย!', timer: 1500, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+            }
+        }
+    } catch (error) {
+        console.error("Edit Quantity Error:", error);
+    }
 };
 // 🟢 4. ฟังก์ชันลบแผนงาน (รายพาร์ท)
 window.deletePlanItem = function(id, date) {
