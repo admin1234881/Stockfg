@@ -6561,126 +6561,73 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
     }
 };
 
-// 🟢 3. ฟังก์ชันรับรถกลับ (ตัดสต็อกออโต้ + แท็กประวัติ)
+// 🟢 3. ฟังก์ชันรับรถกลับ (แก้ไขบั๊กเด้งหลุด: อัปเดตแค่สถานะ ห้ามยุ่งกับเวลาเดิมเพื่อป้องกัน Quote ซ้อนทับ)
 window.returnGroupVehicle = function(date, displayTime, customer) {
-    const safeDate = formatDate(date);
-    const safeTime = window.formatTimeDisplay(displayTime);
+    const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
+    const safeTime = String(displayTime).replace(/^'+/, '').trim(); // ลบ Quote เผื่อติดมา
     const safeCustomer = String(customer).trim();
 
     const plansToUpdate = db.deliveryPlans.filter(p => {
-        return formatDate(p.date) === safeDate && window.formatTimeDisplay(p.time) === safeTime && String(p.customer).trim() === safeCustomer && p.status === 'Delivering';
+        let pDate = typeof formatDate === 'function' ? formatDate(p.date) : p.date;
+        let pTime = String(p.time).replace(/^'+/, '').trim();
+        if (typeof formatTimeDisplay === 'function') pTime = formatTimeDisplay(pTime);
+        
+        return pDate === safeDate && pTime === safeTime && String(p.customer).trim() === safeCustomer && p.status === 'Delivering';
     });
 
-    if (plansToUpdate.length === 0) return;
+    if (plansToUpdate.length === 0) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบรถที่กำลังจัดส่ง (ข้อมูลอาจเปลี่ยนไปแล้ว) กรุณากด F5 เพื่อรีเฟรชจอครับ', 'warning');
+        return;
+    }
 
     Swal.fire({
-        title: '🏁 ยืนยันรับรถกลับและตัดสต็อก?',
+        title: '🏁 ยืนยันรถกลับถึงบริษัท?',
         html: `รับรถกลับของลูกค้า <b>${safeCustomer}</b><br>รอบเวลา: <b>${safeTime} น.</b><br><br>
-               <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> ระบบจะทำการเปลี่ยนสถานะจบงาน และ <b>ตัดยอดสต็อกสินค้าอัตโนมัติ</b> ทันที</span>`,
-        icon: 'warning',
+               <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> ระบบจะทำการเปลี่ยนสถานะเป็น จบงาน (Completed)</span>`,
+        icon: 'info',
         showCancelButton: true,
-        confirmButtonText: 'ยืนยันจบงานและตัดสต็อก',
+        confirmButtonText: 'ยืนยันจบงาน',
         cancelButtonText: 'ยกเลิก',
         confirmButtonColor: '#198754'
     }).then(async (result) => {
         if (result.isConfirmed) {
-            Swal.fire({ title: 'กำลังประมวลผล...', text: 'ระบบกำลังทยอยตัดสต็อกแบบ FIFO กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             
             const returnTime = new Date().toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'}); 
-            const autoExportEntries = [];
-            let tempStock = JSON.parse(JSON.stringify(calculatedStock));
 
-            for (let plan of plansToUpdate) {
-                plan.status = 'Completed';
-                plan.actualReturnTime = "'" + returnTime;
-                plan.time = "'" + window.formatTimeDisplay(plan.time);
-                plan.date = formatDate(plan.date);
-                if (plan.actualReleaseTime && !String(plan.actualReleaseTime).startsWith("'")) plan.actualReleaseTime = "'" + window.formatTimeDisplay(plan.actualReleaseTime);
-
-                if (plan.jobType !== 'Pickup' && plan.quantity > 0 && plan.productId && plan.productId !== '-') {
-                    let qtyToDeduct = parseInt(plan.quantity);
-                    const product = db.products.find(p => String(p.id).trim() === String(plan.productId).trim());
-                    const stockInfo = tempStock.find(s => String(s.productId).trim() === String(plan.productId).trim());
-
-                    if (stockInfo && stockInfo.lots) {
-                        let availableLots = stockInfo.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate));
-                        for (let lot of availableLots) {
-                            if (qtyToDeduct <= 0) break;
-                            let deductAmount = Math.min(lot.quantity, qtyToDeduct);
-                            
-                            autoExportEntries.push({
-                                id: 'exp-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-                                date: new Date().toISOString(),
-                                type: 'export',
-                                exportType: 'Sale',
-                                productId: plan.productId,
-                                productName: plan.productName,
-                                customer: plan.customer,
-                                erpCode: product ? product.erpCode : '',
-                                quantity: deductAmount,
-                                productionDate: lot.productionDate,
-                                user: currentUser.username,
-                                invoiceNumber: plan.licensePlate ? 'AUTO-' + plan.licensePlate : 'AUTO-DELIVERY',
-                                remarks: `DELIVERY_PLAN:${plan.id}|AUTO ตัดสต็อกอัตโนมัติ รอบ ${safeTime} น. (ทะเบียน ${plan.licensePlate || '-'})`,
-                                packagingType: lot.packagingType || 'standard',
-                                priceAtTimeOfSale: product ? (parseFloat(product.unitPrice) || 0) : 0
-                            });
-                            qtyToDeduct -= deductAmount;
-                            lot.quantity -= deductAmount; 
-                        }
-                    }
-
-                    if (qtyToDeduct > 0) {
-                        autoExportEntries.push({
-                            id: 'exp-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-                            date: new Date().toISOString(),
-                            type: 'export',
-                            exportType: 'Sale',
-                            productId: plan.productId,
-                            productName: plan.productName,
-                            customer: plan.customer,
-                            erpCode: product ? product.erpCode : '',
-                            quantity: qtyToDeduct,
-                            productionDate: formatDate(new Date()), 
-                            user: currentUser.username,
-                            invoiceNumber: plan.licensePlate ? 'AUTO-' + plan.licensePlate : 'AUTO-DELIVERY',
-                            remarks: `DELIVERY_PLAN:${plan.id}|AUTO ตัดสต็อกออโต้ รอบ ${safeTime} น. (บังคับหัก/สต็อกไม่พอ)`,
-                            packagingType: 'standard',
-                            priceAtTimeOfSale: product ? (parseFloat(product.unitPrice) || 0) : 0
-                        });
-                    }
-                }
-            }
-            
             try {
-                for (let plan of plansToUpdate) await callAppsScript('updateDeliveryPlan', plan);
-                if (autoExportEntries.length > 0) {
-                    await callAppsScript('appendBatchHistory', autoExportEntries);
-                    autoExportEntries.forEach(entry => db.history.unshift(entry));
+                // อัปเดตข้อมูลโดยแก้แค่ "สถานะ" และ "เวลาจบงาน" เท่านั้น 
+                for (let plan of plansToUpdate) {
+                    plan.status = 'Completed';
+                    plan.actualReturnTime = "'" + returnTime; 
+                    
+                    // สั่งบันทึกลง Google Sheet
+                    await callAppsScript('updateDeliveryPlan', plan);
                 }
-                calculateStockFromHistory();
-                populateAll();
-                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
                 
-                Swal.fire({ icon: 'success', title: 'ปิดงานสำเร็จ!', text: 'รถเข้าคลังและตัดสต็อกออโต้เรียบร้อย', timer: 2000, showConfirmButton: false });
+                // รีเฟรชตารางหน้าจอ
+                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
+                if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
+                
+                Swal.fire({ icon: 'success', title: 'ปิดงานสำเร็จ!', text: 'บันทึกรถเข้าบริษัทเรียบร้อย', timer: 2000, showConfirmButton: false });
             } catch (error) {
                 Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
             }
         }
     });
 };
-
-// 🟢 ฟังก์ชันยกเลิกรอบรถ (แก้ไขบั๊กคืนสต็อก บังคับยอดติดลบตามลอจิกของระบบ)
+// 🟢 4. ฟังก์ชันยกเลิกรอบรถ (แก้ไขป้องกันบั๊ก Quote ซ้อนทับเช่นเดียวกัน)
 window.cancelDeliveryGroup = function(date, displayTime, customer) {
-    const safeDate = formatDate(date);
-    const safeTime = window.formatTimeDisplay(displayTime);
+    const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
+    const safeTime = String(displayTime).replace(/^'+/, '').trim();
     const safeCustomer = String(customer).trim();
 
     const plansToUpdate = db.deliveryPlans.filter(p => {
-        return formatDate(p.date) === safeDate && 
-               window.formatTimeDisplay(p.time) === safeTime && 
-               String(p.customer).trim() === safeCustomer && 
-               p.status !== 'Cancelled';
+        let pDate = typeof formatDate === 'function' ? formatDate(p.date) : p.date;
+        let pTime = String(p.time).replace(/^'+/, '').trim();
+        if (typeof formatTimeDisplay === 'function') pTime = formatTimeDisplay(pTime);
+        
+        return pDate === safeDate && pTime === safeTime && String(p.customer).trim() === safeCustomer && p.status !== 'Cancelled';
     });
 
     if (plansToUpdate.length === 0) return;
@@ -6688,7 +6635,7 @@ window.cancelDeliveryGroup = function(date, displayTime, customer) {
     Swal.fire({
         title: 'ยกเลิกรอบจัดส่งนี้?',
         html: `คุณกำลังจะยกเลิกรถของ <b>${safeCustomer}</b> รอบ <b>${safeTime} น.</b><br>
-               <small class="text-danger fw-bold">หากมีการตัดสต็อกไปแล้ว ระบบจะคืนสต็อกให้อัตโนมัติ และทะเบียนรถจะกลับมาว่างเพื่อรับงานอื่น</small>`,
+               <small class="text-danger fw-bold">หากรถถูกปล่อยไปแล้ว ระบบจะจัดการ "คืนสต็อก" ให้อัตโนมัติ</small>`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'ยืนยันยกเลิก',
@@ -6696,12 +6643,11 @@ window.cancelDeliveryGroup = function(date, displayTime, customer) {
         confirmButtonColor: '#dc3545'
     }).then(async (result) => {
         if (result.isConfirmed) {
-            Swal.fire({ title: 'กำลังยกเลิก...', text: 'กำลังคืนสต็อกและอัปเดตระบบ', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'กำลังยกเลิก...', text: 'กำลังเคลียร์คิวและอัปเดตระบบ', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             
             const reversalEntries = [];
             const planIds = plansToUpdate.map(p => p.id);
 
-            // ค้นหาประวัติ Export เพื่อทำ Reversal คืนสต็อก
             db.history.forEach(h => {
                 if (h.type === 'export') {
                     const isTagged = planIds.some(id => h.remarks && h.remarks.includes(`DELIVERY_PLAN:${id}`));
@@ -6719,8 +6665,7 @@ window.cancelDeliveryGroup = function(date, displayTime, customer) {
                                 customer: h.customer,
                                 erpCode: h.erpCode,
                                 productionDate: h.productionDate,
-                                // 🟢 🛠️ แก้ไขตรงนี้: ใส่เครื่องหมายลบ (-) กลับเข้าไป เพื่อให้ระบบดึงยอดไปติดลบและคำนวณคืนเข้าสต็อก!
-                                quantity: -parseFloat(h.quantity), 
+                                quantity: parseFloat(h.quantity), 
                                 user: currentUser.username,
                                 remarks: `Reversal of transaction ID: ${h.id}. Original remarks: ${h.remarks || ''}`,
                                 packagingType: h.packagingType
@@ -6731,18 +6676,12 @@ window.cancelDeliveryGroup = function(date, displayTime, customer) {
             });
 
             try {
-                // เปลี่ยนสถานะเป็น Cancelled ทิ้งไว้ให้ดูเป็นหลักฐาน
+                // แก้แค่สถานะ ห้ามแตะตัวแปรเวลา!
                 for (let plan of plansToUpdate) {
                     plan.status = 'Cancelled';
-                    plan.time = "'" + window.formatTimeDisplay(plan.time);
-                    plan.date = formatDate(plan.date);
-                    if (plan.actualReleaseTime && !String(plan.actualReleaseTime).startsWith("'")) plan.actualReleaseTime = "'" + window.formatTimeDisplay(plan.actualReleaseTime);
-                    if (plan.actualReturnTime && !String(plan.actualReturnTime).startsWith("'")) plan.actualReturnTime = "'" + window.formatTimeDisplay(plan.actualReturnTime);
-                    
                     await callAppsScript('updateDeliveryPlan', plan);
                 }
 
-                // บันทึกรายการคืนสต็อกลงชีต
                 if (reversalEntries.length > 0) {
                     await callAppsScript('appendBatchHistory', reversalEntries);
                     reversalEntries.forEach(entry => db.history.unshift(entry));
@@ -6753,13 +6692,14 @@ window.cancelDeliveryGroup = function(date, displayTime, customer) {
                 if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
                 if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
                 
-                Swal.fire({ icon: 'success', title: 'ยกเลิกสำเร็จ!', text: 'คืนสต็อกและคืนป้ายทะเบียนรถเรียบร้อย', timer: 2000, showConfirmButton: false });
+                Swal.fire({ icon: 'success', title: 'ยกเลิกสำเร็จ!', text: 'จัดการสถานะและคืนสต็อกเรียบร้อย', timer: 2000, showConfirmButton: false });
             } catch (error) {
                 Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
             }
         }
     });
 };
+
 // 🟢 5. ฟังก์ชันลบแผนงาน (รายพาร์ท - เฉพาะตอนรอจัดส่ง)
 window.deletePlanItem = function(id, date) {
     Swal.fire({
