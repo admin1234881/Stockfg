@@ -3140,7 +3140,7 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyijlnkrfNYhk3ypCB3kV0GwPIyrp1Drm4zfFYBuD0uh4IvSwoR8pemQt2HfrukSG3cBA/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx1c5ymarJPOKgxxQTNNGFxICakUjdsVzP72_71k3Lo5U-A9TNITVts90sITy05xHAHeg/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [] };
@@ -6350,7 +6350,7 @@ document.body.addEventListener('submit', function (e) {
         };
 
         db.deliveryPlans = db.deliveryPlans || [];
-        db.deliveryPlans.push(newPlan);
+        db.deliveryPlans.unshift(newPlan); // 🟢 เปลี่ยนจาก push เป็น unshift เพื่อดันข้อมูลใหม่ขึ้นบนสุด
         
         document.getElementById('view-plan-date').value = planDate;
         renderDeliveryPlanTable(planDate);
