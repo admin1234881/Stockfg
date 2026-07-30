@@ -1522,10 +1522,6 @@
                     
                     <input type="radio" class="btn-check" name="planStatusFilter" id="filter-completed" value="Completed" onchange="renderDeliveryPlanTable(document.getElementById('view-plan-date').value)">
                     <label class="btn btn-outline-success btn-sm fw-bold px-3 py-1" for="filter-completed">จบงาน</label>
-
-                    <!-- 🟢 ปุ่มที่เพิ่มใหม่ -->
-                    <input type="radio" class="btn-check" name="planStatusFilter" id="filter-cancelled" value="Cancelled" onchange="renderDeliveryPlanTable(document.getElementById('view-plan-date').value)">
-                    <label class="btn btn-outline-danger btn-sm fw-bold px-3 py-1" for="filter-cancelled">ยกเลิก</label>
                 </div>
                 <div class="input-group shadow-sm" style="width: 260px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6;">
                     <span class="input-group-text bg-white border-0 py-1"><i class="bi bi-search text-muted small"></i></span>
@@ -7158,13 +7154,17 @@ window.formatTimeDisplay = function(timeStr) {
     return str;
 };
 
-// 🟢 0. ฟังก์ชันคำนวณและแสดงตารางแผนงาน (เพิ่มปุ่มแก้ไขจำนวนข้างปุ่มลบ)
+// 🟢 0. ฟังก์ชันคำนวณและแสดงตารางแผนงาน (แก้ไขบั๊กช่องค้นหา + รวมปุ่มดินสอแก้ไขจำนวน)
 window.renderDeliveryPlanTable = function(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
     if (!tableBody) return;
     
     db.deliveryPlans = db.deliveryPlans || [];
-    const formattedTargetDate = typeof formatDate === 'function' ? formatDate(targetDate) : targetDate;
+    
+    // ดึงวันที่จากช่องเลือกวันที่มาใช้งานเสมอ ป้องกันการส่งค่าว่างตอนพิมพ์ค้นหา
+    const dateInput = document.getElementById('view-plan-date');
+    const actualDate = targetDate || (dateInput ? dateInput.value : '');
+    const formattedTargetDate = typeof formatDate === 'function' ? formatDate(actualDate) : actualDate;
     
     // ซ่อมแซมสถานะว่างเปล่า ให้เป็นรอจัดส่งเสมอ
     db.deliveryPlans.forEach(p => {
@@ -7176,6 +7176,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
     const activeFilterEl = document.querySelector('input[name="planStatusFilter"]:checked');
     const activeFilter = activeFilterEl ? activeFilterEl.value : 'all';
     
+    // 🟢 ดึงคำค้นหามาใช้งาน
     const searchInput = document.getElementById('delivery-plan-search');
     const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
@@ -7188,20 +7189,30 @@ window.renderDeliveryPlanTable = function(targetDate) {
         dailyPlans = dailyPlans.filter(p => p.status === activeFilter);
     }
     
+    // 🟢 🛠️ แก้ไขระบบค้นหา (แปลงทุกอย่างเป็น String ก่อน ป้องกัน Error ทะลุจากตัวเลข)
     if (searchTerm !== '') {
         dailyPlans = dailyPlans.filter(p => {
-            const timeStr = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(p.time) : String(p.time);
+            const timeStr = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(p.time) : String(p.time || '');
+            
+            const strCustomer = String(p.customer || '').toLowerCase();
+            const strPlate = String(p.licensePlate || '').toLowerCase();
+            const strTime = String(timeStr).toLowerCase();
+            const strProductId = String(p.productId || '').toLowerCase();
+            const strProductName = String(p.productName || '').toLowerCase();
+            const strRemarks = String(p.remarks || '').toLowerCase();
+
             return (
-                (p.customer && p.customer.toLowerCase().includes(searchTerm)) ||
-                (p.licensePlate && p.licensePlate.toLowerCase().includes(searchTerm)) ||
-                (timeStr && timeStr.toLowerCase().includes(searchTerm)) ||
-                (p.productId && p.productId.toLowerCase().includes(searchTerm)) ||
-                (p.productName && p.productName.toLowerCase().includes(searchTerm)) ||
-                (p.remarks && p.remarks.toLowerCase().includes(searchTerm))
+                strCustomer.includes(searchTerm) ||
+                strPlate.includes(searchTerm) ||
+                strTime.includes(searchTerm) ||
+                strProductId.includes(searchTerm) ||
+                strProductName.includes(searchTerm) ||
+                strRemarks.includes(searchTerm)
             );
         });
     }
     
+    // เรียงตามเวลา
     dailyPlans = dailyPlans.sort((a, b) => {
         let timeA = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(a.time) : a.time;
         let timeB = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(b.time) : b.time;
@@ -7311,7 +7322,6 @@ window.renderDeliveryPlanTable = function(targetDate) {
         `;
         
         group.items.forEach(item => {
-            // 🟢 🛠️ เพิ่มปุ่มแก้ไขจำนวน (สีเหลือง) เข้าไปคู่กับปุ่มลบ (สีแดง)
             html += `
                             <tr class="border-bottom">
                                 <td style="width: 20%;" class="fw-bold text-dark">${item.productId}</td>
@@ -7320,9 +7330,9 @@ window.renderDeliveryPlanTable = function(targetDate) {
                                 <td style="width: 20%;" class="text-muted"><small>${item.remarks || '-'}</small></td>
                                 <td style="width: 15%;" class="text-center">
                                     ${(group.status === 'Pending') ? `
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <button class="btn btn-sm btn-outline-warning py-0 px-2 shadow-sm" onclick="event.stopPropagation(); window.editPlanItemQuantity('${item.id}', '${planDateStr}')" title="แก้ไขจำนวน"><i class="bi bi-pencil-square"></i></button>
-                                            <button class="btn btn-sm btn-outline-danger py-0 px-2 shadow-sm" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')" title="ลบรายการนี้"><i class="bi bi-trash"></i></button>
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <button type="button" class="btn btn-sm btn-warning text-dark py-0 px-2 shadow-sm" style="border-radius: 6px;" onclick="event.stopPropagation(); window.editPlanItemQuantity('${item.id}', '${planDateStr}')" title="แก้ไขจำนวน"><i class="bi bi-pencil-square"></i></button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2 shadow-sm" style="border-radius: 6px;" onclick="event.stopPropagation(); window.deletePlanItem('${item.id}', '${planDateStr}')" title="ลบรายการนี้"><i class="bi bi-trash"></i></button>
                                         </div>
                                     ` : '<i class="bi bi-lock text-muted"></i>'}
                                 </td>
