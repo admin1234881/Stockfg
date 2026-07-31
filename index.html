@@ -6561,10 +6561,10 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
     }
 };
 
-// 🟢 3. ฟังก์ชันรับรถกลับ (แก้ไขบั๊กเด้งหลุด: อัปเดตแค่สถานะ ห้ามยุ่งกับเวลาเดิมเพื่อป้องกัน Quote ซ้อนทับ)
+// 🟢 3. ฟังก์ชันรับรถกลับ (อัปเดตเฉพาะสถานะและเวลาเข้าบริษัท ห้ามกวนวันที่)
 window.returnGroupVehicle = function(date, displayTime, customer) {
     const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
-    const safeTime = String(displayTime).replace(/^'+/, '').trim(); // ลบ Quote เผื่อติดมา
+    const safeTime = String(displayTime).replace(/^'+/, '').trim();
     const safeCustomer = String(customer).trim();
 
     const plansToUpdate = db.deliveryPlans.filter(p => {
@@ -6576,7 +6576,7 @@ window.returnGroupVehicle = function(date, displayTime, customer) {
     });
 
     if (plansToUpdate.length === 0) {
-        Swal.fire('ข้อผิดพลาด', 'ไม่พบรถที่กำลังจัดส่ง (ข้อมูลอาจเปลี่ยนไปแล้ว) กรุณากด F5 เพื่อรีเฟรชจอครับ', 'warning');
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบรถที่กำลังจัดส่ง กรุณากด F5 เพื่อรีเฟรชจอครับ', 'warning');
         return;
     }
 
@@ -6596,27 +6596,30 @@ window.returnGroupVehicle = function(date, displayTime, customer) {
             const returnTime = new Date().toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'}); 
 
             try {
-                // อัปเดตข้อมูลโดยแก้แค่ "สถานะ" และ "เวลาจบงาน" เท่านั้น 
                 for (let plan of plansToUpdate) {
                     plan.status = 'Completed';
                     plan.actualReturnTime = "'" + returnTime; 
                     
-                    // สั่งบันทึกลง Google Sheet
-                    await callAppsScript('updateDeliveryPlan', plan);
+                    // 🟢 โยนไปอัปเดตเฉพาะ ID, Status และเวลาจบงาน เท่านั้น! (ไม่ต้องส่งวันที่ไป)
+                    await callAppsScript('updateDeliveryPlan', {
+                        id: plan.id,
+                        status: 'Completed',
+                        actualReturnTime: "'" + returnTime
+                    });
                 }
                 
-                // รีเฟรชตารางหน้าจอ
                 if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
                 if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
                 
                 Swal.fire({ icon: 'success', title: 'ปิดงานสำเร็จ!', text: 'บันทึกรถเข้าบริษัทเรียบร้อย', timer: 2000, showConfirmButton: false });
             } catch (error) {
-                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
             }
         }
     });
 };
-// 🟢 4. ฟังก์ชันยกเลิกรอบรถ (แก้ไขป้องกันบั๊ก Quote ซ้อนทับเช่นเดียวกัน)
+
+// 🟢 4. ฟังก์ชันยกเลิกรอบรถ (อัปเดตเฉพาะสถานะ ไม่กวนวันที่และเวลา)
 window.cancelDeliveryGroup = function(date, displayTime, customer) {
     const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
     const safeTime = String(displayTime).replace(/^'+/, '').trim();
@@ -6676,10 +6679,14 @@ window.cancelDeliveryGroup = function(date, displayTime, customer) {
             });
 
             try {
-                // แก้แค่สถานะ ห้ามแตะตัวแปรเวลา!
                 for (let plan of plansToUpdate) {
                     plan.status = 'Cancelled';
-                    await callAppsScript('updateDeliveryPlan', plan);
+                    
+                    // 🟢 โยนไปอัปเดตเฉพาะ ID และ Status เท่านั้น! (ไม่ต้องส่งวันที่ไป)
+                    await callAppsScript('updateDeliveryPlan', {
+                        id: plan.id,
+                        status: 'Cancelled'
+                    });
                 }
 
                 if (reversalEntries.length > 0) {
@@ -7599,336 +7606,335 @@ window.deletePlanItem = function(itemId, dateStr) {
         }
     });
 };
-// 🟢 1. ฟังก์ชันปล่อยรถ (แบบกลุ่ม) + ระบบ Auto-Deduct หักสต็อก FIFO อัตโนมัติ
+// 🟢 2. ฟังก์ชันปล่อยรถ (แก้บั๊กกดหลายรอบ ยิงข้อมูลพร้อมกันรวดเดียวแบบสายฟ้าแลบ)
 window.releaseGroupVehicle = async function(date, displayTime, customer) {
-    const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === date && window.formatTimeDisplay(p.time) === displayTime && p.customer === customer && p.status === 'Pending');
+    const safeDate = formatDate(date);
+    const safeTime = window.formatTimeDisplay(displayTime);
+    const safeCustomer = String(customer).trim();
+
+    const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === safeDate && window.formatTimeDisplay(p.time) === safeTime && p.customer === safeCustomer && p.status === 'Pending');
     if (plansToUpdate.length === 0) return;
 
-    // 📦 แยกงาน "ส่งของ" กับ "รับแร็ค" ออกจากกัน
-    const deliveryPlans = plansToUpdate.filter(p => p.jobType !== 'Pickup');
-    const pickupPlans = plansToUpdate.filter(p => p.jobType === 'Pickup');
+    // 1. จำลองการตัดสต็อก (Simulation) เพื่อเอาข้อมูลไปโชว์ในตารางก่อนยืนยัน
+    let tempStock = JSON.parse(JSON.stringify(calculatedStock));
+    let simulationRows = [];
+    let hasDeliveryItems = false;
+    let jobTypesSet = new Set();
 
-    let htmlContent = '';
-    let exportEntriesToCreate = [];
-    let isStockSufficient = true;
-    let insufficientMsg = '';
+    for (let plan of plansToUpdate) {
+        if (plan.jobType === 'Pickup') jobTypesSet.add('♻️ รับแพ็คกิ้ง');
+        else if (plan.jobType === 'Other') jobTypesSet.add('📝 อื่นๆ');
+        else jobTypesSet.add('📦 ส่งสินค้า');
 
-    // 🚚 ถ้ามีงาน "ส่งของ" ต้องคำนวณ FIFO ตัดสต็อกก่อน
-    if (deliveryPlans.length > 0) {
-        let fifoSummaryHtml = `
-            <div class="table-responsive mt-3 mb-2 rounded border border-secondary-subtle shadow-sm">
-                <table class="table table-sm table-hover text-start align-middle mb-0" style="font-size: 0.8rem;">
-                    <thead class="table-light">
+        if (plan.jobType !== 'Pickup' && plan.jobType !== 'Other' && plan.quantity > 0 && plan.productId && plan.productId !== '-') {
+            hasDeliveryItems = true;
+            let qtyToDeduct = parseInt(plan.quantity);
+            const stockInfo = tempStock.find(s => String(s.productId).trim() === String(plan.productId).trim());
+
+            if (stockInfo && stockInfo.lots) {
+                let availableLots = stockInfo.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate));
+                for (let lot of availableLots) {
+                    if (qtyToDeduct <= 0) break;
+                    let deductAmount = Math.min(lot.quantity, qtyToDeduct);
+                    let pkgBadge = lot.packagingType === 'temporary' ? '<span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Temp</span>' : '<span class="badge bg-success ms-1" style="font-size: 0.65rem;">Std</span>';
+                    
+                    simulationRows.push(`
                         <tr>
-                            <th class="ps-2">รหัสสินค้า</th>
-                            <th>วันที่ผลิต (Lot ที่จะตัด)</th>
-                            <th class="text-end pe-2">จำนวนตัด</th>
+                            <td class="text-primary fw-bold">${plan.productId}</td>
+                            <td>${formatDate(lot.productionDate)} ${pkgBadge}</td>
+                            <td class="text-danger fw-bold">-${deductAmount}</td>
                         </tr>
-                    </thead>
-                    <tbody>
-        `;
-
-        // จำลองสต็อกชั่วคราวเพื่อหักลบ
-        let tempStock = JSON.parse(JSON.stringify(calculatedStock));
-
-        for (let plan of deliveryPlans) {
-            const stockItem = tempStock.find(s => String(s.productId).trim() === String(plan.productId).trim());
-            let requiredQty = parseInt(plan.quantity, 10) || 0;
-
-            if (!stockItem || stockItem.totalQuantity < requiredQty) {
-                isStockSufficient = false;
-                insufficientMsg += `<br><span class="text-danger">❌ <b>${plan.productId}</b> (ต้องการ: ${requiredQty}, สต็อกมีแค่: ${stockItem ? stockItem.totalQuantity : 0})</span>`;
-                continue;
+                    `);
+                    qtyToDeduct -= deductAmount;
+                    lot.quantity -= deductAmount;
+                }
             }
-
-            // กรองดึงเฉพาะ Lot ที่มีของ และเรียงจากเก่าสุดไปใหม่สุด (FIFO)
-            let availableLots = stockItem.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate));
-
-            for (let lot of availableLots) {
-                if (requiredQty <= 0) break;
-                let deductQty = Math.min(lot.quantity, requiredQty);
-                
-                // เตรียมข้อมูลสำหรับส่งไปบันทึกลงประวัติ History
-                exportEntriesToCreate.push({
-                    productId: plan.productId,
-                    productName: plan.productName,
-                    customer: plan.customer,
-                    quantity: deductQty,
-                    productionDate: lot.productionDate,
-                    packagingType: lot.packagingType,
-                    unitPrice: stockItem.unitPrice || 0
-                });
-
-                let packBadge = lot.packagingType === 'temporary' ? '<span class="badge bg-warning text-dark ms-1">Temp</span>' : '<span class="badge bg-success ms-1">Std</span>';
-                fifoSummaryHtml += `<tr><td class="ps-2 fw-bold text-primary">${plan.productId}</td><td>${formatDate(lot.productionDate)} ${packBadge}</td><td class="text-danger fw-bold text-end pe-2">-${deductQty}</td></tr>`;
-
-                lot.quantity -= deductQty;
-                requiredQty -= deductQty;
+            if (qtyToDeduct > 0) {
+                simulationRows.push(`
+                    <tr>
+                        <td class="text-primary fw-bold">${plan.productId}</td>
+                        <td class="text-danger">สต็อกไม่พอ (บังคับติดลบ)</td>
+                        <td class="text-danger fw-bold">-${qtyToDeduct}</td>
+                    </tr>
+                `);
             }
         }
-        fifoSummaryHtml += '</tbody></table></div>';
-
-        // 🚫 ถ้าสต็อกไม่พอ บล็อคไม่ให้ปล่อยรถ
-        if (!isStockSufficient) {
-            Swal.fire({
-                icon: 'error',
-                title: 'สต็อกไม่พอจัดส่ง!',
-                html: `<div class="text-start">ไม่สามารถปล่อยรถได้เนื่องจากสต็อกบางรายการไม่เพียงพอ: ${insufficientMsg}<br><br><small class="text-muted">* กรุณารับเข้าสินค้า หรือปรับแก้แผนการจัดส่งก่อนครับ</small></div>`,
-                confirmButtonColor: '#0d6efd'
-            });
-            return;
-        }
-
-        // หน้าตา Popup ฟอร์มปล่อยรถแบบมีตัดสต็อก
-        htmlContent = `
-            <div class="text-start mb-3 p-3 bg-light rounded border border-primary-subtle" style="font-size: 0.95rem;">
-                <b class="text-dark"><i class="bi bi-building me-1"></i>ลูกค้า:</b> ${customer}<br>
-                <b class="text-dark"><i class="bi bi-clock-history me-1"></i>รอบเวลา:</b> ${displayTime} น.<br>
-                <b class="text-dark"><i class="bi bi-tags me-1"></i>ประเภทงาน:</b> 📦 ส่งสินค้า ${pickupPlans.length > 0 ? '& <span style="color: #6f42c1;">♻️ รับแร็ค</span>' : ''}
-            </div>
-            <div class="text-start">
-                <label class="form-label fw-bold small text-muted mb-1">ทะเบียนรถ <span class="text-danger">*</span></label>
-                <input id="swal-input-plate" class="form-control form-control-lg border-dark shadow-sm mb-3" placeholder="เช่น กท 1234">
-                
-                <label class="form-label fw-bold small text-muted mb-1">เลขที่ Invoice <span class="text-danger">*</span></label>
-                <input id="swal-input-invoice" class="form-control form-control-lg border-primary shadow-sm" placeholder="ระบุ Invoice เพื่อตัดสต็อก">
-            </div>
-            <div class="text-start mt-4 fw-bold text-danger" style="font-size: 0.85rem;"><i class="bi bi-info-circle-fill me-1"></i> ระบบจะตัดสต็อกอัตโนมัติ (FIFO) ตาม Lot นี้:</div>
-            ${fifoSummaryHtml}
-        `;
-    } else {
-        // ♻️ ถ้ารถคันนี้วิ่งไป "รับแพ็คกิ้ง" อย่างเดียว ไม่ต้องตัดสต็อก ไม่ต้องถาม Invoice
-        htmlContent = `
-            <div class="text-start mb-3 p-3 bg-light rounded border border-secondary-subtle" style="font-size: 0.95rem;">
-                <b class="text-dark"><i class="bi bi-building me-1"></i>ลูกค้า:</b> ${customer}<br>
-                <b class="text-dark"><i class="bi bi-clock-history me-1"></i>รอบเวลา:</b> ${displayTime} น.<br>
-                <b class="text-dark"><i class="bi bi-tags me-1"></i>ประเภทงาน:</b> <span style="color: #6f42c1;">♻️ รับแพ็คกิ้งเปล่า (ไม่ตัดสต็อก)</span>
-            </div>
-            <div class="text-start">
-                <label class="form-label fw-bold small text-muted mb-1">ทะเบียนรถ <span class="text-danger">*</span></label>
-                <input id="swal-input-plate" class="form-control form-control-lg border-dark shadow-sm" placeholder="เช่น กท 1234">
-            </div>
-        `;
     }
 
-    const { value: formValues } = await Swal.fire({
-        title: '🚚 ยืนยันปล่อยรถ',
+    let htmlContent = `
+        <div class="text-start" style="font-family: 'Mitr', sans-serif;">
+            <div class="border rounded p-3 mb-3 bg-light text-dark shadow-sm" style="border-color: #b8daff !important;">
+                <div class="mb-1"><i class="bi bi-building text-secondary me-2"></i> <span class="fw-bold">ลูกค้า:</span> ${safeCustomer}</div>
+                <div class="mb-1"><i class="bi bi-clock text-secondary me-2"></i> <span class="fw-bold">รอบเวลา:</span> ${safeTime} น.</div>
+                <div><i class="bi bi-tags text-secondary me-2"></i> <span class="fw-bold">ประเภทงาน:</span> ${Array.from(jobTypesSet).join(', ')}</div>
+            </div>
+            <label class="form-label fw-bold text-dark small mb-1">ทะเบียนรถ <span class="text-danger">*</span></label>
+            <input type="text" id="swal-license-plate" class="form-control mb-3 fw-bold border-dark" placeholder="เช่น กก 1234" autocomplete="off">
+            <label class="form-label fw-bold text-dark small mb-1">เลขที่ Invoice ${hasDeliveryItems ? '<span class="text-danger">*</span>' : ''}</label>
+            <input type="text" id="swal-invoice-number" class="form-control mb-3 fw-bold ${hasDeliveryItems ? 'border-primary' : 'bg-light text-muted'}" placeholder="${hasDeliveryItems ? 'ระบุ Invoice เพื่อตัดสต็อก' : 'ไม่ต้องระบุ (รับแพ็คกิ้ง/อื่นๆ)'}" autocomplete="off" ${!hasDeliveryItems ? 'disabled' : ''}>
+            ${hasDeliveryItems ? `
+                <div class="text-danger small fw-bold mb-2"><i class="bi bi-info-circle-fill me-1"></i>ระบบจะตัดสต็อกอัตโนมัติ (FIFO) ตาม Lot นี้:</div>
+                <div class="table-responsive border rounded shadow-sm">
+                    <table class="table table-sm table-hover mb-0 text-center align-middle" style="font-size: 0.85rem;">
+                        <thead class="table-light"><tr><th class="py-2 text-dark">รหัสสินค้า</th><th class="py-2 text-dark">วันที่ผลิต (Lot ที่จะตัด)</th><th class="py-2 text-dark">จำนวนตัด</th></tr></thead>
+                        <tbody>${simulationRows.join('')}</tbody>
+                    </table>
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    const result = await Swal.fire({
+        title: '<h3 class="fw-bolder mb-0 mt-2"><i class="bi bi-truck text-warning me-2" style="font-size: 2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);"></i> ยืนยันปล่อยรถ</h3>',
         html: htmlContent,
         showCancelButton: true,
-        confirmButtonText: '<i class="bi bi-send-check me-1"></i> ปล่อยรถ & บันทึก',
+        confirmButtonText: '<i class="bi bi-send-fill me-1"></i> ปล่อยรถ & บันทึก',
         cancelButtonText: 'ยกเลิก',
         confirmButtonColor: '#0d6efd',
-        width: '500px',
+        cancelButtonColor: '#6c757d',
+        customClass: { confirmButton: 'px-4 shadow-sm fw-bold', cancelButton: 'px-4 fw-bold' },
         focusConfirm: false,
+        width: '34em',
         preConfirm: () => {
-            const plate = document.getElementById('swal-input-plate').value.trim();
-            const invoiceEl = document.getElementById('swal-input-invoice');
-            const invoice = invoiceEl ? invoiceEl.value.trim() : null;
-
-            if (!plate) {
-                Swal.showValidationMessage('กรุณากรอกทะเบียนรถด้วยครับ!');
-                return false;
-            }
-            
-            // 🛡️ ป้องกันทะเบียนรถซ้ำ (รถคันนึงวิ่งได้รอบเดียว)
-            const isDelivering = db.deliveryPlans.some(p => 
-                p.licensePlate && 
-                p.licensePlate.trim().toLowerCase() === plate.toLowerCase() && 
-                (p.status === 'Delivering' || String(p.status).trim().toLowerCase() === 'delivering')
-            );
-            if (isDelivering) {
-                Swal.showValidationMessage('🚫 รถคันนี้กำลังวิ่งงานอยู่! ต้องกด "ถึงเอเทคแล้ว" ในรอบเก่าก่อนครับ');
-                return false;
-            }
-
-            if (deliveryPlans.length > 0 && !invoice) {
-                Swal.showValidationMessage('กรุณากรอกเลขที่ Invoice สำหรับตัดสต็อกด้วยครับ!');
-                return false;
-            }
-
-            return { plate, invoice };
+            const plate = document.getElementById('swal-license-plate').value.trim();
+            const inv = document.getElementById('swal-invoice-number').value.trim();
+            if (!plate) { Swal.showValidationMessage('กรุณาระบุทะเบียนรถ'); return false; }
+            if (hasDeliveryItems && !inv) { Swal.showValidationMessage('กรุณาระบุเลขที่ Invoice สำหรับตัดสต็อก'); return false; }
+            return { licensePlate: plate, invoiceNumber: inv };
         }
     });
 
-    if (formValues) {
-        Swal.fire({ title: 'กำลังประมวลผล...', text: 'กำลังตัดสต็อกและบันทึกคิวรถ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    if (result.isConfirmed) {
+        const licensePlate = result.value.licensePlate;
+        const invoiceNumber = result.value.invoiceNumber || 'NO-INV';
         
-        const releaseTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
-        const timestampIso = new Date().toISOString();
-        let newHistoryEntries = [];
+        Swal.fire({ title: 'กำลังประมวลผล...', text: 'กำลังส่งข้อมูลรถและทยอยตัดสต็อกแบบ FIFO...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        const releaseTime = new Date().toLocaleTimeString('th-TH');
+        const autoExportEntries = [];
+        let actualTempStock = JSON.parse(JSON.stringify(calculatedStock));
 
-        try {
-            // 📝 1. สร้างประวัติ History เตรียมตัดสต็อก
-            if (deliveryPlans.length > 0 && formValues.invoice) {
-                exportEntriesToCreate.forEach(entry => {
-                    const product = db.products.find(p => String(p.id).trim() === String(entry.productId).trim());
-                    newHistoryEntries.push({
+        // เตรียมข้อมูลอัปเดตลง Google Sheets (ยิงพร้อมกันทีเดียว)
+        const updatePromises = plansToUpdate.map(async (plan) => {
+            // 🟢 AUTO DEDUCT LOGIC: ตัดสต็อกจริงลงประวัติ
+            if (plan.jobType !== 'Pickup' && plan.jobType !== 'Other' && plan.quantity > 0 && plan.productId && plan.productId !== '-') {
+                let qtyToDeduct = parseInt(plan.quantity);
+                const product = db.products.find(p => String(p.id).trim() === String(plan.productId).trim());
+                const stockInfo = actualTempStock.find(s => String(s.productId).trim() === String(plan.productId).trim());
+
+                if (stockInfo && stockInfo.lots) {
+                    let availableLots = stockInfo.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate));
+                    for (let lot of availableLots) {
+                        if (qtyToDeduct <= 0) break;
+                        let deductAmount = Math.min(lot.quantity, qtyToDeduct);
+                        autoExportEntries.push({
+                            id: 'exp-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                            date: new Date().toISOString(),
+                            type: 'export', exportType: 'Sale',
+                            productId: plan.productId, productName: plan.productName,
+                            customer: plan.customer, erpCode: product ? product.erpCode : '',
+                            quantity: deductAmount, productionDate: lot.productionDate,
+                            user: currentUser.username, invoiceNumber: invoiceNumber,
+                            remarks: `DELIVERY_PLAN:${plan.id}|AUTO ตัดสต็อกอัตโนมัติ รอบ ${safeTime} น. (ทะเบียน ${licensePlate})`,
+                            packagingType: lot.packagingType || 'standard',
+                            priceAtTimeOfSale: product ? (parseFloat(product.unitPrice) || 0) : 0
+                        });
+                        qtyToDeduct -= deductAmount;
+                        lot.quantity -= deductAmount; 
+                    }
+                }
+                if (qtyToDeduct > 0) {
+                    autoExportEntries.push({
                         id: 'exp-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-                        date: timestampIso,
-                        type: 'export',
-                        exportType: 'Sale', // บันทึกเป็นงานขาย
-                        productId: entry.productId,
-                        productName: entry.productName,
-                        customer: entry.customer,
-                        erpCode: product ? product.erpCode : '',
-                        quantity: entry.quantity,
-                        productionDate: entry.productionDate,
-                        user: currentUser.username,
-                        invoiceNumber: formValues.invoice,
-                        remarks: `Auto-Deduct แผนจัดส่ง (ทะเบียนรถ: ${formValues.plate})`,
-                        packagingType: entry.packagingType,
-                        priceAtTimeOfSale: product ? (parseFloat(product.unitPrice) || 0) : 0
+                        date: new Date().toISOString(),
+                        type: 'export', exportType: 'Sale',
+                        productId: plan.productId, productName: plan.productName,
+                        customer: plan.customer, erpCode: product ? product.erpCode : '',
+                        quantity: qtyToDeduct, productionDate: formatDate(new Date()), 
+                        user: currentUser.username, invoiceNumber: invoiceNumber,
+                        remarks: `DELIVERY_PLAN:${plan.id}|AUTO ตัดสต็อกออโต้ รอบ ${safeTime} น. (บังคับหัก/สต็อกไม่พอ)`,
+                        packagingType: 'standard', priceAtTimeOfSale: product ? (parseFloat(product.unitPrice) || 0) : 0
                     });
-                });
+                }
             }
-
-            // 💾 2. ส่งประวัติตัดสต็อกไปบันทึกที่ Google Sheet หลังบ้าน
-            if (newHistoryEntries.length > 0) {
-                await callAppsScript('appendBatchHistory', newHistoryEntries);
-                // ดันข้อมูลเข้าเว็บชั่วคราวให้หน้าจอเห็นทันที
-                newHistoryEntries.forEach(entry => db.history.unshift(entry));
+            
+            // 🟢 ยิงคำสั่งอัปเดต Google Sheets
+            plan.status = 'Delivering';
+            plan.licensePlate = licensePlate;
+            plan.actualReleaseTime = "'" + releaseTime;
+            plan.time = "'" + window.formatTimeDisplay(plan.time); 
+            plan.date = formatDate(plan.date);  
+            
+            await callAppsScript('updateDeliveryPlan', plan);
+            
+            // 🛠️ ป้องกัน Auto-sync ลบทับข้อมูล ด้วยการทะลวงอัปเดต ID ตรงๆ ในหน่วยความจำหลัก
+            const realPlan = db.deliveryPlans.find(p => p.id === plan.id);
+            if (realPlan) {
+                realPlan.status = 'Delivering';
+                realPlan.licensePlate = licensePlate;
+                realPlan.actualReleaseTime = "'" + releaseTime;
             }
-
-            // 🚚 3. อัปเดตสถานะรถใน Delivery Plan เป็น "Delivering"
-            for (let plan of plansToUpdate) {
-                plan.status = 'Delivering';
-                plan.licensePlate = formValues.plate; 
-                plan.actualReleaseTime = "'" + releaseTime; // บังคับ Text แก้บั๊ก 1899
-                plan.time = "'" + window.formatTimeDisplay(plan.time); 
-                plan.date = formatDate(plan.date);        
-                await callAppsScript('updateDeliveryPlan', plan);
+        });
+        
+        try {
+            await Promise.all(updatePromises); // ⚡ รันพร้อมกันทีเดียว ไม่ต้องรอทีละอัน!
+            
+            if (autoExportEntries.length > 0) {
+                await callAppsScript('appendBatchHistory', autoExportEntries);
+                autoExportEntries.forEach(entry => db.history.unshift(entry));
             }
-
-            // 🔄 4. รีเฟรชตารางและแดชบอร์ดให้ตัวเลขตรงกับสต็อกจริง
-            calculateStockFromHistory(); 
-            populateAll(); 
-
-            Swal.fire({ 
-                icon: 'success', 
-                title: 'ปล่อยรถ & ตัดสต็อกสำเร็จ!', 
-                text: newHistoryEntries.length > 0 ? `ตัดสต็อก ${newHistoryEntries.length} รายการ (Invoice: ${formValues.invoice})` : 'อัปเดตสถานะรถเรียบร้อย',
-                timer: 2500, 
-                showConfirmButton: false 
-            });
-
+            
+            calculateStockFromHistory();
+            populateAll();
+            if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
+            
+            Swal.fire({ icon: 'success', title: 'ปล่อยรถเรียบร้อย!', text: `ทะเบียน: ${licensePlate} พร้อมตัดสต็อกออโต้แล้ว`, timer: 2000, showConfirmButton: false });
         } catch (error) {
-            console.error(error);
-            Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
-            populateAll(); // รีเซ็ตหน้าจอกลับค่าเดิมเผื่อค้าง
+            Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้ทั้งหมด: ' + error.message, 'error');
         }
     }
 };
-// 🟢 3. ฟังก์ชันยกเลิกการปล่อยรถ (ดึงกลับมาเป็นสถานะ รอจัดส่ง + คืนสต็อกอัตโนมัติ)
-window.returnGroupVehicle = async function(date, displayTime, customer) {
 
-    const plans = db.deliveryPlans.filter(p =>
-        formatDate(p.date) === date &&
-        window.formatTimeDisplay(p.time) === displayTime &&
-        p.customer === customer &&
-        (p.status === 'Delivering' || String(p.status).toLowerCase() === 'delivering')
-    );
+// 🟢 3. ฟังก์ชันรับรถกลับ (แก้บั๊กกดหลายรอบ ยิงข้อมูลพร้อมกันรวดเดียว)
+window.returnGroupVehicle = function(date, displayTime, customer) {
+    const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
+    const safeTime = String(displayTime).replace(/^'+/, '').trim();
+    const safeCustomer = String(customer).trim();
 
-    if (plans.length === 0) {
-        Swal.fire('ไม่พบข้อมูล', 'ไม่พบคิวรถที่กำลังวิ่งอยู่', 'warning');
+    const plansToUpdate = db.deliveryPlans.filter(p => {
+        let pDate = typeof formatDate === 'function' ? formatDate(p.date) : p.date;
+        let pTime = String(p.time).replace(/^'+/, '').trim();
+        if (typeof formatTimeDisplay === 'function') pTime = formatTimeDisplay(pTime);
+        return pDate === safeDate && pTime === safeTime && String(p.customer).trim() === safeCustomer && p.status === 'Delivering';
+    });
+
+    if (plansToUpdate.length === 0) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบรถที่กำลังจัดส่ง กรุณากด F5 เพื่อรีเฟรชจอครับ', 'warning');
         return;
     }
 
-    for (const plan of plans) {
-        await window.returnVehicle(plan.id);
-    }
-    // หาข้อมูลแผนที่กำลังวิ่งอยู่ (Delivering)
-    const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === date && window.formatTimeDisplay(p.time) === displayTime && p.customer === customer && (p.status === 'Delivering' || String(p.status).toLowerCase() === 'delivering'));
-    
-    if (plansToUpdate.length === 0) return;
-    const licensePlate = plansToUpdate[0].licensePlate; // ดึงทะเบียนรถเก็บไว้ใช้ค้นหา
-
     Swal.fire({
-        title: '⚠️ ยืนยันยกเลิกการปล่อยรถ?',
-        html: `คุณกำลังจะยกเลิกคิวรถของ <b>${customer}</b> รอบ <b>${displayTime} น.</b> กลับมาเป็นสถานะรอจัดส่ง<br><br>
-               <div class="text-start mt-2 p-2 bg-warning-subtle border border-warning rounded" style="font-size: 0.85rem;">
-                   <span class="text-dark fw-bold"><i class="bi bi-info-circle-fill me-1 text-primary"></i> การคืนสต็อก (Auto-Reversal):</span><br>
-                   ระบบจะทำการ <b>ดึงสต็อกกลับเข้าคลังให้โดยอัตโนมัติ</b> ทันทีที่คุณกดยืนยันครับ
-               </div>`,
-        icon: 'warning',
+        title: '🏁 ยืนยันรถกลับถึงบริษัท?',
+        html: `รับรถกลับของลูกค้า <b>${safeCustomer}</b><br>รอบเวลา: <b>${safeTime} น.</b><br><br>
+               <span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> ระบบจะทำการเปลี่ยนสถานะเป็น จบงาน (Completed)</span>`,
+        icon: 'info',
         showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: '<i class="bi bi-arrow-counterclockwise"></i> ใช่, ยกเลิกคิวรถ & คืนสต็อก',
-        cancelButtonText: 'ปิดหน้าต่าง'
+        confirmButtonText: 'ยืนยันจบงาน',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#198754'
     }).then(async (result) => {
         if (result.isConfirmed) {
-            Swal.fire({ title: 'กำลังยกเลิก...', text: 'คืนสถานะและปรับสต็อก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            
+            Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const returnTime = new Date().toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'}); 
+
             try {
-                // 📦 1. ค้นหาประวัติการตัดสต็อกของรถคันนี้ (ค้นหาจากหมายเหตุที่มีทะเบียนรถ)
-                const alreadyReversedIds = db.history.filter(h => h.type === 'reversal').map(h => {
-                    const match = h.remarks ? h.remarks.match(/Reversal of transaction ID: (exp-[\w-]+)/) : null;
-                    return match ? match[1] : null;
-                }).filter(Boolean);
-
-                const exportsToReverse = db.history.filter(h => 
-                    h.type === 'export' && 
-                    h.customer === customer && 
-                    h.remarks && h.remarks.includes('Auto-Deduct แผนจัดส่ง') &&
-                    h.remarks.includes(licensePlate) &&
-                    !alreadyReversedIds.includes(h.id)
-                );
-
-                let reversalEntries = [];
-                const timestampIso = new Date().toISOString();
-
-                // สร้างรายการคืนสต็อก (ใส่ค่าติดลบเพื่อบวกยอดกลับ)
-                exportsToReverse.forEach(exp => {
-                    reversalEntries.push({
-                        id: 'rev-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
-                        date: timestampIso,
-                        type: 'reversal',
-                        productId: exp.productId,
-                        productName: exp.productName,
-                        customer: exp.customer,
-                        erpCode: exp.erpCode,
-                        quantity: -parseFloat(exp.quantity), 
-                        productionDate: exp.productionDate,
-                        user: currentUser.username,
-                        invoiceNumber: exp.invoiceNumber,
-                        remarks: `Reversal of transaction ID: ${exp.id}. ยกเลิกปล่อยรถอัตโนมัติ (ทะเบียน: ${licensePlate})`,
-                        packagingType: exp.packagingType
+                const promises = plansToUpdate.map(async (plan) => {
+                    // ยิงสถานะไปเก็บในฐานข้อมูล
+                    await callAppsScript('updateDeliveryPlan', {
+                        id: plan.id, status: 'Completed', actualReturnTime: "'" + returnTime
                     });
+                    
+                    // 🛠️ บังคับอัปเดต ID ตรงๆ ป้องกัน Auto-sync ลบทับกลางคัน
+                    const realPlan = db.deliveryPlans.find(p => p.id === plan.id);
+                    if (realPlan) {
+                        realPlan.status = 'Completed';
+                        realPlan.actualReturnTime = "'" + returnTime;
+                    }
                 });
 
-                // 💾 บันทึกการคืนสต็อกลง Google Sheets ก่อน
+                await Promise.all(promises); // ⚡ รันพร้อมกันทีเดียว!
+                
+                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
+                if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
+                
+                Swal.fire({ icon: 'success', title: 'ปิดงานสำเร็จ!', text: 'บันทึกรถเข้าบริษัทเรียบร้อย', timer: 2000, showConfirmButton: false });
+            } catch (error) {
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
+            }
+        }
+    });
+};
+
+// 🟢 4. ฟังก์ชันยกเลิกรอบรถ (แก้บั๊กกดหลายรอบ ยิงข้อมูลพร้อมกันรวดเดียว)
+window.cancelDeliveryGroup = function(date, displayTime, customer) {
+    const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
+    const safeTime = String(displayTime).replace(/^'+/, '').trim();
+    const safeCustomer = String(customer).trim();
+
+    const plansToUpdate = db.deliveryPlans.filter(p => {
+        let pDate = typeof formatDate === 'function' ? formatDate(p.date) : p.date;
+        let pTime = String(p.time).replace(/^'+/, '').trim();
+        if (typeof formatTimeDisplay === 'function') pTime = formatTimeDisplay(pTime);
+        return pDate === safeDate && pTime === safeTime && String(p.customer).trim() === safeCustomer && p.status !== 'Cancelled';
+    });
+
+    if (plansToUpdate.length === 0) return;
+
+    Swal.fire({
+        title: 'ยกเลิกรอบจัดส่งนี้?',
+        html: `คุณกำลังจะยกเลิกรถของ <b>${safeCustomer}</b> รอบ <b>${safeTime} น.</b><br>
+               <small class="text-danger fw-bold">หากรถถูกปล่อยไปแล้ว ระบบจะจัดการ "คืนสต็อก" ให้อัตโนมัติ</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ยืนยันยกเลิก',
+        cancelButtonText: 'ปิด',
+        confirmButtonColor: '#dc3545'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'กำลังยกเลิก...', text: 'กำลังเคลียร์คิวและอัปเดตระบบ', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            const reversalEntries = [];
+            const planIds = plansToUpdate.map(p => p.id);
+
+            db.history.forEach(h => {
+                if (h.type === 'export') {
+                    const isTagged = planIds.some(id => h.remarks && h.remarks.includes(`DELIVERY_PLAN:${id}`));
+                    const isLegacyMatch = h.remarks && h.remarks.includes(`AUTO ตัดสต็อก`) && h.remarks.includes(`รอบ ${safeTime} น.`) && h.customer === safeCustomer && formatDate(h.date) === safeDate;
+                    
+                    if (isTagged || isLegacyMatch) {
+                        const alreadyReversed = db.history.some(rev => rev.type === 'reversal' && rev.remarks.includes(h.id));
+                        if (!alreadyReversed) {
+                            reversalEntries.push({
+                                id: 'rev-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+                                date: new Date().toISOString(),
+                                type: 'reversal',
+                                productId: h.productId, productName: h.productName,
+                                customer: h.customer, erpCode: h.erpCode,
+                                productionDate: h.productionDate,
+                                quantity: parseFloat(h.quantity), 
+                                user: currentUser.username,
+                                remarks: `Reversal of transaction ID: ${h.id}. Original remarks: ${h.remarks || ''}`,
+                                packagingType: h.packagingType
+                            });
+                        }
+                    }
+                }
+            });
+
+            try {
+                const promises = plansToUpdate.map(async (plan) => {
+                    await callAppsScript('updateDeliveryPlan', { id: plan.id, status: 'Cancelled' });
+                    
+                    // 🛠️ บังคับอัปเดต ID ตรงๆ ป้องกัน Auto-sync ลบทับกลางคัน
+                    const realPlan = db.deliveryPlans.find(p => p.id === plan.id);
+                    if (realPlan) realPlan.status = 'Cancelled';
+                });
+
+                await Promise.all(promises); // ⚡ รันพร้อมกันทีเดียว!
+
                 if (reversalEntries.length > 0) {
                     await callAppsScript('appendBatchHistory', reversalEntries);
-                    // อัปเดตในระบบหน้าเว็บทันที
                     reversalEntries.forEach(entry => db.history.unshift(entry));
+                    calculateStockFromHistory(); 
+                    populateStockSummary(); 
                 }
 
-                // 🚚 2. อัปเดตสถานะรถกลับเป็น Pending เหมือนเดิม
-                for (let plan of plansToUpdate) {
-                    plan.status = 'Pending';
-                    plan.licensePlate = '';
-                    plan.actualReleaseTime = '';
-                    plan.time = "'" + window.formatTimeDisplay(plan.time);
-                    plan.date = formatDate(plan.date);
-                    await callAppsScript('updateDeliveryPlan', plan);
-                }
+                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
+                if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
                 
-                // 🔄 3. คำนวณสต็อกใหม่ และรีเฟรชหน้าจอทั้งหมดให้ตัวเลขเด้งกลับ
-                calculateStockFromHistory();
-                populateAll();
-                if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(date);
-                
-                Swal.fire({ 
-                    icon: 'success', 
-                    title: 'ยกเลิกและคืนสต็อกสำเร็จ', 
-                    text: reversalEntries.length > 0 ? `ดึงสต็อกกลับเข้าคลังเรียบร้อย ${reversalEntries.length} รายการ` : 'คิวรถกลับไปอยู่สถานะ "รอจัดส่ง" แล้วครับ', 
-                    timer: 3000, 
-                    showConfirmButton: false 
-                });
-                
+                Swal.fire({ icon: 'success', title: 'ยกเลิกสำเร็จ!', text: 'จัดการสถานะและคืนสต็อกเรียบร้อย', timer: 2000, showConfirmButton: false });
             } catch (error) {
-                console.error(error);
-                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
             }
         }
     });
