@@ -7204,17 +7204,26 @@ window.formatTimeDisplay = function(timeStr) {
     return str;
 };
 
-// 🟢 0. ฟังก์ชันคำนวณและแสดงตารางแผนงาน (แก้ไขบั๊กช่องค้นหา + รวมปุ่มดินสอแก้ไขจำนวน)
+// 🟢 0. ฟังก์ชันคำนวณและแสดงตารางแผนงาน (แก้บั๊กระบบไม่เรียงวันที่และเวลาสำหรับวันต่อๆ ไป)
 window.renderDeliveryPlanTable = function(targetDate) {
     const tableBody = document.getElementById('delivery-plan-table-body');
     if (!tableBody) return;
     
     db.deliveryPlans = db.deliveryPlans || [];
     
-    // ดึงวันที่จากช่องเลือกวันที่มาใช้งานเสมอ ป้องกันการส่งค่าว่างตอนพิมพ์ค้นหา
+    // ดึงวันที่จากช่องเลือกวันที่มาใช้งานเสมอ
     const dateInput = document.getElementById('view-plan-date');
+    
+    // 🛠️ ติดตั้ง Event Listener ให้ช่องวันที่ เพื่อให้ตารางเปลี่ยนทันทีที่กดเลือกวัน (ไม่ต้องรอ 30 วิ)
+    if (dateInput && !dateInput.hasAttribute('data-has-listener')) {
+        dateInput.addEventListener('change', (e) => {
+            if(typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(e.target.value);
+        });
+        dateInput.setAttribute('data-has-listener', 'true');
+    }
+
     const actualDate = targetDate || (dateInput ? dateInput.value : '');
-    const formattedTargetDate = typeof formatDate === 'function' ? formatDate(actualDate) : actualDate;
+    const formattedTargetDate = typeof formatDate === 'function' && actualDate ? formatDate(actualDate) : actualDate;
     
     // ซ่อมแซมสถานะว่างเปล่า ให้เป็นรอจัดส่งเสมอ
     db.deliveryPlans.forEach(p => {
@@ -7226,24 +7235,31 @@ window.renderDeliveryPlanTable = function(targetDate) {
     const activeFilterEl = document.querySelector('input[name="planStatusFilter"]:checked');
     const activeFilter = activeFilterEl ? activeFilterEl.value : 'all';
     
-    // 🟢 ดึงคำค้นหามาใช้งาน
+    // ดึงคำค้นหามาใช้งาน
     const searchInput = document.getElementById('delivery-plan-search');
     const searchTerm = searchInput ? searchInput.value.trim().toLowerCase() : '';
 
-    let dailyPlans = db.deliveryPlans.filter(p => {
-        let pDate = typeof formatDate === 'function' ? formatDate(p.date) : p.date;
-        return pDate === formattedTargetDate;
-    });
+    let dailyPlans = db.deliveryPlans;
 
+    // 🛠️ ถ้ามีการระบุวันที่ ให้กรองตามวันที่ (แต่ถ้าล้างช่องวันที่ออก จะโชว์ทั้งหมด)
+    if (formattedTargetDate) {
+        dailyPlans = dailyPlans.filter(p => {
+            let pDate = typeof formatDate === 'function' ? formatDate(p.date) : String(p.date).split('T')[0];
+            return pDate === formattedTargetDate;
+        });
+    }
+
+    // กรองตามปุ่มสถานะ
     if (activeFilter !== 'all') {
-        dailyPlans = dailyPlans.filter(p => p.status === activeFilter);
+        dailyPlans = dailyPlans.filter(p => String(p.status).trim() === activeFilter);
+    } else {
+        dailyPlans = dailyPlans.filter(p => String(p.status).trim() !== 'Cancelled');
     }
     
-    // 🟢 🛠️ แก้ไขระบบค้นหา (แปลงทุกอย่างเป็น String ก่อน ป้องกัน Error ทะลุจากตัวเลข)
+    // ค้นหาข้อมูล
     if (searchTerm !== '') {
         dailyPlans = dailyPlans.filter(p => {
             const timeStr = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(p.time) : String(p.time || '');
-            
             const strCustomer = String(p.customer || '').toLowerCase();
             const strPlate = String(p.licensePlate || '').toLowerCase();
             const strTime = String(timeStr).toLowerCase();
@@ -7252,22 +7268,11 @@ window.renderDeliveryPlanTable = function(targetDate) {
             const strRemarks = String(p.remarks || '').toLowerCase();
 
             return (
-                strCustomer.includes(searchTerm) ||
-                strPlate.includes(searchTerm) ||
-                strTime.includes(searchTerm) ||
-                strProductId.includes(searchTerm) ||
-                strProductName.includes(searchTerm) ||
-                strRemarks.includes(searchTerm)
+                strCustomer.includes(searchTerm) || strPlate.includes(searchTerm) || strTime.includes(searchTerm) ||
+                strProductId.includes(searchTerm) || strProductName.includes(searchTerm) || strRemarks.includes(searchTerm)
             );
         });
     }
-    
-    // เรียงตามเวลา
-    dailyPlans = dailyPlans.sort((a, b) => {
-        let timeA = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(a.time) : a.time;
-        let timeB = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(b.time) : b.time;
-        return String(timeA).localeCompare(String(timeB));
-    });
     
     if (dailyPlans.length === 0) {
         const emptyMsg = searchTerm !== '' ? 'ไม่พบข้อมูลที่ตรงกับคำค้นหาค่ะ' : 'ไม่มีแผนการจัดส่งสินค้าค่ะ';
@@ -7275,18 +7280,22 @@ window.renderDeliveryPlanTable = function(targetDate) {
         return;
     }
     
+    // 🟢 🛠️ จัดกลุ่มข้อมูล (เพิ่ม "วันที่" เข้าไปในรหัสกลุ่ม เพื่อไม่ให้คิวของพรุ่งนี้มารวมกับวันนี้)
     const groupedPlans = {};
     dailyPlans.forEach(p => {
-        const displayTime = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(p.time) : p.time;
-        const groupKey = displayTime + '_' + p.customer + '_' + p.status; 
+        const planDateStr = typeof formatDate === 'function' ? formatDate(p.date) : String(p.date).split('T')[0];
+        const displayTime = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(p.time) : String(p.time).replace(/^'+/, '').trim();
+        
+        // 💡 รหัสกลุ่มที่แท้จริง ต้องแยกตาม วันที่ + เวลา + ลูกค้า + สถานะ
+        const groupKey = planDateStr + '_' + displayTime + '_' + p.customer + '_' + p.status; 
         
         if (!groupedPlans[groupKey]) {
             groupedPlans[groupKey] = {
-                date: p.date,
-                displayTime: displayTime,
+                date: planDateStr,
+                displayTime: displayTime, 
                 customer: p.customer,
                 status: p.status, 
-                licensePlate: p.licensePlate || '',
+                licensePlate: p.licensePlate || '', 
                 items: [], 
                 totalQuantity: 0
             };
@@ -7295,20 +7304,43 @@ window.renderDeliveryPlanTable = function(targetDate) {
         groupedPlans[groupKey].totalQuantity += parseInt(p.quantity) || 0;
     });
 
+    // ฟังก์ชันแปลงเวลาสำหรับจัดเรียง (กะทำงาน 07:00 - 06:59)
+    const getShiftedMinutes = (timeStr) => {
+        const str = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(timeStr) : String(timeStr).replace(/^'+/, '').trim();
+        const parts = str.split(':');
+        if (parts.length !== 2) return 0;
+        let h = parseInt(parts[0], 10);
+        let m = parseInt(parts[1], 10);
+        let shiftedHour = h >= 7 ? h - 7 : h + 17;
+        return (shiftedHour * 60) + m;
+    };
+
+    // 🟢 🛠️ บังคับจัดเรียง: 1.เรียงวันที่ -> 2.เรียงเวลา(07:00-06:59) -> 3.เรียงลูกค้า
+    const sortedGroups = Object.values(groupedPlans).sort((a, b) => {
+        let dateA = new Date(a.date).getTime();
+        let dateB = new Date(b.date).getTime();
+        if (dateA !== dateB) return dateA - dateB; 
+
+        let timeA = getShiftedMinutes(a.displayTime);
+        let timeB = getShiftedMinutes(b.displayTime);
+        if (timeA !== timeB) return timeA - timeB; 
+        
+        return String(a.customer).localeCompare(String(b.customer)); 
+    });
+
     let html = '';
     let groupIndex = 0;
 
-    for (const key in groupedPlans) {
-        const group = groupedPlans[key];
+    sortedGroups.forEach(group => {
         const groupId = 'group-collapse-' + groupIndex++;
-        const planDateStr = typeof formatDate === 'function' ? formatDate(group.date) : group.date;
+        const planDateStr = group.date; 
         const safeCustomer = group.customer.replace(/'/g, "\\'"); 
         const displayTime = group.displayTime; 
         
         let statusBadge = '';
         let actionButtons = '';
         
-if (group.status === 'Pending') {
+        if (group.status === 'Pending') {
             statusBadge = `<span class="badge bg-secondary rounded-pill shadow-sm">รอจัดส่ง</span>`;
             actionButtons = `
                 <div class="d-flex flex-column gap-1">
@@ -7340,10 +7372,14 @@ if (group.status === 'Pending') {
         const clickToExpand = `style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#${groupId}" title="คลิกเพื่อดูรายการพาร์ท"`;
         const rowOpacity = group.status === 'Cancelled' ? 'opacity: 0.6;' : '';
 
+        // 🟢 เพิ่มการแสดงวันที่โชว์ตัวเล็กๆ ไว้เหนือเวลา จะได้ไม่งงเวลามีคิวของหลายวันโผล่มา
         html += `
         <tr class="shadow-sm align-middle" style="background-color: #f8f9fa; ${rowOpacity}">
             <td class="text-center text-primary" ${clickToExpand}><i class="bi bi-chevron-down"></i></td>
-            <td class="text-center fw-bold text-primary" ${clickToExpand}><i class="bi bi-clock me-1"></i>${group.displayTime} น.</td>
+            <td class="text-center fw-bold text-primary" ${clickToExpand}>
+                <div class="small text-muted" style="font-size: 0.7rem;">${planDateStr}</div>
+                <i class="bi bi-clock me-1"></i>${group.displayTime} น.
+            </td>
             <td class="fw-bold fs-6" ${clickToExpand}>${group.customer}</td>
             <td class="fw-bold text-secondary" ${clickToExpand}>${group.items.length} พาร์ท <small class="text-muted fw-normal">(คลิกดู)</small></td>
             <td class="text-end fw-bold ${group.status === 'Cancelled' ? 'text-secondary text-decoration-line-through' : 'text-success'} fs-6" ${clickToExpand}>${group.totalQuantity.toLocaleString()}</td>
@@ -7397,7 +7433,7 @@ if (group.status === 'Pending') {
             </td>
         </tr>
         `;
-    }
+    });
 
     html += `
     <tr style="border: none; background: transparent;">
