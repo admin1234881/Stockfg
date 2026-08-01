@@ -5386,6 +5386,7 @@ window.toggleDashboardView = function(view) {
                     }
                 };
 // 🟢 6. ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (เพิ่มระบบกล่องกระพริบสีแดงเตือน "เลยเวลาส่ง")
+// 🟢 6. ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (เพิ่มชื่อคนเปิดจ็อบที่มุมล่างขวาของกล่อง)
 window.populateVehicleDashboard = function() {
     try {
         const T = translations[currentLanguage] || translations['th']; 
@@ -5401,7 +5402,7 @@ window.populateVehicleDashboard = function() {
             return;
         }
 
-        // 🟢 แอบฝัง CSS แอนิเมชันกระพริบสีแดงไว้ถ้ายังไม่มี
+        // แอบฝัง CSS แอนิเมชันกระพริบสีแดงไว้ถ้ายังไม่มี
         if (!document.getElementById('overdue-style')) {
             const style = document.createElement('style');
             style.id = 'overdue-style';
@@ -5435,7 +5436,7 @@ window.populateVehicleDashboard = function() {
         const d = String(today.getDate()).padStart(2, '0');
         const todayStr = `${y}-${m}-${d}`;
 
-        // 🔴 กรองเอาข้อมูล "วันนี้" เพื่อใช้คำนวณ KPI
+        // กรองเอาข้อมูล "วันนี้" เพื่อใช้คำนวณ KPI
         const allTargetPlans = db.deliveryPlans.filter(p => {
             if (!p || !p.date) return false;
             let planDate = '';
@@ -5480,7 +5481,7 @@ window.populateVehicleDashboard = function() {
         if (document.getElementById('dash-veh-kpi-completed')) document.getElementById('dash-veh-kpi-completed').innerText = cCompleted;
         if (document.getElementById('dash-veh-kpi-cancelled')) document.getElementById('dash-veh-kpi-cancelled').innerText = cCancelled;
 
-        // 🔴 กรองเอาเฉพาะข้อมูลที่ไม่ใช่ Cancelled เพื่อเอาไปวาดกล่องรถวิ่ง
+        // กรองเอาเฉพาะข้อมูลที่ไม่ใช่ Cancelled เพื่อเอาไปวาดกล่องรถวิ่ง
         const targetPlans = allTargetPlans.filter(p => p.status !== 'Cancelled');
 
         if (targetPlans.length === 0) {
@@ -5504,10 +5505,12 @@ window.populateVehicleDashboard = function() {
             if (!pendingGroups[groupKey]) {
                 pendingGroups[groupKey] = {
                     time: timeKey, customer: custKey, partsCount: 0, totalQty: 0,
-                    hasDelivery: false, hasPickup: false, remarks: new Set() 
+                    hasDelivery: false, hasPickup: false, remarks: new Set(),
+                    users: new Set() // 🟢 เก็บรายชื่อคนเปิดจ็อบ
                 };
             }
             if (p.remarks && String(p.remarks).trim() !== '') pendingGroups[groupKey].remarks.add(String(p.remarks).trim());
+            if (p.user && String(p.user).trim() !== '') pendingGroups[groupKey].users.add(String(p.user).trim()); // 🟢 นำชื่อมาเก็บใส่ Set
 
             if (p.jobType === 'Pickup') {
                 pendingGroups[groupKey].hasPickup = true;
@@ -5520,7 +5523,7 @@ window.populateVehicleDashboard = function() {
 
         let pendingHtml = '';
         
-        // 🟢 หาเวลาปัจจุบัน (แปลงเป็นหน่วยนาทีเพื่อเปรียบเทียบง่ายๆ)
+        // หาเวลาปัจจุบัน (แปลงเป็นหน่วยนาทีเพื่อเปรียบเทียบง่ายๆ)
         const currentNow = new Date();
         const currentTotalMins = (currentNow.getHours() * 60) + currentNow.getMinutes();
 
@@ -5540,7 +5543,13 @@ window.populateVehicleDashboard = function() {
                 ? `<div class="small text-danger fw-bold mt-1" style="font-size: 0.75rem;"><i class="bi bi-chat-dots-fill me-1"></i>หมายเหตุ: ${remarksArr.join(', ')}</div>` 
                 : '';
 
-            // 🟢 เช็คว่าเลยเวลาที่กำหนดหรือยัง? (Overdue Logic)
+            // 🟢 โค้ดสร้างข้อความแสดงชื่อคนเปิดจ็อบ
+            const usersArr = Array.from(g.users);
+            const creatorHtml = usersArr.length > 0 
+                ? `<div class="text-end mt-2" style="margin-bottom: -5px;"><small class="text-muted opacity-75 fw-semibold" style="font-size: 0.65rem;"><i class="bi bi-person-fill me-1"></i>${usersArr.join(', ')}</small></div>` 
+                : '';
+
+            // เช็คว่าเลยเวลาที่กำหนดหรือยัง? (Overdue Logic)
             let isOverdue = false;
             if (g.time && g.time.includes(':')) {
                 const [pHour, pMin] = g.time.split(':').map(Number);
@@ -5550,7 +5559,7 @@ window.populateVehicleDashboard = function() {
                 }
             }
 
-            // 🟢 กำหนด Class พิเศษถ้าเลยเวลา
+            // กำหนด Class พิเศษถ้าเลยเวลา
             const cardClass = isOverdue ? 'overdue-alert-card' : 'border border-secondary-subtle';
             const timeTextColor = isOverdue ? 'text-danger' : 'text-dark';
             const timeIconColor = isOverdue ? 'text-danger' : 'text-secondary';
@@ -5570,6 +5579,7 @@ window.populateVehicleDashboard = function() {
                         <div class="small fw-bold text-primary mb-1"><i class="bi bi-building me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${g.customer}</div>
                         ${g.hasDelivery ? `<div class="small text-muted"><i class="bi bi-box-seam me-1"></i>${g.partsCount} ${T.dash_vehicle_items || 'รายการ'} <span class="text-success fw-bold">(${g.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'})</span></div>` : ''}
                         ${remarksHtml}
+                        ${creatorHtml} <!-- 🟢 แสดงชื่อคนเปิดบิลมุมขวาล่าง -->
                     </div>
                 </div>
             </div>`;
@@ -5595,12 +5605,14 @@ window.populateVehicleDashboard = function() {
                 activeVehicles[groupKey] = {
                     plate: safePlate, time: timeKey, bgColor: getColorForPlate(safePlate), 
                     customers: new Set(), status: currentStatus === 'completed' ? 'Completed' : 'Delivering', 
-                    partsCount: 0, totalQty: 0, hasDelivery: false, hasPickup: false, actualReturnTime: '', remarks: new Set() 
+                    partsCount: 0, totalQty: 0, hasDelivery: false, hasPickup: false, actualReturnTime: '', remarks: new Set(),
+                    users: new Set() // 🟢 เก็บรายชื่อคนเปิดจ็อบ
                 };
             }
             
             activeVehicles[groupKey].customers.add(p.customer || 'ไม่ระบุ');
             if (p.remarks && String(p.remarks).trim() !== '') activeVehicles[groupKey].remarks.add(String(p.remarks).trim());
+            if (p.user && String(p.user).trim() !== '') activeVehicles[groupKey].users.add(String(p.user).trim()); // 🟢 นำชื่อมาเก็บใส่ Set
 
             if (p.jobType === 'Pickup') {
                 activeVehicles[groupKey].hasPickup = true;
@@ -5636,6 +5648,12 @@ window.populateVehicleDashboard = function() {
                 ? `<div class="small text-danger fw-bold mt-2 pt-1 border-top" style="font-size: 0.75rem; border-color: rgba(0,0,0,0.1) !important;"><i class="bi bi-chat-dots-fill me-1"></i>หมายเหตุ: ${remarksArr.join(', ')}</div>` 
                 : '';
 
+            // 🟢 โค้ดสร้างข้อความแสดงชื่อคนเปิดจ็อบ
+            const usersArr = Array.from(v.users);
+            const creatorHtml = usersArr.length > 0 
+                ? `<div class="text-end mt-1" style="margin-bottom: -5px;"><small class="text-dark opacity-50 fw-semibold" style="font-size: 0.65rem;"><i class="bi bi-person-fill me-1"></i>${usersArr.join(', ')}</small></div>` 
+                : '';
+
             if (v.status === 'Delivering') {
                 deliveringHtml += `
                 <div class="col-12">
@@ -5647,6 +5665,7 @@ window.populateVehicleDashboard = function() {
                             <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
                             ${v.hasDelivery ? `<div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>${T.dash_vehicle_total || 'รวม:'} ${v.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'}</div>` : ''}
                             ${remarksHtml} 
+                            ${creatorHtml} <!-- 🟢 แสดงชื่อคนเปิดบิลมุมขวาล่าง -->
                         </div>
                     </div>
                 </div>`;
@@ -5665,6 +5684,7 @@ window.populateVehicleDashboard = function() {
                             <div class="small text-muted mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
                             <div class="small fw-bold text-success"><i class="bi bi-building-check me-1"></i>${T.dash_vehicle_arrived_time || 'ถึง:'} ${v.actualReturnTime ? v.actualReturnTime + ' น.' : (T.dash_vehicle_not_specified || 'ไม่ระบุเวลา')}</div>
                             ${remarksHtml} 
+                            ${creatorHtml} <!-- 🟢 แสดงชื่อคนเปิดบิลมุมขวาล่าง -->
                         </div>
                     </div>
                 </div>`;
@@ -6756,7 +6776,7 @@ window.deletePlanItem = function(id, date) {
     });
 };
 
-// 🟢 6. ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (เพิ่มระบบกล่องกระพริบสีแดงเตือน "เลยเวลาส่ง")
+// 🟢 6. ฟังก์ชันคำนวณแดชบอร์ดรถขนส่ง (ดึงชื่อ-สกุลจริง fullname มาแสดงที่มุมล่างขวา)
 window.populateVehicleDashboard = function() {
     try {
         const T = translations[currentLanguage] || translations['th']; 
@@ -6772,7 +6792,7 @@ window.populateVehicleDashboard = function() {
             return;
         }
 
-        // 🟢 แอบฝัง CSS แอนิเมชันกระพริบสีแดงไว้ถ้ายังไม่มี
+        // แอบฝัง CSS แอนิเมชันกระพริบสีแดงไว้ถ้ายังไม่มี
         if (!document.getElementById('overdue-style')) {
             const style = document.createElement('style');
             style.id = 'overdue-style';
@@ -6806,7 +6826,7 @@ window.populateVehicleDashboard = function() {
         const d = String(today.getDate()).padStart(2, '0');
         const todayStr = `${y}-${m}-${d}`;
 
-        // 🔴 กรองเอาข้อมูล "วันนี้" เพื่อใช้คำนวณ KPI
+        // กรองเอาข้อมูล "วันนี้" เพื่อใช้คำนวณ KPI
         const allTargetPlans = db.deliveryPlans.filter(p => {
             if (!p || !p.date) return false;
             let planDate = '';
@@ -6851,7 +6871,7 @@ window.populateVehicleDashboard = function() {
         if (document.getElementById('dash-veh-kpi-completed')) document.getElementById('dash-veh-kpi-completed').innerText = cCompleted;
         if (document.getElementById('dash-veh-kpi-cancelled')) document.getElementById('dash-veh-kpi-cancelled').innerText = cCancelled;
 
-        // 🔴 กรองเอาเฉพาะข้อมูลที่ไม่ใช่ Cancelled เพื่อเอาไปวาดกล่องรถวิ่ง
+        // กรองเอาเฉพาะข้อมูลที่ไม่ใช่ Cancelled เพื่อเอาไปวาดกล่องรถวิ่ง
         const targetPlans = allTargetPlans.filter(p => p.status !== 'Cancelled');
 
         if (targetPlans.length === 0) {
@@ -6875,10 +6895,19 @@ window.populateVehicleDashboard = function() {
             if (!pendingGroups[groupKey]) {
                 pendingGroups[groupKey] = {
                     time: timeKey, customer: custKey, partsCount: 0, totalQty: 0,
-                    hasDelivery: false, hasPickup: false, remarks: new Set() 
+                    hasDelivery: false, hasPickup: false, remarks: new Set(),
+                    users: new Set() // 🟢 เก็บรายชื่อคนเปิดจ็อบ
                 };
             }
             if (p.remarks && String(p.remarks).trim() !== '') pendingGroups[groupKey].remarks.add(String(p.remarks).trim());
+            
+            // 🟢 ค้นหาชื่อจริง (fullname) จาก db.users
+            if (p.user && String(p.user).trim() !== '') {
+                const uName = String(p.user).trim();
+                const matchedUser = db.users.find(u => u.username === uName);
+                const displayName = (matchedUser && matchedUser.fullname) ? matchedUser.fullname : uName;
+                pendingGroups[groupKey].users.add(displayName);
+            }
 
             if (p.jobType === 'Pickup') {
                 pendingGroups[groupKey].hasPickup = true;
@@ -6891,7 +6920,7 @@ window.populateVehicleDashboard = function() {
 
         let pendingHtml = '';
         
-        // 🟢 หาเวลาปัจจุบัน (แปลงเป็นหน่วยนาทีเพื่อเปรียบเทียบง่ายๆ)
+        // หาเวลาปัจจุบัน (แปลงเป็นหน่วยนาทีเพื่อเปรียบเทียบง่ายๆ)
         const currentNow = new Date();
         const currentTotalMins = (currentNow.getHours() * 60) + currentNow.getMinutes();
 
@@ -6911,7 +6940,13 @@ window.populateVehicleDashboard = function() {
                 ? `<div class="small text-danger fw-bold mt-1" style="font-size: 0.75rem;"><i class="bi bi-chat-dots-fill me-1"></i>หมายเหตุ: ${remarksArr.join(', ')}</div>` 
                 : '';
 
-            // 🟢 เช็คว่าเลยเวลาที่กำหนดหรือยัง? (Overdue Logic)
+            // 🟢 โค้ดสร้างข้อความแสดงชื่อคนเปิดจ็อบ (ชื่อจริง)
+            const usersArr = Array.from(g.users);
+            const creatorHtml = usersArr.length > 0 
+                ? `<div class="text-end mt-2" style="margin-bottom: -5px;"><small class="text-muted opacity-75 fw-semibold" style="font-size: 0.65rem;"><i class="bi bi-person-fill me-1"></i>${usersArr.join(', ')}</small></div>` 
+                : '';
+
+            // เช็คว่าเลยเวลาที่กำหนดหรือยัง? (Overdue Logic)
             let isOverdue = false;
             if (g.time && g.time.includes(':')) {
                 const [pHour, pMin] = g.time.split(':').map(Number);
@@ -6921,11 +6956,11 @@ window.populateVehicleDashboard = function() {
                 }
             }
 
-            // 🟢 กำหนด Class พิเศษถ้าเลยเวลา
+            // กำหนด Class พิเศษถ้าเลยเวลา
             const cardClass = isOverdue ? 'overdue-alert-card' : 'border border-secondary-subtle';
             const timeTextColor = isOverdue ? 'text-danger' : 'text-dark';
             const timeIconColor = isOverdue ? 'text-danger' : 'text-secondary';
-            const overdueBadge = isOverdue ? `<span class="badge bg-danger shadow-sm ms-2" style="font-size: 0.65rem; padding-bottom: 2px;"><i class="bi bi-exclamation-triangle-fill"></i> สายแล้ว!</span>` : '';
+            const overdueBadge = isOverdue ? `<span class="badge bg-danger shadow-sm ms-2" style="font-size: 0.65rem; padding-bottom: 2px;"><i class="bi bi-exclamation-triangle-fill"></i> เกินเวลาส่งงานแล้ว!</span>` : '';
 
             pendingHtml += `
             <div class="col-12">
@@ -6941,6 +6976,7 @@ window.populateVehicleDashboard = function() {
                         <div class="small fw-bold text-primary mb-1"><i class="bi bi-building me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${g.customer}</div>
                         ${g.hasDelivery ? `<div class="small text-muted"><i class="bi bi-box-seam me-1"></i>${g.partsCount} ${T.dash_vehicle_items || 'รายการ'} <span class="text-success fw-bold">(${g.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'})</span></div>` : ''}
                         ${remarksHtml}
+                        ${creatorHtml} <!-- 🟢 แสดงชื่อคนเปิดบิลมุมขวาล่าง -->
                     </div>
                 </div>
             </div>`;
@@ -6966,12 +7002,21 @@ window.populateVehicleDashboard = function() {
                 activeVehicles[groupKey] = {
                     plate: safePlate, time: timeKey, bgColor: getColorForPlate(safePlate), 
                     customers: new Set(), status: currentStatus === 'completed' ? 'Completed' : 'Delivering', 
-                    partsCount: 0, totalQty: 0, hasDelivery: false, hasPickup: false, actualReturnTime: '', remarks: new Set() 
+                    partsCount: 0, totalQty: 0, hasDelivery: false, hasPickup: false, actualReturnTime: '', remarks: new Set(),
+                    users: new Set() // 🟢 เก็บรายชื่อคนเปิดจ็อบ
                 };
             }
             
             activeVehicles[groupKey].customers.add(p.customer || 'ไม่ระบุ');
             if (p.remarks && String(p.remarks).trim() !== '') activeVehicles[groupKey].remarks.add(String(p.remarks).trim());
+            
+            // 🟢 ค้นหาชื่อจริง (fullname) จาก db.users
+            if (p.user && String(p.user).trim() !== '') {
+                const uName = String(p.user).trim();
+                const matchedUser = db.users.find(u => u.username === uName);
+                const displayName = (matchedUser && matchedUser.fullname) ? matchedUser.fullname : uName;
+                activeVehicles[groupKey].users.add(displayName);
+            }
 
             if (p.jobType === 'Pickup') {
                 activeVehicles[groupKey].hasPickup = true;
@@ -7007,6 +7052,12 @@ window.populateVehicleDashboard = function() {
                 ? `<div class="small text-danger fw-bold mt-2 pt-1 border-top" style="font-size: 0.75rem; border-color: rgba(0,0,0,0.1) !important;"><i class="bi bi-chat-dots-fill me-1"></i>หมายเหตุ: ${remarksArr.join(', ')}</div>` 
                 : '';
 
+            // 🟢 โค้ดสร้างข้อความแสดงชื่อคนเปิดจ็อบ (ชื่อจริง)
+            const usersArr = Array.from(v.users);
+            const creatorHtml = usersArr.length > 0 
+                ? `<div class="text-end mt-1" style="margin-bottom: -5px;"><small class="text-dark opacity-50 fw-semibold" style="font-size: 0.65rem;"><i class="bi bi-person-fill me-1"></i>${usersArr.join(', ')}</small></div>` 
+                : '';
+
             if (v.status === 'Delivering') {
                 deliveringHtml += `
                 <div class="col-12">
@@ -7018,6 +7069,7 @@ window.populateVehicleDashboard = function() {
                             <div class="small fw-bold text-dark opacity-75 mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
                             ${v.hasDelivery ? `<div class="small text-dark opacity-75"><i class="bi bi-box-seam-fill me-1"></i>${T.dash_vehicle_total || 'รวม:'} ${v.totalQty.toLocaleString()} ${T.dash_vehicle_pieces || 'ชิ้น'}</div>` : ''}
                             ${remarksHtml} 
+                            ${creatorHtml} <!-- 🟢 แสดงชื่อคนเปิดบิลมุมขวาล่าง -->
                         </div>
                     </div>
                 </div>`;
@@ -7036,6 +7088,7 @@ window.populateVehicleDashboard = function() {
                             <div class="small text-muted mb-1"><i class="bi bi-geo-alt-fill me-1"></i>${T.dash_vehicle_send_to || 'ส่ง:'} ${customersStr}</div>
                             <div class="small fw-bold text-success"><i class="bi bi-building-check me-1"></i>${T.dash_vehicle_arrived_time || 'ถึง:'} ${v.actualReturnTime ? v.actualReturnTime + ' น.' : (T.dash_vehicle_not_specified || 'ไม่ระบุเวลา')}</div>
                             ${remarksHtml} 
+                            ${creatorHtml} <!-- 🟢 แสดงชื่อคนเปิดบิลมุมขวาล่าง -->
                         </div>
                     </div>
                 </div>`;
@@ -7644,13 +7697,19 @@ window.deletePlanItem = function(itemId, dateStr) {
         }
     });
 };
-// 🟢 2. ฟังก์ชันปล่อยรถ (เพิ่มระบบบล็อกการปล่อยรถ หากสต็อกไม่พอ พร้อมโชว์รายการที่ขาด)
+// 🟢 2. ฟังก์ชันปล่อยรถ (แก้บั๊ก Error โค้ด และเพิ่มระบบดักจับ "ทะเบียนรถกำลังวิ่ง")
 window.releaseGroupVehicle = async function(date, displayTime, customer) {
-    const safeDate = formatDate(date);
-    const safeTime = window.formatTimeDisplay(displayTime);
+    const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
+    const safeTime = String(displayTime).replace(/^'+/, '').trim();
     const safeCustomer = String(customer).trim();
 
-    const plansToUpdate = db.deliveryPlans.filter(p => formatDate(p.date) === safeDate && window.formatTimeDisplay(p.time) === safeTime && p.customer === safeCustomer && p.status === 'Pending');
+    const plansToUpdate = db.deliveryPlans.filter(p => {
+        let pDate = typeof formatDate === 'function' ? formatDate(p.date) : p.date;
+        let pTime = String(p.time).replace(/^'+/, '').trim();
+        if (typeof formatTimeDisplay === 'function') pTime = formatTimeDisplay(pTime);
+        return pDate === safeDate && pTime === safeTime && String(p.customer).trim() === safeCustomer && p.status === 'Pending';
+    });
+    
     if (plansToUpdate.length === 0) return;
 
     // 1. จำลองการตัดสต็อก (Simulation) และตรวจสอบของขาด
@@ -7658,14 +7717,13 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
     let simulationRows = [];
     let hasDeliveryItems = false;
     let jobTypesSet = new Set();
-    let insufficientItems = []; // 🟢 เก็บรายชื่อพาร์ทที่ของไม่พอ
+    let insufficientItems = [];
 
     for (let plan of plansToUpdate) {
         if (plan.jobType === 'Pickup') jobTypesSet.add('♻️ รับแพ็คกิ้ง');
         else if (plan.jobType === 'Other') jobTypesSet.add('📝 อื่นๆ');
         else jobTypesSet.add('📦 ส่งสินค้า');
 
-        // คำนวณจำลองเฉพาะงานที่เป็น "ส่งสินค้า"
         if (plan.jobType !== 'Pickup' && plan.jobType !== 'Other' && plan.quantity > 0 && plan.productId && plan.productId !== '-') {
             hasDeliveryItems = true;
             let qtyToDeduct = parseInt(plan.quantity);
@@ -7678,10 +7736,11 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
                     let deductAmount = Math.min(lot.quantity, qtyToDeduct);
                     let pkgBadge = lot.packagingType === 'temporary' ? '<span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Temp</span>' : '<span class="badge bg-success ms-1" style="font-size: 0.65rem;">Std</span>';
                     
+                    let lotProdDate = typeof formatDate === 'function' ? formatDate(lot.productionDate) : lot.productionDate;
                     simulationRows.push(`
                         <tr>
                             <td class="text-primary fw-bold">${plan.productId}</td>
-                            <td>${formatDate(lot.productionDate)} ${pkgBadge}</td>
+                            <td>${lotProdDate} ${pkgBadge}</td>
                             <td class="text-danger fw-bold">-${deductAmount}</td>
                         </tr>
                     `);
@@ -7689,19 +7748,13 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
                     lot.quantity -= deductAmount;
                 }
             }
-            
-            // 🟢 หากตัดจนหมด Lot แล้ว แต่ยังมีของต้องตัดอีก แปลว่า "สต็อกไม่พอ"
             if (qtyToDeduct > 0) {
-                insufficientItems.push({
-                    productId: plan.productId,
-                    productName: plan.productName || 'ไม่ระบุชื่อ',
-                    shortage: qtyToDeduct
-                });
+                insufficientItems.push({ productId: plan.productId, productName: plan.productName || 'ไม่ระบุชื่อ', shortage: qtyToDeduct });
             }
         }
     }
 
-    // 🟢 2. ดักจับ Error! ถ้าสต็อกไม่พอ ห้ามปล่อยรถเด็ดขาด และแจ้งเตือนพนักงาน
+    // 2. ดักจับ Error! ถ้าสต็อกไม่พอ ห้ามปล่อยรถเด็ดขาด
     if (insufficientItems.length > 0) {
         let errorHtml = '<div class="text-start mb-2 fw-bold text-danger" style="font-size: 1.1rem;"><i class="bi bi-exclamation-octagon-fill me-1"></i> พบรายการสินค้าไม่พอตัดสต็อก:</div><ul class="text-start list-group mb-3 shadow-sm">';
         insufficientItems.forEach(item => {
@@ -7712,17 +7765,10 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
         });
         errorHtml += '</ul><div class="small fw-bold text-secondary"><i class="bi bi-info-circle-fill me-1"></i>กรุณาไปทำรายการ <u class="text-primary">"รับเข้าสินค้า"</u> เพื่อเติมสต็อกให้พอก่อนทำการปล่อยรถครับ!</div>';
 
-        Swal.fire({
-            title: 'ไม่สามารถปล่อยรถได้!',
-            html: errorHtml,
-            icon: 'error',
-            confirmButtonText: 'รับทราบ',
-            confirmButtonColor: '#6c757d'
-        });
-        return; // ⛔ บล็อกการทำงาน หยุดแค่นี้ ไม่เด้งหน้าต่างปล่อยรถ
+        Swal.fire({ title: 'ไม่สามารถปล่อยรถได้!', html: errorHtml, icon: 'error', confirmButtonText: 'รับทราบ', confirmButtonColor: '#6c757d' });
+        return;
     }
 
-    // 3. สร้างโครงสร้าง HTML สำหรับหน้าต่าง Popup กรณีสต็อกพอ
     let htmlContent = `
         <div class="text-start" style="font-family: 'Mitr', sans-serif;">
             <div class="border rounded p-3 mb-3 bg-light text-dark shadow-sm" style="border-color: #b8daff !important;">
@@ -7730,34 +7776,22 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
                 <div class="mb-1"><i class="bi bi-clock text-secondary me-2"></i> <span class="fw-bold">รอบเวลา:</span> ${safeTime} น.</div>
                 <div><i class="bi bi-tags text-secondary me-2"></i> <span class="fw-bold">ประเภทงาน:</span> ${Array.from(jobTypesSet).join(', ')}</div>
             </div>
-
             <label class="form-label fw-bold text-dark small mb-1">ทะเบียนรถ <span class="text-danger">*</span></label>
             <input type="text" id="swal-license-plate" class="form-control mb-3 fw-bold border-dark" placeholder="เช่น กก 1234" autocomplete="off">
-
             <label class="form-label fw-bold text-dark small mb-1">เลขที่ Invoice ${hasDeliveryItems ? '<span class="text-danger">*</span>' : ''}</label>
             <input type="text" id="swal-invoice-number" class="form-control mb-3 fw-bold ${hasDeliveryItems ? 'border-primary' : 'bg-light text-muted'}" placeholder="${hasDeliveryItems ? 'ระบุ Invoice เพื่อตัดสต็อก' : 'ไม่ต้องระบุ (รับแพ็คกิ้ง/อื่นๆ)'}" autocomplete="off" ${!hasDeliveryItems ? 'disabled' : ''}>
-
             ${hasDeliveryItems ? `
                 <div class="text-danger small fw-bold mb-2"><i class="bi bi-info-circle-fill me-1"></i>ระบบจะตัดสต็อกอัตโนมัติ (FIFO) ตาม Lot นี้:</div>
                 <div class="table-responsive border rounded shadow-sm">
                     <table class="table table-sm table-hover mb-0 text-center align-middle" style="font-size: 0.85rem;">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="py-2 text-dark">รหัสสินค้า</th>
-                                <th class="py-2 text-dark">วันที่ผลิต (Lot ที่จะตัด)</th>
-                                <th class="py-2 text-dark">จำนวนตัด</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${simulationRows.join('')}
-                        </tbody>
+                        <thead class="table-light"><tr><th class="py-2 text-dark">รหัสสินค้า</th><th class="py-2 text-dark">วันที่ผลิต (Lot ที่จะตัด)</th><th class="py-2 text-dark">จำนวนตัด</th></tr></thead>
+                        <tbody>${simulationRows.join('')}</tbody>
                     </table>
                 </div>
             ` : ''}
         </div>
     `;
 
-    // 4. แสดงหน้าต่างยืนยัน
     const result = await Swal.fire({
         title: '<h3 class="fw-bolder mb-0 mt-2"><i class="bi bi-truck text-warning me-2" style="font-size: 2rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);"></i> ยืนยันปล่อยรถ</h3>',
         html: htmlContent,
@@ -7772,27 +7806,33 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
         preConfirm: () => {
             const plate = document.getElementById('swal-license-plate').value.trim();
             const inv = document.getElementById('swal-invoice-number').value.trim();
+            if (!plate) { Swal.showValidationMessage('กรุณาระบุทะเบียนรถ'); return false; }
             
-            if (!plate) {
-                Swal.showValidationMessage('กรุณาระบุทะเบียนรถ');
+            // 🟢 ตรวจสอบว่ามีทะเบียนนี้กำลังวิ่งงานอยู่และยังไม่ได้รับกลับหรือไม่?
+            const plateLower = plate.toLowerCase().replace(/\s+/g, '');
+            const isPlateInUse = db.deliveryPlans.some(p => {
+                if (p.status !== 'Delivering' || !p.licensePlate) return false;
+                const existingPlate = String(p.licensePlate).toLowerCase().replace(/\s+/g, '');
+                return existingPlate === plateLower;
+            });
+
+            if (isPlateInUse) {
+                Swal.showValidationMessage(`รถทะเบียน "${plate}" กำลังวิ่งงานอยู่ กรุณากดรับรถเข้าบริษัทก่อนครับ!`);
                 return false;
             }
-            if (hasDeliveryItems && !inv) {
-                Swal.showValidationMessage('กรุณาระบุเลขที่ Invoice สำหรับตัดสต็อก');
-                return false;
-            }
+
+            if (hasDeliveryItems && !inv) { Swal.showValidationMessage('กรุณาระบุเลขที่ Invoice สำหรับตัดสต็อก'); return false; }
             return { licensePlate: plate, invoiceNumber: inv };
         }
     });
 
-    // 5. ดำเนินการตัดสต็อกจริง
     if (result.isConfirmed) {
         const licensePlate = result.value.licensePlate;
         const invoiceNumber = result.value.invoiceNumber || 'NO-INV';
         
         Swal.fire({ title: 'กำลังประมวลผล...', text: 'กำลังส่งข้อมูลรถและทยอยตัดสต็อกแบบ FIFO...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         
-        const releaseTime = new Date().toLocaleTimeString('th-TH');
+        const releaseTime = new Date().toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'});
         const autoExportEntries = [];
         let actualTempStock = JSON.parse(JSON.stringify(calculatedStock));
 
@@ -7807,20 +7847,14 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
                     for (let lot of availableLots) {
                         if (qtyToDeduct <= 0) break;
                         let deductAmount = Math.min(lot.quantity, qtyToDeduct);
-                        
                         autoExportEntries.push({
                             id: 'exp-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
                             date: new Date().toISOString(),
-                            type: 'export',
-                            exportType: 'Sale',
-                            productId: plan.productId,
-                            productName: plan.productName,
-                            customer: plan.customer,
-                            erpCode: product ? product.erpCode : '',
-                            quantity: deductAmount,
-                            productionDate: lot.productionDate,
-                            user: currentUser.username,
-                            invoiceNumber: invoiceNumber,
+                            type: 'export', exportType: 'Sale',
+                            productId: plan.productId, productName: plan.productName,
+                            customer: plan.customer, erpCode: product ? product.erpCode : '',
+                            quantity: deductAmount, productionDate: lot.productionDate,
+                            user: currentUser.username, invoiceNumber: invoiceNumber,
                             remarks: `DELIVERY_PLAN:${plan.id}|AUTO ตัดสต็อกอัตโนมัติ รอบ ${safeTime} น. (ทะเบียน ${licensePlate})`,
                             packagingType: lot.packagingType || 'standard',
                             priceAtTimeOfSale: product ? (parseFloat(product.unitPrice) || 0) : 0
@@ -7829,23 +7863,38 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
                         lot.quantity -= deductAmount; 
                     }
                 }
-                // 🟢 ลบส่วนโค้ดที่เคยปล่อยให้ยอดติดลบทิ้งไปอย่างถาวร! เพราะดักไว้ตั้งแต่ต้นทางแล้ว
             }
             
-            // ยิงสถานะเข้า Google Sheets
-            plan.status = 'Delivering';
-            plan.licensePlate = licensePlate;
-            plan.actualReleaseTime = "'" + releaseTime;
-            plan.time = "'" + window.formatTimeDisplay(plan.time); 
-            plan.date = formatDate(plan.date);  
+            // 🟢 เตรียมข้อมูลอัปเดต โดยล็อคฟอร์แมตวันที่ให้ชัวร์
+            let saveDate = plan.date;
+            if (plan.date) {
+                let dObj = new Date(plan.date);
+                if (!isNaN(dObj.getTime())) {
+                    const yy = dObj.getFullYear();
+                    const mm = String(dObj.getMonth() + 1).padStart(2, '0');
+                    const dd = String(dObj.getDate()).padStart(2, '0');
+                    saveDate = `${yy}-${mm}-${dd}`;
+                } else if (String(plan.date).includes('T')) {
+                    saveDate = String(plan.date).split('T')[0];
+                }
+            }
+
+            // ยิงอัปเดตไปที่ Google Sheets
+            await callAppsScript('updateDeliveryPlan', {
+                id: plan.id,
+                status: 'Delivering',
+                licensePlate: licensePlate,
+                actualReleaseTime: "'" + releaseTime,
+                date: saveDate
+            });
             
-            await callAppsScript('updateDeliveryPlan', plan);
-            
+            // 🛠️ อัปเดตข้อมูลบนเบราว์เซอร์
             const realPlan = db.deliveryPlans.find(p => p.id === plan.id);
             if (realPlan) {
                 realPlan.status = 'Delivering';
                 realPlan.licensePlate = licensePlate;
                 realPlan.actualReleaseTime = "'" + releaseTime;
+                realPlan.date = saveDate;
             }
         });
         
@@ -7857,8 +7906,8 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
                 autoExportEntries.forEach(entry => db.history.unshift(entry));
             }
             
-            calculateStockFromHistory();
-            populateAll();
+            if (typeof calculateStockFromHistory === 'function') calculateStockFromHistory();
+            if (typeof populateAll === 'function') populateAll();
             if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
             
             Swal.fire({ icon: 'success', title: 'ปล่อยรถเรียบร้อย!', text: `ทะเบียน: ${licensePlate} พร้อมตัดสต็อกออโต้แล้ว`, timer: 2000, showConfirmButton: false });
@@ -7867,7 +7916,6 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
         }
     }
 };
-
 // 🟢 3. ฟังก์ชันรับรถกลับ (แก้บั๊กกดหลายรอบ ยิงข้อมูลพร้อมกันรวดเดียว)
 window.returnGroupVehicle = function(date, displayTime, customer) {
     const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
