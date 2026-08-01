@@ -5890,7 +5890,7 @@ window.openVehicleReportModal = function() {
     new bootstrap.Modal(document.getElementById('vehicleReportModal')).show();
 };
 
-// 🟢 ฟังก์ชันประมวลผลข้อมูลและสร้างไฟล์ (CSV / PDF) แบบจัดกลุ่มตาม "วันที่" (เปลี่ยนโชว์จำนวนชิ้น เป็น ประเภทงาน)
+// 🟢 ฟังก์ชันประมวลผลข้อมูลและสร้างไฟล์ (CSV / PDF) แบบจัดกลุ่มตาม "วันที่" (เพิ่มช่องหมายเหตุ)
 window.generateVehicleReport = function(fileType) {
     const startDateStr = document.getElementById('vehicle-report-start').value;
     const endDateStr = document.getElementById('vehicle-report-end').value;
@@ -5935,7 +5935,7 @@ window.generateVehicleReport = function(fileType) {
             let cust = String(p.customer).trim() || 'ไม่ระบุ';
             let timeStr = p.time ? String(p.time).trim() : '00:00';
             
-            // 🟢 แปลง JobType เป็นข้อความภาษาไทย
+            // แปลง JobType เป็นข้อความภาษาไทย
             let jobTypeTh = 'ส่งสินค้า';
             if (p.jobType === 'Pickup') jobTypeTh = 'รับแพ็คกิ้ง';
             else if (p.jobType === 'Other') jobTypeTh = 'อื่นๆ';
@@ -5955,12 +5955,18 @@ window.generateVehicleReport = function(fileType) {
                     plate: plate, 
                     customer: cust, 
                     timeSet: new Set(), 
-                    jobTypes: new Set() // 🟢 สร้าง Set เก็บประเภทงานแทนจำนวนชิ้น (กันข้อมูลซ้ำ)
+                    jobTypes: new Set(),
+                    remarks: new Set() // 🟢 1. สร้าง Set เพื่อเก็บหมายเหตุโดยเฉพาะ (กันข้อความซ้ำ)
                 };
             }
             
             reportDataMap[key].timeSet.add(timeStr);
-            reportDataMap[key].jobTypes.add(jobTypeTh); // ยัดประเภทงานเข้าไป
+            reportDataMap[key].jobTypes.add(jobTypeTh);
+            
+            // 🟢 2. ดึงหมายเหตุมาเก็บสะสมไว้
+            if (p.remarks && String(p.remarks).trim() !== '') {
+                reportDataMap[key].remarks.add(String(p.remarks).trim());
+            }
         }
     });
 
@@ -5971,7 +5977,8 @@ window.generateVehicleReport = function(fileType) {
             plate: data.plate,
             customer: data.customer,
             tripCount: data.timeSet.size, 
-            jobTypesText: Array.from(data.jobTypes).join(', ') // 🟢 รวมข้อความ (เช่น "ส่งสินค้า, รับแพ็คกิ้ง")
+            jobTypesText: Array.from(data.jobTypes).join(', '),
+            remarksText: Array.from(data.remarks).join(', ') || '-' // 🟢 3. จับหมายเหตุมารวมเป็นข้อความ (คั่นด้วยลูกน้ำ)
         };
     }).sort((a, b) => {
         if (a.dateValue !== b.dateValue) return a.dateValue.localeCompare(b.dateValue);
@@ -5991,12 +5998,14 @@ window.generateVehicleReport = function(fileType) {
     // ==========================================
     if (fileType === 'csv') {
         let csvContent = '\ufeff'; 
-        csvContent += '"วันที่","ทะเบียนรถ","ชื่อลูกค้า / ปลายทาง","จำนวนการส่ง (ครั้ง)","ประเภทการส่งงาน"\n'; // 🟢 เปลี่ยนหัวตาราง
+        csvContent += '"วันที่","ทะเบียนรถ","ชื่อลูกค้า / ปลายทาง","จำนวนการส่ง (ครั้ง)","ประเภทการส่งงาน","หมายเหตุ"\n'; // 🟢 4. เพิ่มคอลัมน์ "หมายเหตุ" บนหัวตาราง
         
         reportRows.forEach(r => {
             let sPlate = r.plate.replace(/"/g, '""');
             let sCust = r.customer.replace(/"/g, '""');
-            csvContent += `"${r.dateText}","${sPlate}","${sCust}","${r.tripCount}","${r.jobTypesText}"\n`; // 🟢 ใส่ข้อมูลประเภทงาน
+            let sRemarks = r.remarksText.replace(/"/g, '""'); // 🟢 ป้องกัน Error ลูกน้ำและเครื่องหมายคำพูดในหมายเหตุ
+            
+            csvContent += `"${r.dateText}","${sPlate}","${sCust}","${r.tripCount}","${r.jobTypesText}","${sRemarks}"\n`; // 🟢 5. ยัดหมายเหตุลงคอลัมน์สุดท้าย
         });
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -6010,7 +6019,7 @@ window.generateVehicleReport = function(fileType) {
         Swal.close();
     } 
     // ==========================================
-    // 📄 สร้างไฟล์ PDF
+    // 📄 สร้างไฟล์ PDF (แถมเพิ่มคอลัมน์ให้ด้วยครับ)
     // ==========================================
     else if (fileType === 'pdf') {
         if (typeof html2pdf === 'undefined') {
@@ -6027,7 +6036,8 @@ window.generateVehicleReport = function(fileType) {
                     <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 15px; font-weight: bold; color: #0d6efd; text-align: center;">${r.plate}</td>
                     <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 14px; font-weight: bold;">${r.customer}</td>
                     <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 14px; text-align: center; font-weight: bold; color: #198754;">${r.tripCount} ครั้ง</td>
-                    <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 14px; text-align: center; color: #6c757d; font-weight: 500;">${r.jobTypesText}</td> <!-- 🟢 จัดข้อความไว้ตรงกลาง -->
+                    <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 14px; text-align: center; color: #6c757d; font-weight: 500;">${r.jobTypesText}</td>
+                    <td style="padding: 8px 10px; border: 1px solid #dee2e6; font-size: 13px; color: #dc3545;">${r.remarksText}</td> <!-- 🟢 เพิ่มหมายเหตุในแถว -->
                 </tr>
             `;
         });
@@ -6037,7 +6047,7 @@ window.generateVehicleReport = function(fileType) {
         pdfContainer.style.paddingBottom = '20px';
         pdfContainer.style.fontFamily = "'Sarabun', 'Mitr', sans-serif";
         pdfContainer.style.color = '#333';
-        pdfContainer.style.width = '1000px'; 
+        pdfContainer.style.width = '1060px'; // ขยายความกว้างนิดหน่อยรับคอลัมน์หมายเหตุ
         pdfContainer.style.backgroundColor = '#fff';
         
         const currentDate = new Date().toLocaleString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -6058,18 +6068,19 @@ window.generateVehicleReport = function(fileType) {
             </div>
             
             <div style="margin-bottom: 10px; text-align: right; font-size: 14px;">
-                <b>จำนวนรอบที่ออกวิ่งรวม:</b> <span style="color: #198754; font-size: 16px;">${totalTrips}</span> ครั้ง
+                <b>จำนวนรอบที่ออกวิ่งรวม:</b> <span style="color: #198754; font-size: 16px;">${totalTrips}</span> <b>รอบ</b>
             </div>
-
+            
             <table style="width: 100%; border-collapse: collapse; border: 1px solid #dee2e6; margin-bottom: 15px;">
                 <thead>
-                    <tr style="background-color: #f8f9fa; color: #333; border-bottom: 2px solid #ccc;">
+                    <tr style="background-color: #ffc107; color: #000;">
                         <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 5%;">ลำดับ</th>
-                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 15%;">วันที่จัดส่ง</th>
-                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 15%;">ทะเบียนรถ</th>
-                        <th style="padding: 10px; text-align: left; font-size: 14px; border: 1px solid #dee2e6; width: 25%;">ชื่อลูกค้า / ปลายทาง</th>
-                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 15%;">จำนวนรอบ (ครั้ง)</th>
-                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 25%;">ประเภทการส่งงาน</th> <!-- 🟢 แก้ไขหัวตาราง -->
+                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 12%;">วันที่</th>
+                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 12%;">ทะเบียนรถ</th>
+                        <th style="padding: 10px; text-align: left; font-size: 14px; border: 1px solid #dee2e6; width: 20%;">ชื่อลูกค้า / ปลายทาง</th>
+                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 12%;">จำนวนส่งงาน</th>
+                        <th style="padding: 10px; text-align: center; font-size: 14px; border: 1px solid #dee2e6; width: 15%;">ประเภทงาน</th>
+                        <th style="padding: 10px; text-align: left; font-size: 14px; border: 1px solid #dee2e6; width: 24%;">หมายเหตุ</th> <!-- 🟢 เพิ่มหัวคอลัมน์หมายเหตุ -->
                     </tr>
                 </thead>
                 <tbody>${trContent}</tbody>
@@ -6078,16 +6089,16 @@ window.generateVehicleReport = function(fileType) {
             <table style="width: 100%; border-top: 1px dashed #ccc; padding-top: 8px; font-size: 11px; color: #888; page-break-inside: avoid;">
                 <tr>
                     <td style="text-align: left;">เอกสารรายงานอัตโนมัติจากระบบ ATECH STOCK IN-OUT FG SYSTEM</td>
-                    <td style="text-align: right;">พิมพ์โดย: ${currentUser ? (currentUser.fullname || currentUser.username) : 'ไม่ระบุ'}</td>
+                    <td style="text-align: right;">แบบฟอร์มควบคุมเลขที่.....</td>
                 </tr>
             </table>
         `;
 
         const opt = {
-            margin:       [0.2, 0.2, 0.4, 0.2], 
+            margin:       [0.2, 0.2, 0.35, 0.2], 
             filename:     `Vehicle_Report_${startDateStr}_to_${endDateStr}.pdf`,
             image:        { type: 'jpeg', quality: 1 },
-            html2canvas:  { scale: 2, useCORS: true, scrollY: 0 }, 
+            html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
             jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
             pagebreak:    { mode: ['css', 'legacy'] }
         };
