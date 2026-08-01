@@ -7361,7 +7361,6 @@ window.renderDeliveryPlanTable = function(targetDate) {
             actionButtons = `
                 <div class="d-flex flex-column gap-1 align-items-center">
                     <span class="text-success small fw-bold d-block"><i class="bi bi-check2-all"></i> จบงาน</span>
-                    <button type="button" class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.7rem;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
                 </div>
             `;
         } else if (group.status === 'Cancelled') {
