@@ -5704,7 +5704,7 @@ window.populateVehicleDashboard = function() {
         
     } catch (error) { console.error("Dashboard Vehicle Error:", error); }
 };
-// 🟢 ฟังก์ชันวาดและโหลด PDF แผนจัดส่ง Delivery Plan (อัปเดต: ตรึงเวลา 24 ช.ม. และปัดเศษนาทีลงชั่วโมงเต็ม)
+// 🟢 ฟังก์ชันวาดและโหลด PDF แผนจัดส่ง Delivery Plan (อัปเดต: ใช้ Table-layout Fixed ล็อกสัดส่วน 100% ป้องกันขวาหาย ซ้ายแหว่ง)
 window.downloadDeliveryPlanPDF = function() {
     if (typeof html2pdf === 'undefined') {
         Swal.fire('ข้อผิดพลาด', 'เครื่องมือสร้าง PDF ยังโหลดไม่เสร็จ กรุณารอสักครู่แล้วกดใหม่ครับ', 'warning');
@@ -5719,7 +5719,7 @@ window.downloadDeliveryPlanPDF = function() {
         return;
     }
 
-    Swal.fire({ title: 'กำลังพิมพ์แผนส่งงาน', text: 'กำลังรวบรวมและจัดกลุ่มเวลาจัดส่ง...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    Swal.fire({ title: 'กำลังสร้าง Delivery plan', text: 'กำลังล็อกสัดส่วนตารางให้พอดีหน้ากระดาษ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     setTimeout(() => {
         try {
@@ -5734,7 +5734,6 @@ window.downloadDeliveryPlanPDF = function() {
                 return;
             }
 
-            // 🟢 1. สร้างตารางเวลารอไว้เลย 24 ชั่วโมงตายตัว (07:00 ไปจนถึง 06:00)
             let timeSlots = [];
             for (let i = 7; i < 24; i++) {
                 timeSlots.push(i.toString().padStart(2, '0') + ':00');
@@ -5748,11 +5747,9 @@ window.downloadDeliveryPlanPDF = function() {
                 let tRaw = String(p.time || '00:00').replace(/^'+/, '').trim();
                 if (typeof formatTimeDisplay === 'function') tRaw = formatTimeDisplay(tRaw);
                 
-                // 🟢 2. ปัดเศษนาทีทิ้ง จับยัดลงชั่วโมงเต็ม (เช่น 16:10 -> 16:00)
                 let hh = tRaw.split(':')[0] || '00';
                 let t = hh.padStart(2, '0') + ':00';
                 
-                // ถ้าดึงเวลามาแล้วไม่มีในตาราง (กันเหนียว) ให้จับไปลงช่อง 00:00
                 if (!timeSlots.includes(t)) t = '00:00'; 
                 
                 let cust = String(p.customer || 'ไม่ระบุ').trim();
@@ -5785,7 +5782,6 @@ window.downloadDeliveryPlanPDF = function() {
                         times: {},
                         totalPlan: 0
                     };
-                    // สร้างกล่องเก็บคิวงานให้ครบทั้ง 24 ชั่วโมง
                     timeSlots.forEach(ts => groupedData[key].times[ts] = 0);
                 }
                 
@@ -5803,8 +5799,8 @@ window.downloadDeliveryPlanPDF = function() {
                 return pA.localeCompare(pB);
             });
 
-            // ปรับฟอนต์ช่องเวลาให้เล็กลงนิดนึง เพื่อให้ยัด 24 คอลัมน์ได้พอดีและสวยงาม
-            let thTimes = timeSlots.map(t => `<th style="padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0250da; color: white; font-size: 10px; white-space: nowrap;">${t}</th>`).join('');
+            // 🟢 กำหนดความกว้างช่องเวลาให้เท่ากันเป๊ะที่ 2% (24 ช่อง = 48%)
+            let thTimes = timeSlots.map(t => `<th style="width: 2%; padding: 4px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0250da; color: white; font-size: 10px; white-space: nowrap; overflow: hidden;">${t}</th>`).join('');
             
             const printDateStr = new Date(planDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
             const timestampStr = new Date().toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit' });
@@ -5831,37 +5827,40 @@ window.downloadDeliveryPlanPDF = function() {
                 </table>
             `;
 
+            // 🟢 รวม % ทั้งหมด = 3 + 13 + 18 + 4 + 4 + 48 + 5 + 5 = 100% พอดีเป๊ะ!
             const theadHTML = `
                 <thead>
                     <tr>
-                        <th rowspan="2" style="width: 3%; padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0d6efd; color: white; font-size: 10px;">ลำดับ</th>
-                        <th rowspan="2" style="width: 12%; padding: 6px 10px 6px 12px; text-align: left; border: 1px solid #0a58ca; background-color: #0d6efd; color: white; font-size: 11px;">รายชื่อลูกค้า</th>
-                        <th rowspan="2" style="width: 22%; padding: 6px 10px 6px 12px; text-align: left; border: 1px solid #0a58ca; background-color: #0d6efd; color: white; font-size: 11px;">รหัสและชื่อสินค้า (Part / Name)</th>
-                        <th colspan="2" style="width: 8%; padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0b5ed7; color: white; font-size: 10px;">สต็อกปัจจุบัน</th>
-                        <th colspan="${timeSlots.length}" style="padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0250da; color: white; font-size: 11px;">แยกจำนวนส่งตามรอบเวลา</th>
-                        <th rowspan="2" style="width: 5%; padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #495057; color: white; font-size: 10px;">รวมส่ง</th>
-                        <th rowspan="2" style="width: 5%; padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #198754; color: white; font-size: 10px;">คงเหลือ</th>
+                        <th rowspan="2" style="width: 3%; padding: 4px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0d6efd; color: white; font-size: 10px;">ลำดับ</th>
+                        <th rowspan="2" style="width: 13%; padding: 4px 6px; text-align: left; border: 1px solid #0a58ca; background-color: #0d6efd; color: white; font-size: 11px;">รายชื่อลูกค้า</th>
+                        <th rowspan="2" style="width: 18%; padding: 4px 6px; text-align: left; border: 1px solid #0a58ca; background-color: #0d6efd; color: white; font-size: 11px;">รหัสและชื่อสินค้า (Part / Name)</th>
+                        <th colspan="2" style="padding: 4px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0b5ed7; color: white; font-size: 10px;">สต็อกปัจจุบัน</th>
+                        <th colspan="${timeSlots.length}" style="padding: 4px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0250da; color: white; font-size: 11px;">แยกจำนวนส่งตามรอบเวลา</th>
+                        <th rowspan="2" style="width: 5%; padding: 4px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #495057; color: white; font-size: 10px;">รวมส่ง</th>
+                        <th rowspan="2" style="width: 5%; padding: 4px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #198754; color: white; font-size: 10px;">คงเหลือ</th>
                     </tr>
                     <tr>
-                        <th style="padding: 4px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #e7f1ff; color: #052c65; font-size: 9px;">STD</th>
-                        <th style="padding: 4px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #fff3cd; color: #856404; font-size: 9px;">TEMP</th>
+                        <th style="width: 4%; padding: 2px; text-align: center; border: 1px solid #0a58ca; background-color: #e7f1ff; color: #052c65; font-size: 9px;">STD</th>
+                        <th style="width: 4%; padding: 2px; text-align: center; border: 1px solid #0a58ca; background-color: #fff3cd; color: #856404; font-size: 9px;">TEMP</th>
                         ${thTimes}
                     </tr>
                 </thead>
             `;
 
-            let htmlString = `<div style="width: 1700px; padding: 30px 50px 30px 110px; box-sizing: border-box; background-color: #fff; font-family: 'Sarabun', 'Mitr', sans-serif; color: #333; margin: 0 auto;">`;
+            // 🟢 กำหนดกรอบเอกสารให้มีขนาดตายตัวที่ 1500px พร้อมเว้นขอบ Padding เล็กน้อย
+            let htmlString = `<div style="width: 1500px; padding: 20px 30px; box-sizing: border-box; background-color: #fff; font-family: 'Sarabun', 'Mitr', sans-serif; color: #333; margin: 0 auto;">`;
 
-            const ROWS_PER_PAGE = 18;
+            const ROWS_PER_PAGE = 20; 
 
             rows.forEach((r, idx) => {
                 if (idx % ROWS_PER_PAGE === 0) {
                     if (idx > 0) {
-                        htmlString += `</tbody></table><div class="html2pdf__page-break"></div><div style="height: 30px;"></div>`;
+                        htmlString += `</tbody></table><div class="html2pdf__page-break"></div><div style="height: 20px;"></div>`;
                     } else {
                         htmlString += mainHeaderHTML;
                     }
-                    htmlString += `<table style="width: 100%; border-collapse: collapse; border: 2px solid #0a58ca; font-size: 11px; table-layout: auto;">${theadHTML}<tbody>`;
+                    // 🟢 ใช้ table-layout: fixed; บังคับตารางห้ามขยายหรือหดตามใจชอบเด็ดขาด
+                    htmlString += `<table style="width: 100%; border-collapse: collapse; border: 2px solid #0a58ca; font-size: 11px; table-layout: fixed;">${theadHTML}<tbody>`;
                 }
 
                 let balance = r.totalStock - r.totalPlan;
@@ -5870,33 +5869,34 @@ window.downloadDeliveryPlanPDF = function() {
                 
                 let tdTimes = timeSlots.map(t => {
                     let val = r.times[t];
-                    return `<td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-size: 11px; font-weight: bold; color: ${val > 0 ? '#0d6efd' : '#e9ecef'};">${val > 0 ? val.toLocaleString() : '-'}</td>`;
+                    return `<td style="padding: 4px 2px; text-align: center; border: 1px solid #dee2e6; font-size: 11px; font-weight: bold; color: ${val > 0 ? '#0d6efd' : '#e9ecef'}; overflow: hidden;">${val > 0 ? val.toLocaleString() : '-'}</td>`;
                 }).join('');
 
                 htmlString += `
                     <tr style="border-bottom: 1px solid #dee2e6;">
-                        <td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-size: 11px;">${idx + 1}</td>
-                        <td style="padding: 6px 10px 6px 12px; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; text-align: left;">${r.customer}</td>
-                        <td style="padding: 6px 10px 6px 12px; border: 1px solid #dee2e6; text-align: left;">
-                            <div style="font-weight: bold; color: #0d6efd; font-size: 11px; word-break: break-word;">${r.productId}</div>
-                            <div style="font-size: 10px; color: #6c757d; line-height: 1.2; word-break: break-word;">${r.productName}</div>
+                        <td style="padding: 4px 2px; text-align: center; border: 1px solid #dee2e6; font-size: 11px; overflow: hidden;">${idx + 1}</td>
+                        <td style="padding: 4px 6px; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; text-align: left; word-break: break-word; white-space: normal; overflow: hidden;">${r.customer}</td>
+                        <td style="padding: 4px 6px; border: 1px solid #dee2e6; text-align: left; word-break: break-word; white-space: normal; overflow: hidden;">
+                            <div style="font-weight: bold; color: #0d6efd; font-size: 11px;">${r.productId}</div>
+                            <div style="font-size: 10px; color: #6c757d; line-height: 1.2;">${r.productName}</div>
                         </td>
-                        <td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; color: #052c65; background-color: #e7f1ff;">${r.stockStd.toLocaleString()}</td>
-                        <td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; color: #856404; background-color: #fff3cd;">${r.stockTemp.toLocaleString()}</td>
+                        <td style="padding: 4px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; color: #052c65; background-color: #e7f1ff; overflow: hidden;">${r.stockStd.toLocaleString()}</td>
+                        <td style="padding: 4px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; color: #856404; background-color: #fff3cd; overflow: hidden;">${r.stockTemp.toLocaleString()}</td>
                         ${tdTimes}
-                        <td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; background-color: #f8f9fa;">${r.totalPlan.toLocaleString()}</td>
-                        <td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: 900; font-size: 12px; color: ${balanceColor}; background-color: ${balanceBg};">${balance.toLocaleString()}</td>
+                        <td style="padding: 4px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; background-color: #f8f9fa; overflow: hidden;">${r.totalPlan.toLocaleString()}</td>
+                        <td style="padding: 4px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: 900; font-size: 12px; color: ${balanceColor}; background-color: ${balanceBg}; overflow: hidden;">${balance.toLocaleString()}</td>
                     </tr>
                 `;
             });
 
             htmlString += `</tbody></table></div>`;
 
+            // 🟢 ปลดตัวล็อกกล้องแบบเก่า (x, y, windowWidth) ออก ให้โปรแกรมห่อเฟรมตามกล่อง 1500px อัตโนมัติ
             const opt = {
-                margin:       [0.2, 0.2, 0.2, 0.2], 
+                margin:       0.2, 
                 filename:     `Delivery_Plan_${planDate}.pdf`,
                 image:        { type: 'jpeg', quality: 1 },
-                html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 1700 }, 
+                html2canvas:  { scale: 2, useCORS: true }, 
                 jsPDF:        { unit: 'in', format: 'a3', orientation: 'landscape' },
                 pagebreak:    { mode: ['css', 'legacy'] }
             };
