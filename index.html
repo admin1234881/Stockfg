@@ -5704,7 +5704,7 @@ window.populateVehicleDashboard = function() {
         
     } catch (error) { console.error("Dashboard Vehicle Error:", error); }
 };
-// 🟢 ฟังก์ชันวาดและโหลด PDF แผนจัดส่ง Delivery Plan (อัปเดต: ใช้ Table-layout Fixed ล็อกสัดส่วน 100% ป้องกันขวาหาย ซ้ายแหว่ง)
+// 🟢 ฟังก์ชันวาดและโหลด PDF แผนจัดส่ง Delivery Plan (อัปเดต: ปรับเป็น 23 รายการต่อหน้า)
 window.downloadDeliveryPlanPDF = function() {
     if (typeof html2pdf === 'undefined') {
         Swal.fire('ข้อผิดพลาด', 'เครื่องมือสร้าง PDF ยังโหลดไม่เสร็จ กรุณารอสักครู่แล้วกดใหม่ครับ', 'warning');
@@ -5799,7 +5799,6 @@ window.downloadDeliveryPlanPDF = function() {
                 return pA.localeCompare(pB);
             });
 
-            // 🟢 กำหนดความกว้างช่องเวลาให้เท่ากันเป๊ะที่ 2% (24 ช่อง = 48%)
             let thTimes = timeSlots.map(t => `<th style="width: 2%; padding: 4px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0250da; color: white; font-size: 10px; white-space: nowrap; overflow: hidden;">${t}</th>`).join('');
             
             const printDateStr = new Date(planDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -5827,7 +5826,6 @@ window.downloadDeliveryPlanPDF = function() {
                 </table>
             `;
 
-            // 🟢 รวม % ทั้งหมด = 3 + 13 + 18 + 4 + 4 + 48 + 5 + 5 = 100% พอดีเป๊ะ!
             const theadHTML = `
                 <thead>
                     <tr>
@@ -5847,19 +5845,29 @@ window.downloadDeliveryPlanPDF = function() {
                 </thead>
             `;
 
-            // 🟢 กำหนดกรอบเอกสารให้มีขนาดตายตัวที่ 1500px พร้อมเว้นขอบ Padding เล็กน้อย
+            // 🟢 สร้าง Footer ข้อความมุมล่างซ้าย
+            const footerHTML = `
+                <table style="width: 100%; border: none; margin-top: 8px;">
+                    <tr>
+                        <td style="text-align: left; font-size: 11px; font-weight: bold; color: #555;">
+                            FS-112 R.1 ( 2022.11.22 )
+                        </td>
+                    </tr>
+                </table>
+            `;
+
             let htmlString = `<div style="width: 1500px; padding: 20px 30px; box-sizing: border-box; background-color: #fff; font-family: 'Sarabun', 'Mitr', sans-serif; color: #333; margin: 0 auto;">`;
 
-            const ROWS_PER_PAGE = 20; 
+            // 🟢 อัปเดต: ปรับเป็น 23 บรรทัดต่อ 1 หน้าตามคำขอ
+            const ROWS_PER_PAGE = 23; 
 
             rows.forEach((r, idx) => {
                 if (idx % ROWS_PER_PAGE === 0) {
                     if (idx > 0) {
-                        htmlString += `</tbody></table><div class="html2pdf__page-break"></div><div style="height: 20px;"></div>`;
+                        htmlString += `</tbody></table>${footerHTML}<div class="html2pdf__page-break"></div><div style="height: 20px;"></div>`;
                     } else {
                         htmlString += mainHeaderHTML;
                     }
-                    // 🟢 ใช้ table-layout: fixed; บังคับตารางห้ามขยายหรือหดตามใจชอบเด็ดขาด
                     htmlString += `<table style="width: 100%; border-collapse: collapse; border: 2px solid #0a58ca; font-size: 11px; table-layout: fixed;">${theadHTML}<tbody>`;
                 }
 
@@ -5889,9 +5897,9 @@ window.downloadDeliveryPlanPDF = function() {
                 `;
             });
 
-            htmlString += `</tbody></table></div>`;
+            // 🟢 แปะ Footer ให้หน้าสุดท้ายด้วย
+            htmlString += `</tbody></table>${footerHTML}</div>`;
 
-            // 🟢 ปลดตัวล็อกกล้องแบบเก่า (x, y, windowWidth) ออก ให้โปรแกรมห่อเฟรมตามกล่อง 1500px อัตโนมัติ
             const opt = {
                 margin:       0.2, 
                 filename:     `Delivery_Plan_${planDate}.pdf`,
