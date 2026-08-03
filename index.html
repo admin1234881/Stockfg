@@ -1532,6 +1532,10 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-2 shadow-sm px-3 py-1 bg-light" style="border-radius: 8px; border: 1px solid #dee2e6;">
+                    
+                    <!-- 🟢 เพิ่มปุ่มโหลด PDF ตรงนี้ครับ -->
+                    <button class="btn btn-danger btn-sm fw-bold me-2 shadow-sm" onclick="window.downloadDeliveryPlanPDF()" title="โหลด PDF A3"><i class="bi bi-file-earmark-pdf-fill"></i> พิมพ์แผน</button>
+                    
                     <label for="view-plan-date" class="form-label mb-0 small-text fw-bold text-primary" style="white-space: nowrap;"><i class="bi bi-calendar-event me-1"></i>ดูแผนงานวันที่:</label>
                     <input type="date" id="view-plan-date" class="form-control form-control-sm border-0 fw-bold text-dark bg-light" style="outline: none; box-shadow: none;">
                 </div>
@@ -5699,6 +5703,218 @@ window.populateVehicleDashboard = function() {
         completedContainer.innerHTML = completedHtml;
         
     } catch (error) { console.error("Dashboard Vehicle Error:", error); }
+};
+// 🟢 ฟังก์ชันวาดและโหลด PDF แผนจัดส่ง Delivery Plan (อัปเดต: ตรึงเวลา 24 ช.ม. และปัดเศษนาทีลงชั่วโมงเต็ม)
+window.downloadDeliveryPlanPDF = function() {
+    if (typeof html2pdf === 'undefined') {
+        Swal.fire('ข้อผิดพลาด', 'เครื่องมือสร้าง PDF ยังโหลดไม่เสร็จ กรุณารอสักครู่แล้วกดใหม่ครับ', 'warning');
+        return;
+    }
+
+    const dateInput = document.getElementById('view-plan-date');
+    const planDate = dateInput ? dateInput.value : '';
+
+    if (!planDate) {
+        Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือกวันที่ต้องการพิมพ์แผนงานในช่อง "ดูแผนงานวันที่" ก่อนครับ', 'warning');
+        return;
+    }
+
+    Swal.fire({ title: 'กำลังพิมพ์แผนส่งงาน', text: 'กำลังรวบรวมและจัดกลุ่มเวลาจัดส่ง...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    setTimeout(() => {
+        try {
+            let targetPlans = db.deliveryPlans.filter(p => {
+                if (!p || !p.date) return false;
+                let pDate = typeof formatDate === 'function' ? formatDate(p.date) : String(p.date).split('T')[0];
+                return pDate === planDate && p.status !== 'Cancelled' && p.jobType !== 'Pickup' && p.jobType !== 'Other'; 
+            });
+
+            if (targetPlans.length === 0) {
+                Swal.fire('ไม่มีข้อมูล', 'ไม่มีคิว "ส่งสินค้า" สำหรับวันที่คุณเลือกครับ', 'info');
+                return;
+            }
+
+            // 🟢 1. สร้างตารางเวลารอไว้เลย 24 ชั่วโมงตายตัว (07:00 ไปจนถึง 06:00)
+            let timeSlots = [];
+            for (let i = 7; i < 24; i++) {
+                timeSlots.push(i.toString().padStart(2, '0') + ':00');
+            }
+            for (let i = 0; i <= 6; i++) {
+                timeSlots.push(i.toString().padStart(2, '0') + ':00');
+            }
+
+            let groupedData = {};
+            targetPlans.forEach(p => {
+                let tRaw = String(p.time || '00:00').replace(/^'+/, '').trim();
+                if (typeof formatTimeDisplay === 'function') tRaw = formatTimeDisplay(tRaw);
+                
+                // 🟢 2. ปัดเศษนาทีทิ้ง จับยัดลงชั่วโมงเต็ม (เช่น 16:10 -> 16:00)
+                let hh = tRaw.split(':')[0] || '00';
+                let t = hh.padStart(2, '0') + ':00';
+                
+                // ถ้าดึงเวลามาแล้วไม่มีในตาราง (กันเหนียว) ให้จับไปลงช่อง 00:00
+                if (!timeSlots.includes(t)) t = '00:00'; 
+                
+                let cust = String(p.customer || 'ไม่ระบุ').trim();
+                let pId = String(p.productId || 'ไม่มีรหัส').trim();
+                let pName = String(p.productName || '-').trim();
+                
+                const key = cust + '_' + pId;
+                
+                if (!groupedData[key]) {
+                    let stockStd = 0, stockTemp = 0;
+                    const currentStock = typeof calculatedStock !== 'undefined' ? calculatedStock : [];
+                    const stockInfo = currentStock.find(s => String(s.productId || '').trim() === pId);
+                    
+                    if (stockInfo && stockInfo.lots) {
+                        stockInfo.lots.forEach(lot => {
+                            if (lot.quantity > 0) {
+                                if (lot.packagingType === 'temporary') stockTemp += Number(lot.quantity);
+                                else stockStd += Number(lot.quantity);
+                            }
+                        });
+                    }
+
+                    groupedData[key] = {
+                        customer: cust,
+                        productId: pId,
+                        productName: pName,
+                        stockStd: stockStd,
+                        stockTemp: stockTemp,
+                        totalStock: stockStd + stockTemp,
+                        times: {},
+                        totalPlan: 0
+                    };
+                    // สร้างกล่องเก็บคิวงานให้ครบทั้ง 24 ชั่วโมง
+                    timeSlots.forEach(ts => groupedData[key].times[ts] = 0);
+                }
+                
+                let qty = parseInt(p.quantity, 10) || 0;
+                groupedData[key].times[t] += qty;
+                groupedData[key].totalPlan += qty;
+            });
+
+            let rows = Object.values(groupedData).sort((a, b) => {
+                let cA = String(a.customer);
+                let cB = String(b.customer);
+                let pA = String(a.productId);
+                let pB = String(b.productId);
+                if (cA !== cB) return cA.localeCompare(cB);
+                return pA.localeCompare(pB);
+            });
+
+            // ปรับฟอนต์ช่องเวลาให้เล็กลงนิดนึง เพื่อให้ยัด 24 คอลัมน์ได้พอดีและสวยงาม
+            let thTimes = timeSlots.map(t => `<th style="padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0250da; color: white; font-size: 10px; white-space: nowrap;">${t}</th>`).join('');
+            
+            const printDateStr = new Date(planDate).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+            const timestampStr = new Date().toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            const currentUserStr = typeof currentUser !== 'undefined' && currentUser ? (currentUser.fullname || currentUser.username) : 'ไม่ระบุ';
+
+            const mainHeaderHTML = `
+                <table style="width: 100%; border-bottom: 3px solid #0d6efd; margin-bottom: 15px; border-collapse: collapse;">
+                    <tr>
+                        <td style="vertical-align: bottom; padding-bottom: 8px; width: 65%;">
+                            <div style="display: flex; align-items: flex-end;">
+                                <img src="https://i.ibb.co/KxttMHxc/291315-logo-20230216140112-5.jpg" style="width: 70px; height: auto; margin-right: 15px;" crossorigin="anonymous">
+                                <div style="padding-bottom: 2px;">
+                                    <h1 style="margin: 0; color: #0d6efd; font-weight: 900; font-size: 26px; line-height: 1.1;">DAILY DELIVERY PLAN SUMMARY</h1>
+                                    <div style="color: #6c757d; font-size: 13px; font-weight: bold; margin-top: 2px;">แผนการจัดส่งสินค้าประจำวัน และสถานะสต็อกคงเหลือ (ตัดยอดอัตโนมัติ)</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="vertical-align: bottom; text-align: right; padding-bottom: 10px; width: 35%; font-size: 12px; color: #555; line-height: 1.4;">
+                            <b style="color: #dc3545; font-size: 14px;">ข้อมูลแผนงานประจำวันที่: ${printDateStr}</b><br>
+                            <b>พิมพ์เมื่อ:</b> วันนี้ ${timestampStr} น.<br>
+                            <b>ผู้พิมพ์เอกสาร:</b> <span style="color: #0d6efd; font-weight: bold;">${currentUserStr}</span>
+                        </td>
+                    </tr>
+                </table>
+            `;
+
+            const theadHTML = `
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 3%; padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0d6efd; color: white; font-size: 10px;">ลำดับ</th>
+                        <th rowspan="2" style="width: 12%; padding: 6px 10px 6px 12px; text-align: left; border: 1px solid #0a58ca; background-color: #0d6efd; color: white; font-size: 11px;">รายชื่อลูกค้า</th>
+                        <th rowspan="2" style="width: 22%; padding: 6px 10px 6px 12px; text-align: left; border: 1px solid #0a58ca; background-color: #0d6efd; color: white; font-size: 11px;">รหัสและชื่อสินค้า (Part / Name)</th>
+                        <th colspan="2" style="width: 8%; padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0b5ed7; color: white; font-size: 10px;">สต็อกปัจจุบัน</th>
+                        <th colspan="${timeSlots.length}" style="padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #0250da; color: white; font-size: 11px;">แยกจำนวนส่งตามรอบเวลา</th>
+                        <th rowspan="2" style="width: 5%; padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #495057; color: white; font-size: 10px;">รวมส่ง</th>
+                        <th rowspan="2" style="width: 5%; padding: 6px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #198754; color: white; font-size: 10px;">คงเหลือ</th>
+                    </tr>
+                    <tr>
+                        <th style="padding: 4px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #e7f1ff; color: #052c65; font-size: 9px;">STD</th>
+                        <th style="padding: 4px 2px; text-align: center; border: 1px solid #0a58ca; background-color: #fff3cd; color: #856404; font-size: 9px;">TEMP</th>
+                        ${thTimes}
+                    </tr>
+                </thead>
+            `;
+
+            let htmlString = `<div style="width: 1700px; padding: 30px 50px 30px 110px; box-sizing: border-box; background-color: #fff; font-family: 'Sarabun', 'Mitr', sans-serif; color: #333; margin: 0 auto;">`;
+
+            const ROWS_PER_PAGE = 18;
+
+            rows.forEach((r, idx) => {
+                if (idx % ROWS_PER_PAGE === 0) {
+                    if (idx > 0) {
+                        htmlString += `</tbody></table><div class="html2pdf__page-break"></div><div style="height: 30px;"></div>`;
+                    } else {
+                        htmlString += mainHeaderHTML;
+                    }
+                    htmlString += `<table style="width: 100%; border-collapse: collapse; border: 2px solid #0a58ca; font-size: 11px; table-layout: auto;">${theadHTML}<tbody>`;
+                }
+
+                let balance = r.totalStock - r.totalPlan;
+                let balanceColor = balance < 0 ? '#dc3545' : '#198754';
+                let balanceBg = balance < 0 ? '#fff5f5' : '#f0fdf4';
+                
+                let tdTimes = timeSlots.map(t => {
+                    let val = r.times[t];
+                    return `<td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-size: 11px; font-weight: bold; color: ${val > 0 ? '#0d6efd' : '#e9ecef'};">${val > 0 ? val.toLocaleString() : '-'}</td>`;
+                }).join('');
+
+                htmlString += `
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-size: 11px;">${idx + 1}</td>
+                        <td style="padding: 6px 10px 6px 12px; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; text-align: left;">${r.customer}</td>
+                        <td style="padding: 6px 10px 6px 12px; border: 1px solid #dee2e6; text-align: left;">
+                            <div style="font-weight: bold; color: #0d6efd; font-size: 11px; word-break: break-word;">${r.productId}</div>
+                            <div style="font-size: 10px; color: #6c757d; line-height: 1.2; word-break: break-word;">${r.productName}</div>
+                        </td>
+                        <td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; color: #052c65; background-color: #e7f1ff;">${r.stockStd.toLocaleString()}</td>
+                        <td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; color: #856404; background-color: #fff3cd;">${r.stockTemp.toLocaleString()}</td>
+                        ${tdTimes}
+                        <td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: bold; font-size: 11px; background-color: #f8f9fa;">${r.totalPlan.toLocaleString()}</td>
+                        <td style="padding: 6px 2px; text-align: center; border: 1px solid #dee2e6; font-weight: 900; font-size: 12px; color: ${balanceColor}; background-color: ${balanceBg};">${balance.toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+
+            htmlString += `</tbody></table></div>`;
+
+            const opt = {
+                margin:       [0.2, 0.2, 0.2, 0.2], 
+                filename:     `Delivery_Plan_${planDate}.pdf`,
+                image:        { type: 'jpeg', quality: 1 },
+                html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 1700 }, 
+                jsPDF:        { unit: 'in', format: 'a3', orientation: 'landscape' },
+                pagebreak:    { mode: ['css', 'legacy'] }
+            };
+
+            html2pdf().set(opt).from(htmlString).save().then(() => {
+                Swal.close();
+                Swal.fire({ icon: 'success', title: 'ดาวน์โหลดสำเร็จ!', text: 'ไฟล์ Delivery Plan ถูกบันทึกลงเครื่องแล้ว', timer: 2500, showConfirmButton: false });
+            }).catch(error => {
+                Swal.close();
+                Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถสร้าง PDF ได้: ' + error.message, 'error');
+            });
+
+        } catch (error) {
+            console.error("Data Processing Error:", error);
+            Swal.close();
+            Swal.fire('เกิดข้อขัดข้องระหว่างคำนวณข้อมูล', 'สาเหตุ: ' + error.message, 'error');
+        }
+    }, 150);
 };
 // ฟังก์ชันคำนวณและวาดตาราง Rack
                 window.populateRackDashboard = function() {
