@@ -7279,6 +7279,11 @@ window.renderDeliveryPlanTable = function(targetDate) {
             <td class="text-center fw-bold text-primary" ${clickToExpand}>
                 <div class="small text-muted" style="font-size: 0.7rem;">${planDateStr}</div>
                 <i class="bi bi-clock me-1"></i>${group.displayTime} น.
+                ${group.status === 'Pending' ? `
+                    <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" style="text-decoration: none;" onclick="event.stopPropagation(); window.editDeliveryGroupTime('${planDateStr}', '${displayTime}', '${safeCustomer}')" title="แก้ไขเวลา">
+                        <i class="bi bi-pencil-square text-warning"></i>
+                    </button>
+                ` : ''}
             </td>
             <td class="fw-bold fs-6" ${clickToExpand}>${group.customer}</td>
             <td class="fw-bold text-secondary" ${clickToExpand}>${group.items.length} พาร์ท <small class="text-muted fw-normal">(คลิกดู)</small></td>
@@ -7922,7 +7927,72 @@ window.returnGroupVehicle = function(date, displayTime, customer) {
         }
     });
 };
+// 🟢 ฟังก์ชันแก้ไขเวลาจัดส่ง (เฉพาะสถานะ "รอจัดส่ง") - แก้เวลาทีเดียวทั้งกลุ่ม (ทุกพาร์ทในคิวเดียวกัน)
+window.editDeliveryGroupTime = async function(date, displayTime, customer) {
+    const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
+    const safeTime = String(displayTime).replace(/^'+/, '').trim();
+    const safeCustomer = String(customer).trim();
 
+    const plansToUpdate = db.deliveryPlans.filter(p => {
+        let pDate = typeof formatDate === 'function' ? formatDate(p.date) : p.date;
+        let pTime = String(p.time).replace(/^'+/, '').trim();
+        if (typeof formatTimeDisplay === 'function') pTime = formatTimeDisplay(pTime);
+        return pDate === safeDate && pTime === safeTime && String(p.customer).trim() === safeCustomer && p.status === 'Pending';
+    });
+
+    if (plansToUpdate.length === 0) {
+        Swal.fire('ข้อผิดพลาด', 'ไม่พบคิวจัดส่งนี้ในระบบ กรุณารีเฟรชหน้าเว็บครับ', 'error');
+        return;
+    }
+
+    const { value: newTime, dismiss } = await Swal.fire({
+        title: 'แก้ไขเวลาจัดส่ง',
+        html: `
+            <div class="text-start mb-3" style="font-size: 0.95rem;">
+                <div><i class="bi bi-building text-secondary me-1"></i><b>ลูกค้า:</b> <span class="text-primary">${customer}</span></div>
+                <div><i class="bi bi-clock-history text-secondary me-1"></i><b>เวลาเดิม:</b> ${safeTime} น.</div>
+                <div class="text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>จะปรับเวลาให้ทุกพาร์ท (${plansToUpdate.length} รายการ) ในคิวนี้พร้อมกัน</div>
+            </div>
+            <div class="form-group text-start">
+                <label class="fw-bold small text-muted">เลือกเวลาใหม่ (24 ชม.) <span class="text-danger">*</span></label>
+                <input id="swal-edit-plan-time" type="time" class="form-control form-control-lg text-center fw-bold" required value="${safeTime}">
+            </div>
+        `,
+        focusConfirm: false,
+        showCancelButton: true,
+        confirmButtonText: '<i class="bi bi-save me-1"></i> บันทึกเวลาใหม่',
+        cancelButtonText: 'ยกเลิก',
+        confirmButtonColor: '#0d6efd',
+        preConfirm: () => {
+            const time = document.getElementById('swal-edit-plan-time').value;
+            if (!time) Swal.showValidationMessage('กรุณาเลือกเวลาด้วยค่ะ');
+            return time;
+        }
+    });
+
+    if (dismiss === Swal.DismissReason.cancel || dismiss === Swal.DismissReason.close || !newTime) {
+        return;
+    }
+
+    if (newTime === safeTime) return; // เวลาไม่เปลี่ยน ไม่ต้องบันทึกซ้ำ
+
+    Swal.fire({ title: 'กำลังบันทึกเวลาใหม่...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        for (let plan of plansToUpdate) {
+            plan.time = "'" + newTime;
+            if (plan.date) plan.date = formatDate(plan.date);
+            await callAppsScript('updateDeliveryPlan', plan);
+        }
+
+        if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
+        if (typeof populateVehicleDashboard === 'function') populateVehicleDashboard();
+
+        Swal.fire({ icon: 'success', title: `แก้ไขเวลาเป็น ${newTime} น. เรียบร้อย!`, timer: 1500, showConfirmButton: false });
+    } catch (error) {
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้: ' + error.message, 'error');
+    }
+};
 // 🟢 4. ฟังก์ชันยกเลิกรอบรถ (แก้ไขระบบจับคู่ประวัติ ป้องกัน Error หมายเหตุว่าง และดึงยอดคืนทันที)
 window.cancelDeliveryGroup = function(date, displayTime, customer) {
     const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
