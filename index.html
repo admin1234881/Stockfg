@@ -8030,11 +8030,14 @@ window.cancelDeliveryGroup = function(date, displayTime, customer) {
                     if (h.type !== 'export') return false;
                     // 🛡️ สำคัญ: หุ้ม String() ไว้ ป้องกัน Error หากประวัติไม่มีการพิมพ์หมายเหตุ
                     const hRemarks = String(h.remarks || '');
+                    const hDate = typeof formatDate === 'function' ? formatDate(h.date) : String(h.date).split('T')[0];
                     
                     const matchID = hRemarks.includes(plan.id);
                     const matchProduct = String(h.productId).trim() === String(plan.productId).trim();
                     const matchCustomer = String(h.customer).trim() === safeCustomer;
-                    const matchLegacy = matchProduct && matchCustomer && hRemarks.includes('AUTO') && hRemarks.includes(safeTime);
+                    const matchAutoTag = hRemarks.includes('AUTO') || hRemarks.includes('DELIVERY_PLAN');
+                    const matchSameDay = hDate === safeDate;
+                    const matchLegacy = matchProduct && matchCustomer && matchAutoTag && matchSameDay;
                     
                     return matchID || matchLegacy;
                 });
