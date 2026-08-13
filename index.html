@@ -3149,7 +3149,7 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwU1KNBzDvNKs29P00uUhnfVDAkvciXr6NArtFXsM1AmYZDMARJdy8SqJaFYgI9tY-qxA/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyuuPMBfD_cVBQTsfhbE3CMxQpaL1cbrtVPFfLPz-0X97p2euTvppSCFedb97PJ8vWnrg/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [] };
@@ -3277,6 +3277,27 @@ function handleLogin(e) {
 
 
 let isDataLoaded = false; 
+let isUsersLoaded = false; // 🟢 เช็คว่าโหลดรายชื่อผู้ใช้สำหรับล็อกอินเสร็จหรือยัง
+
+// 🟢 โหลดเฉพาะ Users ก่อน (เบา เร็ว) เพื่อให้กดล็อกอินได้ทันที ไม่ต้องรอข้อมูลสต็อก/ประวัติทั้งหมด
+async function loadUsersOnly() {
+    try {
+        const response = await fetch(SCRIPT_URL + '?action=getUsers&t=' + new Date().getTime(), {
+            method: 'GET',
+            cache: 'no-store',
+            redirect: 'follow'
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.users && data.users.length > 0) {
+            db.users = data.users; // เขียนทับด้วยข้อมูลสดจากเซิร์ฟเวอร์ ป้องกันรหัสผ่านเก่าค้างจากแคช
+            isUsersLoaded = true;
+            console.log('⚡ โหลดรายชื่อผู้ใช้สำหรับล็อกอินสำเร็จ');
+        }
+    } catch (error) {
+        console.error('Error loading users for login:', error);
+    }
+}
 
 async function loadDataFromSheet(isInitialLoad = false) {
     if (isInitialLoad) {
@@ -4099,7 +4120,10 @@ async function init() {
         showDashboard();
     }
     
-    // 3. แอบสั่งโหลดข้อมูลเงียบๆ อยู่หลังบ้าน (ไม่เอา await บล็อกไว้แล้ว)
+    // 3. โหลด Users ก่อนทันที (เบา เร็ว) เพื่อให้ล็อกอินได้ไว ไม่ต้องรอข้อมูลอื่น
+    loadUsersOnly();
+
+    // 4. แอบสั่งโหลดข้อมูลที่เหลือทั้งหมดเงียบๆ อยู่หลังบ้าน (ไม่เอา await บล็อกไว้แล้ว)
     loadDataFromSheet(true); 
     
     addEventListeners();
