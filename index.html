@@ -1507,7 +1507,12 @@
     <div class="card border-0 shadow-sm" style="border-radius: 20px;">
         <!-- 🟢 หัวตารางที่มีช่องค้นหา -->
         <div class="card-header fw-bold d-flex justify-content-between align-items-center bg-white border-0 pt-4 pb-2 px-4 flex-wrap gap-2" style="border-radius: 20px 20px 0 0;">
-            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-table me-2"></i>ตารางสรุปแผนการจัดส่งรวมประจำวัน</h5>
+            <h5 class="fw-bold text-primary mb-0">
+                <i class="bi bi-table me-2"></i>ตารางสรุปแผนการจัดส่งรวมประจำวัน
+                <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="manual-refresh-delivery-btn" title="รีเฟรชข้อมูลตอนนี้">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </h5>
             
             <div class="d-flex align-items-center gap-3"><!-- 🟢 ส่วนที่เพิ่ม: ปุ่มกรองสถานะ -->
 <div class="btn-group shadow-sm" role="group" style="border-radius: 8px;">
@@ -3149,7 +3154,7 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyuuPMBfD_cVBQTsfhbE3CMxQpaL1cbrtVPFfLPz-0X97p2euTvppSCFedb97PJ8vWnrg/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzhKxykEgdKpnVHCiI9ule0DaE5_t9vN_1qE7KX1EJyNrX9jkYyEAxBBua9nhHyzOK_/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [] };
@@ -6369,6 +6374,13 @@ window.generateVehicleReport = function(fileType) {
                     loginForm.addEventListener('submit', handleLogin);
                     logoutBtn.addEventListener('click', () => confirmAction(translations[currentLanguage].confirm_logout_title, '', logoutWithAnimation));
                     document.getElementById('refresh-stock-summary-btn').addEventListener('click', () => loadDataFromSheet(true));
+                    const manualRefreshDeliveryBtn = document.getElementById('manual-refresh-delivery-btn');
+                    if (manualRefreshDeliveryBtn) {
+                        manualRefreshDeliveryBtn.addEventListener('click', () => {
+                            manualRefreshDeliveryBtn.classList.add('disabled');
+                            loadDataFromSheet(true).finally(() => manualRefreshDeliveryBtn.classList.remove('disabled'));
+                        });
+                    }
 
                     // --- แก้ไขโค้ดสำหรับปุ่มดาวน์โหลด ---
                     document.getElementById('backup-stock-btn').addEventListener('click', () => {
