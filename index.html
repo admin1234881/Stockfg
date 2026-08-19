@@ -8485,12 +8485,12 @@ window.deletePlanItem = function(id, date) {
 window.downloadDeliveryTemplate = function() {
     try {
         const ws_data = [
-            ["Date (YYYY-MM-DD)", "Job Type", "Customer", "Part No.", "Quantity", "Time (HH:mm)", "Remarks"],
-            ["2026-07-28", "Delivery", "", "PART-001", 500, "08:30", "ใส่ Delivery ระบบจะดึงชื่อลูกค้าจาก Part No. เอง"],
-            ["2026-07-28", "Pickup", "LG", "-", 0, "13:00", "ใส่ Pickup แล้วใส่ชื่อลูกค้า ช่อง Part ใส่เป็น -"]
+            ["Date (YYYY-MM-DD)", "Job Type", "Customer", "Part No.", "Quantity", "Time (HH:mm)", "Remarks", "Invoice No. (เว้นว่างได้)"],
+            ["2026-07-28", "Delivery", "", "PART-001", 500, "08:30", "ใส่ Delivery ระบบจะดึงชื่อลูกค้าจาก Part No. เอง", "INV1001"],
+            ["2026-07-28", "Pickup", "LG", "-", 0, "13:00", "ใส่ Pickup แล้วใส่ชื่อลูกค้า ช่อง Part ใส่เป็น -", ""]
         ];
         const ws = XLSX.utils.aoa_to_sheet(ws_data);
-        ws['!cols'] = [{wch: 18}, {wch: 15}, {wch: 20}, {wch: 20}, {wch: 10}, {wch: 15}, {wch: 40}];
+        ws['!cols'] = [{wch: 18}, {wch: 15}, {wch: 20}, {wch: 20}, {wch: 10}, {wch: 15}, {wch: 40}, {wch: 20}];
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Delivery_Template");
         XLSX.writeFile(wb, "Delivery_Plan_Template.xlsx");
@@ -8598,7 +8598,7 @@ window.uploadDeliveryFile = function() {
                     const row = jsonData[i];
                     if (!row || row.length < 2) continue; 
                     
-                    // 🟢 แมปปิ้งตามเทมเพลต 7 คอลัมน์ของคุณ Jo เป๊ะๆ
+                    // 🟢 แมปปิ้งตามเทมเพลต 8 คอลัมน์ของคุณ Jo เป๊ะๆ
                     const rawDate = row[0];       // A: Date
                     const rawJobType = String(row[1] || '').trim().toLowerCase(); // B: Job Type
                     let rawCustomer = String(row[2] || '').trim(); // C: Customer
@@ -8606,6 +8606,7 @@ window.uploadDeliveryFile = function() {
                     const rawQty = parseFloat(row[4]); // E: Quantity
                     const rawTime = row[5];       // F: Time
                     const rawRemarks = String(row[6] || '').trim(); // G: Remarks
+                    const rawInvoiceNumber = String(row[7] || '').trim(); // H: Invoice No. 🟢
 
                     if (!rawDate) continue; 
 
@@ -8645,6 +8646,7 @@ window.uploadDeliveryFile = function() {
                         quantity: finalQty,
                         time: "'" + finalTime, 
                         remarks: rawRemarks,
+                        invoiceNumber: rawInvoiceNumber, // 🟢 เลขที่ Invoice จากคอลัมน์ H
                         user: currentUser.username,
                         status: 'Pending', 
                         licensePlate: '',
@@ -11709,14 +11711,14 @@ function populateSalesDashboard(startDate, endDate) {
 window.downloadDeliveryTemplate = function() {
     try {
         const ws_data = [
-            ["วันที่จัดส่ง (YYYY-MM-DD)", "รอบเวลา (เช่น 08:30)", "รหัสสินค้า (Part No.)", "จำนวนชิ้น", "หมายเหตุ (เว้นว่างได้)"],
-            ["2024-05-20", "09:30", "PART-001", 1500, "ส่งรอบเช้า"],
-            ["2024-05-20", "14:00", "PART-002", 500, ""],
-            ["* ลบข้อมูลตัวอย่างนี้ทิ้งก่อนใช้งาน *", "", "", "", ""]
+            ["วันที่จัดส่ง (YYYY-MM-DD)", "รอบเวลา (เช่น 08:30)", "รหัสสินค้า (Part No.)", "จำนวนชิ้น", "หมายเหตุ (เว้นว่างได้)", "เลขที่ Invoice (เว้นว่างได้)"],
+            ["2024-05-20", "09:30", "PART-001", 1500, "ส่งรอบเช้า", "INV1001"],
+            ["2024-05-20", "14:00", "PART-002", 500, "", ""],
+            ["* ลบข้อมูลตัวอย่างนี้ทิ้งก่อนใช้งาน *", "", "", "", "", ""]
         ];
         const ws = XLSX.utils.aoa_to_sheet(ws_data);
         // กำหนดความกว้างคอลัมน์ให้สวยงาม
-        ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 25}, {wch: 15}, {wch: 35}];
+        ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 25}, {wch: 15}, {wch: 35}, {wch: 20}];
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "DeliveryPlan_Template");
         XLSX.writeFile(wb, "Delivery_Plan_Template.xlsx");
@@ -11815,6 +11817,7 @@ window.uploadDeliveryFile = function() {
                     const productId = String(row[2] || '').trim();
                     const qty = parseInt(row[3]);
                     const remarks = String(row[4] || '').trim();
+                    const invoiceNumber = String(row[5] || '').trim(); // 🟢 เลขที่ Invoice (คอลัมน์ที่ 6)
 
                     if (!rawDate || !rawTime || !productId || isNaN(qty) || productId.includes('*')) continue;
 
@@ -11830,6 +11833,7 @@ window.uploadDeliveryFile = function() {
                         productName: productInfo.name,
                         quantity: qty,
                         remarks: remarks,
+                        invoiceNumber: invoiceNumber, // 🟢 บันทึกเลขที่ Invoice ไปด้วย
                         user: currentUser.username,
                         status: 'Pending', 
                         licensePlate: '',
