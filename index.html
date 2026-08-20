@@ -3185,7 +3185,7 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvCJPznhN4QjPiKX_t69gTL_x7Bg6L-IF746j_WmMrWT7I-TnwM6dSskzu2i00yuZINQ/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxzrzGI7k-VOM-mDPf2JrxV9isV9cZP_Yt-hKuwGFcFCTDzpOT8T_4smVswoMWHqiFu9w/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [], lotHolds: [] };
@@ -7940,6 +7940,30 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
             if (typeof renderDeliveryPlanTable === 'function') renderDeliveryPlanTable(safeDate);
             
             Swal.fire({ icon: 'success', title: 'ปล่อยรถเรียบร้อย!', text: `ทะเบียน: ${licensePlate} พร้อมตัดสต็อกออโต้แล้ว`, timer: 2000, showConfirmButton: false });
+
+            // 🟢 แจ้งเตือนเข้ากลุ่มไลน์คนขับ (ยิงแบบ fire-and-forget ไม่บล็อกหน้าจอ ถ้าพลาดก็ไม่กระทบงานหลัก)
+            const uniqueInvoicesForLine = [...new Set(plansToUpdate.map(p => (p.invoiceNumber || '').trim()).filter(v => v !== ''))];
+
+            // 🟢 สรุปประเภทงานในคิวนี้ ให้คนขับรู้ล่วงหน้าว่าต้องไปส่งของ / รับแพ็คกิ้งคืน / งานอื่นๆ
+            const deliveryItems = plansToUpdate.filter(p => p.jobType !== 'Pickup' && p.jobType !== 'Other');
+            const pickupItems = plansToUpdate.filter(p => p.jobType === 'Pickup');
+            const otherItems = plansToUpdate.filter(p => p.jobType === 'Other');
+
+            let jobSummaryParts = [];
+            if (deliveryItems.length > 0) jobSummaryParts.push(`📦 ส่งสินค้า ${deliveryItems.length} รายการ`);
+            if (pickupItems.length > 0) jobSummaryParts.push(`♻️ รับแพ็คกิ้งคืน ${pickupItems.length} รายการ`);
+            if (otherItems.length > 0) jobSummaryParts.push(`📝 งานอื่นๆ ${otherItems.length} รายการ${otherItems[0].remarks ? ' (' + otherItems[0].remarks + ')' : ''}`);
+            const jobSummary = jobSummaryParts.join(' | ');
+
+            callAppsScript('notifyLineDeliveryRelease', {
+                customer: safeCustomer,
+                time: safeTime,
+                date: safeDate,
+                licensePlate: licensePlate,
+                itemCount: plansToUpdate.length,
+                invoiceNumber: uniqueInvoicesForLine.join('-'),
+                jobSummary: jobSummary
+            }).catch(err => console.error('แจ้งเตือน LINE ไม่สำเร็จ (ไม่กระทบการทำงานหลัก):', err));
         } catch (error) {
             Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกข้อมูลได้ทั้งหมด: ' + error.message, 'error');
         }
