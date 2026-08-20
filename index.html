@@ -4603,8 +4603,8 @@ clearInterval(window.mascotLoopTimer);
         if (document.getElementById('nav-announcements-item')) document.getElementById('nav-announcements-item').style.display = canManageAnn ? '' : 'none';
         if (document.getElementById('nav-forecast-item')) {document.getElementById('nav-forecast-item').style.display = canForecast ? '' : 'none';
         }
-        if (document.getElementById('nav-lot-hold-item')) document.getElementById('nav-lot-hold-item').style.display = isMasterAdmin ? '' : 'none';
-
+        const canManageLotHold = isMasterAdmin || currentUser.canManageLotHold;
+        if (document.getElementById('nav-lot-hold-item')) document.getElementById('nav-lot-hold-item').style.display = canManageLotHold ? '' : 'none';
  // 3. จัดการปุ่มดาวน์โหลดสำรองข้อมูลแบบใหม่ (Dropdown)
         const backupDropdown = document.getElementById('backup-dropdown-container');
         if (backupDropdown) backupDropdown.style.display = (canManageProducts || canManageUsers) ? 'block' : 'none';
@@ -10096,7 +10096,8 @@ const permissions = [
                         { key: 'canManageDeliveryPlan', label: 'จัดการแผนการจัดส่ง' },
                         { key: 'canConvertPart', label: 'เปลี่ยนรหัสสินค้า (Convert)' },
                         { key: 'canManageRack', label: 'ระบบจัดการ Rack (แพ็คกิ้ง)' },
-                        { key: 'canForecast', label: 'อัปโหลด Forecast' }
+                        { key: 'canForecast', label: 'อัปโหลด Forecast' },
+                        { key: 'canManageLotHold', label: 'ตรวจสอบ/ปลดล็อกล็อตค้าง (Q)' }
                     ];
                     let permissionsHtml = permissions.map(p => `
                 <div class="form-check form-switch">
@@ -11633,7 +11634,8 @@ function populateSalesDashboard(startDate, endDate) {
                         canManageDeliveryPlan: document.getElementById('permission-canManageDeliveryPlan').checked, // 👈 สิทธิ์จัดส่ง
                         canConvertPart: document.getElementById('permission-canConvertPart').checked, // 👈 สิทธิ์ Convert
                         canManageRack: document.getElementById('permission-canManageRack').checked,
-                        canForecast: document.getElementById('user-canForecast').checked
+                        canForecast: document.getElementById('user-canForecast').checked,
+                        canManageLotHold: document.getElementById('permission-canManageLotHold').checked
                     };
 
                         Swal.fire({
