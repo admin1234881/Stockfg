@@ -1358,7 +1358,8 @@
                             
                             <li id="nav-history-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-history"><i class="bi bi-clock-fill me-3 fs-5 align-middle" style="color: #20c997;"></i><span data-lang-key="nav_history">ประวัติ</span></button></li>
                             
-                            <li id="nav-delivery-plan-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-delivery-plan"><i class="bi bi-calendar-check-fill me-3 text-danger fs-5 align-middle"></i><span data-lang-key="nav_delivery_plan">แผนการจัดส่ง Delivery plan</span></button></li>
+                                                       <li id="nav-delivery-plan-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-delivery-plan"><i class="bi bi-calendar-check-fill me-3 text-danger fs-5 align-middle"></i><span data-lang-key="nav_delivery_plan">แผนการจัดส่ง Delivery plan</span></button></li>
+                            <li id="nav-lot-hold-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-lot-hold"><i class="bi bi-shield-exclamation me-3 text-danger fs-5 align-middle"></i><span>รายการรอตรวจสอบ (Q) <span id="lot-hold-badge-count" class="badge bg-danger rounded-pill ms-1" style="display:none;">0</span></span></button></li>
                             <li id="nav-forecast-item"><button class="dropdown-item modern-dropdown-item" data-bs-toggle="pill" data-bs-target="#pills-forecast"><i class="bi bi-graph-up-arrow me-3 text-success fs-5 align-middle"></i><span data-lang-key="nav_forecast">อัปโหลด Forecast (ล่วงหน้า)</span></button></li>
                         </ul>
                     </li>
@@ -1429,6 +1430,32 @@
                         </div>
                     </div>
                 </div>
+            <div class="tab-pane fade" id="pills-lot-hold" role="tabpanel">
+    <div class="card mb-4 border-0 shadow-sm" style="border-radius: 20px;">
+        <div class="card-header fw-bold bg-white border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center" style="border-radius: 20px 20px 0 0;">
+            <h5 class="fw-bold text-danger mb-0"><i class="bi bi-shield-exclamation me-2"></i>รายการล็อตค้างตรวจสอบ (Q)</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.populateLotHoldPage()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+        </div>
+        <div class="card-body px-4 pb-4 pt-2">
+            <div class="table-responsive shadow-sm" style="border-radius: 10px; border: 1px solid #dee2e6;">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>รหัสสินค้า</th>
+                            <th>Lot วันที่</th>
+                            <th class="text-center">จำนวนค้าง</th>
+                            <th>ผู้แจ้ง</th>
+                            <th>วันที่แจ้ง</th>
+                            <th>หมายเหตุ</th>
+                            <th class="text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lot-hold-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>   
 <div class="tab-pane fade" id="pills-delivery-plan" role="tabpanel">
     <!-- ฟอร์มสร้างแผนการจัดส่ง -->
     <div class="card mb-4 border-0 shadow-sm" style="border-radius: 20px; overflow: visible; z-index: 20;">
@@ -3158,10 +3185,10 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfsi8HSfxzwxDMCAX5W4K98u7TvAUTqcKsxmNqA_ONyZDuHZuZncOkMRTBHvZZagEfPQ/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvCJPznhN4QjPiKX_t69gTL_x7Bg6L-IF746j_WmMrWT7I-TnwM6dSskzu2i00yuZINQ/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
-                let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [] };
+                                let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [], lotHolds: [] };
                 let calculatedStock = []; // This will hold the stock calculated from history
                 let dataSyncInterval = null;
                 let inactivityTimer = null;
@@ -4576,6 +4603,7 @@ clearInterval(window.mascotLoopTimer);
         if (document.getElementById('nav-announcements-item')) document.getElementById('nav-announcements-item').style.display = canManageAnn ? '' : 'none';
         if (document.getElementById('nav-forecast-item')) {document.getElementById('nav-forecast-item').style.display = canForecast ? '' : 'none';
         }
+        if (document.getElementById('nav-lot-hold-item')) document.getElementById('nav-lot-hold-item').style.display = isMasterAdmin ? '' : 'none';
 
  // 3. จัดการปุ่มดาวน์โหลดสำรองข้อมูลแบบใหม่ (Dropdown)
         const backupDropdown = document.getElementById('backup-dropdown-container');
@@ -4617,9 +4645,10 @@ clearInterval(window.mascotLoopTimer);
                         }
                     }, 50); // ใส่ดีเลย์ 50ms ให้ระบบวาดเมนูซ่อน/โชว์ให้เสร็จก่อน
 
-                    calculateStockFromHistory();
-                    populateAll();
-                    startDataSync();
+    calculateStockFromHistory();
+    populateAll();
+    if (typeof window.populateLotHoldPage === 'function') window.populateLotHoldPage(); // 🟢 อัปเดต badge จำนวน Q ตั้งแต่เปิดแอป
+    startDataSync();
                     setupActivityListeners();
                     resetInactivityTimer();
                 }
@@ -6530,6 +6559,9 @@ window.generateVehicleReport = function(fileType) {
                     });
                     // 🟢 ดักจับเวลากดเปิดแท็บ "แผนการจัดส่ง" ให้สั่งโหลดข้อมูลทันที
                         document.body.addEventListener('shown.bs.tab', function (e) {
+                            if (e.target.dataset.bsTarget === '#pills-lot-hold') {
+                                if (typeof window.populateLotHoldPage === 'function') window.populateLotHoldPage();
+                            }
                             if (e.target.dataset.bsTarget === '#pills-delivery-plan') {
                                 const viewPlanDateInput = document.getElementById('view-plan-date');
                                 if (viewPlanDateInput && typeof renderDeliveryPlanTable === 'function') {
@@ -7289,6 +7321,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
                 <div class="d-flex flex-column gap-1">
                     <button type="button" class="btn btn-primary btn-sm shadow-sm w-100" onclick="event.stopPropagation(); window.releaseGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-truck me-1"></i> ปล่อยรถ</button>
                     <button type="button" class="btn btn-outline-dark btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.generatePackingListPDF('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-file-earmark-pdf"></i> Packing List</button>
+                    <button type="button" class="btn btn-outline-warning btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.openLotAdjustModal('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-boxes"></i> ปรับล็อต</button>
                     <button type="button" class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
                 </div>
             `;
@@ -7970,6 +8003,261 @@ window.returnGroupVehicle = function(date, displayTime, customer) {
             }
         }
     });
+};
+// 🟢 หน้าต่าง "ปรับล็อต" — โชว์ล็อตที่ระบบแนะนำให้หยิบ ให้พนักงานแจ้งได้ถ้าหาไม่เจอ
+window.openLotAdjustModal = async function(date, displayTime, customer) {
+    const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
+    const safeTime = String(displayTime).replace(/^'+/, '').trim();
+    const safeCustomer = String(customer).trim();
+
+    const renderLotAdjustRows = () => {
+        const groupItems = db.deliveryPlans.filter(p => {
+            let pDate = typeof formatDate === 'function' ? formatDate(p.date) : p.date;
+            let pTime = String(p.time).replace(/^'+/, '').trim();
+            if (typeof formatTimeDisplay === 'function') pTime = formatTimeDisplay(pTime);
+            return pDate === safeDate && pTime === safeTime && String(p.customer).trim() === safeCustomer && p.status !== 'Cancelled';
+        });
+
+        let tempStock = JSON.parse(JSON.stringify(calculatedStock));
+        let rowsHtml = '';
+        let hasAnyRow = false;
+
+        groupItems.forEach(plan => {
+            if (plan.jobType === 'Pickup' || plan.jobType === 'Other' || !plan.productId || plan.productId === '-' || !(plan.quantity > 0)) return;
+
+            let qtyNeeded = parseInt(plan.quantity);
+            const stockInfo = tempStock.find(s => String(s.productId).trim() === String(plan.productId).trim());
+            let lotLines = [];
+
+            if (stockInfo && stockInfo.lots) {
+                let availableLots = stockInfo.lots.filter(l => l.quantity > 0).sort((a, b) => new Date(a.productionDate) - new Date(b.productionDate));
+                for (let lot of availableLots) {
+                    if (qtyNeeded <= 0) break;
+                    let lotFullQty = lot.quantity; // 🟢 เก็บจำนวนเต็มของล็อตนี้ไว้ (ก่อนหักตามที่ออเดอร์นี้ต้องการ)
+                    let takeAmount = Math.min(lot.quantity, qtyNeeded);
+                    lotLines.push({ productId: plan.productId, productionDate: lot.productionDate, qty: takeAmount, lotFullQty: lotFullQty });
+                    qtyNeeded -= takeAmount;
+                    lot.quantity -= takeAmount;
+                }
+            }
+
+            lotLines.forEach(line => {
+                hasAnyRow = true;
+                const lotDateDisplay = typeof formatDate === 'function' ? formatDate(line.productionDate) : line.productionDate;
+                rowsHtml += `
+                    <tr>
+                        <td class="fw-bold text-primary small">${line.productId}</td>
+                        <td class="small">${lotDateDisplay}</td>
+                        <td class="small fw-bold text-center">${line.qty}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="window.reportLotShortage('${line.productId}', '${line.productionDate}', ${line.lotFullQty})">
+                                <i class="bi bi-exclamation-triangle"></i> แจ้งจำนวนจริง
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (qtyNeeded > 0) {
+                hasAnyRow = true;
+                rowsHtml += `<tr><td colspan="4" class="text-center text-danger small py-2">⚠️ ${plan.productId} — สต็อกไม่พอ ขาด ${qtyNeeded} ชิ้น (ไม่มีล็อตให้แนะนำเพิ่ม)</td></tr>`;
+            }
+        });
+
+        if (!hasAnyRow) rowsHtml = '<tr><td colspan="4" class="text-center text-muted small py-3">ไม่มีพาร์ทที่ต้องหยิบล็อตในคิวนี้</td></tr>';
+        return rowsHtml;
+    };
+
+    await Swal.fire({
+        title: '<i class="bi bi-boxes text-primary me-2"></i> ปรับล็อตที่จะหยิบ',
+        html: `
+            <div class="text-start mb-2 small text-muted">ลูกค้า: <b>${safeCustomer}</b> &nbsp;|&nbsp; รอบ: <b>${safeTime} น.</b></div>
+            <div class="table-responsive" style="max-height: 380px; overflow-y:auto;">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light"><tr><th>รหัสสินค้า</th><th>Lot วันที่</th><th class="text-center">จำนวน</th><th class="text-center">แจ้งปัญหา</th></tr></thead>
+                    <tbody id="lot-adjust-tbody">${renderLotAdjustRows()}</tbody>
+                </table>
+            </div>
+            <div class="small text-muted mt-2 text-start"><i class="bi bi-info-circle"></i> กด "หาไม่เจอ" ถ้าไปหยิบจริงแล้วไม่พบของในล็อตนั้น ระบบจะล็อกล็อตนี้ไว้รอแอดมินตรวจสอบทันที แล้วแนะนำล็อตถัดไปให้อัตโนมัติ</div>
+        `,
+        width: '40em',
+        confirmButtonText: 'ปิดหน้าต่าง',
+        confirmButtonColor: '#6c757d',
+        showCancelButton: false
+    });
+
+    window.__lotAdjustRefresh = null;
+};
+// 🟢 หน้าแอดมิน: แสดงรายการล็อตค้างตรวจสอบ (Q) ทั้งหมด
+window.populateLotHoldPage = function() {
+    const tbody = document.getElementById('lot-hold-table-body');
+    if (!tbody) return;
+
+    const pendingHolds = (db.lotHolds || []).filter(h => h.status !== 'Resolved');
+
+    const badge = document.getElementById('lot-hold-badge-count');
+    if (badge) {
+        if (pendingHolds.length > 0) { badge.style.display = ''; badge.innerText = pendingHolds.length; }
+        else { badge.style.display = 'none'; }
+    }
+
+    if (pendingHolds.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4"><i class="bi bi-check-circle fs-2 d-block mb-2 opacity-50"></i>ไม่มีรายการค้างตรวจสอบครับ</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = pendingHolds.map(h => {
+        const lotDateDisplay = typeof formatDate === 'function' ? formatDate(h.productionDate) : h.productionDate;
+        const reportedDateDisplay = h.reportedDate ? new Date(h.reportedDate).toLocaleString('th-TH', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '-';
+        return `
+            <tr>
+                <td class="fw-bold text-primary">${h.productId}</td>
+                <td>${lotDateDisplay}</td>
+                <td class="text-center"><span class="badge bg-danger">${h.systemQty}</span></td>
+                <td class="small">${h.reportedBy || '-'}</td>
+                <td class="small text-muted">${reportedDateDisplay}</td>
+                <td class="small text-muted">${h.adminNote || '-'}</td>
+                <td class="text-center">
+                    <div class="d-flex gap-1 justify-content-center">
+                        <button type="button" class="btn btn-success btn-sm" onclick="window.resolveLotHoldUnlock('${h.id}')" title="เจอของแล้ว นับผิดพลาด คืนสต็อกกลับปกติ"><i class="bi bi-unlock"></i> ปลดล็อก</button>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="window.resolveLotHoldFixQty('${h.id}')" title="แก้ยอดสต็อกจริงให้ตรง"><i class="bi bi-pencil-square"></i> แก้ยอดจริง</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+};
+
+// 🟢 ปลดล็อกเฉยๆ (เจอของแล้ว เป็นการนับผิดพลาดของพนักงาน) -> คืนสต็อกกลับเต็มจำนวนเดิม ไม่ต้องปรับยอด
+window.resolveLotHoldUnlock = async function(holdId) {
+    const hold = (db.lotHolds || []).find(h => h.id === holdId);
+    if (!hold) return;
+
+    const confirmed = window.confirm(`ยืนยันปลดล็อกล็อตนี้?\n\nพาร์ท: ${hold.productId}\nLot: ${formatDate(hold.productionDate)}\nจำนวน: ${hold.systemQty} ชิ้น\n\nระบบจะคืนจำนวนนี้กลับเข้าสต็อกตามเดิมทันที (ใช้กรณีเจอของแล้ว/นับผิดพลาด)`);
+    if (!confirmed) return;
+
+    try {
+        const updatePayload = {
+            id: hold.id,
+            status: 'Resolved',
+            resolvedQty: hold.systemQty,
+            resolvedBy: currentUser.username,
+            resolvedDate: new Date().toISOString()
+        };
+        await callAppsScript('updateLotHold', updatePayload);
+        Object.assign(hold, updatePayload);
+
+        if (typeof calculateStockFromHistory === 'function') calculateStockFromHistory();
+        window.populateLotHoldPage();
+
+        const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 2500 });
+        Toast.fire({ icon: 'success', title: 'ปลดล็อกและคืนสต็อกเรียบร้อยแล้วครับ' });
+    } catch (error) {
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
+    }
+};
+
+// 🟢 แก้ยอดสต็อกจริง (นับแล้วไม่ครบตามที่ระบบคิด) -> ปรับยอดจริงในล็อตนั้นให้ตรง แล้วปลดล็อก
+window.resolveLotHoldFixQty = async function(holdId) {
+    const hold = (db.lotHolds || []).find(h => h.id === holdId);
+    if (!hold) return;
+
+    const input = window.prompt(`พาร์ท "${hold.productId}" ล็อตวันที่ ${formatDate(hold.productionDate)}\nจำนวนที่ค้างตรวจสอบ: ${hold.systemQty} ชิ้น\n\nกรอกจำนวนที่นับเจอจริง (นับใหม่ตอนนี้เจอกี่ชิ้น ใส่ 0 ถ้าไม่เจอเลย):`, '0');
+    if (input === null) return;
+
+    const actualFound = parseFloat(input);
+    if (isNaN(actualFound) || actualFound < 0) {
+        Swal.fire('ข้อมูลไม่ถูกต้อง', 'กรุณากรอกจำนวนเป็นตัวเลขไม่ติดลบ', 'warning');
+        return;
+    }
+
+    const delta = actualFound - parseFloat(hold.systemQty || 0);
+    const confirmed = window.confirm(`ยืนยันแก้ยอดสต็อกจริง?\n\nพาร์ท: ${hold.productId}\nLot: ${formatDate(hold.productionDate)}\nจำนวนที่ค้าง: ${hold.systemQty} ชิ้น\nนับเจอจริง: ${actualFound} ชิ้น\nส่วนต่างที่จะปรับ: ${delta > 0 ? '+' : ''}${delta} ชิ้น`);
+    if (!confirmed) return;
+
+    try {
+        const adjEntry = {
+            id: 'adj-lothold-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+            date: new Date().toISOString(),
+            type: 'adjustment',
+            productId: hold.productId,
+            productName: '',
+            productionDate: hold.productionDate,
+            quantity: delta,
+            packagingType: 'standard',
+            user: currentUser.username,
+            remarks: `STOCK_COUNT_ADJ: แก้ไขจากรายการค้างตรวจสอบ (Q) โดยแอดมิน ${currentUser.username} — ค้าง ${hold.systemQty} เจอจริง ${actualFound}`
+        };
+        await callAppsScript('appendHistory', adjEntry);
+        db.history.unshift(adjEntry);
+
+        const updatePayload = {
+            id: hold.id,
+            status: 'Resolved',
+            resolvedQty: actualFound,
+            resolvedBy: currentUser.username,
+            resolvedDate: new Date().toISOString()
+        };
+        await callAppsScript('updateLotHold', updatePayload);
+        Object.assign(hold, updatePayload);
+
+        if (typeof calculateStockFromHistory === 'function') calculateStockFromHistory();
+        window.populateLotHoldPage();
+
+        const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 2500 });
+        Toast.fire({ icon: 'success', title: 'ปรับยอดสต็อกและปลดล็อกเรียบร้อยแล้วครับ' });
+    } catch (error) {
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
+    }
+};
+// 🟢 แจ้งจำนวนที่เจอจริง -> คำนวณส่วนต่างที่ขาด แล้วล็อกเฉพาะส่วนที่ขาดเป็น Q รอแอดมินตรวจสอบ
+window.reportLotShortage = async function(productId, rawProductionDate, lotFullQty) {
+    const productionDateDisplay = typeof formatDate === 'function' ? formatDate(rawProductionDate) : rawProductionDate;
+    const input = window.prompt(`พาร์ท "${productId}" ล็อตวันที่ ${productionDateDisplay}\nจำนวนที่ระบบคิดว่ามีในล็อตนี้ทั้งหมด: ${lotFullQty} ชิ้น\n\nกรอกจำนวนที่นับเจอจริงหน้างาน (ทั้งล็อต ไม่ใช่แค่ยอดที่ต้องส่ง — ใส่ 0 ถ้าไม่เจอเลย):`, lotFullQty);
+    if (input === null) return; // กดยกเลิก
+
+    const actualFound = parseInt(input);
+    if (isNaN(actualFound) || actualFound < 0) {
+        Swal.fire('ข้อมูลไม่ถูกต้อง', 'กรุณากรอกจำนวนเป็นตัวเลขไม่ติดลบ', 'warning');
+        return;
+    }
+    if (actualFound >= lotFullQty) {
+        Swal.fire({ icon: 'info', title: 'เจอครบตามระบบ', text: 'ไม่ต้องล็อกอะไร ใช้ล็อตนี้ได้ตามปกติเลยครับ', timer: 2000, showConfirmButton: false });
+        return;
+    }
+
+    const shortage = lotFullQty - actualFound;
+    const confirmed = window.confirm(`เจอจริง ${actualFound} ชิ้น จากที่ระบบคิดว่ามีทั้งล็อต ${lotFullQty} ชิ้น\nส่วนที่ขาด ${shortage} ชิ้น จะถูกล็อกทั้งหมดไว้รอแอดมินตรวจสอบ\n\nยืนยันบันทึก?`);
+    if (!confirmed) return;
+
+    try {
+        const holdEntry = {
+            id: 'hold-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+            productId: productId,
+            productionDate: productionDateDisplay,
+            systemQty: shortage, // 🟢 ล็อกเฉพาะส่วนที่ขาด ไม่ใช่ทั้งล็อต
+            reportedBy: currentUser.username,
+            reportedDate: new Date().toISOString(),
+            status: 'Pending',
+            adminNote: `พนักงานเจอจริง ${actualFound}/${lotFullQty} ชิ้น`,
+            resolvedQty: '',
+            resolvedBy: '',
+            resolvedDate: ''
+        };
+
+        await callAppsScript('addLotHold', holdEntry);
+        if (!db.lotHolds) db.lotHolds = [];
+        db.lotHolds.push(holdEntry);
+
+        if (typeof calculateStockFromHistory === 'function') calculateStockFromHistory();
+
+        const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 2500 });
+        Toast.fire({ icon: 'success', title: `บันทึกแล้ว เหลือให้หยิบล็อตนี้ได้ ${actualFound} ชิ้น` });
+
+        Swal.close();
+    } catch (error) {
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
+    }
 };
 // 🟢 ฟังก์ชันแก้ไขเวลาจัดส่ง (เฉพาะสถานะ "รอจัดส่ง") - แก้เวลาทีเดียวทั้งกลุ่ม (ทุกพาร์ทในคิวเดียวกัน)
 window.editDeliveryGroupTime = async function(date, displayTime, customer) {
@@ -10005,9 +10293,25 @@ function renderHistoryFilterForm() {
                         }
                     }
 
+                    // 🟢 รวมยอดที่ค้างตรวจสอบ (Q) ต่อล็อต — เผื่อล็อตเดียวถูกแจ้งขาดหลายรอบ
+                    const heldQtyMap = new Map();
+                    (db.lotHolds || []).forEach(h => {
+                        if (h.status === 'Resolved') return;
+                        const key = `${String(h.productId).trim()}::${formatDate(h.productionDate)}`;
+                        heldQtyMap.set(key, (heldQtyMap.get(key) || 0) + (parseFloat(h.systemQty) || 0));
+                    });
+
                     // รวมยอดล็อตต่างๆ เข้าเป็นก้อนสินค้า
                     const productStockMap = new Map();
                     for (const lot of stockLedger.values()) {
+                        // 🟢 หักเฉพาะจำนวนที่ค้างตรวจสอบ (Q) ออกจากล็อตนี้ ไม่ใช่หักทั้งล็อต
+                        const lotKey = `${lot.productId}::${lot.productionDate}`;
+                        if (heldQtyMap.has(lotKey)) {
+                            const heldQty = heldQtyMap.get(lotKey);
+                            lot.quantity = Math.max(0, lot.quantity - heldQty);
+                            lot.isHeld = true; // 🟢 ใช้ flag นี้เพื่อโชว์สถานะ "มีส่วนค้าง Q" ในหน้าจอได้ถ้าต้องการ
+                        }
+
                         if (!productStockMap.has(lot.productId)) {
                             productStockMap.set(lot.productId, {
                                 productId: lot.productId,
