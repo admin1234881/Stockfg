@@ -12199,13 +12199,27 @@ window.uploadDeliveryFile = function() {
                     confirmButtonColor: '#198754'
                 });
 
-                // 🟢 ส่งข้อมูลไปเซฟที่ Apps Script หลังบ้านแบบเงียบๆ (ถ้าพังหน้าเว็บก็ไม่ค้างแล้ว)
+                // 🟢 ส่งข้อมูลไปเซฟที่ Apps Script หลังบ้าน แล้วเก็บสถิติว่าอันไหนพัง เพื่อแจ้งเตือนจริง
+                let saveFailedList = [];
                 for (let plan of newPlans) {
                     try {
                         await callAppsScript('addDeliveryPlan', plan);
                     } catch (err) {
-                        console.warn("แอบเซฟหลังบ้านไม่สำเร็จสำหรับพาร์ท:", plan.productId, err.message);
+                        console.warn("บันทึกหลังบ้านไม่สำเร็จสำหรับพาร์ท:", plan.productId, err.message);
+                        saveFailedList.push(plan.productId);
                     }
+                }
+
+                // 🟢 ถ้ามีรายการบันทึกไม่สำเร็จ ต้องแจ้งเตือนจริงๆ ไม่ใช่ปล่อยให้หายไปเงียบๆ
+                if (saveFailedList.length > 0) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: `บันทึกไม่สำเร็จ ${saveFailedList.length} รายการ!`,
+                        html: `รายการบนตารางแสดงผลไว้แล้ว แต่ <b>ยังไม่ถูกบันทึกลง Google Sheet จริง</b> — ถ้ารีเฟรชหน้าเว็บตอนนี้ ข้อมูลเหล่านี้จะหายไป:<br><br>
+                               <div class="text-start small" style="max-height:150px; overflow-y:auto;">${saveFailedList.join(', ')}</div>
+                               <br><small class="text-muted">ลองกดอัปโหลดไฟล์เดิมซ้ำอีกครั้ง หรือแจ้งแอดมินเช็คระบบ</small>`,
+                        confirmButtonColor: '#dc3545'
+                    });
                 }
 
             } catch (err) {
