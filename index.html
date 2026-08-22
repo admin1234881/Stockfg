@@ -3185,7 +3185,7 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby-HXq_PmPIpHv-YEq2OtEiDJ-LqPW26t3wpQNo1nYaqn7-TD6NQw5JWcODSVxwpJAo/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzo4g_WCgSJ5y7sKoi56FbNHt-DVE1X_NwMP_fHKil10mpzv8V7wTrU7oln2WL9sCGtMw/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [], lotHolds: [] };
@@ -7331,6 +7331,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
                 <div class="d-flex flex-column gap-1">
                     <button type="button" class="btn btn-success btn-sm shadow-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.returnGroupVehicle('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-building-check me-1"></i> ถึงเอเทคแล้ว</button>
                     <button type="button" class="btn btn-outline-dark btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.generatePackingListPDF('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-file-earmark-pdf"></i> Packing List</button>
+                    <button type="button" class="btn btn-outline-info btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.viewDeliveryPhotos('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-images"></i> ดูรูปก่อน-หลัง</button>
                     <button type="button" class="btn btn-outline-danger btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.cancelDeliveryGroup('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-x-circle"></i> ยกเลิกรอบรถ</button>
                 </div>
             `;
@@ -7339,6 +7340,7 @@ window.renderDeliveryPlanTable = function(targetDate) {
             actionButtons = `
                 <div class="d-flex flex-column gap-1 align-items-center">
                     <span class="text-success small fw-bold d-block"><i class="bi bi-check2-all"></i> จบงาน</span>
+                    <button type="button" class="btn btn-outline-info btn-sm w-100" style="font-size: 0.75rem;" onclick="event.stopPropagation(); window.viewDeliveryPhotos('${planDateStr}', '${displayTime}', '${safeCustomer}')"><i class="bi bi-images"></i> ดูรูปก่อน-หลัง</button>
                 </div>
             `;
         } else if (group.status === 'Cancelled') {
@@ -8282,6 +8284,62 @@ window.reportLotShortage = async function(productId, rawProductionDate, lotFullQ
     } catch (error) {
         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
     }
+};
+// 🟢 หน้าดูรูปก่อน-หลังส่งของแต่ละรอบ (ดึงจากระบบอัปโหลดรูปที่คนขับถ่ายผ่านไลน์)
+window.viewDeliveryPhotos = function(date, displayTime, customer) {
+    const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
+    const safeTime = String(displayTime).replace(/^'+/, '').trim();
+    const safeCustomerText = String(customer).trim();
+    // 🟢 roundKey ต้องสร้างด้วยสูตรเดียวกับฝั่ง Backend เป๊ะๆ (date|time|customer)
+    const roundKey = safeDate + '|' + safeTime + '|' + safeCustomerText;
+
+    Swal.fire({
+        title: '<i class="bi bi-images text-info me-2"></i> รูปก่อน-หลังส่ง',
+        html: `
+            <div class="text-start mb-3 small text-muted">ลูกค้า: <b>${safeCustomerText}</b> &nbsp;|&nbsp; รอบ: <b>${safeTime} น.</b> &nbsp;|&nbsp; วันที่: <b>${safeDate}</b></div>
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="fw-bold text-primary small mb-2"><i class="bi bi-box-seam"></i> ก่อนไปส่ง</div>
+                    <div id="photo-before-box" class="text-center text-muted small py-4">กำลังโหลด...</div>
+                </div>
+                <div class="col-6">
+                    <div class="fw-bold text-success small mb-2"><i class="bi bi-check-circle"></i> หลังส่งเสร็จ</div>
+                    <div id="photo-after-box" class="text-center text-muted small py-4">กำลังโหลด...</div>
+                </div>
+            </div>
+        `,
+        width: '40em',
+        confirmButtonText: 'ปิด',
+        confirmButtonColor: '#6c757d',
+        showCancelButton: false
+    });
+
+    const renderPhotoBox = (elId, data) => {
+        const box = document.getElementById(elId);
+        if (!box) return;
+        if (!data.locked || !data.photos || data.photos.length === 0) {
+            box.innerHTML = '<div class="text-muted small py-4"><i class="bi bi-hourglass-split"></i><br>ยังไม่มีการอัปโหลด</div>';
+            return;
+        }
+        box.innerHTML = data.photos.map(url => {
+            const match = String(url).match(/[-\w]{25,}/);
+            const imgSrc = match ? `https://drive.google.com/thumbnail?id=${match[0]}&sz=w500` : url;
+            return `<a href="${url}" target="_blank"><img src="${imgSrc}" referrerpolicy="no-referrer" class="img-thumbnail mb-2" style="width:100%; cursor:pointer;"></a>`;
+        }).join('');
+    };
+
+    Promise.all([
+        fetch(SCRIPT_URL + '?action=checkPhotoStatus&roundKey=' + encodeURIComponent(roundKey) + '&type=before').then(r => r.json()),
+        fetch(SCRIPT_URL + '?action=checkPhotoStatus&roundKey=' + encodeURIComponent(roundKey) + '&type=after').then(r => r.json())
+    ]).then(([beforeData, afterData]) => {
+        renderPhotoBox('photo-before-box', beforeData);
+        renderPhotoBox('photo-after-box', afterData);
+    }).catch(err => {
+        const beforeBox = document.getElementById('photo-before-box');
+        const afterBox = document.getElementById('photo-after-box');
+        if (beforeBox) beforeBox.innerHTML = '<span class="text-danger small">โหลดไม่สำเร็จ</span>';
+        if (afterBox) afterBox.innerHTML = '<span class="text-danger small">โหลดไม่สำเร็จ</span>';
+    });
 };
 // 🟢 ฟังก์ชันแก้ไขเวลาจัดส่ง (เฉพาะสถานะ "รอจัดส่ง") - แก้เวลาทีเดียวทั้งกลุ่ม (ทุกพาร์ทในคิวเดียวกัน)
 window.editDeliveryGroupTime = async function(date, displayTime, customer) {
