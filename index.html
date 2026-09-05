@@ -1162,12 +1162,12 @@
 @media (max-width: 576px) {
     .login-mascot-wrap { right: -50px; width: 108px; bottom: -4px; }
 }
-/* 🎯 แถบเมนูแบบไอคอน พร้อม Tooltip */
+/* 🎯 แถบเมนูแบบไอคอน ขยายตัวโชว์ชื่อตอนชี้เมาส์ (Dock Style) */
 .icon-nav-container {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     padding: 10px 14px;
     background: #fff;
     border-radius: 18px;
@@ -1176,57 +1176,83 @@
 }
 .icon-nav-btn {
     position: relative;
-    width: 50px;
+    display: inline-flex;
+    align-items: center;
     height: 50px;
-    border-radius: 14px;
+    min-width: 50px;
+    border-radius: 25px;
     border: none;
     background: #f1f3f5;
+    padding: 0 14px;
+    overflow: hidden;
+    white-space: nowrap;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+}
+.icon-nav-icon {
+    font-size: 1.25rem;
+    width: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.3rem;
-    color: #495057;
-    transition: all 0.18s ease;
-    cursor: pointer;
     flex-shrink: 0;
+}
+.icon-nav-label {
+    display: inline-block;
+    max-width: 0;
+    opacity: 0;
+    margin-left: 0;
+    overflow: hidden;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #495057;
+    white-space: nowrap;
+    transition: max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, margin-left 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .icon-nav-btn:hover {
     background: #e7f1ff;
-    color: #0d6efd;
+    box-shadow: 0 6px 16px rgba(13,110,253,0.2);
     transform: translateY(-2px);
-    box-shadow: 0 6px 14px rgba(13,110,253,0.18);
+}
+.icon-nav-btn:hover .icon-nav-label {
+    max-width: 220px;
+    opacity: 1;
+    margin-left: 9px;
 }
 .icon-nav-btn.active {
     background: linear-gradient(135deg, #0d6efd, #4d94ff);
-    color: #fff;
     box-shadow: 0 6px 14px rgba(13,110,253,0.35);
 }
+.icon-nav-btn.active .icon-nav-label { color: #fff; }
 .icon-nav-divider {
     width: 1px;
     align-self: stretch;
     background: #e9ecef;
-    margin: 4px 8px;
+    margin: 4px 4px;
 }
 .icon-nav-badge {
     position: absolute;
-    top: -3px;
-    right: -3px;
-    min-width: 19px;
-    height: 19px;
+    top: 2px;
+    right: 6px;
+    min-width: 17px;
+    height: 17px;
     border-radius: 999px;
     background: #dc3545;
     color: #fff;
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0 4px;
-    border: 2.5px solid #fff;
+    border: 2px solid #fff;
+    z-index: 2;
 }
 @media (max-width: 576px) {
-    .icon-nav-btn { width: 42px; height: 42px; font-size: 1.1rem; border-radius: 12px; }
-    .icon-nav-container { gap: 4px; padding: 8px 10px; }
+    .icon-nav-btn { height: 44px; min-width: 44px; padding: 0 11px; }
+    .icon-nav-icon { font-size: 1.1rem; }
+    .icon-nav-container { gap: 5px; padding: 8px 10px; }
 }
 </style>
 <body>
@@ -1476,36 +1502,72 @@
                 </div>
             </header>
 
-<!-- Navigation Icons (Icon-only + Tooltip) -->
+<!-- Navigation Icons (Expand-on-hover Dock Style) -->
             <div class="icon-nav-container" id="pills-tab" role="tablist">
 
-                <button class="icon-nav-btn active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab" title="สต็อกคงเหลือ">
-                    <i class="bi bi-house-heart-fill"></i>
+                <button class="icon-nav-btn active" id="pills-stock-tab" data-bs-toggle="pill" data-bs-target="#pills-stock" type="button" role="tab">
+                    <span class="icon-nav-icon"><i class="bi bi-house-heart-fill"></i></span>
+                    <span class="icon-nav-label">สต็อกคงเหลือ</span>
                 </button>
-                <button class="icon-nav-btn" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard" type="button" role="tab" title="แดชบอร์ด">
-                    <i class="bi bi-speedometer2"></i>
+                <button class="icon-nav-btn" id="pills-dashboard-tab" data-bs-toggle="pill" data-bs-target="#pills-dashboard" type="button" role="tab">
+                    <span class="icon-nav-icon"><i class="bi bi-speedometer2"></i></span>
+                    <span class="icon-nav-label">แดชบอร์ด</span>
                 </button>
 
                 <div class="icon-nav-divider"></div>
 
-                <button class="icon-nav-btn" id="nav-import-item" data-bs-toggle="pill" data-bs-target="#pills-import" title="รับเข้าสินค้า"><i class="bi bi-arrow-down-square-fill text-success"></i></button>
-                <button class="icon-nav-btn" id="nav-export-item" data-bs-toggle="pill" data-bs-target="#pills-export" title="ส่งออกสินค้า"><i class="bi bi-arrow-up-square-fill text-info"></i></button>
-                <button class="icon-nav-btn" id="nav-rack-item" data-bs-toggle="pill" data-bs-target="#pills-rack" title="ระบบจัดการ Packing"><i class="bi bi-inboxes-fill" style="color:#6f42c1;"></i></button>
-                <button class="icon-nav-btn" id="nav-stock-count-item" data-bs-toggle="pill" data-bs-target="#pills-stock-count" title="นับสต็อก"><i class="bi bi-clipboard2-check-fill text-warning"></i></button>
-                <button class="icon-nav-btn" id="nav-convert-item" onclick="openConvertModal()" title="เปลี่ยนรหัสสินค้า (Convert)"><i class="bi bi-arrow-left-right text-primary"></i></button>
-                <button class="icon-nav-btn" id="nav-history-item" data-bs-toggle="pill" data-bs-target="#pills-history" title="ประวัติ"><i class="bi bi-clock-fill" style="color:#20c997;"></i></button>
-                <button class="icon-nav-btn" id="nav-delivery-plan-item" data-bs-toggle="pill" data-bs-target="#pills-delivery-plan" title="แผนการจัดส่ง Delivery plan"><i class="bi bi-calendar-check-fill text-danger"></i></button>
-                <button class="icon-nav-btn" id="nav-lot-hold-item" data-bs-toggle="pill" data-bs-target="#pills-lot-hold" title="รายการรอตรวจสอบ (Q)">
-                    <i class="bi bi-shield-exclamation text-danger"></i>
-                    <span id="lot-hold-badge-count" class="icon-nav-badge" style="display:none;">0</span>
+                <button class="icon-nav-btn" id="nav-import-item" data-bs-toggle="pill" data-bs-target="#pills-import">
+                    <span class="icon-nav-icon"><i class="bi bi-arrow-down-square-fill text-success"></i></span>
+                    <span class="icon-nav-label">รับเข้าสินค้า</span>
                 </button>
-                <button class="icon-nav-btn" id="nav-forecast-item" data-bs-toggle="pill" data-bs-target="#pills-forecast" title="อัปโหลด Forecast (ล่วงหน้า)"><i class="bi bi-graph-up-arrow text-success"></i></button>
+                <button class="icon-nav-btn" id="nav-export-item" data-bs-toggle="pill" data-bs-target="#pills-export">
+                    <span class="icon-nav-icon"><i class="bi bi-arrow-up-square-fill text-info"></i></span>
+                    <span class="icon-nav-label">ส่งออกสินค้า</span>
+                </button>
+                <button class="icon-nav-btn" id="nav-rack-item" data-bs-toggle="pill" data-bs-target="#pills-rack">
+                    <span class="icon-nav-icon"><i class="bi bi-inboxes-fill" style="color:#6f42c1;"></i></span>
+                    <span class="icon-nav-label">ระบบจัดการ Packing</span>
+                </button>
+                <button class="icon-nav-btn" id="nav-stock-count-item" data-bs-toggle="pill" data-bs-target="#pills-stock-count">
+                    <span class="icon-nav-icon"><i class="bi bi-clipboard2-check-fill text-warning"></i></span>
+                    <span class="icon-nav-label">นับสต็อก</span>
+                </button>
+                <button class="icon-nav-btn" id="nav-convert-item" onclick="openConvertModal()">
+                    <span class="icon-nav-icon"><i class="bi bi-arrow-left-right text-primary"></i></span>
+                    <span class="icon-nav-label">เปลี่ยนรหัสสินค้า (Convert)</span>
+                </button>
+                <button class="icon-nav-btn" id="nav-history-item" data-bs-toggle="pill" data-bs-target="#pills-history">
+                    <span class="icon-nav-icon"><i class="bi bi-clock-fill" style="color:#20c997;"></i></span>
+                    <span class="icon-nav-label">ประวัติ</span>
+                </button>
+                <button class="icon-nav-btn" id="nav-delivery-plan-item" data-bs-toggle="pill" data-bs-target="#pills-delivery-plan">
+                    <span class="icon-nav-icon"><i class="bi bi-calendar-check-fill text-danger"></i></span>
+                    <span class="icon-nav-label">แผนการจัดส่ง Delivery plan</span>
+                </button>
+                <button class="icon-nav-btn" id="nav-lot-hold-item" data-bs-toggle="pill" data-bs-target="#pills-lot-hold">
+                    <span class="icon-nav-icon"><i class="bi bi-shield-exclamation text-danger"></i></span>
+                    <span id="lot-hold-badge-count" class="icon-nav-badge" style="display:none;">0</span>
+                    <span class="icon-nav-label">รายการรอตรวจสอบ (Q)</span>
+                </button>
+                <button class="icon-nav-btn" id="nav-forecast-item" data-bs-toggle="pill" data-bs-target="#pills-forecast">
+                    <span class="icon-nav-icon"><i class="bi bi-graph-up-arrow text-success"></i></span>
+                    <span class="icon-nav-label">อัปโหลด Forecast (ล่วงหน้า)</span>
+                </button>
 
                 <div class="icon-nav-divider" id="nav-admin-group"></div>
 
-                <button class="icon-nav-btn" id="nav-products-item" data-bs-toggle="pill" data-bs-target="#pills-products" title="จัดการสินค้า"><i class="bi bi-boxes" style="color:#fd7e14;"></i></button>
-                <button class="icon-nav-btn" id="nav-users-item" data-bs-toggle="pill" data-bs-target="#pills-users" title="จัดการผู้ใช้"><i class="bi bi-person-vcard-fill" style="color:#6610f2;"></i></button>
-                <button class="icon-nav-btn" id="nav-announcements-item" data-bs-toggle="pill" data-bs-target="#pills-announcements" title="จัดการประกาศ"><i class="bi bi-bell-fill" style="color:#d63384;"></i></button>
+                <button class="icon-nav-btn" id="nav-products-item" data-bs-toggle="pill" data-bs-target="#pills-products">
+                    <span class="icon-nav-icon"><i class="bi bi-boxes" style="color:#fd7e14;"></i></span>
+                    <span class="icon-nav-label">จัดการสินค้า</span>
+                </button>
+                <button class="icon-nav-btn" id="nav-users-item" data-bs-toggle="pill" data-bs-target="#pills-users">
+                    <span class="icon-nav-icon"><i class="bi bi-person-vcard-fill" style="color:#6610f2;"></i></span>
+                    <span class="icon-nav-label">จัดการผู้ใช้</span>
+                </button>
+                <button class="icon-nav-btn" id="nav-announcements-item" data-bs-toggle="pill" data-bs-target="#pills-announcements">
+                    <span class="icon-nav-icon"><i class="bi bi-bell-fill" style="color:#d63384;"></i></span>
+                    <span class="icon-nav-label">จัดการประกาศ</span>
+                </button>
             </div>
             <div id="announcements-display-area" class="mb-4"></div>	
             <!-- Tab Content -->
@@ -3191,10 +3253,6 @@
             let currentLanguage = sessionStorage.getItem('currentLanguage') || 'th';
 
             document.addEventListener('DOMContentLoaded', () => {
-    // 🟢 เปิดใช้งาน Tooltip สำหรับแถบไอคอนเมนู
-    document.querySelectorAll('.icon-nav-btn[title]').forEach(el => {
-        new bootstrap.Tooltip(el, { placement: 'bottom', trigger: 'hover' });
-    });
     // 🟢 ไฮไลต์ไอคอนที่กำลังเลือกอยู่ (active state)
     document.querySelectorAll('.icon-nav-btn[data-bs-toggle="pill"]').forEach(btn => {
         btn.addEventListener('shown.bs.pill', function () {
@@ -3324,7 +3382,7 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfEcgO1DYVsTFMDkvO7khawjc7poTY1oaWyNFOs5tfOEOcJYfSSHBC7R3w7QgtgQaLcw/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzUW8iTy0N-Z7WhHUgNNem7lVhp9Zq4HbaMFWaLWcGzxY5krH5BlSnGGLsBmeDpmQ5S3Q/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [], lotHolds: [] };
@@ -7949,7 +8007,8 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
             <label class="form-label fw-bold text-dark small mb-1">ทะเบียนรถ <span class="text-danger">*</span></label>
             <input type="text" id="swal-license-plate" class="form-control mb-3 fw-bold border-dark" placeholder="เช่น กก 1234" autocomplete="off">
             <label class="form-label fw-bold text-dark small mb-1">เลขที่ Invoice ${hasDeliveryItems ? '<span class="text-danger">*</span>' : ''}</label>
-            <input type="text" id="swal-invoice-number" class="form-control mb-3 fw-bold ${hasDeliveryItems ? 'border-primary' : 'bg-light text-muted'}" placeholder="${hasDeliveryItems ? 'ระบุ Invoice เพื่อตัดสต็อก' : 'ไม่ต้องระบุ (รับแพ็คกิ้ง/อื่นๆ)'}" autocomplete="off" ${!hasDeliveryItems ? 'disabled' : ''}>
+            <input type="text" id="swal-invoice-number" class="form-control mb-3 fw-bold ${hasDeliveryItems ? 'border-primary' : 'bg-light text-muted'}" placeholder="${hasDeliveryItems ? 'ระบุ Invoice เพื่อตัดสต็อก' : 'ไม่ต้องระบุ (รับแพ็คกิ้ง/อื่นๆ)'}" autocomplete="off" value="${(() => { const invs = [...new Set(plansToUpdate.map(p => (p.invoiceNumber || '').trim()).filter(v => v !== ''))]; return invs.join('-'); })()}" ${!hasDeliveryItems ? 'disabled' : ''}>
+            ${(() => { const invs = [...new Set(plansToUpdate.map(p => (p.invoiceNumber || '').trim()).filter(v => v !== ''))]; return invs.length > 0 ? `<div class="text-muted small mb-2" style="margin-top:-8px;"><i class="bi bi-magic me-1"></i>ดึงมาจากตอนเพิ่มแผนอัตโนมัติ แก้ไขได้ตามต้องการ</div>` : ''; })()}
             ${hasDeliveryItems ? `
                 <div class="text-danger small fw-bold mb-2"><i class="bi bi-info-circle-fill me-1"></i>ระบบจะตัดสต็อกอัตโนมัติ (FIFO) ตาม Lot นี้:</div>
                 <div class="table-responsive border rounded shadow-sm">
