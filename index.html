@@ -1254,6 +1254,135 @@
     .icon-nav-icon { font-size: 1.1rem; }
     .icon-nav-container { gap: 5px; padding: 8px 10px; }
 }
+/* 💬 ปุ่มแชทลอย + ป็อบอัพแจ้งปัญหา */
+.support-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd, #4d94ff);
+    color: #fff;
+    border: none;
+    font-size: 1.5rem;
+    box-shadow: 0 6px 18px rgba(13,110,253,0.4);
+    z-index: 1050;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.support-fab:hover { transform: scale(1.08); }
+.support-fab .support-fab-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    background: #dc3545;
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+    border: 2px solid #fff;
+}
+.support-popup {
+    position: fixed;
+    bottom: 94px;
+    right: 24px;
+    width: 360px;
+    max-width: calc(100vw - 32px);
+    max-height: 70vh;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.2);
+    z-index: 1049;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: supportPopupIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.support-popup.show { display: flex; }
+@keyframes supportPopupIn {
+    0%   { opacity: 0; transform: translateY(16px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.support-popup-header {
+    background: linear-gradient(135deg, #0d6efd, #4d94ff);
+    color: #fff;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.support-popup-header h6 { margin: 0; font-weight: 700; }
+.support-popup-close { background: none; border: none; color: #fff; font-size: 1.3rem; opacity: 0.85; cursor: pointer; line-height: 1; }
+.support-popup-body { padding: 14px 16px; overflow-y: auto; flex: 1; }
+.support-popup-textarea {
+    width: 100%;
+    min-height: 90px;
+    border: 1.5px solid #dee2e6;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    resize: vertical;
+    font-family: inherit;
+}
+.support-popup-textarea:focus { outline: none; border-color: #0d6efd; }
+.support-toolbar { display: flex; gap: 8px; margin-top: 10px; }
+.support-tool-btn {
+    background: #f1f3f5;
+    border: none;
+    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    color: #495057;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.support-tool-btn:hover { background: #e7f1ff; color: #0d6efd; }
+.support-preview-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.support-preview-item { position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; border: 1px solid #dee2e6; }
+.support-preview-item img { width: 100%; height: 100%; object-fit: cover; }
+.support-preview-item .support-preview-remove {
+    position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: #fff;
+    border: none; width: 18px; height: 18px; border-radius: 50%; font-size: 0.65rem; cursor: pointer; line-height: 1;
+}
+.support-emoji-panel {
+    display: none;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-top: 8px;
+    font-size: 1.2rem;
+}
+.support-emoji-panel.show { display: flex; }
+.support-emoji-panel span { cursor: pointer; padding: 3px; border-radius: 6px; }
+.support-emoji-panel span:hover { background: #e9ecef; }
+.support-popup-footer { padding: 12px 16px; border-top: 1px solid #f1f3f5; }
+.support-send-btn {
+    width: 100%;
+    padding: 11px;
+    background: linear-gradient(135deg, #0d6efd, #4d94ff);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.support-send-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>
 <body>
 <!-- ========================================= -->
@@ -1441,6 +1570,34 @@
         </div>
     </div>
     </div>
+        <!-- 💬 ปุ่มแชทลอยแจ้งปัญหาการใช้งาน -->
+    <button type="button" class="support-fab" id="support-fab-btn" title="แจ้งปัญหาการใช้งาน">
+        <i class="bi bi-headset"></i>
+        <span class="support-fab-badge" id="support-fab-badge" style="display:none;">0</span>
+    </button>
+
+    <div class="support-popup" id="support-popup">
+        <div class="support-popup-header">
+            <h6><i class="bi bi-headset me-2"></i>แจ้งปัญหาการใช้งาน</h6>
+            <button type="button" class="support-popup-close" id="support-popup-close">&times;</button>
+        </div>
+        <div class="support-popup-body">
+            <textarea class="support-popup-textarea" id="support-message" placeholder="อธิบายปัญหาที่พบ...&#10;เช่น กดปุ่มปล่อยรถแล้วขึ้น error"></textarea>
+            <div class="support-toolbar">
+                <button type="button" class="support-tool-btn" id="support-btn-screenshot" title="แคปหน้าจอปัจจุบัน"><i class="bi bi-camera-fill"></i></button>
+                <button type="button" class="support-tool-btn" id="support-btn-attach" title="แนบไฟล์"><i class="bi bi-paperclip"></i></button>
+                <button type="button" class="support-tool-btn" id="support-btn-emoji" title="แทรกอิโมจิ"><i class="bi bi-emoji-smile-fill"></i></button>
+                <input type="file" id="support-file-input" style="display:none;" accept="image/*,.pdf,.doc,.docx,.xlsx">
+            </div>
+            <div class="support-emoji-panel" id="support-emoji-panel">
+                <span>😀</span><span>😅</span><span>😢</span><span>😡</span><span>👍</span><span>🙏</span><span>❗</span><span>⚠️</span><span>🔥</span><span>🐛</span><span>💥</span><span>🚫</span>
+            </div>
+            <div class="support-preview-strip" id="support-preview-strip"></div>
+        </div>
+        <div class="support-popup-footer">
+            <button type="button" class="support-send-btn" id="support-send-btn"><i class="bi bi-send-fill me-1"></i> ส่งแจ้งปัญหา</button>
+        </div>
+    </div>
     <!-- Main Dashboard -->
     <div id="main-dashboard" class="pb-4 pt-0">
         <!-- NEW: Wrapper for sticky elements -->
@@ -1549,6 +1706,11 @@
                     <span id="lot-hold-badge-count" class="icon-nav-badge" style="display:none;">0</span>
                     <span class="icon-nav-label">รายการรอตรวจสอบ (Q)</span>
                 </button>
+                <button class="icon-nav-btn" id="nav-support-item" data-bs-toggle="pill" data-bs-target="#pills-support">
+                    <span class="icon-nav-icon"><i class="bi bi-headset text-primary"></i></span>
+                    <span id="support-badge-count" class="icon-nav-badge" style="display:none;">0</span>
+                    <span class="icon-nav-label">แจ้งปัญหาการใช้งาน</span>
+                </button>
                 <button class="icon-nav-btn" id="nav-forecast-item" data-bs-toggle="pill" data-bs-target="#pills-forecast">
                     <span class="icon-nav-icon"><i class="bi bi-graph-up-arrow text-success"></i></span>
                     <span class="icon-nav-label">อัปโหลด Forecast (ล่วงหน้า)</span>
@@ -1646,6 +1808,17 @@
         </div>
     </div>
 </div>   
+<div class="tab-pane fade" id="pills-support" role="tabpanel">
+    <div class="card mb-4 border-0 shadow-sm" style="border-radius: 20px;">
+        <div class="card-header fw-bold bg-white border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center" style="border-radius: 20px 20px 0 0;">
+            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-headset me-2"></i>รายการแจ้งปัญหาการใช้งาน</h5>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.populateSupportTicketPage()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
+        </div>
+        <div class="card-body px-4 pb-4 pt-2">
+            <div id="support-ticket-list"></div>
+        </div>
+    </div>
+</div>
 <div class="tab-pane fade" id="pills-delivery-plan" role="tabpanel">
     <!-- ฟอร์มสร้างแผนการจัดส่ง -->
     <div class="card mb-4 border-0 shadow-sm" style="border-radius: 20px; overflow: visible; z-index: 20;">
@@ -3382,7 +3555,7 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzUW8iTy0N-Z7WhHUgNNem7lVhp9Zq4HbaMFWaLWcGzxY5krH5BlSnGGLsBmeDpmQ5S3Q/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXFZJKTwwtlEY3-nTc57qEYOime1oBm7MX1O3k2xQWeOH31wGbLtQvItFU9AMo4ySpdg/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [], lotHolds: [] };
@@ -4802,6 +4975,7 @@ clearInterval(window.mascotLoopTimer);
         }
         const canManageLotHold = isMasterAdmin || currentUser.canManageLotHold;
         if (document.getElementById('nav-lot-hold-item')) document.getElementById('nav-lot-hold-item').style.display = canManageLotHold ? '' : 'none';
+        if (document.getElementById('nav-support-item')) document.getElementById('nav-support-item').style.display = isMasterAdmin ? '' : 'none';
  // 3. จัดการปุ่มดาวน์โหลดสำรองข้อมูลแบบใหม่ (Dropdown)
         const backupDropdown = document.getElementById('backup-dropdown-container');
         if (backupDropdown) backupDropdown.style.display = (canManageProducts || canManageUsers) ? 'block' : 'none';
@@ -4844,7 +5018,9 @@ clearInterval(window.mascotLoopTimer);
 
     calculateStockFromHistory();
     populateAll();
-    if (typeof window.populateLotHoldPage === 'function') window.populateLotHoldPage(); // 🟢 อัปเดต badge จำนวน Q ตั้งแต่เปิดแอป
+      if (typeof window.populateLotHoldPage === 'function') window.populateLotHoldPage(); // 🟢 อัปเดต badge จำนวน Q ตั้งแต่เปิดแอป
+    if (typeof window.initSupportWidget === 'function') window.initSupportWidget(); // 🟢 เปิดใช้งานปุ่มแชทลอย
+    if (typeof window.populateSupportTicketPage === 'function') window.populateSupportTicketPage(); // 🟢 อัปเดต badge จำนวนแจ้งปัญหาใหม่ตั้งแต่เปิดแอป
     startDataSync();
                     setupActivityListeners();
                     resetInactivityTimer();
@@ -6754,10 +6930,12 @@ window.generateVehicleReport = function(fileType) {
                             if (suggestionsContainer) suggestionsContainer.innerHTML = '';
                         }
                     });
-                    // 🟢 ดักจับเวลากดเปิดแท็บ "แผนการจัดส่ง" ให้สั่งโหลดข้อมูลทันที
                         document.body.addEventListener('shown.bs.tab', function (e) {
                             if (e.target.dataset.bsTarget === '#pills-lot-hold') {
                                 if (typeof window.populateLotHoldPage === 'function') window.populateLotHoldPage();
+                            }
+                            if (e.target.dataset.bsTarget === '#pills-support') {
+                                if (typeof window.populateSupportTicketPage === 'function') window.populateSupportTicketPage();
                             }
                             if (e.target.dataset.bsTarget === '#pills-delivery-plan') {
                                 const viewPlanDateInput = document.getElementById('view-plan-date');
@@ -8039,14 +8217,20 @@ window.releaseGroupVehicle = async function(date, displayTime, customer) {
             
             // 🟢 ตรวจสอบว่ามีทะเบียนนี้กำลังวิ่งงานอยู่และยังไม่ได้รับกลับหรือไม่?
             const plateLower = plate.toLowerCase().replace(/\s+/g, '');
-            const isPlateInUse = db.deliveryPlans.some(p => {
+            const plateInUseItem = db.deliveryPlans.find(p => {
                 if (p.status !== 'Delivering' || !p.licensePlate) return false;
                 const existingPlate = String(p.licensePlate).toLowerCase().replace(/\s+/g, '');
                 return existingPlate === plateLower;
             });
 
-            if (isPlateInUse) {
-                Swal.showValidationMessage(`รถทะเบียน "${plate}" กำลังวิ่งงานอยู่ กรุณากดรับรถเข้าบริษัทก่อนครับ!`);
+            if (plateInUseItem) {
+                const stuckDate = typeof formatDate === 'function' ? formatDate(plateInUseItem.date) : plateInUseItem.date;
+                const stuckTime = typeof formatTimeDisplay === 'function' ? formatTimeDisplay(plateInUseItem.time) : plateInUseItem.time;
+                Swal.showValidationMessage(
+                    `รถทะเบียน "${plate}" กำลังวิ่งงานอยู่ ยังไม่ได้รับกลับ<br>` +
+                    `📅 วันที่: <b>${stuckDate}</b> &nbsp; ⏰ รอบ: <b>${stuckTime} น.</b> &nbsp; 🏢 ลูกค้า: <b>${plateInUseItem.customer}</b><br>` +
+                    `กรุณาไปกด "รับรถเข้าบริษัท" ให้คิวนี้ก่อนครับ!`
+                );
                 return false;
             }
 
@@ -8228,7 +8412,123 @@ window.returnGroupVehicle = function(date, displayTime, customer) {
         }
     });
 };
-// 🟢 หน้าต่าง "ปรับล็อต" — โชว์ล็อตที่ระบบแนะนำให้หยิบ ให้พนักงานแจ้งได้ถ้าหาไม่เจอ
+// 🟢 ==================== ระบบแจ้งปัญหาการใช้งาน (Support Ticket) ====================
+let supportScreenshotB64 = null;
+let supportAttachmentB64 = null;
+let supportAttachmentName = '';
+
+window.initSupportWidget = function() {
+    const fabBtn = document.getElementById('support-fab-btn');
+    const popup = document.getElementById('support-popup');
+    const closeBtn = document.getElementById('support-popup-close');
+    const emojiBtn = document.getElementById('support-btn-emoji');
+    const emojiPanel = document.getElementById('support-emoji-panel');
+    const screenshotBtn = document.getElementById('support-btn-screenshot');
+    const attachBtn = document.getElementById('support-btn-attach');
+    const fileInput = document.getElementById('support-file-input');
+    const textarea = document.getElementById('support-message');
+    const sendBtn = document.getElementById('support-send-btn');
+
+    if (!fabBtn || fabBtn.dataset.initialized) return;
+    fabBtn.dataset.initialized = 'true';
+
+    fabBtn.addEventListener('click', () => popup.classList.toggle('show'));
+    closeBtn.addEventListener('click', () => popup.classList.remove('show'));
+    emojiBtn.addEventListener('click', () => emojiPanel.classList.toggle('show'));
+    emojiPanel.addEventListener('click', (e) => {
+        if (e.target.tagName === 'SPAN') {
+            textarea.value += e.target.innerText;
+            textarea.focus();
+        }
+    });
+
+    screenshotBtn.addEventListener('click', () => {
+        popup.classList.remove('show'); // ซ่อนป็อบอัพก่อนแคป กันแคปติดตัวป็อบอัพเอง
+        setTimeout(() => {
+            html2canvas(document.body, { useCORS: true, scale: 1 }).then(canvas => {
+                supportScreenshotB64 = canvas.toDataURL('image/jpeg', 0.8);
+                renderSupportPreview();
+                popup.classList.add('show');
+            }).catch(() => {
+                popup.classList.add('show');
+                Swal.fire('ไม่สามารถแคปหน้าจอได้', '', 'warning');
+            });
+        }, 200);
+    });
+
+    attachBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        supportAttachmentName = file.name;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            supportAttachmentB64 = ev.target.result;
+            renderSupportPreview();
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    });
+
+    sendBtn.addEventListener('click', window.submitSupportTicket);
+};
+
+function renderSupportPreview() {
+    const strip = document.getElementById('support-preview-strip');
+    let html = '';
+    if (supportScreenshotB64) {
+        html += `<div class="support-preview-item"><img src="${supportScreenshotB64}"><button type="button" class="support-preview-remove" onclick="window.removeSupportScreenshot()">&times;</button></div>`;
+    }
+    if (supportAttachmentB64) {
+        const isImage = supportAttachmentB64.startsWith('data:image');
+        html += `<div class="support-preview-item">${isImage ? `<img src="${supportAttachmentB64}">` : `<div class="d-flex align-items-center justify-content-center h-100 bg-light"><i class="bi bi-file-earmark-text fs-4 text-muted"></i></div>`}<button type="button" class="support-preview-remove" onclick="window.removeSupportAttachment()">&times;</button></div>`;
+    }
+    strip.innerHTML = html;
+}
+
+window.removeSupportScreenshot = function() { supportScreenshotB64 = null; renderSupportPreview(); };
+window.removeSupportAttachment = function() { supportAttachmentB64 = null; supportAttachmentName = ''; renderSupportPreview(); };
+
+window.submitSupportTicket = async function() {
+    const textarea = document.getElementById('support-message');
+    const message = textarea.value.trim();
+    if (!message && !supportScreenshotB64 && !supportAttachmentB64) {
+        Swal.fire('กรุณากรอกข้อความ', 'หรือแนบรูป/ไฟล์อย่างน้อย 1 อย่าง', 'warning');
+        return;
+    }
+
+    const sendBtn = document.getElementById('support-send-btn');
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> กำลังส่ง...';
+
+    try {
+        await callAppsScript('submitSupportTicket', {
+            username: currentUser ? currentUser.username : 'ไม่ระบุ',
+            message: message,
+            screenshotBase64: supportScreenshotB64,
+            attachmentBase64: supportAttachmentB64,
+            attachmentName: supportAttachmentName,
+            pageContext: document.querySelector('.tab-pane.active.show')?.id || '-'
+        });
+
+        // เคลียร์ฟอร์ม
+        textarea.value = '';
+        supportScreenshotB64 = null;
+        supportAttachmentB64 = null;
+        supportAttachmentName = '';
+        renderSupportPreview();
+        document.getElementById('support-popup').classList.remove('show');
+
+        const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 2500 });
+        Toast.fire({ icon: 'success', title: 'ส่งแจ้งปัญหาเรียบร้อยแล้วครับ ขอบคุณครับ' });
+    } catch (error) {
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถส่งได้: ' + error.message, 'error');
+    } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<i class="bi bi-send-fill me-1"></i> ส่งแจ้งปัญหา';
+    }
+};
+
 window.openLotAdjustModal = async function(date, displayTime, customer) {
     const safeDate = typeof formatDate === 'function' ? formatDate(date) : date;
     const safeTime = String(displayTime).replace(/^'+/, '').trim();
@@ -8434,7 +8734,58 @@ window.resolveLotHoldFixQty = async function(holdId) {
         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
     }
 };
-// 🟢 แจ้งจำนวนที่เจอจริง -> คำนวณส่วนต่างที่ขาด แล้วล็อกเฉพาะส่วนที่ขาดเป็น Q รอแอดมินตรวจสอบ
+// 🟢 หน้าแอดมิน: แสดงรายการแจ้งปัญหาการใช้งานทั้งหมด
+window.populateSupportTicketPage = function() {
+    const listEl = document.getElementById('support-ticket-list');
+    if (!listEl) return;
+
+    const tickets = (db.supportTickets || []).slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const unreadCount = tickets.filter(t => t.status !== 'Read').length;
+    const badge = document.getElementById('support-badge-count');
+    if (badge) {
+        if (unreadCount > 0) { badge.style.display = ''; badge.innerText = unreadCount; }
+        else { badge.style.display = 'none'; }
+    }
+
+    if (tickets.length === 0) {
+        listEl.innerHTML = `<div class="text-center text-muted p-5"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>ยังไม่มีการแจ้งปัญหาเข้ามาครับ</div>`;
+        return;
+    }
+
+    listEl.innerHTML = tickets.map(t => {
+        const isUnread = t.status !== 'Read';
+        const dateDisplay = t.createdAt ? new Date(t.createdAt).toLocaleString('th-TH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+        return `
+            <div class="border rounded-4 p-3 mb-3 ${isUnread ? 'border-primary bg-light' : 'border-light'}" style="cursor:pointer;" onclick="window.markSupportTicketRead('${t.id}')">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span class="fw-bold text-dark">${t.username || 'ไม่ระบุ'}</span>
+                        ${isUnread ? '<span class="badge bg-primary ms-2">ใหม่</span>' : ''}
+                        <div class="small text-muted"><i class="bi bi-clock me-1"></i>${dateDisplay} &nbsp;|&nbsp; หน้า: ${t.pageContext || '-'}</div>
+                    </div>
+                </div>
+                <div class="mb-2" style="white-space: pre-wrap;">${t.message || '<span class="text-muted fst-italic">(ไม่มีข้อความ ส่งมาแค่ไฟล์แนบ)</span>'}</div>
+                <div class="d-flex gap-2 flex-wrap">
+                    ${t.screenshotUrl ? `<a href="${t.screenshotUrl}" target="_blank" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();"><i class="bi bi-camera-fill me-1"></i>ดูภาพหน้าจอ</a>` : ''}
+                    ${t.attachmentUrl ? `<a href="${t.attachmentUrl}" target="_blank" class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation();"><i class="bi bi-paperclip me-1"></i>ดูไฟล์แนบ</a>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+};
+
+window.markSupportTicketRead = async function(ticketId) {
+    const ticket = (db.supportTickets || []).find(t => t.id === ticketId);
+    if (!ticket || ticket.status === 'Read') return;
+    try {
+        await callAppsScript('updateSupportTicketStatus', { id: ticketId, status: 'Read' });
+        ticket.status = 'Read';
+        window.populateSupportTicketPage();
+    } catch (error) {
+        console.error('อัปเดตสถานะไม่สำเร็จ:', error);
+    }
+};
 window.reportLotShortage = async function(productId, rawProductionDate, lotFullQty) {
     const productionDateDisplay = typeof formatDate === 'function' ? formatDate(rawProductionDate) : rawProductionDate;
     const input = window.prompt(`พาร์ท "${productId}" ล็อตวันที่ ${productionDateDisplay}\nจำนวนที่ระบบคิดว่ามีในล็อตนี้ทั้งหมด: ${lotFullQty} ชิ้น\n\nกรอกจำนวนที่นับเจอจริงหน้างาน (ทั้งล็อต ไม่ใช่แค่ยอดที่ต้องส่ง — ใส่ 0 ถ้าไม่เจอเลย):`, lotFullQty);
@@ -10377,7 +10728,8 @@ const permissions = [
                         { key: 'canConvertPart', label: 'เปลี่ยนรหัสสินค้า (Convert)' },
                         { key: 'canManageRack', label: 'ระบบจัดการ Rack (แพ็คกิ้ง)' },
                         { key: 'canForecast', label: 'อัปโหลด Forecast' },
-                        { key: 'canManageLotHold', label: 'ตรวจสอบ/ปลดล็อกล็อตค้าง (Q)' }
+                        { key: 'canManageLotHold', label: 'ตรวจสอบ/ปลดล็อกล็อตค้าง (Q)' },
+                        { key: 'canManageSupport', label: 'ดูรายการแจ้งปัญหาการใช้งาน' }
                     ];
                     let permissionsHtml = permissions.map(p => `
                 <div class="form-check form-switch">
