@@ -1383,6 +1383,24 @@
     cursor: pointer;
 }
 .support-send-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.support-chat-messages { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-height: 200px; max-height: 340px; }
+.chat-bubble { max-width: 78%; padding: 8px 12px; border-radius: 14px; font-size: 0.87rem; line-height: 1.4; word-wrap: break-word; }
+.chat-bubble.mine { align-self: flex-end; background: #0d6efd; color: #fff; border-bottom-right-radius: 4px; }
+.chat-bubble.theirs { align-self: flex-start; background: #f1f3f5; color: #212529; border-bottom-left-radius: 4px; }
+.chat-bubble img { max-width: 100%; border-radius: 8px; margin-top: 4px; display: block; }
+.chat-bubble .chat-time { font-size: 0.65rem; opacity: 0.7; margin-top: 3px; display: block; }
+.chat-bubble.broadcast { align-self: center; background: #fff3cd; color: #664d03; border: 1px solid #ffe69c; font-size: 0.8rem; }
+.chat-empty-state { text-align: center; color: #adb5bd; padding: 40px 0; font-size: 0.85rem; }
+.contact-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; cursor: pointer; transition: background 0.15s; }
+.contact-item:hover { background: #f1f3f5; }
+.contact-avatar { width: 40px; height: 40px; border-radius: 50%; background: #e7f1ff; color: #0d6efd; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; flex-shrink: 0; position: relative; }
+.contact-avatar.support-avatar { background: #fff3cd; color: #b8860b; }
+.online-dot { position: absolute; bottom: 0; right: 0; width: 11px; height: 11px; border-radius: 50%; background: #adb5bd; border: 2px solid #fff; }
+.online-dot.online { background: #28a745; }
+.contact-name { font-weight: 600; font-size: 0.88rem; }
+.contact-status { font-size: 0.72rem; color: #adb5bd; }
+.contact-status.online { color: #28a745; }
+.support-back-btn { background: none; border: none; color: #fff; font-size: 1.1rem; margin-right: 6px; cursor: pointer; }
 </style>
 <body>
 <!-- ========================================= -->
@@ -1571,31 +1589,46 @@
     </div>
     </div>
         <!-- 💬 ปุ่มแชทลอยแจ้งปัญหาการใช้งาน -->
-    <button type="button" class="support-fab" id="support-fab-btn" title="แจ้งปัญหาการใช้งาน">
+    <button type="button" class="support-fab" id="support-fab-btn" title="แจ้งปัญหาการใช้งาน" style="display:none;">
         <i class="bi bi-headset"></i>
         <span class="support-fab-badge" id="support-fab-badge" style="display:none;">0</span>
     </button>
-
     <div class="support-popup" id="support-popup">
-        <div class="support-popup-header">
-            <h6><i class="bi bi-headset me-2"></i>แจ้งปัญหาการใช้งาน</h6>
-            <button type="button" class="support-popup-close" id="support-popup-close">&times;</button>
-        </div>
-        <div class="support-popup-body">
-            <textarea class="support-popup-textarea" id="support-message" placeholder="อธิบายปัญหาที่พบ...&#10;เช่น กดปุ่มปล่อยรถแล้วขึ้น error"></textarea>
-            <div class="support-toolbar">
-                <button type="button" class="support-tool-btn" id="support-btn-screenshot" title="แคปหน้าจอปัจจุบัน"><i class="bi bi-camera-fill"></i></button>
-                <button type="button" class="support-tool-btn" id="support-btn-attach" title="แนบไฟล์"><i class="bi bi-paperclip"></i></button>
-                <button type="button" class="support-tool-btn" id="support-btn-emoji" title="แทรกอิโมจิ"><i class="bi bi-emoji-smile-fill"></i></button>
-                <input type="file" id="support-file-input" style="display:none;" accept="image/*,.pdf,.doc,.docx,.xlsx">
+        <!-- หน้ารายชื่อผู้ติดต่อ -->
+        <div id="support-contacts-view">
+            <div class="support-popup-header">
+                <h6><i class="bi bi-chat-dots-fill me-2"></i>แชท</h6>
+                <button type="button" class="support-popup-close" id="support-popup-close">&times;</button>
             </div>
-            <div class="support-emoji-panel" id="support-emoji-panel">
-                <span>😀</span><span>😅</span><span>😢</span><span>😡</span><span>👍</span><span>🙏</span><span>❗</span><span>⚠️</span><span>🔥</span><span>🐛</span><span>💥</span><span>🚫</span>
-            </div>
-            <div class="support-preview-strip" id="support-preview-strip"></div>
+            <div style="padding: 10px 10px; max-height: 420px; overflow-y: auto;" id="support-contacts-list"></div>
         </div>
-        <div class="support-popup-footer">
-            <button type="button" class="support-send-btn" id="support-send-btn"><i class="bi bi-send-fill me-1"></i> ส่งแจ้งปัญหา</button>
+
+        <!-- หน้าห้องแชท -->
+        <div id="support-chat-view" style="display:none;">
+            <div class="support-popup-header">
+                <button type="button" class="support-back-btn" onclick="window.backToContactList()"><i class="bi bi-arrow-left"></i></button>
+                <h6 class="flex-grow-1" id="support-chat-partner-name">-</h6>
+                <button type="button" class="support-popup-close" id="support-popup-close-2">&times;</button>
+            </div>
+            <div class="support-chat-messages" id="support-chat-messages"></div>
+            <div style="padding: 6px 16px 0;">
+                <div class="support-toolbar">
+                    <button type="button" class="support-tool-btn" id="support-btn-screenshot" title="แคปหน้าจอปัจจุบัน"><i class="bi bi-camera-fill"></i></button>
+                    <button type="button" class="support-tool-btn" id="support-btn-attach" title="แนบไฟล์"><i class="bi bi-paperclip"></i></button>
+                    <button type="button" class="support-tool-btn" id="support-btn-emoji" title="แทรกอิโมจิ"><i class="bi bi-emoji-smile-fill"></i></button>
+                    <input type="file" id="support-file-input" style="display:none;" accept="image/*,.pdf,.doc,.docx,.xlsx">
+                </div>
+                <div class="support-emoji-panel" id="support-emoji-panel">
+                    <span>😀</span><span>😅</span><span>😢</span><span>😡</span><span>👍</span><span>🙏</span><span>❗</span><span>⚠️</span><span>🔥</span><span>🐛</span><span>💥</span><span>🚫</span>
+                </div>
+                <div class="support-preview-strip" id="support-preview-strip"></div>
+            </div>
+            <div class="support-popup-footer">
+                <div class="d-flex gap-2">
+                    <textarea class="support-popup-textarea" id="support-message" style="min-height:40px; flex:1;" placeholder="พิมพ์ข้อความ..."></textarea>
+                    <button type="button" class="support-send-btn" id="support-send-btn" style="width:auto; padding: 0 16px;"><i class="bi bi-send-fill"></i></button>
+                </div>
+            </div>
         </div>
     </div>
     <!-- Main Dashboard -->
@@ -1706,10 +1739,9 @@
                     <span id="lot-hold-badge-count" class="icon-nav-badge" style="display:none;">0</span>
                     <span class="icon-nav-label">รายการรอตรวจสอบ (Q)</span>
                 </button>
-                <button class="icon-nav-btn" id="nav-support-item" data-bs-toggle="pill" data-bs-target="#pills-support">
-                    <span class="icon-nav-icon"><i class="bi bi-headset text-primary"></i></span>
-                    <span id="support-badge-count" class="icon-nav-badge" style="display:none;">0</span>
-                    <span class="icon-nav-label">แจ้งปัญหาการใช้งาน</span>
+                <button class="icon-nav-btn" id="nav-archive-item" data-bs-toggle="pill" data-bs-target="#pills-archive">
+                    <span class="icon-nav-icon"><i class="bi bi-archive-fill text-secondary"></i></span>
+                    <span class="icon-nav-label">จัดการ Archive ประวัติเก่า</span>
                 </button>
                 <button class="icon-nav-btn" id="nav-forecast-item" data-bs-toggle="pill" data-bs-target="#pills-forecast">
                     <span class="icon-nav-icon"><i class="bi bi-graph-up-arrow text-success"></i></span>
@@ -1807,15 +1839,58 @@
             </div>
         </div>
     </div>
+</div>
+<div class="tab-pane fade" id="pills-archive" role="tabpanel">
+    <div class="card mb-4 border-0 shadow-sm" style="border-radius: 20px;">
+        <div class="card-header fw-bold bg-white border-0 pt-4 pb-2 px-4" style="border-radius: 20px 20px 0 0;">
+            <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-archive-fill me-2"></i>จัดการ Archive ประวัติเก่า</h5>
+        </div>
+        <div class="card-body px-4 pb-4 pt-2">
+            <div class="alert alert-warning small">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                <b>สำคัญ:</b> ระบบจะย้ายเฉพาะ "ล็อตที่ปิดจบแล้ว" (ยอดคงเหลือ = 0) และเก่ากว่าจำนวนวันที่กำหนดเท่านั้น ล็อตที่ยังมีของเหลืออยู่จะไม่ถูกย้ายแน่นอน — <b>แนะนำให้สำรอง Google Sheet ไว้ก่อนกด "ย้ายจริง" ทุกครั้ง</b>
+            </div>
+
+            <div class="row g-3 align-items-end mb-4">
+                <div class="col-auto">
+                    <label class="form-label fw-bold small">ย้ายล็อตที่ปิดจบแล้ว เก่ากว่า (วัน)</label>
+                    <input type="number" id="archive-cutoff-days" class="form-control" value="180" style="width: 150px;">
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-outline-primary fw-bold" onclick="window.previewArchive()"><i class="bi bi-eye-fill me-1"></i> ดูตัวอย่างก่อน</button>
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-danger fw-bold" id="archive-confirm-btn" onclick="window.confirmArchive()" disabled><i class="bi bi-archive-fill me-1"></i> ย้ายจริง</button>
+                </div>
+            </div>
+
+            <div id="archive-preview-result"></div>
+        </div>
+    </div>
 </div>   
 <div class="tab-pane fade" id="pills-support" role="tabpanel">
     <div class="card mb-4 border-0 shadow-sm" style="border-radius: 20px;">
         <div class="card-header fw-bold bg-white border-0 pt-4 pb-2 px-4 d-flex justify-content-between align-items-center" style="border-radius: 20px 20px 0 0;">
-            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-headset me-2"></i>รายการแจ้งปัญหาการใช้งาน</h5>
+            <h5 class="fw-bold text-primary mb-0"><i class="bi bi-headset me-2"></i>แชทกับผู้ใช้งาน</h5>
             <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.populateSupportTicketPage()"><i class="bi bi-arrow-clockwise"></i> รีเฟรช</button>
         </div>
         <div class="card-body px-4 pb-4 pt-2">
-            <div id="support-ticket-list"></div>
+            <div id="support-room-list-view">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0">ห้องสนทนา</h6>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="window.startNewSupportChat()"><i class="bi bi-plus-lg me-1"></i> ข้อความใหม่</button>
+                </div>
+                <div id="support-room-list"></div>
+            </div>
+            <div id="support-room-chat-view" style="display:none;">
+                <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="window.closeSupportRoomChat()"><i class="bi bi-arrow-left me-1"></i> กลับไปหน้ารายการ</button>
+                <div class="border rounded-4 p-2 mb-2 bg-light fw-bold" id="support-room-chat-title"></div>
+                <div class="support-chat-messages" id="admin-chat-messages" style="max-height: 420px; border: 1px solid #eee; border-radius: 12px; background: #fff;"></div>
+                <div class="d-flex gap-2 mt-2">
+                    <textarea class="support-popup-textarea" id="admin-chat-input" style="min-height:44px; flex:1;" placeholder="พิมพ์ข้อความตอบกลับ..."></textarea>
+                    <button type="button" class="btn btn-primary" id="admin-chat-send-btn" onclick="window.sendAdminChatMessage()"><i class="bi bi-send-fill"></i></button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -2537,6 +2612,11 @@
                                     <tbody id="history-table"></tbody>
                                 </table>
                             </div>
+                            <div class="text-center mt-3">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="load-archived-history-btn" onclick="window.loadArchivedHistory()">
+                                    <i class="bi bi-archive me-1"></i> โหลดประวัติเก่ากว่านี้ (Archive)
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2786,6 +2866,7 @@
 	    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
         <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
         <!-- Vehicle Report Modal (เลือกวันที่โหลดรายงาน) -->
         <div class="modal fade" id="vehicleReportModal" tabindex="-1" aria-hidden="true">
@@ -3555,7 +3636,7 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXFZJKTwwtlEY3-nTc57qEYOime1oBm7MX1O3k2xQWeOH31wGbLtQvItFU9AMo4ySpdg/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyH8hl_j-QxAUegbd_XzMKDtqxHrjBFlK7y0kIwQGc0CkgzST2TgYWCjBY22pArMYGbJg/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [], lotHolds: [] };
@@ -4982,7 +5063,9 @@ clearInterval(window.mascotLoopTimer);
         }
         const canManageLotHold = isMasterAdmin || currentUser.canManageLotHold;
         if (document.getElementById('nav-lot-hold-item')) document.getElementById('nav-lot-hold-item').style.display = canManageLotHold ? '' : 'none';
-        if (document.getElementById('nav-support-item')) document.getElementById('nav-support-item').style.display = isMasterAdmin ? '' : 'none';
+        const canManageSupport = isMasterAdmin || currentUser.canManageSupport;
+        if (document.getElementById('nav-support-item')) document.getElementById('nav-support-item').style.display = canManageSupport ? '' : 'none';
+        if (document.getElementById('nav-archive-item')) document.getElementById('nav-archive-item').style.display = isMasterAdmin ? '' : 'none';
  // 3. จัดการปุ่มดาวน์โหลดสำรองข้อมูลแบบใหม่ (Dropdown)
         const backupDropdown = document.getElementById('backup-dropdown-container');
         if (backupDropdown) backupDropdown.style.display = (canManageProducts || canManageUsers) ? 'block' : 'none';
@@ -5026,8 +5109,11 @@ clearInterval(window.mascotLoopTimer);
     calculateStockFromHistory();
     populateAll();
       if (typeof window.populateLotHoldPage === 'function') window.populateLotHoldPage(); // 🟢 อัปเดต badge จำนวน Q ตั้งแต่เปิดแอป
-    if (typeof window.initSupportWidget === 'function') window.initSupportWidget(); // 🟢 เปิดใช้งานปุ่มแชทลอย
+        if (typeof window.initSupportWidget === 'function') window.initSupportWidget(); // 🟢 เปิดใช้งานปุ่มแชทลอย
+    const supportFabBtn = document.getElementById('support-fab-btn');
+    if (supportFabBtn) supportFabBtn.style.display = ''; // 🟢 โชว์ปุ่มแชทหลังล็อกอินสำเร็จเท่านั้น
     if (typeof window.populateSupportTicketPage === 'function') window.populateSupportTicketPage(); // 🟢 อัปเดต badge จำนวนแจ้งปัญหาใหม่ตั้งแต่เปิดแอป
+    if (typeof window.checkMySupportReplies === 'function') window.checkMySupportReplies(); // 🟢 เช็คว่า User มีคำตอบใหม่ที่ยังไม่เห็นไหม
     startDataSync();
                     setupActivityListeners();
                     resetInactivityTimer();
@@ -8419,15 +8505,23 @@ window.returnGroupVehicle = function(date, displayTime, customer) {
         }
     });
 };
-// 🟢 ==================== ระบบแจ้งปัญหาการใช้งาน (Support Ticket) ====================
+// 🟢 ==================== ระบบแชทภายใน (คุยกับใครก็ได้ + แจ้งปัญหาทีมงาน) ====================
 let supportScreenshotB64 = null;
 let supportAttachmentB64 = null;
 let supportAttachmentName = '';
+let supportChatPollTimer = null;
+let currentChatRoomId = null;
+let currentChatPartnerLabel = null;
+
+function getRoomId(userA, userB) {
+    return [userA, userB].sort().join('__');
+}
 
 window.initSupportWidget = function() {
     const fabBtn = document.getElementById('support-fab-btn');
     const popup = document.getElementById('support-popup');
     const closeBtn = document.getElementById('support-popup-close');
+    const closeBtn2 = document.getElementById('support-popup-close-2');
     const emojiBtn = document.getElementById('support-btn-emoji');
     const emojiPanel = document.getElementById('support-emoji-panel');
     const screenshotBtn = document.getElementById('support-btn-screenshot');
@@ -8439,27 +8533,34 @@ window.initSupportWidget = function() {
     if (!fabBtn || fabBtn.dataset.initialized) return;
     fabBtn.dataset.initialized = 'true';
 
-    fabBtn.addEventListener('click', () => popup.classList.toggle('show'));
-    closeBtn.addEventListener('click', () => popup.classList.remove('show'));
+    const closePopup = () => { popup.classList.remove('show'); window.stopSupportChatPolling(); };
+
+    fabBtn.addEventListener('click', () => {
+        popup.classList.toggle('show');
+        if (popup.classList.contains('show')) window.openContactList();
+        else window.stopSupportChatPolling();
+    });
+    closeBtn.addEventListener('click', closePopup);
+    closeBtn2.addEventListener('click', closePopup);
     emojiBtn.addEventListener('click', () => emojiPanel.classList.toggle('show'));
     emojiPanel.addEventListener('click', (e) => {
-        if (e.target.tagName === 'SPAN') {
-            textarea.value += e.target.innerText;
-            textarea.focus();
-        }
+        if (e.target.tagName === 'SPAN') { textarea.value += e.target.innerText; textarea.focus(); }
     });
 
     screenshotBtn.addEventListener('click', () => {
-        popup.classList.remove('show'); // ซ่อนป็อบอัพก่อนแคป กันแคปติดตัวป็อบอัพเอง
+        if (typeof html2canvas !== 'function') {
+            Swal.fire('ไม่พร้อมใช้งาน', 'เครื่องมือแคปหน้าจอยังโหลดไม่เสร็จ กรุณารอสักครู่แล้วลองใหม่ครับ', 'warning');
+            return;
+        }
+        popup.classList.remove('show');
         setTimeout(() => {
-            html2canvas(document.body, { useCORS: true, scale: 1 }).then(canvas => {
-                supportScreenshotB64 = canvas.toDataURL('image/jpeg', 0.8);
-                renderSupportPreview();
-                popup.classList.add('show');
-            }).catch(() => {
-                popup.classList.add('show');
-                Swal.fire('ไม่สามารถแคปหน้าจอได้', '', 'warning');
-            });
+            try {
+                html2canvas(document.body, { useCORS: true, scale: 1 }).then(canvas => {
+                    supportScreenshotB64 = canvas.toDataURL('image/jpeg', 0.8);
+                    renderSupportPreview();
+                    popup.classList.add('show');
+                }).catch((err) => { popup.classList.add('show'); Swal.fire('ไม่สามารถแคปหน้าจอได้', err.message || '', 'warning'); });
+            } catch (err) { popup.classList.add('show'); Swal.fire('ไม่สามารถแคปหน้าจอได้', err.message || '', 'warning'); }
         }, 200);
     });
 
@@ -8469,70 +8570,252 @@ window.initSupportWidget = function() {
         if (!file) return;
         supportAttachmentName = file.name;
         const reader = new FileReader();
-        reader.onload = (ev) => {
-            supportAttachmentB64 = ev.target.result;
-            renderSupportPreview();
-        };
+        reader.onload = (ev) => { supportAttachmentB64 = ev.target.result; renderSupportPreview(); };
         reader.readAsDataURL(file);
         e.target.value = '';
     });
 
     sendBtn.addEventListener('click', window.submitSupportTicket);
+    textarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); window.submitSupportTicket(); }
+    });
+
+    // 🟢 ส่งสัญญาณออนไลน์ทุก 25 วิ ตลอดเวลาที่เปิดแอปอยู่ (ไม่ว่าจะอยู่หน้าไหน)
+    if (currentUser) callAppsScript('pingPresence', { username: currentUser.username }).catch(() => {});
+    setInterval(() => {
+        if (currentUser) callAppsScript('pingPresence', { username: currentUser.username }).catch(() => {});
+    }, 25000);
 };
 
 function renderSupportPreview() {
     const strip = document.getElementById('support-preview-strip');
     let html = '';
-    if (supportScreenshotB64) {
-        html += `<div class="support-preview-item"><img src="${supportScreenshotB64}"><button type="button" class="support-preview-remove" onclick="window.removeSupportScreenshot()">&times;</button></div>`;
-    }
+    if (supportScreenshotB64) html += `<div class="support-preview-item"><img src="${supportScreenshotB64}"><button type="button" class="support-preview-remove" onclick="window.removeSupportScreenshot()">&times;</button></div>`;
     if (supportAttachmentB64) {
         const isImage = supportAttachmentB64.startsWith('data:image');
         html += `<div class="support-preview-item">${isImage ? `<img src="${supportAttachmentB64}">` : `<div class="d-flex align-items-center justify-content-center h-100 bg-light"><i class="bi bi-file-earmark-text fs-4 text-muted"></i></div>`}<button type="button" class="support-preview-remove" onclick="window.removeSupportAttachment()">&times;</button></div>`;
     }
     strip.innerHTML = html;
 }
-
 window.removeSupportScreenshot = function() { supportScreenshotB64 = null; renderSupportPreview(); };
 window.removeSupportAttachment = function() { supportAttachmentB64 = null; supportAttachmentName = ''; renderSupportPreview(); };
+
+// 🟢 เปิดหน้ารายชื่อผู้ติดต่อ
+window.openContactList = function() {
+    document.getElementById('support-contacts-view').style.display = 'block';
+    document.getElementById('support-chat-view').style.display = 'none';
+    window.stopSupportChatPolling();
+    window.renderContactList();
+    window.fetchChatDataForContacts();
+};
+
+window.fetchChatDataForContacts = async function() {
+    try {
+        const res = await fetch(SCRIPT_URL + '?action=getChatMessages&t=' + Date.now());
+        const data = await res.json();
+        db.supportTickets = data.messages || [];
+        db.userPresence = data.presence || [];
+        window.renderContactList();
+    } catch (err) { console.error('โหลดรายชื่อไม่สำเร็จ:', err); }
+};
+
+function isUserOnline(username) {
+    const p = (db.userPresence || []).find(x => x.username === username);
+    if (!p || !p.lastActive) return false;
+    return (new Date() - new Date(p.lastActive)) < 60000; // ออนไลน์ถ้า ping มาไม่เกิน 1 นาที
+}
+
+window.renderContactList = function() {
+    const listEl = document.getElementById('support-contacts-list');
+    if (!listEl || !currentUser) return;
+
+    let html = '';
+
+    // 🎧 ช่องแจ้งปัญหาหาแอดมิน (ไม่โชว์ให้แอดมินเห็นตัวเอง)
+    if (currentUser.username !== 'admin') {
+        const supportRoomId = 'support__' + currentUser.username;
+        const unread = (db.supportTickets || []).filter(t => t.roomId === supportRoomId && t.sender !== currentUser.username && t.status !== 'Read').length;
+        html += `
+            <div class="contact-item" onclick="window.openChatRoom('${supportRoomId}', '🎧 แจ้งปัญหาการใช้งาน', true)">
+                <div class="contact-avatar support-avatar"><i class="bi bi-headset"></i></div>
+                <div class="flex-grow-1">
+                    <div class="contact-name">🎧 แจ้งปัญหาการใช้งาน</div>
+                    <div class="contact-status">ทีมงานแอดมิน</div>
+                </div>
+                ${unread > 0 ? `<span class="badge bg-danger rounded-pill">${unread}</span>` : ''}
+            </div>
+            <hr class="my-2">
+        `;
+    }
+
+    // รายชื่อ User คนอื่นๆ ทั้งหมด (คุยกันเองได้)
+    const others = (db.users || []).filter(u => u.username !== currentUser.username);
+    others.forEach(u => {
+        const roomId = getRoomId(currentUser.username, u.username);
+        const online = isUserOnline(u.username);
+        const unread = (db.supportTickets || []).filter(t => t.roomId === roomId && t.sender !== currentUser.username && t.status !== 'Read').length;
+        const displayName = (u.fullname && u.fullname.trim() !== '') ? u.fullname : u.username;
+        html += `
+            <div class="contact-item" onclick="window.openChatRoom('${roomId}', '${displayName.replace(/'/g, "\\'")}', false)">
+                <div class="contact-avatar" style="position:relative;">${window.getAvatarHtml(u, 40)}<span class="online-dot ${online ? 'online' : ''}"></span></div>
+                <div class="flex-grow-1">
+                    <div class="contact-name">${displayName}</div>
+                    <div class="contact-status ${online ? 'online' : ''}">${online ? 'ออนไลน์' : 'ออฟไลน์'}</div>
+                </div>
+                ${unread > 0 ? `<span class="badge bg-danger rounded-pill">${unread}</span>` : ''}
+            </div>
+        `;
+    });
+
+    if (others.length === 0 && currentUser.username === 'admin') {
+        html += `<div class="text-center text-muted p-4 small">ยังไม่มีผู้ใช้งานคนอื่นในระบบครับ</div>`;
+    }
+
+    listEl.innerHTML = html || `<div class="text-center text-muted p-4 small">ไม่มีรายชื่อผู้ติดต่อ</div>`;
+
+    // อัปเดต badge รวมที่ปุ่มลอย
+    const totalUnread = (db.supportTickets || []).filter(t =>
+        (t.roomId && (t.roomId.includes('__' + currentUser.username) || t.roomId.includes(currentUser.username + '__'))) &&
+        t.sender !== currentUser.username && t.status !== 'Read'
+    ).length;
+    const badge = document.getElementById('support-fab-badge');
+    if (badge) {
+        if (totalUnread > 0) { badge.style.display = ''; badge.innerText = totalUnread; }
+        else { badge.style.display = 'none'; }
+    }
+};
+
+// 🟢 เปิดห้องแชทกับคนที่เลือก
+window.openChatRoom = function(roomId, partnerLabel, isSupport) {
+    currentChatRoomId = roomId;
+    currentChatPartnerLabel = partnerLabel;
+    document.getElementById('support-contacts-view').style.display = 'none';
+    document.getElementById('support-chat-view').style.display = 'block';
+    document.getElementById('support-chat-partner-name').innerText = partnerLabel;
+
+    window.fetchAndRenderChatRoom();
+    window.stopSupportChatPolling();
+    supportChatPollTimer = setInterval(window.fetchAndRenderChatRoom, 3500);
+
+    callAppsScript('markRoomRead', { roomId: roomId, myUsername: currentUser.username }).catch(() => {});
+};
+
+window.backToContactList = function() {
+    window.openContactList();
+};
+
+window.stopSupportChatPolling = function() {
+    if (supportChatPollTimer) { clearInterval(supportChatPollTimer); supportChatPollTimer = null; }
+};
+
+window.fetchAndRenderChatRoom = async function() {
+    try {
+        const res = await fetch(SCRIPT_URL + '?action=getChatMessages&t=' + Date.now());
+        const data = await res.json();
+        db.supportTickets = data.messages || [];
+        db.userPresence = data.presence || [];
+        window.renderChatMessages();
+    } catch (err) { console.error('โหลดแชทไม่สำเร็จ:', err); }
+};
+
+window.renderChatMessages = function() {
+    const box = document.getElementById('support-chat-messages');
+    if (!box || !currentChatRoomId || !currentUser) return;
+
+    const msgs = (db.supportTickets || []).filter(t => t.roomId === currentChatRoomId)
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    if (msgs.length === 0) {
+        box.innerHTML = `<div class="chat-empty-state">ยังไม่มีข้อความ พิมพ์ทักได้เลยครับ</div>`;
+        return;
+    }
+
+    box.innerHTML = msgs.map(m => {
+        const isMine = m.sender === currentUser.username;
+        const timeStr = m.createdAt ? new Date(m.createdAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '';
+        let imgHtml = '';
+        if (m.screenshotUrl) imgHtml += `<a href="${m.screenshotUrl}" target="_blank"><img src="${m.screenshotUrl}"></a>`;
+        if (m.attachmentUrl) imgHtml += `<div><a href="${m.attachmentUrl}" target="_blank" class="small"><i class="bi bi-paperclip"></i> ไฟล์แนบ</a></div>`;
+        const senderUser = (db.users || []).find(u => u.username === m.sender);
+        const senderDisplayName = (senderUser && senderUser.fullname && senderUser.fullname.trim() !== '') ? senderUser.fullname : m.sender;
+        return `<div class="chat-bubble ${isMine ? 'mine' : 'theirs'}">
+            ${!isMine ? `<div class="small fw-bold opacity-75">${senderDisplayName}</div>` : ''}
+            ${m.message ? m.message.replace(/\n/g, '<br>') : ''}
+            ${imgHtml}
+            <span class="chat-time">${timeStr}</span>
+        </div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+
+    // mark ว่าอ่านแล้วทันทีที่เห็นข้อความใหม่
+    const hasUnread = msgs.some(m => m.sender !== currentUser.username && m.status !== 'Read');
+    if (hasUnread) callAppsScript('markRoomRead', { roomId: currentChatRoomId, myUsername: currentUser.username }).catch(() => {});
+};
 
 window.submitSupportTicket = async function() {
     const textarea = document.getElementById('support-message');
     const message = textarea.value.trim();
-    if (!message && !supportScreenshotB64 && !supportAttachmentB64) {
-        Swal.fire('กรุณากรอกข้อความ', 'หรือแนบรูป/ไฟล์อย่างน้อย 1 อย่าง', 'warning');
-        return;
-    }
+    if ((!message && !supportScreenshotB64 && !supportAttachmentB64) || !currentChatRoomId) return;
 
-    const sendBtn = document.getElementById('support-send-btn');
-    sendBtn.disabled = true;
-    sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> กำลังส่ง...';
+    // 🟢 เด้งข้อความขึ้นจอทันที ไม่รอบันทึกหลังบ้านเสร็จก่อน (Optimistic UI)
+    const roomIdToSend = currentChatRoomId;
+    const usernameToSend = roomIdToSend.startsWith('support__') ? roomIdToSend.replace('support__', '') : currentUser.username;
+    const tempMsg = {
+        id: 'temp-' + Date.now(),
+        roomId: roomIdToSend,
+        username: usernameToSend,
+        sender: currentUser.username,
+        message: message,
+        screenshotUrl: supportScreenshotB64 || '',
+        attachmentUrl: (!supportScreenshotB64 && supportAttachmentB64) ? supportAttachmentB64 : '',
+        createdAt: new Date().toISOString(),
+        status: 'Unread'
+    };
+    if (!db.supportTickets) db.supportTickets = [];
+    db.supportTickets.push(tempMsg);
+    window.renderChatMessages();
+
+    textarea.value = '';
+    const screenshotToSend = supportScreenshotB64;
+    const attachmentToSend = supportAttachmentB64;
+    const attachmentNameToSend = supportAttachmentName;
+    supportScreenshotB64 = null; supportAttachmentB64 = null; supportAttachmentName = '';
+    renderSupportPreview();
 
     try {
         await callAppsScript('submitSupportTicket', {
-            username: currentUser ? currentUser.username : 'ไม่ระบุ',
+            roomId: roomIdToSend,
+            username: usernameToSend,
+            sender: currentUser.username,
             message: message,
-            screenshotBase64: supportScreenshotB64,
-            attachmentBase64: supportAttachmentB64,
-            attachmentName: supportAttachmentName,
+            screenshotBase64: screenshotToSend,
+            attachmentBase64: attachmentToSend,
+            attachmentName: attachmentNameToSend,
             pageContext: document.querySelector('.tab-pane.active.show')?.id || '-'
         });
-
-        // เคลียร์ฟอร์ม
-        textarea.value = '';
-        supportScreenshotB64 = null;
-        supportAttachmentB64 = null;
-        supportAttachmentName = '';
-        renderSupportPreview();
-        document.getElementById('support-popup').classList.remove('show');
-
-        const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 2500 });
-        Toast.fire({ icon: 'success', title: 'ส่งแจ้งปัญหาเรียบร้อยแล้วครับ ขอบคุณครับ' });
+        window.fetchAndRenderChatRoom(); // ดึงของจริงจากเซิร์ฟเวอร์มาแทนที่ข้อความชั่วคราว
     } catch (error) {
+        tempMsg.message = (tempMsg.message || '') + ' ⚠️ (ส่งไม่สำเร็จ)';
+        window.renderChatMessages();
         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถส่งได้: ' + error.message, 'error');
-    } finally {
-        sendBtn.disabled = false;
-        sendBtn.innerHTML = '<i class="bi bi-send-fill me-1"></i> ส่งแจ้งปัญหา';
+    }
+};
+
+// 🟢 อัปเดต badge บนปุ่มลอย ถ้ามีข้อความใหม่จากแอดมินที่ยังไม่เห็น
+window.checkMySupportReplies = function() {
+    if (!currentUser) return;
+    const unread = (db.supportTickets || []).filter(t =>
+        (t.username === currentUser.username || t.username === 'ALL') && t.sender === 'admin' && t.status !== 'Read'
+    );
+    const badge = document.getElementById('support-fab-badge');
+    const popupOpen = document.getElementById('support-popup')?.classList.contains('show');
+    if (badge) {
+        if (unread.length > 0 && !popupOpen) { badge.style.display = ''; badge.innerText = unread.length; }
+        else { badge.style.display = 'none'; }
+    }
+    // ถ้าเปิดป็อบอัพอยู่ mark ว่าอ่านแล้วทันที
+    if (popupOpen && unread.length > 0) {
+        callAppsScript('markRoomRead', { username: currentUser.username, readerRole: 'user' }).catch(() => {});
     }
 };
 
@@ -8741,56 +9024,254 @@ window.resolveLotHoldFixQty = async function(holdId) {
         Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถบันทึกได้: ' + error.message, 'error');
     }
 };
-// 🟢 หน้าแอดมิน: แสดงรายการแจ้งปัญหาการใช้งานทั้งหมด
+// 🟢 หน้าแอดมิน: รายชื่อห้องสนทนาทั้งหมด (จัดกลุ่มตาม username)
+let adminCurrentRoom = null;
+let adminChatPollTimer = null;
+
 window.populateSupportTicketPage = function() {
-    const listEl = document.getElementById('support-ticket-list');
+    const listEl = document.getElementById('support-room-list');
     if (!listEl) return;
 
-    const tickets = (db.supportTickets || []).slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const tickets = db.supportTickets || [];
+    const rooms = {};
+    tickets.forEach(t => {
+        const key = t.username || 'ไม่ระบุ';
+        if (!rooms[key]) rooms[key] = { username: key, lastMsg: t, unread: 0 };
+        if (new Date(t.createdAt) > new Date(rooms[key].lastMsg.createdAt)) rooms[key].lastMsg = t;
+        if (t.sender === 'user' && t.status !== 'Read') rooms[key].unread++;
+    });
 
-    const unreadCount = tickets.filter(t => t.status !== 'Read').length;
+    const roomList = Object.values(rooms).sort((a, b) => new Date(b.lastMsg.createdAt) - new Date(a.lastMsg.createdAt));
+    const totalUnread = roomList.reduce((sum, r) => sum + r.unread, 0);
+
     const badge = document.getElementById('support-badge-count');
     if (badge) {
-        if (unreadCount > 0) { badge.style.display = ''; badge.innerText = unreadCount; }
+        if (totalUnread > 0) { badge.style.display = ''; badge.innerText = totalUnread; }
         else { badge.style.display = 'none'; }
     }
 
-    if (tickets.length === 0) {
-        listEl.innerHTML = `<div class="text-center text-muted p-5"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>ยังไม่มีการแจ้งปัญหาเข้ามาครับ</div>`;
+    if (roomList.length === 0) {
+        listEl.innerHTML = `<div class="text-center text-muted p-5"><i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>ยังไม่มีข้อความเข้ามาครับ</div>`;
         return;
     }
 
-    listEl.innerHTML = tickets.map(t => {
-        const isUnread = t.status !== 'Read';
-        const dateDisplay = t.createdAt ? new Date(t.createdAt).toLocaleString('th-TH', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+    listEl.innerHTML = roomList.map(r => {
+        const dateDisplay = new Date(r.lastMsg.createdAt).toLocaleString('th-TH', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+        const preview = r.lastMsg.message || (r.lastMsg.screenshotUrl ? '📷 รูปภาพ' : (r.lastMsg.attachmentUrl ? '📎 ไฟล์แนบ' : ''));
         return `
-            <div class="border rounded-4 p-3 mb-3 ${isUnread ? 'border-primary bg-light' : 'border-light'}" style="cursor:pointer;" onclick="window.markSupportTicketRead('${t.id}')">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                        <span class="fw-bold text-dark">${t.username || 'ไม่ระบุ'}</span>
-                        ${isUnread ? '<span class="badge bg-primary ms-2">ใหม่</span>' : ''}
-                        <div class="small text-muted"><i class="bi bi-clock me-1"></i>${dateDisplay} &nbsp;|&nbsp; หน้า: ${t.pageContext || '-'}</div>
-                    </div>
+            <div class="border rounded-4 p-3 mb-2 d-flex justify-content-between align-items-center" style="cursor:pointer;" onclick="window.openSupportRoomChat('${r.username}')">
+                <div>
+                    <div class="fw-bold">${r.username === 'ALL' ? '📢 ประกาศทุกคน' : r.username} ${r.unread > 0 ? `<span class="badge bg-danger rounded-pill ms-1">${r.unread}</span>` : ''}</div>
+                    <div class="small text-muted text-truncate" style="max-width: 320px;">${preview}</div>
                 </div>
-                <div class="mb-2" style="white-space: pre-wrap;">${t.message || '<span class="text-muted fst-italic">(ไม่มีข้อความ ส่งมาแค่ไฟล์แนบ)</span>'}</div>
-                <div class="d-flex gap-2 flex-wrap">
-                    ${t.screenshotUrl ? `<a href="${t.screenshotUrl}" target="_blank" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation();"><i class="bi bi-camera-fill me-1"></i>ดูภาพหน้าจอ</a>` : ''}
-                    ${t.attachmentUrl ? `<a href="${t.attachmentUrl}" target="_blank" class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation();"><i class="bi bi-paperclip me-1"></i>ดูไฟล์แนบ</a>` : ''}
-                </div>
+                <div class="small text-muted">${dateDisplay}</div>
             </div>
         `;
     }).join('');
 };
 
-window.markSupportTicketRead = async function(ticketId) {
-    const ticket = (db.supportTickets || []).find(t => t.id === ticketId);
-    if (!ticket || ticket.status === 'Read') return;
+window.startNewSupportChat = async function() {
+    const users = (db.users || []).map(u => u.username).filter(u => u !== 'admin');
+    const { value: choice } = await Swal.fire({
+        title: 'เริ่มสนทนาใหม่',
+        input: 'select',
+        inputOptions: { 'ALL': '📢 ส่งประกาศถึงทุกคน', ...Object.fromEntries(users.map(u => [u, u])) },
+        inputPlaceholder: 'เลือกผู้รับ',
+        showCancelButton: true,
+        confirmButtonText: 'เริ่มแชท',
+        cancelButtonText: 'ยกเลิก'
+    });
+    if (choice) window.openSupportRoomChat(choice);
+};
+
+window.openSupportRoomChat = function(username) {
+    adminCurrentRoom = username;
+    document.getElementById('support-room-list-view').style.display = 'none';
+    document.getElementById('support-room-chat-view').style.display = 'block';
+    document.getElementById('support-room-chat-title').innerText = username === 'ALL' ? '📢 ประกาศทุกคน' : username;
+
+    window.fetchAdminChat();
+    if (adminChatPollTimer) clearInterval(adminChatPollTimer);
+    adminChatPollTimer = setInterval(window.fetchAdminChat, 3500);
+
+    callAppsScript('markRoomRead', { username: username, readerRole: 'admin' }).catch(() => {});
+};
+
+window.closeSupportRoomChat = function() {
+    document.getElementById('support-room-list-view').style.display = 'block';
+    document.getElementById('support-room-chat-view').style.display = 'none';
+    if (adminChatPollTimer) { clearInterval(adminChatPollTimer); adminChatPollTimer = null; }
+    adminCurrentRoom = null;
+    window.populateSupportTicketPage();
+};
+
+window.fetchAdminChat = async function() {
     try {
-        await callAppsScript('updateSupportTicketStatus', { id: ticketId, status: 'Read' });
-        ticket.status = 'Read';
-        window.populateSupportTicketPage();
+        const res = await fetch(SCRIPT_URL + '?action=getChatMessages&t=' + Date.now());
+        const data = await res.json();
+        db.supportTickets = data.messages || [];
+        window.renderAdminChatMessages();
+    } catch (err) { console.error('โหลดแชทไม่สำเร็จ:', err); }
+};
+
+window.renderAdminChatMessages = function() {
+    const box = document.getElementById('admin-chat-messages');
+    if (!box || !adminCurrentRoom) return;
+
+    const msgs = (db.supportTickets || []).filter(t => t.username === adminCurrentRoom)
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    if (msgs.length === 0) {
+        box.innerHTML = `<div class="chat-empty-state">ยังไม่มีข้อความในห้องนี้ครับ</div>`;
+        return;
+    }
+
+    box.innerHTML = msgs.map(m => {
+        const isMine = m.sender === 'admin';
+        const timeStr = new Date(m.createdAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        let imgHtml = '';
+        if (m.screenshotUrl) imgHtml += `<a href="${m.screenshotUrl}" target="_blank"><img src="${m.screenshotUrl}"></a>`;
+        if (m.attachmentUrl) imgHtml += `<div><a href="${m.attachmentUrl}" target="_blank" class="small"><i class="bi bi-paperclip"></i> ไฟล์แนบ</a></div>`;
+        return `<div class="chat-bubble ${isMine ? 'mine' : 'theirs'}">${m.message ? m.message.replace(/\n/g, '<br>') : ''}${imgHtml}<span class="chat-time">${timeStr}</span></div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+};
+
+window.sendAdminChatMessage = async function() {
+    const input = document.getElementById('admin-chat-input');
+    const message = input.value.trim();
+    if (!message || !adminCurrentRoom) return;
+
+    const btn = document.getElementById('admin-chat-send-btn');
+    btn.disabled = true;
+
+    try {
+        await callAppsScript('submitSupportTicket', {
+            username: adminCurrentRoom,
+            sender: 'admin',
+            message: message,
+            pageContext: '-'
+        });
+        input.value = '';
+        window.fetchAdminChat();
     } catch (error) {
-        console.error('อัปเดตสถานะไม่สำเร็จ:', error);
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถส่งได้: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+};
+// 🟢 หน้าแอดมิน: ดูตัวอย่างก่อนย้าย Archive
+let lastArchiveCutoffDays = 180;
+// 🟢 โหลดประวัติเก่าที่ถูก Archive ไปแล้ว มารวมแสดงในตารางประวัติ (โหลดตามสั่งเท่านั้น ไม่โหลดอัตโนมัติ)
+let archivedHistoryLoaded = false;
+window.loadArchivedHistory = async function() {
+    const btn = document.getElementById('load-archived-history-btn');
+    if (archivedHistoryLoaded) {
+        Swal.fire({ icon: 'info', title: 'โหลดไปแล้ว', text: 'ประวัติเก่าถูกโหลดมารวมในตารางแล้วครับ', timer: 2000, showConfirmButton: false });
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> กำลังโหลด...';
+
+    try {
+        const res = await callAppsScript('getArchivedHistory', {});
+        const archivedRows = res.data || [];
+
+        if (archivedRows.length === 0) {
+            btn.innerHTML = '<i class="bi bi-archive me-1"></i> ไม่มีประวัติเก่าใน Archive';
+            return;
+        }
+
+        // กันข้อมูลซ้ำ เผื่อกดโหลดซ้ำ
+        const existingIds = new Set(db.history.map(h => h.id));
+        const newRows = archivedRows.filter(r => !existingIds.has(r.id));
+        db.history = db.history.concat(newRows);
+
+        archivedHistoryLoaded = true;
+        hasHistoryBeenSearched = true;
+        if (typeof populateHistoryTable === 'function') populateHistoryTable();
+
+        btn.innerHTML = `<i class="bi bi-check-circle me-1"></i> โหลดแล้ว ${newRows.length} รายการ`;
+
+        const Toast = Swal.mixin({ toast: true, position: 'bottom-end', showConfirmButton: false, timer: 2500 });
+        Toast.fire({ icon: 'success', title: `โหลดประวัติเก่ามารวมแล้ว ${newRows.length} รายการ` });
+    } catch (error) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-archive me-1"></i> โหลดประวัติเก่ากว่านี้ (Archive)';
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดได้: ' + error.message, 'error');
+    }
+};
+window.previewArchive = async function() {
+    const cutoffDays = parseInt(document.getElementById('archive-cutoff-days').value) || 180;
+    lastArchiveCutoffDays = cutoffDays;
+    const resultBox = document.getElementById('archive-preview-result');
+    const confirmBtn = document.getElementById('archive-confirm-btn');
+    confirmBtn.disabled = true;
+    resultBox.innerHTML = `<div class="text-center text-muted py-4"><span class="spinner-border spinner-border-sm me-2"></span>กำลังวิเคราะห์ข้อมูล...</div>`;
+
+    try {
+        const res = await callAppsScript('previewArchiveHistory', { cutoffDays: cutoffDays });
+
+        if (res.rowCount === 0) {
+            resultBox.innerHTML = `<div class="alert alert-info"><i class="bi bi-info-circle-fill me-1"></i>ไม่พบล็อตที่ปิดจบแล้วและเก่าเกิน ${cutoffDays} วัน ไม่มีอะไรต้องย้ายตอนนี้ครับ</div>`;
+            return;
+        }
+
+        let tableRows = res.sampleLots.map(l => `
+            <tr>
+                <td class="fw-bold text-primary">${l.productId}</td>
+                <td>${l.productionDate}</td>
+                <td class="text-center">${l.rowCount} แถว</td>
+            </tr>
+        `).join('');
+
+        resultBox.innerHTML = `
+            <div class="alert alert-success">
+                <i class="bi bi-check-circle-fill me-1"></i>
+                พบ <b>${res.lotCount} ล็อต</b> ที่ปิดจบแล้ว รวม <b>${res.rowCount} แถว</b> ที่จะถูกย้ายไป Archive
+            </div>
+            <div class="table-responsive border rounded-3" style="max-height: 300px; overflow-y:auto;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light sticky-top"><tr><th>รหัสสินค้า</th><th>ล็อตวันที่</th><th class="text-center">จำนวนแถว</th></tr></thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            </div>
+            ${res.lotCount > 20 ? `<div class="small text-muted mt-2">* แสดงตัวอย่าง 20 ล็อตแรก จากทั้งหมด ${res.lotCount} ล็อต</div>` : ''}
+        `;
+        confirmBtn.disabled = false;
+    } catch (error) {
+        resultBox.innerHTML = `<div class="alert alert-danger">เกิดข้อผิดพลาด: ${error.message}</div>`;
+    }
+};
+
+// 🟢 ย้าย Archive จริง (ต้อง Preview ก่อนเสมอ)
+window.confirmArchive = async function() {
+    const confirmed = await Swal.fire({
+        title: 'ยืนยันการย้ายข้อมูล?',
+        html: `การย้ายนี้จะ<b>ลบแถวออกจากชีต History หลักจริง</b> (ย้ายไปเก็บที่ History_Archive แทน)<br><br><span class="text-danger fw-bold">แนะนำให้สำรอง Google Sheet ไว้ก่อนแล้วใช่ไหมครับ?</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'ใช่ สำรองแล้ว ย้ายเลย',
+        confirmButtonColor: '#dc3545',
+        cancelButtonText: 'ยกเลิก'
+    });
+
+    if (!confirmed.isConfirmed) return;
+
+    Swal.fire({ title: 'กำลังย้ายข้อมูล...', text: 'อาจใช้เวลาสักครู่ถ้าข้อมูลเยอะ กรุณาอย่าปิดหน้าเว็บ', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
+        const res = await callAppsScript('archiveHistory', { cutoffDays: lastArchiveCutoffDays });
+        Swal.fire({ icon: 'success', title: 'ย้ายข้อมูลสำเร็จ!', text: `ย้ายไป ${res.archivedCount} แถว จาก ${res.lotCount} ล็อต` });
+
+        document.getElementById('archive-preview-result').innerHTML = '';
+        document.getElementById('archive-confirm-btn').disabled = true;
+
+        // รีเฟรชข้อมูลทั้งระบบ เพราะ History เปลี่ยนไปแล้ว
+        if (typeof loadDataFromSheet === 'function') loadDataFromSheet(true);
+    } catch (error) {
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถย้ายข้อมูลได้: ' + error.message, 'error');
     }
 };
 window.reportLotShortage = async function(productId, rawProductionDate, lotFullQty) {
@@ -12274,7 +12755,8 @@ function populateSalesDashboard(startDate, endDate) {
                         canConvertPart: document.getElementById('permission-canConvertPart').checked, // 👈 สิทธิ์ Convert
                         canManageRack: document.getElementById('permission-canManageRack').checked,
                         canForecast: document.getElementById('user-canForecast').checked,
-                        canManageLotHold: document.getElementById('permission-canManageLotHold').checked
+                        canManageLotHold: document.getElementById('permission-canManageLotHold').checked,
+                        canManageSupport: document.getElementById('permission-canManageSupport').checked
                     };
 
                         Swal.fire({
