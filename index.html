@@ -3641,7 +3641,7 @@ function handleLogin(e) {
                     }
                 };
                     // --- GOOGLE APPS SCRIPT CONFIGURATION ---
-                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyH8hl_j-QxAUegbd_XzMKDtqxHrjBFlK7y0kIwQGc0CkgzST2TgYWCjBY22pArMYGbJg/exec';
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx2MpUFV6GatsH25aCgslEa9aDCy2bGEAQn-Q--ZrhztwEQZ-gDZ55relN8QHBHXAL14g/exec';
 
                 // --- DATABASE SIMULATION & PERSISTENCE ---
                                 let db = { users: [], products: [], history: [], announcements: [], stockCounts: [], deliveryPlans: [], rackHistory: [], forecast: [], lotHolds: [] };
@@ -8531,14 +8531,19 @@ let supportBackgroundPollTimer = null;
 window.startSupportBackgroundPoll = function() {
     if (supportBackgroundPollTimer) return;
     window.checkForNewSupportMessages();
-    supportBackgroundPollTimer = setInterval(window.checkForNewSupportMessages, 5000);
+    supportBackgroundPollTimer = setInterval(window.checkForNewSupportMessages, 8000); // 🟢 ลดจาก 5 วิ เป็น 8 วิ ลดโหลด
 };
+
+let supportPollFailCount = 0;
 
 window.checkForNewSupportMessages = async function() {
     if (!currentUser) return;
     try {
         const res = await fetch(SCRIPT_URL + '?action=getChatMessages&t=' + Date.now());
+        if (!res.ok) throw new Error('status ' + res.status);
         const data = await res.json();
+        supportPollFailCount = 0; // สำเร็จแล้ว รีเซ็ตตัวนับ error
+
         db.supportTickets = data.messages || [];
         db.userPresence = data.presence || [];
 
@@ -8554,7 +8559,6 @@ window.checkForNewSupportMessages = async function() {
             }
         });
 
-        // รอบแรกหลังเปิดแอป แค่จดจำข้อความเก่าไว้ ไม่เด้งป็อบอัพ (กันเด้งทุกครั้งที่เปิดหน้าเว็บ)
         if (!supportSeenInitialized) { supportSeenInitialized = true; return; }
 
         const popup = document.getElementById('support-popup');
@@ -8567,10 +8571,23 @@ window.checkForNewSupportMessages = async function() {
             }
             popup.classList.add('show');
             window.openChatRoom(newestUnseen.roomId, label, isSupportRoom);
-        } else if (document.getElementById('support-contacts-view').style.display !== 'none' && popup.classList.contains('show')) {
-            window.renderContactList();
+        } else if (popup.classList.contains('show')) {
+            // 🟢 อัปเดตหน้าที่กำลังเปิดอยู่ ไม่ว่าจะเป็นรายชื่อ หรือห้องแชท (ใช้ poll ตัวเดียวคุมทั้งหมด)
+            if (document.getElementById('support-contacts-view').style.display !== 'none') {
+                window.renderContactList();
+            } else if (currentChatRoomId) {
+                window.renderChatMessages();
+            }
         }
-    } catch (err) { console.error('เช็คข้อความใหม่ไม่สำเร็จ:', err); }
+    } catch (err) {
+        supportPollFailCount++;
+        console.warn('เช็คข้อความใหม่ไม่สำเร็จ (ครั้งที่ ' + supportPollFailCount + '):', err.message);
+        // 🟢 ถ้าพลาดติดกันหลายครั้ง ให้ชะลอความถี่ลงชั่วคราว กันยิงรัวจนซ้ำเติมปัญหา
+        if (supportPollFailCount >= 3 && supportBackgroundPollTimer) {
+            clearInterval(supportBackgroundPollTimer);
+            supportBackgroundPollTimer = setInterval(window.checkForNewSupportMessages, 15000); // ชะลอเป็นทุก 15 วิ
+        }
+    }
 };
 
 window.initSupportWidget = function() {
@@ -8741,7 +8758,6 @@ window.renderContactList = function() {
     }
 };
 
-// 🟢 เปิดห้องแชทกับคนที่เลือก
 window.openChatRoom = function(roomId, partnerLabel, isSupport) {
     currentChatRoomId = roomId;
     currentChatPartnerLabel = partnerLabel;
@@ -8749,9 +8765,8 @@ window.openChatRoom = function(roomId, partnerLabel, isSupport) {
     document.getElementById('support-chat-view').style.display = 'block';
     document.getElementById('support-chat-partner-name').innerText = partnerLabel;
 
-    window.fetchAndRenderChatRoom();
-    window.stopSupportChatPolling();
-    supportChatPollTimer = setInterval(window.fetchAndRenderChatRoom, 3500);
+    window.renderChatMessages(); // 🟢 ใช้ข้อมูลที่ Poll ตัวเดียว (พื้นหลัง) ดึงมาอยู่แล้ว ไม่ต้องยิงซ้ำ
+    // 🟢 ไม่ต้องเปิด timer แยกอีกตัวแล้ว ใช้ตัวพื้นหลังตัวเดียวพอ (ลดโหลด Google Apps Script)
 
     callAppsScript('markRoomRead', { roomId: roomId, myUsername: currentUser.username }).catch(() => {});
 };
