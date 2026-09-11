@@ -1401,6 +1401,12 @@
 .contact-status { font-size: 0.72rem; color: #adb5bd; }
 .contact-status.online { color: #28a745; }
 .support-back-btn { background: none; border: none; color: #fff; font-size: 1.1rem; margin-right: 6px; cursor: pointer; }
+.auto-filled-field {
+    background-color: #fff8e1 !important;
+    border: 1.5px solid #ffc107 !important;
+    color: #7a5c00 !important;
+    font-weight: 600;
+}
 </style>
 <body>
 <!-- ========================================= -->
@@ -1589,9 +1595,8 @@
     </div>
     </div>
         <!-- 💬 ปุ่มแชทลอยแจ้งปัญหาการใช้งาน -->
-    <button type="button" class="support-fab" id="support-fab-btn" title="แจ้งปัญหาการใช้งาน" style="display:none;">
+        <button type="button" class="support-fab" id="support-fab-btn" title="แจ้งปัญหาการใช้งาน" style="display:none;">
         <i class="bi bi-headset"></i>
-        <span class="support-fab-badge" id="support-fab-badge" style="display:none;">0</span>
     </button>
     <div class="support-popup" id="support-popup">
         <!-- หน้ารายชื่อผู้ติดต่อ -->
@@ -1918,7 +1923,7 @@
                 <div class="col-md-3">
                     <label for="plan-customer" class="form-label fw-bold text-secondary small">ลูกค้า</label>
                     <div class="position-relative">
-                        <input type="text" id="plan-customer" class="form-control bg-light border-0 text-dark" placeholder="ดึงอัตโนมัติจากรหัสสินค้า..." readonly required autocomplete="off">
+                        <input type="text" id="plan-customer" class="form-control auto-filled-field" placeholder="ดึงอัตโนมัติจากรหัสสินค้า..." readonly required autocomplete="off">
                         <div id="plan-customer-suggestions" class="list-group position-absolute w-100 suggestions-container shadow-lg" style="z-index: 1050; max-height: 200px; overflow-y: auto;"></div>
                     </div>
                 </div>
@@ -1931,7 +1936,7 @@
                 </div>
                 <div class="col-md-3">
                     <label for="plan-product-name" class="form-label fw-bold text-secondary small">ชื่อสินค้า / รายละเอียด</label>
-                    <input type="text" id="plan-product-name" class="form-control bg-light border-0 text-muted" readonly>
+                    <input type="text" id="plan-product-name" class="form-control auto-filled-field" readonly>
                 </div>
                 
                 <div class="col-md-2">
@@ -5112,6 +5117,7 @@ clearInterval(window.mascotLoopTimer);
         if (typeof window.initSupportWidget === 'function') window.initSupportWidget(); // 🟢 เปิดใช้งานปุ่มแชทลอย
     const supportFabBtn = document.getElementById('support-fab-btn');
     if (supportFabBtn) supportFabBtn.style.display = ''; // 🟢 โชว์ปุ่มแชทหลังล็อกอินสำเร็จเท่านั้น
+    if (typeof window.startSupportBackgroundPoll === 'function') window.startSupportBackgroundPoll(); // 🟢 เริ่มเช็คข้อความใหม่เบื้องหลัง เด้งป็อบอัพอัตโนมัติ
     if (typeof window.populateSupportTicketPage === 'function') window.populateSupportTicketPage(); // 🟢 อัปเดต badge จำนวนแจ้งปัญหาใหม่ตั้งแต่เปิดแอป
     if (typeof window.checkMySupportReplies === 'function') window.checkMySupportReplies(); // 🟢 เช็คว่า User มีคำตอบใหม่ที่ยังไม่เห็นไหม
     startDataSync();
@@ -8516,6 +8522,56 @@ let currentChatPartnerLabel = null;
 function getRoomId(userA, userB) {
     return [userA, userB].sort().join('__');
 }
+
+let seenSupportMsgIds = new Set();
+let supportSeenInitialized = false;
+let supportBackgroundPollTimer = null;
+
+// 🟢 ตรวจสอบข้อความใหม่แบบเบื้องหลังตลอดเวลา (ไม่ว่าป็อบอัพจะเปิดอยู่หรือไม่) แล้วเด้งหน้าต่างขึ้นเองถ้ามีข้อความเข้า
+window.startSupportBackgroundPoll = function() {
+    if (supportBackgroundPollTimer) return;
+    window.checkForNewSupportMessages();
+    supportBackgroundPollTimer = setInterval(window.checkForNewSupportMessages, 5000);
+};
+
+window.checkForNewSupportMessages = async function() {
+    if (!currentUser) return;
+    try {
+        const res = await fetch(SCRIPT_URL + '?action=getChatMessages&t=' + Date.now());
+        const data = await res.json();
+        db.supportTickets = data.messages || [];
+        db.userPresence = data.presence || [];
+
+        const myIncoming = (db.supportTickets || []).filter(t =>
+            t.sender !== currentUser.username && t.roomId && t.roomId.includes(currentUser.username)
+        );
+
+        let newestUnseen = null;
+        myIncoming.forEach(m => {
+            if (!seenSupportMsgIds.has(m.id)) {
+                seenSupportMsgIds.add(m.id);
+                newestUnseen = m;
+            }
+        });
+
+        // รอบแรกหลังเปิดแอป แค่จดจำข้อความเก่าไว้ ไม่เด้งป็อบอัพ (กันเด้งทุกครั้งที่เปิดหน้าเว็บ)
+        if (!supportSeenInitialized) { supportSeenInitialized = true; return; }
+
+        const popup = document.getElementById('support-popup');
+        if (newestUnseen && !popup.classList.contains('show')) {
+            const isSupportRoom = newestUnseen.roomId.startsWith('support__');
+            let label = '🎧 แจ้งปัญหาการใช้งาน';
+            if (!isSupportRoom) {
+                const senderUser = (db.users || []).find(u => u.username === newestUnseen.sender);
+                label = (senderUser && senderUser.fullname) ? senderUser.fullname : newestUnseen.sender;
+            }
+            popup.classList.add('show');
+            window.openChatRoom(newestUnseen.roomId, label, isSupportRoom);
+        } else if (document.getElementById('support-contacts-view').style.display !== 'none' && popup.classList.contains('show')) {
+            window.renderContactList();
+        }
+    } catch (err) { console.error('เช็คข้อความใหม่ไม่สำเร็จ:', err); }
+};
 
 window.initSupportWidget = function() {
     const fabBtn = document.getElementById('support-fab-btn');
